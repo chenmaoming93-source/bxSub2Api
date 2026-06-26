@@ -14,8 +14,8 @@ CREATE TABLE IF NOT EXISTS proxies (
     deleted_at      DATETIME(6)
 );
 
-CREATE INDEX IF NOT EXISTS idx_proxies_status ON proxies(status);
-CREATE INDEX IF NOT EXISTS idx_proxies_deleted_at ON proxies(deleted_at);
+CREATE INDEX idx_proxies_status ON proxies(status);
+CREATE INDEX idx_proxies_deleted_at ON proxies(deleted_at);
 
 CREATE TABLE IF NOT EXISTS `groups` (
     id              BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -29,10 +29,10 @@ CREATE TABLE IF NOT EXISTS `groups` (
     deleted_at      DATETIME(6)
 );
 
-CREATE INDEX IF NOT EXISTS idx_groups_name ON `groups`(name);
-CREATE INDEX IF NOT EXISTS idx_groups_status ON `groups`(status);
-CREATE INDEX IF NOT EXISTS idx_groups_is_exclusive ON `groups`(is_exclusive);
-CREATE INDEX IF NOT EXISTS idx_groups_deleted_at ON `groups`(deleted_at);
+CREATE INDEX idx_groups_name ON `groups`(name);
+CREATE INDEX idx_groups_status ON `groups`(status);
+CREATE INDEX idx_groups_is_exclusive ON `groups`(is_exclusive);
+CREATE INDEX idx_groups_deleted_at ON `groups`(deleted_at);
 
 CREATE TABLE IF NOT EXISTS users (
     id              BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -48,9 +48,9 @@ CREATE TABLE IF NOT EXISTS users (
     deleted_at      DATETIME(6)
 );
 
-CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
-CREATE INDEX IF NOT EXISTS idx_users_status ON users(status);
-CREATE INDEX IF NOT EXISTS idx_users_deleted_at ON users(deleted_at);
+CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_users_status ON users(status);
+CREATE INDEX idx_users_deleted_at ON users(deleted_at);
 
 CREATE TABLE IF NOT EXISTS accounts (
     id              BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -70,13 +70,13 @@ CREATE TABLE IF NOT EXISTS accounts (
     deleted_at      DATETIME(6)
 );
 
-CREATE INDEX IF NOT EXISTS idx_accounts_platform ON accounts(platform);
-CREATE INDEX IF NOT EXISTS idx_accounts_type ON accounts(type);
-CREATE INDEX IF NOT EXISTS idx_accounts_status ON accounts(status);
-CREATE INDEX IF NOT EXISTS idx_accounts_proxy_id ON accounts(proxy_id);
-CREATE INDEX IF NOT EXISTS idx_accounts_priority ON accounts(priority);
-CREATE INDEX IF NOT EXISTS idx_accounts_last_used_at ON accounts(last_used_at);
-CREATE INDEX IF NOT EXISTS idx_accounts_deleted_at ON accounts(deleted_at);
+CREATE INDEX idx_accounts_platform ON accounts(platform);
+CREATE INDEX idx_accounts_type ON accounts(type);
+CREATE INDEX idx_accounts_status ON accounts(status);
+CREATE INDEX idx_accounts_proxy_id ON accounts(proxy_id);
+CREATE INDEX idx_accounts_priority ON accounts(priority);
+CREATE INDEX idx_accounts_last_used_at ON accounts(last_used_at);
+CREATE INDEX idx_accounts_deleted_at ON accounts(deleted_at);
 
 CREATE TABLE IF NOT EXISTS api_keys (
     id              BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -90,11 +90,11 @@ CREATE TABLE IF NOT EXISTS api_keys (
     deleted_at      DATETIME(6)
 );
 
-CREATE INDEX IF NOT EXISTS idx_api_keys_key ON api_keys(`key`);
-CREATE INDEX IF NOT EXISTS idx_api_keys_user_id ON api_keys(user_id);
-CREATE INDEX IF NOT EXISTS idx_api_keys_group_id ON api_keys(group_id);
-CREATE INDEX IF NOT EXISTS idx_api_keys_status ON api_keys(status);
-CREATE INDEX IF NOT EXISTS idx_api_keys_deleted_at ON api_keys(deleted_at);
+CREATE INDEX idx_api_keys_key ON api_keys(`key`);
+CREATE INDEX idx_api_keys_user_id ON api_keys(user_id);
+CREATE INDEX idx_api_keys_group_id ON api_keys(group_id);
+CREATE INDEX idx_api_keys_status ON api_keys(status);
+CREATE INDEX idx_api_keys_deleted_at ON api_keys(deleted_at);
 
 CREATE TABLE IF NOT EXISTS account_groups (
     account_id      BIGINT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
@@ -104,8 +104,8 @@ CREATE TABLE IF NOT EXISTS account_groups (
     PRIMARY KEY (account_id, group_id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_account_groups_group_id ON account_groups(group_id);
-CREATE INDEX IF NOT EXISTS idx_account_groups_priority ON account_groups(priority);
+CREATE INDEX idx_account_groups_group_id ON account_groups(group_id);
+CREATE INDEX idx_account_groups_priority ON account_groups(priority);
 
 CREATE TABLE IF NOT EXISTS redeem_codes (
     id              BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -118,9 +118,9 @@ CREATE TABLE IF NOT EXISTS redeem_codes (
     created_at      DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
 );
 
-CREATE INDEX IF NOT EXISTS idx_redeem_codes_code ON redeem_codes(code);
-CREATE INDEX IF NOT EXISTS idx_redeem_codes_status ON redeem_codes(status);
-CREATE INDEX IF NOT EXISTS idx_redeem_codes_used_by ON redeem_codes(used_by);
+CREATE INDEX idx_redeem_codes_code ON redeem_codes(code);
+CREATE INDEX idx_redeem_codes_status ON redeem_codes(status);
+CREATE INDEX idx_redeem_codes_used_by ON redeem_codes(used_by);
 
 CREATE TABLE IF NOT EXISTS usage_logs (
     id                          BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -146,9 +146,9 @@ CREATE TABLE IF NOT EXISTS usage_logs (
     created_at                  DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
 );
 
-CREATE INDEX IF NOT EXISTS idx_usage_logs_user_id ON usage_logs(user_id);
-CREATE INDEX IF NOT EXISTS idx_usage_logs_api_key_id ON usage_logs(api_key_id);
-CREATE INDEX IF NOT EXISTS idx_usage_logs_account_id ON usage_logs(account_id);
-CREATE INDEX IF NOT EXISTS idx_usage_logs_model ON usage_logs(model);
-CREATE INDEX IF NOT EXISTS idx_usage_logs_created_at ON usage_logs(created_at);
-CREATE INDEX IF NOT EXISTS idx_usage_logs_user_created ON usage_logs(user_id, created_at);
+CREATE INDEX idx_usage_logs_user_id ON usage_logs(user_id);
+CREATE INDEX idx_usage_logs_api_key_id ON usage_logs(api_key_id);
+CREATE INDEX idx_usage_logs_account_id ON usage_logs(account_id);
+CREATE INDEX idx_usage_logs_model ON usage_logs(model);
+CREATE INDEX idx_usage_logs_created_at ON usage_logs(created_at);
+CREATE INDEX idx_usage_logs_user_created ON usage_logs(user_id, created_at);

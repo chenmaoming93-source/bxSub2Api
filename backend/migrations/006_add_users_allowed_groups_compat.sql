@@ -1,4 +1,19 @@
 -- Compatibility column for legacy allowed group data. GoldenDB stores the old
 -- array-shaped value as JSON so 007 can backfill through JSON_TABLE.
-ALTER TABLE users
-    ADD COLUMN IF NOT EXISTS allowed_groups JSON;
+SET @sub2api_add_users_allowed_groups_sql = (
+    SELECT IF(
+        EXISTS (
+            SELECT 1
+            FROM information_schema.columns
+            WHERE table_schema = DATABASE()
+              AND table_name = 'users'
+              AND column_name = 'allowed_groups'
+        ),
+        'DO 0',
+        'ALTER TABLE users ADD COLUMN allowed_groups JSON'
+    )
+);
+
+PREPARE sub2api_add_users_allowed_groups_stmt FROM @sub2api_add_users_allowed_groups_sql;
+EXECUTE sub2api_add_users_allowed_groups_stmt;
+DEALLOCATE PREPARE sub2api_add_users_allowed_groups_stmt;

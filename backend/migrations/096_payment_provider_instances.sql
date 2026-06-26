@@ -11,5 +11,5 @@ CREATE TABLE IF NOT EXISTS payment_provider_instances (
     created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
 );
-CREATE INDEX IF NOT EXISTS idx_payment_provider_instances_provider_key ON payment_provider_instances(provider_key);
-CREATE INDEX IF NOT EXISTS idx_payment_provider_instances_enabled ON payment_provider_instances(enabled);
+CREATE INDEX idx_payment_provider_instances_provider_key ON payment_provider_instances(provider_key);
+CREATE INDEX idx_payment_provider_instances_enabled ON payment_provider_instances(enabled);

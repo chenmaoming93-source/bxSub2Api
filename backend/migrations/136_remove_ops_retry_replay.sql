@@ -2,7 +2,7 @@
 -- The retry endpoints are no longer exposed, so keeping request bodies and
 -- retry audit rows only increases write width, memory retention, and DB size.
 
-DROP TABLE IF EXISTS ops_retry_attempts CASCADE;
+DROP TABLE IF EXISTS ops_retry_attempts;
 
 ALTER TABLE ops_error_logs
   DROP COLUMN IF EXISTS request_body,

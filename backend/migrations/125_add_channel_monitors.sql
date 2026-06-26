@@ -32,11 +32,11 @@ CREATE TABLE IF NOT EXISTS channel_monitors (
     CONSTRAINT channel_monitors_interval_check CHECK (interval_seconds BETWEEN 15 AND 3600)
 );
 
-CREATE INDEX IF NOT EXISTS idx_channel_monitors_enabled_last_checked
+CREATE INDEX idx_channel_monitors_enabled_last_checked
     ON channel_monitors (enabled, last_checked_at);
-CREATE INDEX IF NOT EXISTS idx_channel_monitors_provider
+CREATE INDEX idx_channel_monitors_provider
     ON channel_monitors (provider);
-CREATE INDEX IF NOT EXISTS idx_channel_monitors_group_name
+CREATE INDEX idx_channel_monitors_group_name
     ON channel_monitors (group_name);
 
 CREATE TABLE IF NOT EXISTS channel_monitor_histories (
@@ -52,7 +52,7 @@ CREATE TABLE IF NOT EXISTS channel_monitor_histories (
         CHECK (status IN ('operational', 'degraded', 'failed', 'error'))
 );
 
-CREATE INDEX IF NOT EXISTS idx_channel_monitor_histories_monitor_model_checked
+CREATE INDEX idx_channel_monitor_histories_monitor_model_checked
     ON channel_monitor_histories (monitor_id, model, checked_at DESC);
-CREATE INDEX IF NOT EXISTS idx_channel_monitor_histories_checked_at
+CREATE INDEX idx_channel_monitor_histories_checked_at
     ON channel_monitor_histories (checked_at);

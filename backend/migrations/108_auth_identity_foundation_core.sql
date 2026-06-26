@@ -1,7 +1,7 @@
 ALTER TABLE users
-ADD COLUMN IF NOT EXISTS signup_source VARCHAR(20) NOT NULL DEFAULT 'email',
-ADD COLUMN IF NOT EXISTS last_login_at DATETIME(6) NULL,
-ADD COLUMN IF NOT EXISTS last_active_at DATETIME(6) NULL;
+ADD COLUMN signup_source VARCHAR(20) NOT NULL DEFAULT 'email',
+ADD COLUMN last_login_at DATETIME(6) NULL,
+ADD COLUMN last_active_at DATETIME(6) NULL;
 
 UPDATE users
 SET signup_source = 'email'
@@ -26,13 +26,13 @@ CREATE TABLE IF NOT EXISTS auth_identities (
         CHECK (provider_type IN ('email', 'linuxdo', 'wechat', 'oidc'))
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS auth_identities_provider_subject_key
+CREATE UNIQUE INDEX auth_identities_provider_subject_key
     ON auth_identities (provider_type, provider_key, provider_subject);
 
-CREATE INDEX IF NOT EXISTS auth_identities_user_id_idx
+CREATE INDEX auth_identities_user_id_idx
     ON auth_identities (user_id);
 
-CREATE INDEX IF NOT EXISTS auth_identities_user_provider_idx
+CREATE INDEX auth_identities_user_provider_idx
     ON auth_identities (user_id, provider_type);
 
 CREATE TABLE IF NOT EXISTS auth_identity_channels (
@@ -50,10 +50,10 @@ CREATE TABLE IF NOT EXISTS auth_identity_channels (
         CHECK (provider_type IN ('email', 'linuxdo', 'wechat', 'oidc'))
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS auth_identity_channels_channel_key
+CREATE UNIQUE INDEX auth_identity_channels_channel_key
     ON auth_identity_channels (provider_type, provider_key, channel, channel_app_id, channel_subject);
 
-CREATE INDEX IF NOT EXISTS auth_identity_channels_identity_id_idx
+CREATE INDEX auth_identity_channels_identity_id_idx
     ON auth_identity_channels (identity_id);
 
 CREATE TABLE IF NOT EXISTS pending_auth_sessions (
@@ -85,19 +85,19 @@ CREATE TABLE IF NOT EXISTS pending_auth_sessions (
         CHECK (provider_type IN ('email', 'linuxdo', 'wechat', 'oidc'))
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS pending_auth_sessions_session_token_key
+CREATE UNIQUE INDEX pending_auth_sessions_session_token_key
     ON pending_auth_sessions (session_token);
 
-CREATE INDEX IF NOT EXISTS pending_auth_sessions_target_user_id_idx
+CREATE INDEX pending_auth_sessions_target_user_id_idx
     ON pending_auth_sessions (target_user_id);
 
-CREATE INDEX IF NOT EXISTS pending_auth_sessions_expires_at_idx
+CREATE INDEX pending_auth_sessions_expires_at_idx
     ON pending_auth_sessions (expires_at);
 
-CREATE INDEX IF NOT EXISTS pending_auth_sessions_provider_idx
+CREATE INDEX pending_auth_sessions_provider_idx
     ON pending_auth_sessions (provider_type, provider_key, provider_subject);
 
-CREATE INDEX IF NOT EXISTS pending_auth_sessions_completion_code_idx
+CREATE INDEX pending_auth_sessions_completion_code_idx
     ON pending_auth_sessions (completion_code_hash);
 
 CREATE TABLE IF NOT EXISTS identity_adoption_decisions (
@@ -111,10 +111,10 @@ CREATE TABLE IF NOT EXISTS identity_adoption_decisions (
     updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS identity_adoption_decisions_pending_auth_session_id_key
+CREATE UNIQUE INDEX identity_adoption_decisions_pending_auth_session_id_key
     ON identity_adoption_decisions (pending_auth_session_id);
 
-CREATE INDEX IF NOT EXISTS identity_adoption_decisions_identity_id_idx
+CREATE INDEX identity_adoption_decisions_identity_id_idx
     ON identity_adoption_decisions (identity_id);
 
 CREATE TABLE IF NOT EXISTS auth_identity_migration_reports (
@@ -125,8 +125,8 @@ CREATE TABLE IF NOT EXISTS auth_identity_migration_reports (
     created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
 );
 
-CREATE INDEX IF NOT EXISTS auth_identity_migration_reports_type_idx
+CREATE INDEX auth_identity_migration_reports_type_idx
     ON auth_identity_migration_reports (report_type);
 
-CREATE UNIQUE INDEX IF NOT EXISTS auth_identity_migration_reports_type_key
+CREATE UNIQUE INDEX auth_identity_migration_reports_type_key
     ON auth_identity_migration_reports (report_type, report_key);

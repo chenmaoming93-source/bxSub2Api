@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS ops_metrics_hourly (
     PRIMARY KEY (bucket_start, platform)
 );
 
-CREATE INDEX IF NOT EXISTS idx_ops_metrics_hourly_platform_bucket_start
+CREATE INDEX idx_ops_metrics_hourly_platform_bucket_start
     ON ops_metrics_hourly (platform, bucket_start DESC);
 
 
@@ -74,7 +74,7 @@ CREATE TABLE IF NOT EXISTS ops_metrics_daily (
     PRIMARY KEY (bucket_date, platform)
 );
 
-CREATE INDEX IF NOT EXISTS idx_ops_metrics_daily_platform_bucket_date
+CREATE INDEX idx_ops_metrics_daily_platform_bucket_date
     ON ops_metrics_daily (platform, bucket_date DESC);
 
 
@@ -91,10 +91,10 @@ CREATE INDEX IF NOT EXISTS idx_ops_metrics_daily_platform_bucket_date
 -- - Derive the provider/platform similarly to existing dashboard queries:
 --     usage_logs: COALESCE(NULLIF(`groups`.platform, ''), accounts.platform, '')
 --     ops_error_logs: COALESCE(NULLIF(ops_error_logs.platform, ''), `groups`.platform, accounts.platform, '')
--- - Keep request_count/success_count/error_count as the authoritative values; compute error_rate from counts.
+-- - Keep request_count/success_count/error_count as the authoritative values, compute error_rate from counts.
 --
 -- Example (hourly) shape (pseudo-SQL):
 --   INSERT INTO ops_metrics_hourly (...)
 --   SELECT hourly bucket expression AS bucket_start, platform, ...
 --   FROM (/* aggregate usage_logs + ops_error_logs */) s
---   ON DUPLICATE KEY UPDATE ...;
+--   ON DUPLICATE KEY UPDATE ...

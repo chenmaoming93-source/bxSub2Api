@@ -27,7 +27,7 @@ WHERE r.rn > 1;
 -- -----------------------------------------------------------------------------
 -- 2) Idempotency constraint for usage_logs
 -- -----------------------------------------------------------------------------
-CREATE UNIQUE INDEX IF NOT EXISTS idx_usage_logs_request_id_api_key_unique
+CREATE UNIQUE INDEX idx_usage_logs_request_id_api_key_unique
     ON usage_logs (request_id, api_key_id);
 
 -- -----------------------------------------------------------------------------
@@ -45,11 +45,11 @@ CREATE TABLE IF NOT EXISTS billing_usage_entries (
     created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS billing_usage_entries_usage_log_id_unique
+CREATE UNIQUE INDEX billing_usage_entries_usage_log_id_unique
     ON billing_usage_entries (usage_log_id);
 
-CREATE INDEX IF NOT EXISTS idx_billing_usage_entries_user_time
+CREATE INDEX idx_billing_usage_entries_user_time
     ON billing_usage_entries (user_id, created_at);
 
-CREATE INDEX IF NOT EXISTS idx_billing_usage_entries_created_at
+CREATE INDEX idx_billing_usage_entries_created_at
     ON billing_usage_entries (created_at);

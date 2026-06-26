@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS user_allowed_groups (
     PRIMARY KEY (user_id, group_id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_user_allowed_groups_group_id ON user_allowed_groups(group_id);
+CREATE INDEX idx_user_allowed_groups_group_id ON user_allowed_groups(group_id);
 
 -- Backfill from the legacy users.allowed_groups JSON array.
 INSERT IGNORE INTO user_allowed_groups (user_id, group_id)

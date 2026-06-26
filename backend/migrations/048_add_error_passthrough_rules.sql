@@ -20,5 +20,5 @@ CREATE TABLE IF NOT EXISTS error_passthrough_rules (
 );
 
 -- Indexes for efficient queries
-CREATE INDEX IF NOT EXISTS idx_error_passthrough_rules_enabled ON error_passthrough_rules (enabled);
-CREATE INDEX IF NOT EXISTS idx_error_passthrough_rules_priority ON error_passthrough_rules (priority);
+CREATE INDEX idx_error_passthrough_rules_enabled ON error_passthrough_rules (enabled);
+CREATE INDEX idx_error_passthrough_rules_priority ON error_passthrough_rules (priority);

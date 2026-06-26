@@ -9,5 +9,5 @@ CREATE TABLE IF NOT EXISTS user_affiliates (
     updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
 );
 
-CREATE INDEX IF NOT EXISTS idx_user_affiliates_inviter_id ON user_affiliates(inviter_id);
-CREATE INDEX IF NOT EXISTS idx_user_affiliates_aff_quota ON user_affiliates(aff_quota);
+CREATE INDEX idx_user_affiliates_inviter_id ON user_affiliates(inviter_id);
+CREATE INDEX idx_user_affiliates_aff_quota ON user_affiliates(aff_quota);

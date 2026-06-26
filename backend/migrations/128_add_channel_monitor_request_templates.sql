@@ -26,18 +26,18 @@ CREATE TABLE IF NOT EXISTS channel_monitor_request_templates (
         CHECK (body_override_mode IN ('off', 'merge', 'replace'))
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS channel_monitor_request_templates_provider_name
+CREATE UNIQUE INDEX channel_monitor_request_templates_provider_name
     ON channel_monitor_request_templates (provider, name);
 
--- channel_monitors 加 4 列（ADD COLUMN IF NOT EXISTS 需要 PG 9.6+，生产使用 PG 16）
+-- channel_monitors 加 4 列（ADD COLUMN 需要 PG 9.6+，生产使用 PG 16）
 ALTER TABLE channel_monitors
-    ADD COLUMN IF NOT EXISTS template_id        BIGINT      NULL;
+    ADD COLUMN template_id        BIGINT      NULL;
 ALTER TABLE channel_monitors
-    ADD COLUMN IF NOT EXISTS extra_headers      JSON NULL;
+    ADD COLUMN extra_headers      JSON NULL;
 ALTER TABLE channel_monitors
-    ADD COLUMN IF NOT EXISTS body_override_mode VARCHAR(10) NOT NULL DEFAULT 'off';
+    ADD COLUMN body_override_mode VARCHAR(10) NOT NULL DEFAULT 'off';
 ALTER TABLE channel_monitors
-    ADD COLUMN IF NOT EXISTS body_override      JSON       NULL;
+    ADD COLUMN body_override      JSON       NULL;
 
 -- 约束 + 外键（DO 块里 IF NOT EXISTS 判断，保证幂等）
 ALTER TABLE channel_monitors
@@ -50,5 +50,5 @@ ALTER TABLE channel_monitors
     REFERENCES channel_monitor_request_templates (id)
     ON DELETE SET NULL;
 
-CREATE INDEX IF NOT EXISTS idx_channel_monitors_template_id
+CREATE INDEX idx_channel_monitors_template_id
     ON channel_monitors (template_id);

@@ -1,2 +1,2 @@
 ALTER TABLE payment_orders
-ADD COLUMN IF NOT EXISTS provider_snapshot JSON;
+ADD COLUMN provider_snapshot JSON;

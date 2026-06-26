@@ -20,14 +20,14 @@ CREATE TABLE IF NOT EXISTS user_attribute_definitions (
 
 -- Partial unique index for key (only for non-deleted records)
 -- Allows reusing keys after soft delete
-CREATE UNIQUE INDEX IF NOT EXISTS idx_user_attribute_definitions_key_unique
+CREATE UNIQUE INDEX idx_user_attribute_definitions_key_unique
     ON user_attribute_definitions(`key`);
 
-CREATE INDEX IF NOT EXISTS idx_user_attribute_definitions_enabled
+CREATE INDEX idx_user_attribute_definitions_enabled
     ON user_attribute_definitions(enabled);
-CREATE INDEX IF NOT EXISTS idx_user_attribute_definitions_display_order
+CREATE INDEX idx_user_attribute_definitions_display_order
     ON user_attribute_definitions(display_order);
-CREATE INDEX IF NOT EXISTS idx_user_attribute_definitions_deleted_at
+CREATE INDEX idx_user_attribute_definitions_deleted_at
     ON user_attribute_definitions(deleted_at);
 
 -- User Attribute Values table (hard delete only, no deleted_at)
@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS user_attribute_values (
     UNIQUE(user_id, attribute_id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_user_attribute_values_user_id
+CREATE INDEX idx_user_attribute_values_user_id
     ON user_attribute_values(user_id);
-CREATE INDEX IF NOT EXISTS idx_user_attribute_values_attribute_id
+CREATE INDEX idx_user_attribute_values_attribute_id
     ON user_attribute_values(attribute_id);

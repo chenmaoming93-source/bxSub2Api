@@ -4,4 +4,4 @@
 -- 0（默认）表示固定间隔，与历史行为一致。
 
 ALTER TABLE channel_monitors
-    ADD COLUMN IF NOT EXISTS jitter_seconds INTEGER NOT NULL DEFAULT 0;
+    ADD COLUMN jitter_seconds INTEGER NOT NULL DEFAULT 0;

@@ -7,4 +7,4 @@ CREATE TABLE IF NOT EXISTS security_secrets (
   updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
 );
 
-CREATE INDEX IF NOT EXISTS idx_security_secrets_key ON security_secrets (`key`);
+CREATE INDEX idx_security_secrets_key ON security_secrets (`key`);

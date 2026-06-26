@@ -16,11 +16,11 @@ CREATE TABLE IF NOT EXISTS idempotency_records (
     updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_idempotency_records_scope_key
+CREATE UNIQUE INDEX idx_idempotency_records_scope_key
     ON idempotency_records (scope, idempotency_key_hash);
 
-CREATE INDEX IF NOT EXISTS idx_idempotency_records_expires_at
+CREATE INDEX idx_idempotency_records_expires_at
     ON idempotency_records (expires_at);
 
-CREATE INDEX IF NOT EXISTS idx_idempotency_records_status_locked_until
+CREATE INDEX idx_idempotency_records_status_locked_until
     ON idempotency_records (status, locked_until);

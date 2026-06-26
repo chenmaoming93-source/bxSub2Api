@@ -15,9 +15,9 @@
 
 -- 1) 给历史明细表加软删除字段
 ALTER TABLE channel_monitor_histories
-    ADD COLUMN IF NOT EXISTS deleted_at DATETIME(6);
+    ADD COLUMN deleted_at DATETIME(6);
 
-CREATE INDEX IF NOT EXISTS idx_channel_monitor_histories_deleted_at
+CREATE INDEX idx_channel_monitor_histories_deleted_at
     ON channel_monitor_histories (deleted_at);
 
 -- 2) 创建日聚合表
@@ -40,11 +40,11 @@ CREATE TABLE IF NOT EXISTS channel_monitor_daily_rollups (
     deleted_at            DATETIME(6)
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_channel_monitor_daily_rollups_unique
+CREATE UNIQUE INDEX idx_channel_monitor_daily_rollups_unique
     ON channel_monitor_daily_rollups (monitor_id, model, bucket_date);
-CREATE INDEX IF NOT EXISTS idx_channel_monitor_daily_rollups_bucket
+CREATE INDEX idx_channel_monitor_daily_rollups_bucket
     ON channel_monitor_daily_rollups (bucket_date);
-CREATE INDEX IF NOT EXISTS idx_channel_monitor_daily_rollups_deleted_at
+CREATE INDEX idx_channel_monitor_daily_rollups_deleted_at
     ON channel_monitor_daily_rollups (deleted_at);
 
 -- 3) 创建 watermark 表（单行：id=1）

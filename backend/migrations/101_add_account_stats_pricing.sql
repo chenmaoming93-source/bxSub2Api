@@ -1,7 +1,7 @@
 -- Account statistics pricing: allow channels to configure custom pricing for account cost tracking.
 
 -- 1. Channel-level toggle
-ALTER TABLE channels ADD COLUMN IF NOT EXISTS apply_pricing_to_account_stats BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE channels ADD COLUMN apply_pricing_to_account_stats BOOLEAN NOT NULL DEFAULT FALSE;
 
 -- 2. Account stats pricing rules (ordered list per channel)
 CREATE TABLE IF NOT EXISTS channel_account_stats_pricing_rules (
@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS channel_account_stats_pricing_rules (
     created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
 );
-CREATE INDEX IF NOT EXISTS idx_cas_pricing_rules_channel_id ON channel_account_stats_pricing_rules(channel_id);
+CREATE INDEX idx_cas_pricing_rules_channel_id ON channel_account_stats_pricing_rules(channel_id);
 
 -- 3. Model pricing for each rule (same structure as channel_model_pricing)
 CREATE TABLE IF NOT EXISTS channel_account_stats_model_pricing (
@@ -32,7 +32,7 @@ CREATE TABLE IF NOT EXISTS channel_account_stats_model_pricing (
     created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
 );
-CREATE INDEX IF NOT EXISTS idx_cas_model_pricing_rule_id ON channel_account_stats_model_pricing(rule_id);
+CREATE INDEX idx_cas_model_pricing_rule_id ON channel_account_stats_model_pricing(rule_id);
 
 -- 4. Usage logs: pre-computed account stats cost (NULL = use default formula)
-ALTER TABLE usage_logs ADD COLUMN IF NOT EXISTS account_stats_cost NUMERIC(20,10);
+ALTER TABLE usage_logs ADD COLUMN account_stats_cost NUMERIC(20,10);

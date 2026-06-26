@@ -7,10 +7,10 @@
 -- 直接 DROP 列 + 索引；对应的 Go 侧 ent schema 已移除 SoftDeleteMixin、repo 的
 -- raw SQL 已移除 deleted_at IS NULL 过滤。
 
-DROP INDEX IF EXISTS idx_channel_monitor_histories_deleted_at;
+DROP INDEX IF EXISTS idx_channel_monitor_histories_deleted_at ON channel_monitor_histories;
 ALTER TABLE channel_monitor_histories
     DROP COLUMN IF EXISTS deleted_at;
 
-DROP INDEX IF EXISTS idx_channel_monitor_daily_rollups_deleted_at;
+DROP INDEX IF EXISTS idx_channel_monitor_daily_rollups_deleted_at ON channel_monitor_daily_rollups;
 ALTER TABLE channel_monitor_daily_rollups
     DROP COLUMN IF EXISTS deleted_at;

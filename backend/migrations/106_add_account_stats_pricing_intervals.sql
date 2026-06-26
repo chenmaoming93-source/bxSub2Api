@@ -15,5 +15,5 @@ CREATE TABLE IF NOT EXISTS channel_account_stats_pricing_intervals (
     updated_at        DATETIME(6)    NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
 );
 
-CREATE INDEX IF NOT EXISTS idx_account_stats_pricing_intervals_pricing_id
+CREATE INDEX idx_account_stats_pricing_intervals_pricing_id
     ON channel_account_stats_pricing_intervals (pricing_id);

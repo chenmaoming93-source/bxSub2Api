@@ -9,5 +9,5 @@ CREATE TABLE IF NOT EXISTS usage_billing_dedup (
     created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_usage_billing_dedup_request_api_key
+CREATE UNIQUE INDEX idx_usage_billing_dedup_request_api_key
     ON usage_billing_dedup (request_id, api_key_id);

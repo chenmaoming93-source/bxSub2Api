@@ -1,8 +1,6 @@
 -- 已删除 API key 审计表:删除 key 时同步留存(明文 key、所有者、key 信息),
 -- 供认证失败(INVALID_API_KEY)反查"这个失效 key 曾属于谁"。
 -- 仅对本表上线后删除的 key 生效;此前已删的 key 原值已被 tombstone 覆盖,无法补录。
-SET LOCAL lock_timeout = '5s';
-SET LOCAL statement_timeout = '10min';
 
 CREATE TABLE IF NOT EXISTS deleted_api_key_audits (
     id           BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -13,10 +11,10 @@ CREATE TABLE IF NOT EXISTS deleted_api_key_audits (
     deleted_at   DATETIME(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     created_at   DATETIME(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
 );
-CREATE INDEX IF NOT EXISTS deletedapikeyaudit_key     ON deleted_api_key_audits (`key`);
-CREATE INDEX IF NOT EXISTS deletedapikeyaudit_user_id ON deleted_api_key_audits (user_id);
+CREATE INDEX deletedapikeyaudit_key     ON deleted_api_key_audits (`key`);
+CREATE INDEX deletedapikeyaudit_user_id ON deleted_api_key_audits (user_id);
 
 ALTER TABLE ops_error_logs
-    ADD COLUMN IF NOT EXISTS attempted_key_prefix      VARCHAR(32),
-    ADD COLUMN IF NOT EXISTS deleted_key_owner_user_id BIGINT,
-    ADD COLUMN IF NOT EXISTS deleted_key_name          VARCHAR(100);
+    ADD COLUMN attempted_key_prefix      VARCHAR(32),
+    ADD COLUMN deleted_key_owner_user_id BIGINT,
+    ADD COLUMN deleted_key_name          VARCHAR(100);

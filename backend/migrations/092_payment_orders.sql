@@ -38,10 +38,10 @@ CREATE TABLE IF NOT EXISTS payment_orders (
     updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
 );
 -- Indexes
-CREATE INDEX IF NOT EXISTS idx_payment_orders_user_id ON payment_orders(user_id);
-CREATE INDEX IF NOT EXISTS idx_payment_orders_status ON payment_orders(status);
-CREATE INDEX IF NOT EXISTS idx_payment_orders_expires_at ON payment_orders(expires_at);
-CREATE INDEX IF NOT EXISTS idx_payment_orders_created_at ON payment_orders(created_at);
-CREATE INDEX IF NOT EXISTS idx_payment_orders_paid_at ON payment_orders(paid_at);
-CREATE INDEX IF NOT EXISTS idx_payment_orders_type_paid ON payment_orders(payment_type, paid_at);
-CREATE INDEX IF NOT EXISTS idx_payment_orders_order_type ON payment_orders(order_type);
+CREATE INDEX idx_payment_orders_user_id ON payment_orders(user_id);
+CREATE INDEX idx_payment_orders_status ON payment_orders(status);
+CREATE INDEX idx_payment_orders_expires_at ON payment_orders(expires_at);
+CREATE INDEX idx_payment_orders_created_at ON payment_orders(created_at);
+CREATE INDEX idx_payment_orders_paid_at ON payment_orders(paid_at);
+CREATE INDEX idx_payment_orders_type_paid ON payment_orders(payment_type, paid_at);
+CREATE INDEX idx_payment_orders_order_type ON payment_orders(order_type);

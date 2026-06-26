@@ -20,8 +20,8 @@ CREATE TABLE IF NOT EXISTS user_affiliate_ledger (
     updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
 );
 
-CREATE INDEX IF NOT EXISTS idx_user_affiliate_ledger_user_id ON user_affiliate_ledger(user_id);
-CREATE INDEX IF NOT EXISTS idx_user_affiliate_ledger_action ON user_affiliate_ledger(action);
+CREATE INDEX idx_user_affiliate_ledger_user_id ON user_affiliate_ledger(user_id);
+CREATE INDEX idx_user_affiliate_ledger_action ON user_affiliate_ledger(action);
 
 
 -- 3) Enforce idempotency at DB layer for payment audit actions.
@@ -34,7 +34,7 @@ JOIN (
 ) AS ranked ON ranked.id = p.id
 WHERE ranked.rn > 1;
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_payment_audit_logs_order_action_uniq
+CREATE UNIQUE INDEX idx_payment_audit_logs_order_action_uniq
 ON payment_audit_logs(order_id, action);
 
 -- 4) Prevent retroactive affiliate rebate issuance for legacy completed balance orders.

@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS promo_code_usages (
 );
 
 -- 索引
-CREATE INDEX IF NOT EXISTS idx_promo_codes_status ON promo_codes(status);
-CREATE INDEX IF NOT EXISTS idx_promo_codes_expires_at ON promo_codes(expires_at);
-CREATE INDEX IF NOT EXISTS idx_promo_code_usages_promo_code_id ON promo_code_usages(promo_code_id);
-CREATE INDEX IF NOT EXISTS idx_promo_code_usages_user_id ON promo_code_usages(user_id);
+CREATE INDEX idx_promo_codes_status ON promo_codes(status);
+CREATE INDEX idx_promo_codes_expires_at ON promo_codes(expires_at);
+CREATE INDEX idx_promo_code_usages_promo_code_id ON promo_code_usages(promo_code_id);
+CREATE INDEX idx_promo_code_usages_user_id ON promo_code_usages(user_id);

@@ -9,7 +9,5 @@ ADD COLUMN is_count_tokens BOOLEAN NOT NULL DEFAULT FALSE;
 
 -- Add comment
 
--- Create index for filtering (optional, improves query performance)
-CREATE INDEX IF NOT EXISTS idx_ops_error_logs_is_count_tokens
-ON ops_error_logs(is_count_tokens)
-WHERE is_count_tokens = TRUE;
+CREATE INDEX idx_ops_error_logs_is_count_tokens
+ON ops_error_logs(is_count_tokens);

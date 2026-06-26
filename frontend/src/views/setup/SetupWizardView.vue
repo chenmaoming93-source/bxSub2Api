@@ -77,7 +77,7 @@
                 v-model="formData.database.host"
                 type="text"
                 class="input"
-                placeholder="localhost"
+                placeholder="8.154.40.173"
               />
             </div>
             <div>
@@ -86,7 +86,7 @@
                 v-model.number="formData.database.port"
                 type="number"
                 class="input"
-                placeholder="5432"
+                placeholder="3306"
               />
             </div>
           </div>
@@ -110,7 +110,7 @@
                 v-model="formData.database.user"
                 type="text"
                 class="input"
-                placeholder="postgres"
+                placeholder="root"
               />
             </div>
             <div>
@@ -202,7 +202,7 @@
                 v-model="formData.redis.host"
                 type="text"
                 class="input"
-                placeholder="localhost"
+                placeholder="8.154.40.173"
               />
             </div>
             <div>
@@ -516,7 +516,7 @@ const testingRedis = ref(false)
 const dbConnected = ref(false)
 const redisConnected = ref(false)
 const installing = ref(false)
-const confirmPassword = ref('')
+const confirmPassword = ref('P@ssw0rd')
 const serviceReady = ref(false)
 
 // Default server port
@@ -531,23 +531,23 @@ const getCurrentPort = (): number => {
 
 const formData = reactive<InstallRequest>({
   database: {
-    host: 'localhost',
-    port: 5432,
-    user: 'postgres',
-    password: '',
+    host: '8.154.40.173',
+    port: 3306,
+    user: 'root',
+    password: '123456',
     dbname: 'sub2api',
     sslmode: 'disable'
   },
   redis: {
-    host: 'localhost',
+    host: '8.154.40.173',
     port: 6379,
     password: '',
     db: 0,
     enable_tls: false
   },
   admin: {
-    email: '',
-    password: ''
+    email: 'admin@example.com',
+    password: 'P@ssw0rd'
   },
   server: {
     host: '0.0.0.0',

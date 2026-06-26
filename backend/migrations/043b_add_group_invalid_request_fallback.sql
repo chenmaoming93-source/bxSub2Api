@@ -3,10 +3,10 @@
 
 -- 添加 fallback_group_id_on_invalid_request 字段：无效请求兜底使用的分组
 ALTER TABLE `groups`
-ADD COLUMN IF NOT EXISTS fallback_group_id_on_invalid_request BIGINT REFERENCES `groups`(id) ON DELETE SET NULL;
+ADD COLUMN fallback_group_id_on_invalid_request BIGINT REFERENCES `groups`(id) ON DELETE SET NULL;
 
 -- 添加索引优化查询
-CREATE INDEX IF NOT EXISTS idx_groups_fallback_group_id_on_invalid_request
+CREATE INDEX idx_groups_fallback_group_id_on_invalid_request
 ON `groups`(fallback_group_id_on_invalid_request);
 
 -- 添加字段注释

@@ -1,4 +1,4 @@
 -- 为 redeem_codes 表添加备注字段
 
 ALTER TABLE redeem_codes
-ADD COLUMN IF NOT EXISTS notes TEXT;
+ADD COLUMN notes TEXT;

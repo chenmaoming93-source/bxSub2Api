@@ -14,5 +14,5 @@ CREATE TABLE IF NOT EXISTS subscription_plans (
     created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
 );
-CREATE INDEX IF NOT EXISTS idx_subscription_plans_group_id ON subscription_plans(group_id);
-CREATE INDEX IF NOT EXISTS idx_subscription_plans_for_sale ON subscription_plans(for_sale);
+CREATE INDEX idx_subscription_plans_group_id ON subscription_plans(group_id);
+CREATE INDEX idx_subscription_plans_for_sale ON subscription_plans(for_sale);

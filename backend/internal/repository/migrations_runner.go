@@ -65,6 +65,7 @@ var (
 	addColumnIfNotExistsPattern   = regexp.MustCompile(`(?is)^\s*ADD\s+COLUMN\s+IF\s+NOT\s+EXISTS\s+` + identifierPattern("column") + `\s+`)
 	dropColumnIfExistsPattern     = regexp.MustCompile(`(?is)^\s*DROP\s+COLUMN\s+IF\s+EXISTS\s+` + identifierPattern("column") + `\s*$`)
 	dropObjectCascadePattern      = regexp.MustCompile(`(?is)^(\s*DROP\s+(?:TABLE|VIEW)\s+IF\s+EXISTS\s+.+?)\s+CASCADE\s*$`)
+	setLocalPattern               = regexp.MustCompile(`(?is)^\s*SET\s+LOCAL\s+`)
 )
 
 type migrationExecutor interface {
@@ -426,6 +427,9 @@ func executeMigrationStatements(ctx context.Context, exec migrationExecutor, con
 func executeMigrationStatement(ctx context.Context, exec migrationExecutor, stmt string) error {
 	normalized := stripSQLLineComment(strings.TrimSpace(stmt))
 	if normalized == "" {
+		return nil
+	}
+	if setLocalPattern.MatchString(normalized) {
 		return nil
 	}
 
@@ -801,13 +805,75 @@ func validateMigrationExecutionMode(name, content string) (bool, error) {
 }
 
 func splitSQLStatements(content string) []string {
-	parts := strings.Split(content, ";")
-	out := make([]string, 0, len(parts))
-	for _, part := range parts {
-		if strings.TrimSpace(part) == "" {
+	var out []string
+	start := 0
+	inSingleQuote := false
+	inDoubleQuote := false
+	inBacktick := false
+	inLineComment := false
+	inBlockComment := false
+	for i := 0; i < len(content); i++ {
+		ch := content[i]
+		var next byte
+		if i+1 < len(content) {
+			next = content[i+1]
+		}
+
+		if inLineComment {
+			if ch == '\n' || ch == '\r' {
+				inLineComment = false
+			}
 			continue
 		}
-		out = append(out, part)
+		if inBlockComment {
+			if ch == '*' && next == '/' {
+				inBlockComment = false
+				i++
+			}
+			continue
+		}
+		if !inSingleQuote && !inDoubleQuote && !inBacktick {
+			if ch == '-' && next == '-' {
+				inLineComment = true
+				i++
+				continue
+			}
+			if ch == '/' && next == '*' {
+				inBlockComment = true
+				i++
+				continue
+			}
+		}
+
+		switch ch {
+		case '\'':
+			if !inDoubleQuote && !inBacktick {
+				if inSingleQuote && next == '\'' {
+					i++
+				} else {
+					inSingleQuote = !inSingleQuote
+				}
+			}
+		case '"':
+			if !inSingleQuote && !inBacktick {
+				inDoubleQuote = !inDoubleQuote
+			}
+		case '`':
+			if !inSingleQuote && !inDoubleQuote {
+				inBacktick = !inBacktick
+			}
+		case ';':
+			if !inSingleQuote && !inDoubleQuote && !inBacktick {
+				part := content[start:i]
+				if strings.TrimSpace(part) != "" {
+					out = append(out, part)
+				}
+				start = i + 1
+			}
+		}
+	}
+	if tail := content[start:]; strings.TrimSpace(tail) != "" {
+		out = append(out, tail)
 	}
 	return out
 }

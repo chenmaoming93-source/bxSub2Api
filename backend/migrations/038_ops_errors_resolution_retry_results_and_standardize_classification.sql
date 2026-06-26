@@ -2,55 +2,51 @@
 --
 -- This migration is intentionally idempotent.
 
-SET LOCAL lock_timeout = '5s';
-SET LOCAL statement_timeout = '10min';
-
 -- ============================================
 -- 1) ops_error_logs: resolution fields
 -- ============================================
 
 ALTER TABLE ops_error_logs
-  ADD COLUMN IF NOT EXISTS resolved BOOLEAN NOT NULL DEFAULT false;
+  ADD COLUMN resolved BOOLEAN NOT NULL DEFAULT false;
 
 ALTER TABLE ops_error_logs
-  ADD COLUMN IF NOT EXISTS resolved_at DATETIME(6);
+  ADD COLUMN resolved_at DATETIME(6);
 
 ALTER TABLE ops_error_logs
-  ADD COLUMN IF NOT EXISTS resolved_by_user_id BIGINT;
+  ADD COLUMN resolved_by_user_id BIGINT;
 
 ALTER TABLE ops_error_logs
-  ADD COLUMN IF NOT EXISTS resolved_retry_id BIGINT;
+  ADD COLUMN resolved_retry_id BIGINT;
 
-CREATE INDEX IF NOT EXISTS idx_ops_error_logs_resolved_time
+CREATE INDEX idx_ops_error_logs_resolved_time
   ON ops_error_logs (resolved, created_at DESC);
 
-CREATE INDEX IF NOT EXISTS idx_ops_error_logs_unresolved_time
-  ON ops_error_logs (created_at DESC)
-  WHERE resolved = false;
+CREATE INDEX idx_ops_error_logs_unresolved_time
+  ON ops_error_logs (resolved, created_at DESC);
 
 -- ============================================
 -- 2) ops_retry_attempts: persist execution results
 -- ============================================
 
 ALTER TABLE ops_retry_attempts
-  ADD COLUMN IF NOT EXISTS success BOOLEAN;
+  ADD COLUMN success BOOLEAN;
 
 ALTER TABLE ops_retry_attempts
-  ADD COLUMN IF NOT EXISTS http_status_code INT;
+  ADD COLUMN http_status_code INT;
 
 ALTER TABLE ops_retry_attempts
-  ADD COLUMN IF NOT EXISTS upstream_request_id VARCHAR(128);
+  ADD COLUMN upstream_request_id VARCHAR(128);
 
 ALTER TABLE ops_retry_attempts
-  ADD COLUMN IF NOT EXISTS used_account_id BIGINT;
+  ADD COLUMN used_account_id BIGINT;
 
 ALTER TABLE ops_retry_attempts
-  ADD COLUMN IF NOT EXISTS response_preview TEXT;
+  ADD COLUMN response_preview TEXT;
 
 ALTER TABLE ops_retry_attempts
-  ADD COLUMN IF NOT EXISTS response_truncated BOOLEAN NOT NULL DEFAULT false;
+  ADD COLUMN response_truncated BOOLEAN NOT NULL DEFAULT false;
 
-CREATE INDEX IF NOT EXISTS idx_ops_retry_attempts_success_time
+CREATE INDEX idx_ops_retry_attempts_success_time
   ON ops_retry_attempts (success, created_at DESC);
 
 -- Backfill best-effort fields for existing rows.

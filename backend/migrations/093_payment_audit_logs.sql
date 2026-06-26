@@ -6,4 +6,4 @@ CREATE TABLE IF NOT EXISTS payment_audit_logs (
     operator VARCHAR(100) NOT NULL DEFAULT 'system',
     created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
 );
-CREATE INDEX IF NOT EXISTS idx_payment_audit_logs_order_id ON payment_audit_logs(order_id);
+CREATE INDEX idx_payment_audit_logs_order_id ON payment_audit_logs(order_id);

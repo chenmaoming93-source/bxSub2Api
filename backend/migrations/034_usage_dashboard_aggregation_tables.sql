@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS usage_dashboard_hourly (
     computed_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
 );
 
-CREATE INDEX IF NOT EXISTS idx_usage_dashboard_hourly_bucket_start
+CREATE INDEX idx_usage_dashboard_hourly_bucket_start
     ON usage_dashboard_hourly (bucket_start DESC);
 
 
@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS usage_dashboard_daily (
     computed_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
 );
 
-CREATE INDEX IF NOT EXISTS idx_usage_dashboard_daily_bucket_date
+CREATE INDEX idx_usage_dashboard_daily_bucket_date
     ON usage_dashboard_daily (bucket_date DESC);
 
 
@@ -48,7 +48,7 @@ CREATE TABLE IF NOT EXISTS usage_dashboard_hourly_users (
     PRIMARY KEY (bucket_start, user_id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_usage_dashboard_hourly_users_bucket_start
+CREATE INDEX idx_usage_dashboard_hourly_users_bucket_start
     ON usage_dashboard_hourly_users (bucket_start);
 
 -- Daily active user dedup table.
@@ -58,7 +58,7 @@ CREATE TABLE IF NOT EXISTS usage_dashboard_daily_users (
     PRIMARY KEY (bucket_date, user_id)
 );
 
-CREATE INDEX IF NOT EXISTS idx_usage_dashboard_daily_users_bucket_date
+CREATE INDEX idx_usage_dashboard_daily_users_bucket_date
     ON usage_dashboard_daily_users (bucket_date);
 
 -- Aggregation watermark table (single row).

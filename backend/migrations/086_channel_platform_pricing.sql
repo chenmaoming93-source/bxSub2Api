@@ -3,9 +3,9 @@
 
 -- 1. channel_model_pricing 加 platform 列
 ALTER TABLE channel_model_pricing
-    ADD COLUMN IF NOT EXISTS platform VARCHAR(50) NOT NULL DEFAULT 'anthropic';
+    ADD COLUMN platform VARCHAR(50) NOT NULL DEFAULT 'anthropic';
 
-CREATE INDEX IF NOT EXISTS idx_channel_model_pricing_platform
+CREATE INDEX idx_channel_model_pricing_platform
     ON channel_model_pricing (platform);
 
 -- 2. model_mapping JSON 数据回填

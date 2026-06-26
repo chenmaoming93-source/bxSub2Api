@@ -1,1 +1,1 @@
-ALTER TABLE channels ADD COLUMN IF NOT EXISTS features_config JSON NULL;
+ALTER TABLE channels ADD COLUMN features_config JSON NULL;

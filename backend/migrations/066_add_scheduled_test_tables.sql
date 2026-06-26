@@ -13,8 +13,8 @@ CREATE TABLE IF NOT EXISTS scheduled_test_plans (
     created_at      DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     updated_at      DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
 );
-CREATE INDEX IF NOT EXISTS idx_stp_account_id ON scheduled_test_plans(account_id);
-CREATE INDEX IF NOT EXISTS idx_stp_enabled_next_run ON scheduled_test_plans(enabled, next_run_at);
+CREATE INDEX idx_stp_account_id ON scheduled_test_plans(account_id);
+CREATE INDEX idx_stp_enabled_next_run ON scheduled_test_plans(enabled, next_run_at);
 
 CREATE TABLE IF NOT EXISTS scheduled_test_results (
     id            BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -27,4 +27,4 @@ CREATE TABLE IF NOT EXISTS scheduled_test_results (
     finished_at   DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     created_at    DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
 );
-CREATE INDEX IF NOT EXISTS idx_str_plan_created ON scheduled_test_results(plan_id, created_at DESC);
+CREATE INDEX idx_str_plan_created ON scheduled_test_results(plan_id, created_at DESC);

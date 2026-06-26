@@ -56,7 +56,7 @@ ALTER TABLE users DROP COLUMN IF EXISTS wechat;
 -- +goose StatementBegin
 
 -- Restore wechat column
-ALTER TABLE users ADD COLUMN IF NOT EXISTS wechat VARCHAR(100) DEFAULT '';
+ALTER TABLE users ADD COLUMN wechat VARCHAR(100) DEFAULT '';
 
 -- Copy attribute values back to users.wechat column
 UPDATE users u

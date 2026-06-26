@@ -1,4 +1,4 @@
 -- Add last_result to ops_job_heartbeats for UI job details.
 
-ALTER TABLE IF EXISTS ops_job_heartbeats
-    ADD COLUMN IF NOT EXISTS last_result TEXT;
+ALTER TABLE ops_job_heartbeats
+    ADD COLUMN last_result TEXT;

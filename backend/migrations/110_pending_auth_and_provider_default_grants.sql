@@ -11,10 +11,10 @@ CREATE TABLE IF NOT EXISTS user_provider_default_grants (
         CHECK (grant_reason IN ('signup', 'first_bind'))
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS user_provider_default_grants_user_provider_reason_key
+CREATE UNIQUE INDEX user_provider_default_grants_user_provider_reason_key
     ON user_provider_default_grants (user_id, provider_type, grant_reason);
 
-CREATE INDEX IF NOT EXISTS user_provider_default_grants_user_id_idx
+CREATE INDEX user_provider_default_grants_user_id_idx
     ON user_provider_default_grants (user_id);
 
 CREATE TABLE IF NOT EXISTS user_avatars (
@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS user_avatars (
     updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS user_avatars_user_id_key
+CREATE UNIQUE INDEX user_avatars_user_id_key
     ON user_avatars (user_id);
 
 INSERT IGNORE INTO settings (`key`, value)
