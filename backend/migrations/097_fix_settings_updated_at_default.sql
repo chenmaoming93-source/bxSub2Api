@@ -22,6 +22,7 @@
 --   1. 从未运行过旧版迁移的全新部署（005 已经把列建对，本迁移变成 no-op）。
 --   2. 历史损坏实例（本迁移修复缺失的默认值，使后续 098 能够正常 INSERT）。
 
-ALTER TABLE settings ALTER COLUMN updated_at SET DEFAULT CURRENT_TIMESTAMP(6);
+ALTER TABLE settings
+    MODIFY COLUMN updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6);
 
 UPDATE settings SET updated_at = NOW() WHERE updated_at IS NULL;

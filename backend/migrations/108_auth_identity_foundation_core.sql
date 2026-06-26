@@ -15,8 +15,8 @@ CREATE TABLE IF NOT EXISTS auth_identities (
     id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     provider_type VARCHAR(20) NOT NULL,
-    provider_key TEXT NOT NULL,
-    provider_subject TEXT NOT NULL,
+    provider_key VARCHAR(500) NOT NULL,
+    provider_subject VARCHAR(500) NOT NULL,
     verified_at DATETIME(6) NULL,
     issuer TEXT NULL,
     metadata JSON NULL,
@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS auth_identities (
 );
 
 CREATE UNIQUE INDEX auth_identities_provider_subject_key
-    ON auth_identities (provider_type, provider_key, provider_subject);
+    ON auth_identities (provider_type, provider_key(191), provider_subject(191));
 
 CREATE INDEX auth_identities_user_id_idx
     ON auth_identities (user_id);
@@ -39,10 +39,10 @@ CREATE TABLE IF NOT EXISTS auth_identity_channels (
     id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     identity_id BIGINT NOT NULL REFERENCES auth_identities(id) ON DELETE CASCADE,
     provider_type VARCHAR(20) NOT NULL,
-    provider_key TEXT NOT NULL,
+    provider_key VARCHAR(500) NOT NULL,
     channel VARCHAR(20) NOT NULL,
-    channel_app_id TEXT NOT NULL,
-    channel_subject TEXT NOT NULL,
+    channel_app_id VARCHAR(500) NOT NULL,
+    channel_subject VARCHAR(500) NOT NULL,
     metadata JSON NULL,
     created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
@@ -51,7 +51,7 @@ CREATE TABLE IF NOT EXISTS auth_identity_channels (
 );
 
 CREATE UNIQUE INDEX auth_identity_channels_channel_key
-    ON auth_identity_channels (provider_type, provider_key, channel, channel_app_id, channel_subject);
+    ON auth_identity_channels (provider_type, provider_key(191), channel, channel_app_id(191), channel_subject(191));
 
 CREATE INDEX auth_identity_channels_identity_id_idx
     ON auth_identity_channels (identity_id);
@@ -61,8 +61,8 @@ CREATE TABLE IF NOT EXISTS pending_auth_sessions (
     session_token VARCHAR(255) NOT NULL,
     intent VARCHAR(40) NOT NULL,
     provider_type VARCHAR(20) NOT NULL,
-    provider_key TEXT NOT NULL,
-    provider_subject TEXT NOT NULL,
+    provider_key VARCHAR(500) NOT NULL,
+    provider_subject VARCHAR(500) NOT NULL,
     target_user_id BIGINT NULL REFERENCES users(id) ON DELETE SET NULL,
     redirect_to TEXT NULL,
     resolved_email TEXT NULL,
@@ -95,7 +95,7 @@ CREATE INDEX pending_auth_sessions_expires_at_idx
     ON pending_auth_sessions (expires_at);
 
 CREATE INDEX pending_auth_sessions_provider_idx
-    ON pending_auth_sessions (provider_type, provider_key, provider_subject);
+    ON pending_auth_sessions (provider_type, provider_key(191), provider_subject(191));
 
 CREATE INDEX pending_auth_sessions_completion_code_idx
     ON pending_auth_sessions (completion_code_hash);
@@ -120,7 +120,7 @@ CREATE INDEX identity_adoption_decisions_identity_id_idx
 CREATE TABLE IF NOT EXISTS auth_identity_migration_reports (
     id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     report_type VARCHAR(40) NOT NULL,
-    report_key TEXT NOT NULL,
+    report_key VARCHAR(500) NOT NULL,
     details JSON NULL,
     created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
 );

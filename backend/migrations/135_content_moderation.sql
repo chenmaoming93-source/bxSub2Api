@@ -32,13 +32,13 @@ CREATE TABLE IF NOT EXISTS content_moderation_logs (
     created_at          DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
 );
 
-ALTER TABLE content_moderation_logs ADD COLUMN violation_count INT NOT NULL DEFAULT 0;
-ALTER TABLE content_moderation_logs ADD COLUMN auto_banned BOOLEAN NOT NULL DEFAULT FALSE;
-ALTER TABLE content_moderation_logs ADD COLUMN email_sent BOOLEAN NOT NULL DEFAULT FALSE;
-ALTER TABLE content_moderation_logs ADD COLUMN queue_delay_ms INT;
-CREATE INDEX idx_content_moderation_logs_created_at ON content_moderation_logs(created_at DESC);
-CREATE INDEX idx_content_moderation_logs_group_created_at ON content_moderation_logs(group_id, created_at DESC);
-CREATE INDEX idx_content_moderation_logs_flagged_created_at ON content_moderation_logs(flagged, created_at DESC);
-CREATE INDEX idx_content_moderation_logs_user_created_at ON content_moderation_logs(user_id, created_at DESC);
-CREATE INDEX idx_content_moderation_logs_api_key_created_at ON content_moderation_logs(api_key_id, created_at DESC);
-CREATE INDEX idx_content_moderation_logs_endpoint_created_at ON content_moderation_logs(endpoint, created_at DESC);
+ALTER TABLE content_moderation_logs ADD COLUMN IF NOT EXISTS violation_count INT NOT NULL DEFAULT 0;
+ALTER TABLE content_moderation_logs ADD COLUMN IF NOT EXISTS auto_banned BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE content_moderation_logs ADD COLUMN IF NOT EXISTS email_sent BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE content_moderation_logs ADD COLUMN IF NOT EXISTS queue_delay_ms INT;
+CREATE INDEX IF NOT EXISTS idx_content_moderation_logs_created_at ON content_moderation_logs(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_content_moderation_logs_group_created_at ON content_moderation_logs(group_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_content_moderation_logs_flagged_created_at ON content_moderation_logs(flagged, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_content_moderation_logs_user_created_at ON content_moderation_logs(user_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_content_moderation_logs_api_key_created_at ON content_moderation_logs(api_key_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_content_moderation_logs_endpoint_created_at ON content_moderation_logs(endpoint, created_at DESC);

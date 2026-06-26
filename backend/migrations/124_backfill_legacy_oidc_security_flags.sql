@@ -2,8 +2,15 @@
 -- introduction of secure PKCE/id_token defaults. Fresh installs continue to
 -- inherit runtime defaults when these rows are absent.
 
-WITH legacy_oidc_install AS (
-    SELECT 1
+INSERT IGNORE INTO settings (`key`, value)
+SELECT defaults.`key`, 'false'
+FROM (
+    SELECT 'oidc_connect_use_pkce' AS `key`
+    UNION ALL
+    SELECT 'oidc_connect_validate_id_token'
+) AS defaults
+JOIN (
+    SELECT 1 AS has_legacy_oidc
     FROM settings
     WHERE `key` IN (
         'oidc_connect_enabled',
@@ -15,17 +22,12 @@ WITH legacy_oidc_install AS (
         'oidc_connect_frontend_redirect_url'
     )
     LIMIT 1
-)
-INSERT IGNORE INTO settings (`key`, value)
-SELECT defaults.`key`, 'false'
-FROM legacy_oidc_install
-CROSS JOIN (
-    SELECT 'oidc_connect_use_pkce' AS `key`
-    UNION ALL
-    SELECT 'oidc_connect_validate_id_token'
-) AS defaults
+) AS legacy_oidc_install ON legacy_oidc_install.has_legacy_oidc = 1
 WHERE NOT EXISTS (
     SELECT 1
-    FROM settings existing
+    FROM (
+        SELECT `key`
+        FROM settings
+    ) AS existing
     WHERE existing.`key` = defaults.`key`
 );
