@@ -3,8 +3,8 @@ CREATE TABLE IF NOT EXISTS user_provider_default_grants (
     user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     provider_type VARCHAR(20) NOT NULL,
     grant_reason VARCHAR(20) NOT NULL DEFAULT 'first_bind',
-    granted_at DATETIME(6) NOT NULL DEFAULT NOW(),
-    created_at DATETIME(6) NOT NULL DEFAULT NOW(),
+    granted_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     CONSTRAINT user_provider_default_grants_provider_type_check
         CHECK (provider_type IN ('email', 'linuxdo', 'wechat', 'oidc')),
     CONSTRAINT user_provider_default_grants_reason_check
@@ -21,19 +21,19 @@ CREATE TABLE IF NOT EXISTS user_avatars (
     id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     storage_provider VARCHAR(20) NOT NULL DEFAULT 'database',
-    storage_key TEXT NOT NULL DEFAULT '',
-    url TEXT NOT NULL DEFAULT '',
+    storage_key TEXT NULL,
+    url TEXT NULL,
     content_type VARCHAR(100) NOT NULL DEFAULT '',
     byte_size INT NOT NULL DEFAULT 0,
     sha256 VARCHAR(64) NOT NULL DEFAULT '',
-    created_at DATETIME(6) NOT NULL DEFAULT NOW(),
-    updated_at DATETIME(6) NOT NULL DEFAULT NOW()
+    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS user_avatars_user_id_key
     ON user_avatars (user_id);
 
-INSERT IGNORE INTO settings (key, value)
+INSERT IGNORE INTO settings (`key`, value)
 VALUES
     ('auth_source_default_email_balance', '0'),
     ('auth_source_default_email_concurrency', '5'),

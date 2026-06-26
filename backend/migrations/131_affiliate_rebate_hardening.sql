@@ -4,7 +4,7 @@
 UPDATE settings
 SET value = TRIM(TRAILING '.' FROM TRIM(TRAILING '0' FROM CAST((CAST(value AS DECIMAL(20,8)) * 100) AS CHAR))),
     updated_at = NOW()
-WHERE key = 'affiliate_rebate_rate'
+WHERE `key` = 'affiliate_rebate_rate'
   AND REGEXP_LIKE(value, '^-?[0-9]+(\\.[0-9]+)?$')
   AND CAST(value AS DECIMAL(20,8)) > 0
   AND CAST(value AS DECIMAL(20,8)) <= 1;
@@ -16,8 +16,8 @@ CREATE TABLE IF NOT EXISTS user_affiliate_ledger (
     action VARCHAR(32) NOT NULL,
     amount DECIMAL(20,8) NOT NULL,
     source_user_id BIGINT NULL REFERENCES users(id) ON DELETE SET NULL,
-    created_at DATETIME(6) NOT NULL DEFAULT NOW(),
-    updated_at DATETIME(6) NOT NULL DEFAULT NOW()
+    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
 );
 
 CREATE INDEX IF NOT EXISTS idx_user_affiliate_ledger_user_id ON user_affiliate_ledger(user_id);

@@ -14,7 +14,7 @@
 --     "null value in column \"updated_at\" of relation \"settings\" violates not-null constraint"
 --
 -- 幂等性：
---   - ALTER COLUMN ... SET DEFAULT NOW() 在已经具备相同默认值的实例上是无操作，
+--   - ALTER COLUMN ... SET DEFAULT CURRENT_TIMESTAMP(6) 在已经具备相同默认值的实例上是无操作，
 --     不会报错（PostgreSQL 允许重复设置相同的默认值）。
 --   - UPDATE 子句的 WHERE updated_at IS NULL 在健康实例上匹配 0 行，不影响数据。
 --
@@ -22,6 +22,6 @@
 --   1. 从未运行过旧版迁移的全新部署（005 已经把列建对，本迁移变成 no-op）。
 --   2. 历史损坏实例（本迁移修复缺失的默认值，使后续 098 能够正常 INSERT）。
 
-ALTER TABLE settings ALTER COLUMN updated_at SET DEFAULT NOW();
+ALTER TABLE settings ALTER COLUMN updated_at SET DEFAULT CURRENT_TIMESTAMP(6);
 
 UPDATE settings SET updated_at = NOW() WHERE updated_at IS NULL;

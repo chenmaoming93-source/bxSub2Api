@@ -4,7 +4,7 @@
 CREATE TABLE IF NOT EXISTS user_allowed_groups (
     user_id     BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     group_id    BIGINT NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
-    created_at  DATETIME(6) NOT NULL DEFAULT NOW(),
+    created_at  DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     PRIMARY KEY (user_id, group_id)
 );
 

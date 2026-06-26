@@ -6,10 +6,10 @@ CREATE TABLE IF NOT EXISTS payment_provider_instances (
     supported_types VARCHAR(200) NOT NULL DEFAULT '',
     enabled BOOLEAN NOT NULL DEFAULT TRUE,
     sort_order INT NOT NULL DEFAULT 0,
-    limits TEXT NOT NULL DEFAULT '',
+    limits TEXT NULL,
     refund_enabled BOOLEAN NOT NULL DEFAULT FALSE,
-    created_at DATETIME(6) NOT NULL DEFAULT NOW(),
-    updated_at DATETIME(6) NOT NULL DEFAULT NOW()
+    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
 );
 CREATE INDEX IF NOT EXISTS idx_payment_provider_instances_provider_key ON payment_provider_instances(provider_key);
 CREATE INDEX IF NOT EXISTS idx_payment_provider_instances_enabled ON payment_provider_instances(enabled);

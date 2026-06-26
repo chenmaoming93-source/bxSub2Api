@@ -19,9 +19,9 @@ CREATE TABLE IF NOT EXISTS auth_identities (
     provider_subject TEXT NOT NULL,
     verified_at DATETIME(6) NULL,
     issuer TEXT NULL,
-    metadata JSON NOT NULL DEFAULT (JSON_OBJECT()),
-    created_at DATETIME(6) NOT NULL DEFAULT NOW(),
-    updated_at DATETIME(6) NOT NULL DEFAULT NOW(),
+    metadata JSON NULL,
+    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     CONSTRAINT auth_identities_provider_type_check
         CHECK (provider_type IN ('email', 'linuxdo', 'wechat', 'oidc'))
 );
@@ -43,9 +43,9 @@ CREATE TABLE IF NOT EXISTS auth_identity_channels (
     channel VARCHAR(20) NOT NULL,
     channel_app_id TEXT NOT NULL,
     channel_subject TEXT NOT NULL,
-    metadata JSON NOT NULL DEFAULT (JSON_OBJECT()),
-    created_at DATETIME(6) NOT NULL DEFAULT NOW(),
-    updated_at DATETIME(6) NOT NULL DEFAULT NOW(),
+    metadata JSON NULL,
+    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     CONSTRAINT auth_identity_channels_provider_type_check
         CHECK (provider_type IN ('email', 'linuxdo', 'wechat', 'oidc'))
 );
@@ -64,21 +64,21 @@ CREATE TABLE IF NOT EXISTS pending_auth_sessions (
     provider_key TEXT NOT NULL,
     provider_subject TEXT NOT NULL,
     target_user_id BIGINT NULL REFERENCES users(id) ON DELETE SET NULL,
-    redirect_to TEXT NOT NULL DEFAULT '',
-    resolved_email TEXT NOT NULL DEFAULT '',
-    registration_password_hash TEXT NOT NULL DEFAULT '',
-    upstream_identity_claims JSON NOT NULL DEFAULT (JSON_OBJECT()),
-    local_flow_state JSON NOT NULL DEFAULT (JSON_OBJECT()),
-    browser_session_key TEXT NOT NULL DEFAULT '',
-    completion_code_hash TEXT NOT NULL DEFAULT '',
+    redirect_to TEXT NULL,
+    resolved_email TEXT NULL,
+    registration_password_hash VARCHAR(64) NOT NULL DEFAULT '',
+    upstream_identity_claims JSON NULL,
+    local_flow_state JSON NULL,
+    browser_session_key TEXT NULL,
+    completion_code_hash VARCHAR(64) NOT NULL DEFAULT '',
     completion_code_expires_at DATETIME(6) NULL,
     email_verified_at DATETIME(6) NULL,
     password_verified_at DATETIME(6) NULL,
     totp_verified_at DATETIME(6) NULL,
     expires_at DATETIME(6) NOT NULL,
     consumed_at DATETIME(6) NULL,
-    created_at DATETIME(6) NOT NULL DEFAULT NOW(),
-    updated_at DATETIME(6) NOT NULL DEFAULT NOW(),
+    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     CONSTRAINT pending_auth_sessions_intent_check
         CHECK (intent IN ('login', 'bind_current_user', 'adopt_existing_user_by_email')),
     CONSTRAINT pending_auth_sessions_provider_type_check
@@ -106,9 +106,9 @@ CREATE TABLE IF NOT EXISTS identity_adoption_decisions (
     identity_id BIGINT NULL REFERENCES auth_identities(id) ON DELETE SET NULL,
     adopt_display_name BOOLEAN NOT NULL DEFAULT FALSE,
     adopt_avatar BOOLEAN NOT NULL DEFAULT FALSE,
-    decided_at DATETIME(6) NOT NULL DEFAULT NOW(),
-    created_at DATETIME(6) NOT NULL DEFAULT NOW(),
-    updated_at DATETIME(6) NOT NULL DEFAULT NOW()
+    decided_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS identity_adoption_decisions_pending_auth_session_id_key
@@ -121,8 +121,8 @@ CREATE TABLE IF NOT EXISTS auth_identity_migration_reports (
     id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     report_type VARCHAR(40) NOT NULL,
     report_key TEXT NOT NULL,
-    details JSON NOT NULL DEFAULT (JSON_OBJECT()),
-    created_at DATETIME(6) NOT NULL DEFAULT NOW()
+    details JSON NULL,
+    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
 );
 
 CREATE INDEX IF NOT EXISTS auth_identity_migration_reports_type_idx

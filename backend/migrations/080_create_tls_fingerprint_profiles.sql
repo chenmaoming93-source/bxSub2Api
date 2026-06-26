@@ -18,6 +18,6 @@ CREATE TABLE IF NOT EXISTS tls_fingerprint_profiles (
     key_share_groups     JSON,
     psk_modes            JSON,
     extensions           JSON,
-    created_at   DATETIME(6)  NOT NULL DEFAULT NOW(),
-    updated_at   DATETIME(6)  NOT NULL DEFAULT NOW()
+    created_at   DATETIME(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    updated_at   DATETIME(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
 );

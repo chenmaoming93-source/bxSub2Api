@@ -13,5 +13,5 @@ UPDATE settings
            'easypay'
        ), ','
    )
- WHERE key = 'ENABLED_PAYMENT_TYPES'
+ WHERE `key` = 'ENABLED_PAYMENT_TYPES'
    AND value LIKE '%easypay%';

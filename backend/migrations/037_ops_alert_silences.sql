@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS ops_alert_silences (
     reason TEXT,
 
     created_by BIGINT,
-    created_at DATETIME(6) NOT NULL DEFAULT NOW()
+    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
 );
 
 CREATE INDEX IF NOT EXISTS idx_ops_alert_silences_lookup

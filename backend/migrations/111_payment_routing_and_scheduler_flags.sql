@@ -1,4 +1,4 @@
-INSERT IGNORE INTO settings (key, value)
+INSERT IGNORE INTO settings (`key`, value)
 VALUES
     ('payment_visible_method_alipay_source', ''),
     ('payment_visible_method_wxpay_source', ''),

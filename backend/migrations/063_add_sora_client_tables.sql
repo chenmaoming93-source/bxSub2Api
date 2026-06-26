@@ -14,12 +14,12 @@ CREATE TABLE IF NOT EXISTS sora_generations (
 
     -- 生成参数
     model            VARCHAR(64) NOT NULL,
-    prompt           TEXT NOT NULL DEFAULT '',
+    prompt           TEXT NULL,
     media_type       VARCHAR(16) NOT NULL DEFAULT 'video',    -- video / image
 
     -- 结果
     status           VARCHAR(16) NOT NULL DEFAULT 'pending',  -- pending / generating / completed / failed / cancelled
-    media_url        TEXT NOT NULL DEFAULT '',
+    media_url        TEXT NULL,
     media_urls       JSON,                                   -- 多图时的 URL 数组
     file_size_bytes  BIGINT NOT NULL DEFAULT 0,
     storage_type     VARCHAR(16) NOT NULL DEFAULT 'none',     -- s3 / local / upstream / none
@@ -27,10 +27,10 @@ CREATE TABLE IF NOT EXISTS sora_generations (
 
     -- 上游信息
     upstream_task_id VARCHAR(128) NOT NULL DEFAULT '',
-    error_message    TEXT NOT NULL DEFAULT '',
+    error_message    TEXT NULL,
 
     -- 时间
-    created_at       DATETIME(6) NOT NULL DEFAULT NOW(),
+    created_at       DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     completed_at     DATETIME(6)
 );
 

@@ -4,7 +4,7 @@
 -- users: add fields added after initial migration
 ALTER TABLE users ADD COLUMN IF NOT EXISTS username VARCHAR(100) NOT NULL DEFAULT '';
 ALTER TABLE users ADD COLUMN IF NOT EXISTS wechat VARCHAR(100) NOT NULL DEFAULT '';
-ALTER TABLE users ADD COLUMN IF NOT EXISTS notes TEXT NOT NULL DEFAULT '';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS notes TEXT NULL;
 
 -- api_keys: allow longer keys (GORM model uses size:128)
 ALTER TABLE api_keys MODIFY COLUMN `key` VARCHAR(128);
@@ -35,7 +35,7 @@ CREATE INDEX IF NOT EXISTS idx_usage_logs_billing_type ON usage_logs(billing_typ
 -- settings: key-value store
 CREATE TABLE IF NOT EXISTS settings (
     id          BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    key         VARCHAR(100) NOT NULL UNIQUE,
+    `key`         VARCHAR(100) NOT NULL UNIQUE,
     value       TEXT NOT NULL,
-    updated_at  DATETIME(6) NOT NULL DEFAULT NOW()
+    updated_at  DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
 );

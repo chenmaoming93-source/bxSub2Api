@@ -22,8 +22,8 @@ CREATE TABLE IF NOT EXISTS user_platform_quotas (
     weekly_window_start  DATETIME(6),
     monthly_window_start DATETIME(6),
 
-    created_at           DATETIME(6) NOT NULL DEFAULT NOW(),
-    updated_at           DATETIME(6) NOT NULL DEFAULT NOW(),
+    created_at           DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    updated_at           DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     deleted_at           DATETIME(6)
 );
 

@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS channel_monitor_daily_rollups (
     count_latency         INT          NOT NULL DEFAULT 0,
     sum_ping_latency_ms   BIGINT       NOT NULL DEFAULT 0,
     count_ping_latency    INT          NOT NULL DEFAULT 0,
-    computed_at           DATETIME(6)  NOT NULL DEFAULT NOW(),
+    computed_at           DATETIME(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     deleted_at            DATETIME(6)
 );
 
@@ -51,7 +51,7 @@ CREATE INDEX IF NOT EXISTS idx_channel_monitor_daily_rollups_deleted_at
 CREATE TABLE IF NOT EXISTS channel_monitor_aggregation_watermark (
     id                   INT          PRIMARY KEY DEFAULT 1,
     last_aggregated_date DATE,
-    updated_at           DATETIME(6)  NOT NULL DEFAULT NOW(),
+    updated_at           DATETIME(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     CONSTRAINT channel_monitor_aggregation_watermark_singleton CHECK (id = 1)
 );
 

@@ -126,7 +126,7 @@ CREATE TABLE IF NOT EXISTS ops_error_logs (
     is_retryable BOOLEAN NOT NULL DEFAULT false,
     retry_count INT NOT NULL DEFAULT 0,
 
-    created_at DATETIME(6) NOT NULL DEFAULT NOW()
+    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
 );
 
 -- ============================================
@@ -136,7 +136,7 @@ CREATE TABLE IF NOT EXISTS ops_error_logs (
 CREATE TABLE IF NOT EXISTS ops_retry_attempts (
     id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
 
-    created_at DATETIME(6) NOT NULL DEFAULT NOW(),
+    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
 
     requested_by_user_id BIGINT,
     source_error_id BIGINT,
@@ -166,7 +166,7 @@ CREATE TABLE IF NOT EXISTS ops_retry_attempts (
 CREATE TABLE IF NOT EXISTS ops_system_metrics (
     id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
 
-    created_at DATETIME(6) NOT NULL DEFAULT NOW(),
+    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     window_minutes INT NOT NULL DEFAULT 1,
 
     -- Optional dimensions (only if collector chooses to write per-dimension snapshots)
@@ -238,7 +238,7 @@ CREATE TABLE IF NOT EXISTS ops_job_heartbeats (
     last_error TEXT,
     last_duration_ms BIGINT,
 
-    updated_at DATETIME(6) NOT NULL DEFAULT NOW()
+    updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
 );
 
 -- ============================================
@@ -268,8 +268,8 @@ CREATE TABLE IF NOT EXISTS ops_alert_rules (
     filters JSON,
 
     last_triggered_at DATETIME(6),
-    created_at DATETIME(6) NOT NULL DEFAULT NOW(),
-    updated_at DATETIME(6) NOT NULL DEFAULT NOW()
+    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_ops_alert_rules_name_unique
@@ -292,11 +292,11 @@ CREATE TABLE IF NOT EXISTS ops_alert_events (
     threshold_value DOUBLE PRECISION,
     dimensions JSON,
 
-    fired_at DATETIME(6) NOT NULL DEFAULT NOW(),
+    fired_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     resolved_at DATETIME(6),
 
     email_sent BOOLEAN NOT NULL DEFAULT false,
-    created_at DATETIME(6) NOT NULL DEFAULT NOW()
+    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
 );
 
 CREATE INDEX IF NOT EXISTS idx_ops_alert_events_rule_status
@@ -355,8 +355,8 @@ CREATE TABLE IF NOT EXISTS ops_metrics_hourly (
     ttft_p95_ms INT,
     ttft_p99_ms INT,
 
-    computed_at DATETIME(6) NOT NULL DEFAULT NOW(),
-    created_at DATETIME(6) NOT NULL DEFAULT NOW()
+    computed_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
 );
 
 -- Uniqueness across three 鈥渄imension modes鈥?(overall / platform / group).
@@ -409,8 +409,8 @@ CREATE TABLE IF NOT EXISTS ops_metrics_daily (
     ttft_p95_ms INT,
     ttft_p99_ms INT,
 
-    computed_at DATETIME(6) NOT NULL DEFAULT NOW(),
-    created_at DATETIME(6) NOT NULL DEFAULT NOW()
+    computed_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_ops_metrics_daily_unique_dim

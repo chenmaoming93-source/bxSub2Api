@@ -6,17 +6,17 @@ CREATE TABLE IF NOT EXISTS error_passthrough_rules (
     name VARCHAR(100) NOT NULL,
     enabled BOOLEAN NOT NULL DEFAULT true,
     priority INTEGER NOT NULL DEFAULT 0,
-    error_codes JSON DEFAULT (JSON_ARRAY()),
-    keywords JSON DEFAULT (JSON_ARRAY()),
+    error_codes JSON NULL,
+    keywords JSON NULL,
     match_mode VARCHAR(10) NOT NULL DEFAULT 'any',
-    platforms JSON DEFAULT (JSON_ARRAY()),
+    platforms JSON NULL,
     passthrough_code BOOLEAN NOT NULL DEFAULT true,
     response_code INTEGER,
     passthrough_body BOOLEAN NOT NULL DEFAULT true,
     custom_message TEXT,
     description TEXT,
-    created_at DATETIME(6) NOT NULL DEFAULT NOW(),
-    updated_at DATETIME(6) NOT NULL DEFAULT NOW()
+    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
 );
 
 -- Indexes for efficient queries

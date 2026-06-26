@@ -1,6 +1,6 @@
 -- 风控中心内容审计配置与记录
 
-INSERT IGNORE INTO settings (key, value, updated_at)
+INSERT IGNORE INTO settings (`key`, value, updated_at)
 VALUES ('risk_control_enabled', 'false', NOW())
 ;
 
@@ -21,16 +21,16 @@ CREATE TABLE IF NOT EXISTS content_moderation_logs (
     flagged             BOOLEAN NOT NULL DEFAULT FALSE,
     highest_category    VARCHAR(64) NOT NULL DEFAULT '',
     highest_score       DECIMAL(8, 6) NOT NULL DEFAULT 0,
-    category_scores     JSON NOT NULL DEFAULT (JSON_OBJECT()),
-    threshold_snapshot  JSON NOT NULL DEFAULT (JSON_OBJECT()),
-    input_excerpt       TEXT NOT NULL DEFAULT '',
+    category_scores     JSON NULL,
+    threshold_snapshot  JSON NULL,
+    input_excerpt       TEXT NULL,
     upstream_latency_ms INT,
-    error               TEXT NOT NULL DEFAULT '',
+    error               TEXT NULL,
     violation_count     INT NOT NULL DEFAULT 0,
     auto_banned         BOOLEAN NOT NULL DEFAULT FALSE,
     email_sent          BOOLEAN NOT NULL DEFAULT FALSE,
     queue_delay_ms      INT,
-    created_at          DATETIME(6) NOT NULL DEFAULT NOW()
+    created_at          DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
 );
 
 ALTER TABLE content_moderation_logs ADD COLUMN IF NOT EXISTS violation_count INT NOT NULL DEFAULT 0;

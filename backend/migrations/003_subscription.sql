@@ -36,11 +36,11 @@ CREATE TABLE IF NOT EXISTS user_subscriptions (
 
     -- 管理员分配信息
     assigned_by             BIGINT REFERENCES users(id) ON DELETE SET NULL,
-    assigned_at             DATETIME(6) NOT NULL DEFAULT NOW(),
+    assigned_at             DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     notes                   TEXT,
 
-    created_at              DATETIME(6) NOT NULL DEFAULT NOW(),
-    updated_at              DATETIME(6) NOT NULL DEFAULT NOW(),
+    created_at              DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    updated_at              DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
 
     -- 唯一约束：每个用户对每个分组只能有一个订阅
     UNIQUE(user_id, group_id)

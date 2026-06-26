@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS ops_metrics_hourly (
     error_rate DOUBLE PRECISION NOT NULL DEFAULT 0,
 
     -- When this row was last (re)computed by the background job.
-    computed_at DATETIME(6) NOT NULL DEFAULT NOW(),
+    computed_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
 
     PRIMARY KEY (bucket_start, platform)
 );
@@ -69,7 +69,7 @@ CREATE TABLE IF NOT EXISTS ops_metrics_daily (
     p99_latency_ms DOUBLE PRECISION,
 
     error_rate DOUBLE PRECISION NOT NULL DEFAULT 0,
-    computed_at DATETIME(6) NOT NULL DEFAULT NOW(),
+    computed_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
 
     PRIMARY KEY (bucket_date, platform)
 );

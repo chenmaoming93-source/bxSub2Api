@@ -5,6 +5,6 @@
 -- 格式: {"model_pattern": [account_id1, account_id2], ...}
 -- 例如: {"claude-opus-*": [1, 2], "claude-sonnet-*": [3, 4, 5]}
 ALTER TABLE groups
-ADD COLUMN IF NOT EXISTS model_routing JSON DEFAULT (JSON_OBJECT());
+ADD COLUMN IF NOT EXISTS model_routing JSON NULL;
 
 -- 添加字段注释

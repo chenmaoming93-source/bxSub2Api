@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -39,7 +40,7 @@ executed_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
 execution_time BIGINT NOT NULL DEFAULT 0,
 error TEXT NULL,
 error_stmt TEXT NULL,
-hash TEXT NOT NULL DEFAULT '',
+hash VARCHAR(64) NOT NULL DEFAULT '',
 partial_hashes TEXT NULL,
 operator_version TEXT NULL
 );
@@ -56,6 +57,20 @@ const paymentOrdersOutTradeNoUniqueMigration = "120_enforce_payment_orders_out_t
 const paymentOrdersOutTradeNoUniqueIndex = "paymentorder_out_trade_no_unique"
 const schedulerOutboxPendingDedupKeyMigration = "153_scheduler_outbox_pending_dedup_key_index_notx.sql"
 const schedulerOutboxPendingDedupKeyIndex = "idx_scheduler_outbox_pending_dedup_key"
+
+var (
+	createIndexIfNotExistsPattern = regexp.MustCompile(`(?is)^\s*CREATE\s+(UNIQUE\s+)?INDEX\s+IF\s+NOT\s+EXISTS\s+` + identifierPattern("index") + `\s+ON\s+` + identifierPattern("table") + `\b`)
+	dropIndexIfExistsPattern      = regexp.MustCompile(`(?is)^\s*DROP\s+INDEX\s+IF\s+EXISTS\s+` + identifierPattern("index") + `(?:\s+ON\s+` + identifierPattern("table") + `)?\s*$`)
+	alterTablePattern             = regexp.MustCompile(`(?is)^\s*ALTER\s+TABLE\s+` + identifierPattern("table") + `\s+(?P<clauses>.+)$`)
+	addColumnIfNotExistsPattern   = regexp.MustCompile(`(?is)^\s*ADD\s+COLUMN\s+IF\s+NOT\s+EXISTS\s+` + identifierPattern("column") + `\s+`)
+	dropColumnIfExistsPattern     = regexp.MustCompile(`(?is)^\s*DROP\s+COLUMN\s+IF\s+EXISTS\s+` + identifierPattern("column") + `\s*$`)
+	dropObjectCascadePattern      = regexp.MustCompile(`(?is)^(\s*DROP\s+(?:TABLE|VIEW)\s+IF\s+EXISTS\s+.+?)\s+CASCADE\s*$`)
+)
+
+type migrationExecutor interface {
+	ExecContext(context.Context, string, ...any) (sql.Result, error)
+	QueryRowContext(context.Context, string, ...any) *sql.Row
+}
 
 type migrationChecksumCompatibilityRule struct {
 	fileChecksum       string
@@ -219,7 +234,7 @@ func applyMigrationsFS(ctx context.Context, db *sql.DB, fsys fs.FS) error {
 				if stripSQLLineComment(trimmed) == "" {
 					continue
 				}
-				if _, err := db.ExecContext(ctx, trimmed); err != nil {
+				if err := executeMigrationStatement(ctx, db, trimmed); err != nil {
 					return fmt.Errorf("apply migration %s (non-tx statement %d): %w", name, i+1, err)
 				}
 			}
@@ -236,9 +251,9 @@ func applyMigrationsFS(ctx context.Context, db *sql.DB, fsys fs.FS) error {
 		}
 
 		// 执行迁移 SQL
-		if _, err := tx.ExecContext(ctx, content); err != nil {
+		if err := executeMigrationStatements(ctx, tx, content, name, "tx"); err != nil {
 			_ = tx.Rollback()
-			return fmt.Errorf("apply migration %s: %w", name, err)
+			return err
 		}
 
 		// 记录迁移已完成，保存文件名和校验和
@@ -389,6 +404,324 @@ func tableExists(ctx context.Context, db *sql.DB, tableName string) (bool, error
 		)
 	`, tableName).Scan(&exists)
 	return exists, err
+}
+
+func executeMigrationStatements(ctx context.Context, exec migrationExecutor, content, name, mode string) error {
+	statements := splitSQLStatements(content)
+	for i, stmt := range statements {
+		trimmed := strings.TrimSpace(stmt)
+		if trimmed == "" {
+			continue
+		}
+		if stripSQLLineComment(trimmed) == "" {
+			continue
+		}
+		if err := executeMigrationStatement(ctx, exec, trimmed); err != nil {
+			return fmt.Errorf("apply migration %s (%s statement %d): %w", name, mode, i+1, err)
+		}
+	}
+	return nil
+}
+
+func executeMigrationStatement(ctx context.Context, exec migrationExecutor, stmt string) error {
+	normalized := stripSQLLineComment(strings.TrimSpace(stmt))
+	if normalized == "" {
+		return nil
+	}
+
+	if rewritten, skip, err := rewriteCreateIndexIfNotExists(ctx, exec, normalized); err != nil {
+		return err
+	} else if skip {
+		return nil
+	} else if rewritten != "" {
+		_, err := exec.ExecContext(ctx, rewritten)
+		return err
+	}
+
+	if rewritten, skip, err := rewriteDropIndexIfExists(ctx, exec, normalized); err != nil {
+		return err
+	} else if skip {
+		return nil
+	} else if rewritten != "" {
+		_, err := exec.ExecContext(ctx, rewritten)
+		return err
+	}
+
+	if rewritten, skip, err := rewriteAlterTableColumnIfExists(ctx, exec, normalized); err != nil {
+		return err
+	} else if skip {
+		return nil
+	} else if rewritten != "" {
+		_, err := exec.ExecContext(ctx, rewritten)
+		return err
+	}
+
+	if rewritten := rewriteDropObjectCascade(normalized); rewritten != "" {
+		_, err := exec.ExecContext(ctx, rewritten)
+		return err
+	}
+
+	_, err := exec.ExecContext(ctx, normalized)
+	return err
+}
+
+func rewriteCreateIndexIfNotExists(ctx context.Context, exec migrationExecutor, stmt string) (string, bool, error) {
+	matches := createIndexIfNotExistsPattern.FindStringSubmatch(stmt)
+	if matches == nil {
+		return "", false, nil
+	}
+
+	indexName := regexpNamedMatch(createIndexIfNotExistsPattern, matches, "index_quoted")
+	if indexName == "" {
+		indexName = regexpNamedMatch(createIndexIfNotExistsPattern, matches, "index_plain")
+	}
+	tableName := regexpNamedMatch(createIndexIfNotExistsPattern, matches, "table_quoted")
+	if tableName == "" {
+		tableName = regexpNamedMatch(createIndexIfNotExistsPattern, matches, "table_plain")
+	}
+	exists, err := indexExists(ctx, exec, tableName, indexName)
+	if err != nil {
+		return "", false, fmt.Errorf("check index %s on %s: %w", indexName, tableName, err)
+	}
+	if exists {
+		return "", true, nil
+	}
+	return createIndexIfNotExistsPattern.ReplaceAllString(stmt, "CREATE ${1}INDEX "+quoteIdentifier(indexName)+" ON "+quoteIdentifier(tableName)), false, nil
+}
+
+func rewriteDropIndexIfExists(ctx context.Context, exec migrationExecutor, stmt string) (string, bool, error) {
+	matches := dropIndexIfExistsPattern.FindStringSubmatch(stmt)
+	if matches == nil {
+		return "", false, nil
+	}
+
+	indexName := regexpNamedMatch(dropIndexIfExistsPattern, matches, "index_quoted")
+	if indexName == "" {
+		indexName = regexpNamedMatch(dropIndexIfExistsPattern, matches, "index_plain")
+	}
+	tableName := regexpNamedMatch(dropIndexIfExistsPattern, matches, "table_quoted")
+	if tableName == "" {
+		tableName = regexpNamedMatch(dropIndexIfExistsPattern, matches, "table_plain")
+	}
+
+	if tableName != "" {
+		exists, err := indexExists(ctx, exec, tableName, indexName)
+		if err != nil {
+			return "", false, fmt.Errorf("check index %s on %s: %w", indexName, tableName, err)
+		}
+		if !exists {
+			return "", true, nil
+		}
+		return "DROP INDEX " + quoteIdentifier(indexName) + " ON " + quoteIdentifier(tableName), false, nil
+	}
+
+	tables, err := indexTables(ctx, exec, indexName)
+	if err != nil {
+		return "", false, fmt.Errorf("lookup index %s: %w", indexName, err)
+	}
+	if len(tables) == 0 {
+		return "", true, nil
+	}
+	if len(tables) > 1 {
+		return "", false, fmt.Errorf("index %s exists on multiple tables: %s", indexName, strings.Join(tables, ", "))
+	}
+	return "DROP INDEX " + quoteIdentifier(indexName) + " ON " + quoteIdentifier(tables[0]), false, nil
+}
+
+func rewriteAlterTableColumnIfExists(ctx context.Context, exec migrationExecutor, stmt string) (string, bool, error) {
+	matches := alterTablePattern.FindStringSubmatch(stmt)
+	if matches == nil {
+		return "", false, nil
+	}
+
+	tableName := regexpNamedMatch(alterTablePattern, matches, "table_quoted")
+	if tableName == "" {
+		tableName = regexpNamedMatch(alterTablePattern, matches, "table_plain")
+	}
+	clauses := regexpNamedMatch(alterTablePattern, matches, "clauses")
+	if !strings.Contains(strings.ToUpper(clauses), "IF") {
+		return "", false, nil
+	}
+
+	parts := splitTopLevelComma(clauses)
+	rewrittenParts := make([]string, 0, len(parts))
+	changed := false
+	for _, part := range parts {
+		trimmed := strings.TrimSpace(part)
+		if trimmed == "" {
+			continue
+		}
+
+		if addMatches := addColumnIfNotExistsPattern.FindStringSubmatch(trimmed); addMatches != nil {
+			columnName := regexpNamedMatch(addColumnIfNotExistsPattern, addMatches, "column_quoted")
+			if columnName == "" {
+				columnName = regexpNamedMatch(addColumnIfNotExistsPattern, addMatches, "column_plain")
+			}
+			exists, err := columnExists(ctx, exec, tableName, columnName)
+			if err != nil {
+				return "", false, fmt.Errorf("check column %s on %s: %w", columnName, tableName, err)
+			}
+			changed = true
+			if exists {
+				continue
+			}
+			rewrittenParts = append(rewrittenParts, addColumnIfNotExistsPattern.ReplaceAllString(trimmed, "ADD COLUMN "+quoteIdentifier(columnName)+" "))
+			continue
+		}
+
+		if dropMatches := dropColumnIfExistsPattern.FindStringSubmatch(trimmed); dropMatches != nil {
+			columnName := regexpNamedMatch(dropColumnIfExistsPattern, dropMatches, "column_quoted")
+			if columnName == "" {
+				columnName = regexpNamedMatch(dropColumnIfExistsPattern, dropMatches, "column_plain")
+			}
+			exists, err := columnExists(ctx, exec, tableName, columnName)
+			if err != nil {
+				return "", false, fmt.Errorf("check column %s on %s: %w", columnName, tableName, err)
+			}
+			changed = true
+			if !exists {
+				continue
+			}
+			rewrittenParts = append(rewrittenParts, "DROP COLUMN "+quoteIdentifier(columnName))
+			continue
+		}
+
+		rewrittenParts = append(rewrittenParts, trimmed)
+	}
+
+	if !changed {
+		return "", false, nil
+	}
+	if len(rewrittenParts) == 0 {
+		return "", true, nil
+	}
+	return "ALTER TABLE " + quoteIdentifier(tableName) + " " + strings.Join(rewrittenParts, ", "), false, nil
+}
+
+func rewriteDropObjectCascade(stmt string) string {
+	matches := dropObjectCascadePattern.FindStringSubmatch(stmt)
+	if matches == nil {
+		return ""
+	}
+	return matches[1]
+}
+
+func indexExists(ctx context.Context, exec migrationExecutor, tableName, indexName string) (bool, error) {
+	var exists bool
+	err := exec.QueryRowContext(ctx, `
+		SELECT EXISTS (
+			SELECT 1
+			FROM information_schema.statistics
+			WHERE table_schema = DATABASE() AND table_name = ? AND index_name = ?
+		)
+	`, tableName, indexName).Scan(&exists)
+	return exists, err
+}
+
+func indexTables(ctx context.Context, exec migrationExecutor, indexName string) ([]string, error) {
+	rows, err := queryContext(ctx, exec, `
+		SELECT DISTINCT table_name
+		FROM information_schema.statistics
+		WHERE table_schema = DATABASE() AND index_name = ?
+		ORDER BY table_name
+	`, indexName)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		_ = rows.Close()
+	}()
+
+	var tables []string
+	for rows.Next() {
+		var tableName string
+		if err := rows.Scan(&tableName); err != nil {
+			return nil, err
+		}
+		tables = append(tables, tableName)
+	}
+	return tables, rows.Err()
+}
+
+func columnExists(ctx context.Context, exec migrationExecutor, tableName, columnName string) (bool, error) {
+	var exists bool
+	err := exec.QueryRowContext(ctx, `
+		SELECT EXISTS (
+			SELECT 1
+			FROM information_schema.columns
+			WHERE table_schema = DATABASE() AND table_name = ? AND column_name = ?
+		)
+	`, tableName, columnName).Scan(&exists)
+	return exists, err
+}
+
+func splitTopLevelComma(s string) []string {
+	var parts []string
+	start := 0
+	depth := 0
+	inSingleQuote := false
+	inDoubleQuote := false
+	inBacktick := false
+	for i, r := range s {
+		switch r {
+		case '\'':
+			if !inDoubleQuote && !inBacktick {
+				inSingleQuote = !inSingleQuote
+			}
+		case '"':
+			if !inSingleQuote && !inBacktick {
+				inDoubleQuote = !inDoubleQuote
+			}
+		case '`':
+			if !inSingleQuote && !inDoubleQuote {
+				inBacktick = !inBacktick
+			}
+		case '(':
+			if !inSingleQuote && !inDoubleQuote && !inBacktick {
+				depth++
+			}
+		case ')':
+			if !inSingleQuote && !inDoubleQuote && !inBacktick && depth > 0 {
+				depth--
+			}
+		case ',':
+			if !inSingleQuote && !inDoubleQuote && !inBacktick && depth == 0 {
+				parts = append(parts, s[start:i])
+				start = i + 1
+			}
+		}
+	}
+	parts = append(parts, s[start:])
+	return parts
+}
+
+type queryer interface {
+	QueryContext(context.Context, string, ...any) (*sql.Rows, error)
+}
+
+func queryContext(ctx context.Context, exec migrationExecutor, query string, args ...any) (*sql.Rows, error) {
+	q, ok := exec.(queryer)
+	if !ok {
+		return nil, errors.New("migration executor does not support QueryContext")
+	}
+	return q.QueryContext(ctx, query, args...)
+}
+
+func identifierPattern(name string) string {
+	return `(?:` + "`" + `(?P<` + name + `_quoted>[^` + "`" + `]+)` + "`" + `|(?P<` + name + `_plain>[A-Za-z0-9_]+))`
+}
+
+func regexpNamedMatch(re *regexp.Regexp, matches []string, name string) string {
+	for i, groupName := range re.SubexpNames() {
+		if groupName == name && i < len(matches) {
+			return matches[i]
+		}
+	}
+	return ""
+}
+
+func quoteIdentifier(name string) string {
+	return "`" + strings.ReplaceAll(name, "`", "``") + "`"
 }
 
 func latestMigrationBaseline(fsys fs.FS) (string, string, string, error) {

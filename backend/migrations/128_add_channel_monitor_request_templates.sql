@@ -15,11 +15,11 @@ CREATE TABLE IF NOT EXISTS channel_monitor_request_templates (
     name          VARCHAR(100) NOT NULL,
     provider      VARCHAR(20)  NOT NULL,
     description   VARCHAR(500) NOT NULL DEFAULT '',
-    extra_headers JSON        NOT NULL DEFAULT (JSON_OBJECT()),
+    extra_headers JSON NULL,
     body_override_mode VARCHAR(10) NOT NULL DEFAULT 'off',
     body_override JSON        NULL,
-    created_at    DATETIME(6)  NOT NULL DEFAULT NOW(),
-    updated_at    DATETIME(6)  NOT NULL DEFAULT NOW(),
+    created_at    DATETIME(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    updated_at    DATETIME(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     CONSTRAINT channel_monitor_request_templates_provider_check
         CHECK (provider IN ('openai', 'anthropic', 'gemini')),
     CONSTRAINT channel_monitor_request_templates_body_mode_check
@@ -33,7 +33,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS channel_monitor_request_templates_provider_nam
 ALTER TABLE channel_monitors
     ADD COLUMN IF NOT EXISTS template_id        BIGINT      NULL;
 ALTER TABLE channel_monitors
-    ADD COLUMN IF NOT EXISTS extra_headers      JSON       NOT NULL DEFAULT (JSON_OBJECT());
+    ADD COLUMN IF NOT EXISTS extra_headers      JSON NULL;
 ALTER TABLE channel_monitors
     ADD COLUMN IF NOT EXISTS body_override_mode VARCHAR(10) NOT NULL DEFAULT 'off';
 ALTER TABLE channel_monitors

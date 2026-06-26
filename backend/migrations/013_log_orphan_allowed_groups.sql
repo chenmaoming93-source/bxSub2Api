@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS orphan_allowed_groups_audit (
     id          BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     user_id     BIGINT NOT NULL,
     group_id    BIGINT NOT NULL,
-    recorded_at DATETIME(6) NOT NULL DEFAULT NOW(),
+    recorded_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     UNIQUE (user_id, group_id)
 );
 

@@ -5,7 +5,7 @@
 WITH legacy_oidc_install AS (
     SELECT 1
     FROM settings
-    WHERE key IN (
+    WHERE `key` IN (
         'oidc_connect_enabled',
         'oidc_connect_client_id',
         'oidc_connect_authorize_url',
@@ -16,8 +16,8 @@ WITH legacy_oidc_install AS (
     )
     LIMIT 1
 )
-INSERT IGNORE INTO settings (key, value)
-SELECT defaults.key, 'false'
+INSERT IGNORE INTO settings (`key`, value)
+SELECT defaults.`key`, 'false'
 FROM legacy_oidc_install
 CROSS JOIN (
     SELECT 'oidc_connect_use_pkce' AS `key`
@@ -27,5 +27,5 @@ CROSS JOIN (
 WHERE NOT EXISTS (
     SELECT 1
     FROM settings existing
-    WHERE existing.key = defaults.key
+    WHERE existing.`key` = defaults.`key`
 );

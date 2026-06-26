@@ -8,11 +8,11 @@ CREATE TABLE IF NOT EXISTS channel_account_stats_pricing_rules (
     id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     channel_id BIGINT NOT NULL REFERENCES channels(id) ON DELETE CASCADE,
     name VARCHAR(100) NOT NULL DEFAULT '',
-    group_ids JSON NOT NULL DEFAULT (JSON_ARRAY()),
-    account_ids JSON NOT NULL DEFAULT (JSON_ARRAY()),
+    group_ids JSON NULL,
+    account_ids JSON NULL,
     sort_order INT NOT NULL DEFAULT 0,
-    created_at DATETIME(6) NOT NULL DEFAULT NOW(),
-    updated_at DATETIME(6) NOT NULL DEFAULT NOW()
+    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
 );
 CREATE INDEX IF NOT EXISTS idx_cas_pricing_rules_channel_id ON channel_account_stats_pricing_rules(channel_id);
 
@@ -21,7 +21,7 @@ CREATE TABLE IF NOT EXISTS channel_account_stats_model_pricing (
     id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     rule_id BIGINT NOT NULL REFERENCES channel_account_stats_pricing_rules(id) ON DELETE CASCADE,
     platform VARCHAR(50) NOT NULL DEFAULT '',
-    models JSON NOT NULL DEFAULT (JSON_ARRAY()),
+    models JSON NULL,
     billing_mode VARCHAR(20) NOT NULL DEFAULT 'token',
     input_price NUMERIC(20,10),
     output_price NUMERIC(20,10),
@@ -29,8 +29,8 @@ CREATE TABLE IF NOT EXISTS channel_account_stats_model_pricing (
     cache_read_price NUMERIC(20,10),
     image_output_price NUMERIC(20,10),
     per_request_price NUMERIC(20,10),
-    created_at DATETIME(6) NOT NULL DEFAULT NOW(),
-    updated_at DATETIME(6) NOT NULL DEFAULT NOW()
+    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
 );
 CREATE INDEX IF NOT EXISTS idx_cas_model_pricing_rule_id ON channel_account_stats_model_pricing(rule_id);
 
