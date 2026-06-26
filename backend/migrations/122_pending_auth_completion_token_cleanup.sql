@@ -1,0 +1,5 @@
+-- GoldenDB/MySQL mode: cleanup of legacy pending_auth_sessions completion_response
+-- secrets is handled by the offline PostgreSQL-to-GoldenDB data migration script.
+-- The offline transform must remove access_token, refresh_token, expires_in, and
+-- token_type from completion_response. Fresh GoldenDB installs use the current
+-- sanitized application flow.

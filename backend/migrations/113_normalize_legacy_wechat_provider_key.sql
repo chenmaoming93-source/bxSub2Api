@@ -1,0 +1,3 @@
+-- GoldenDB/MySQL mode: legacy WeChat provider-key normalization is handled by
+-- the offline PostgreSQL-to-GoldenDB data migration script. Fresh GoldenDB
+-- installs use the canonical provider key directly.

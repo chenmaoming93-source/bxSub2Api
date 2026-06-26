@@ -1,0 +1,3 @@
+-- Historical PostgreSQL JSON migration for legacy purchase_subscription settings.
+-- GoldenDB production data should be transformed by the offline PostgreSQL-to-GoldenDB
+-- migration script before application migrations run.

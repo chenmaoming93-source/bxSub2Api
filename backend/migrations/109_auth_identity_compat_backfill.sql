@@ -1,0 +1,3 @@
+-- GoldenDB/MySQL mode: legacy auth identity backfill from PostgreSQL-era synthetic
+-- emails is handled by the offline PostgreSQL-to-GoldenDB data migration script.
+-- Fresh GoldenDB installs do not need this compatibility backfill.

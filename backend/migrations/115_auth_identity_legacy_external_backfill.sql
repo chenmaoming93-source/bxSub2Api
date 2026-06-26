@@ -1,0 +1,3 @@
+-- Historical PostgreSQL auth identity legacy backfill.
+-- GoldenDB production data should be transformed by the offline PostgreSQL-to-GoldenDB
+-- migration script before application migrations run. Fresh GoldenDB installs do not need this.

@@ -1,0 +1,3 @@
+-- Historical PostgreSQL JSON fix for migrated purchase menu item.
+-- GoldenDB production data should be transformed by the offline PostgreSQL-to-GoldenDB
+-- migration script before application migrations run.

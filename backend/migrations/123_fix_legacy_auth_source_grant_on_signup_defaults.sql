@@ -1,0 +1,4 @@
+-- GoldenDB/MySQL mode: correction of untouched defaults from
+-- 110_pending_auth_and_provider_default_grants.sql is handled by the offline
+-- PostgreSQL-to-GoldenDB data migration script. Fresh GoldenDB installs seed the
+-- corrected defaults directly.

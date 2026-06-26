@@ -1,0 +1,3 @@
+-- usage_logs monthly partition bootstrap.
+-- PostgreSQL partition bootstrap is not applicable to GoldenDB/MySQL mode.
+-- Partitioning, if needed, should be planned as a dedicated GoldenDB DDL change.

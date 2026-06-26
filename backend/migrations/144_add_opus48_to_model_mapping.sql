@@ -1,0 +1,3 @@
+-- GoldenDB/MySQL mode: this legacy JSON data backfill is handled by the
+-- offline PostgreSQL-to-GoldenDB data migration script. Fresh GoldenDB installs
+-- either have no matching legacy rows or use the current application defaults.

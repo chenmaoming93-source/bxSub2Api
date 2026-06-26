@@ -1,0 +1,2 @@
+-- Intentionally left as a no-op for GoldenDB/MySQL mode.
+-- Index-name alignment is handled by the GoldenDB-compatible index rollout.
