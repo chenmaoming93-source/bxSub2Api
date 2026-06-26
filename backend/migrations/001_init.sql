@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS proxies (
 CREATE INDEX IF NOT EXISTS idx_proxies_status ON proxies(status);
 CREATE INDEX IF NOT EXISTS idx_proxies_deleted_at ON proxies(deleted_at);
 
-CREATE TABLE IF NOT EXISTS groups (
+CREATE TABLE IF NOT EXISTS `groups` (
     id              BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
     name            VARCHAR(100) NOT NULL UNIQUE,
     description     TEXT,
@@ -29,10 +29,10 @@ CREATE TABLE IF NOT EXISTS groups (
     deleted_at      DATETIME(6)
 );
 
-CREATE INDEX IF NOT EXISTS idx_groups_name ON groups(name);
-CREATE INDEX IF NOT EXISTS idx_groups_status ON groups(status);
-CREATE INDEX IF NOT EXISTS idx_groups_is_exclusive ON groups(is_exclusive);
-CREATE INDEX IF NOT EXISTS idx_groups_deleted_at ON groups(deleted_at);
+CREATE INDEX IF NOT EXISTS idx_groups_name ON `groups`(name);
+CREATE INDEX IF NOT EXISTS idx_groups_status ON `groups`(status);
+CREATE INDEX IF NOT EXISTS idx_groups_is_exclusive ON `groups`(is_exclusive);
+CREATE INDEX IF NOT EXISTS idx_groups_deleted_at ON `groups`(deleted_at);
 
 CREATE TABLE IF NOT EXISTS users (
     id              BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -83,7 +83,7 @@ CREATE TABLE IF NOT EXISTS api_keys (
     user_id         BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     `key`           VARCHAR(64) NOT NULL UNIQUE,
     name            VARCHAR(100) NOT NULL,
-    group_id        BIGINT REFERENCES groups(id) ON DELETE SET NULL,
+    group_id        BIGINT REFERENCES `groups`(id) ON DELETE SET NULL,
     status          VARCHAR(20) NOT NULL DEFAULT 'active',
     created_at      DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     updated_at      DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
@@ -98,7 +98,7 @@ CREATE INDEX IF NOT EXISTS idx_api_keys_deleted_at ON api_keys(deleted_at);
 
 CREATE TABLE IF NOT EXISTS account_groups (
     account_id      BIGINT NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
-    group_id        BIGINT NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
+    group_id        BIGINT NOT NULL REFERENCES `groups`(id) ON DELETE CASCADE,
     priority        INT NOT NULL DEFAULT 50,
     created_at      DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     PRIMARY KEY (account_id, group_id)

@@ -59,7 +59,7 @@ const schedulerOutboxPendingDedupKeyMigration = "153_scheduler_outbox_pending_de
 const schedulerOutboxPendingDedupKeyIndex = "idx_scheduler_outbox_pending_dedup_key"
 
 var (
-	createIndexIfNotExistsPattern = regexp.MustCompile(`(?is)^\s*CREATE\s+(UNIQUE\s+)?INDEX\s+IF\s+NOT\s+EXISTS\s+` + identifierPattern("index") + `\s+ON\s+` + identifierPattern("table") + `\b`)
+	createIndexIfNotExistsPattern = regexp.MustCompile(`(?is)^\s*CREATE\s+(UNIQUE\s+)?INDEX\s+IF\s+NOT\s+EXISTS\s+` + identifierPattern("index") + `\s+ON\s+` + identifierPattern("table"))
 	dropIndexIfExistsPattern      = regexp.MustCompile(`(?is)^\s*DROP\s+INDEX\s+IF\s+EXISTS\s+` + identifierPattern("index") + `(?:\s+ON\s+` + identifierPattern("table") + `)?\s*$`)
 	alterTablePattern             = regexp.MustCompile(`(?is)^\s*ALTER\s+TABLE\s+` + identifierPattern("table") + `\s+(?P<clauses>.+)$`)
 	addColumnIfNotExistsPattern   = regexp.MustCompile(`(?is)^\s*ADD\s+COLUMN\s+IF\s+NOT\s+EXISTS\s+` + identifierPattern("column") + `\s+`)

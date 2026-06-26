@@ -1,11 +1,10 @@
 -- Create channels table for managing pricing channels.
--- A channel groups multiple groups together and provides custom model pricing.
+-- A channel `groups` multiple `groups` together and provides custom model pricing.
 
 SET LOCAL lock_timeout = '5s';
 SET LOCAL statement_timeout = '10min';
 
--- 渠道表
-CREATE TABLE IF NOT EXISTS channels (
+-- 渠道�?CREATE TABLE IF NOT EXISTS channels (
     id          BIGINT NOT NULL AUTO_INCREMENT    PRIMARY KEY,
     name        VARCHAR(100) NOT NULL,
     description TEXT NULL,
@@ -22,15 +21,14 @@ CREATE INDEX IF NOT EXISTS idx_channels_status ON channels (status);
 CREATE TABLE IF NOT EXISTS channel_groups (
     id          BIGINT NOT NULL AUTO_INCREMENT    PRIMARY KEY,
     channel_id  BIGINT       NOT NULL REFERENCES channels(id) ON DELETE CASCADE,
-    group_id    BIGINT       NOT NULL REFERENCES groups(id) ON DELETE CASCADE,
+    group_id    BIGINT       NOT NULL REFERENCES `groups`(id) ON DELETE CASCADE,
     created_at  DATETIME(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_channel_groups_group_id ON channel_groups (group_id);
 CREATE INDEX IF NOT EXISTS idx_channel_groups_channel_id ON channel_groups (channel_id);
 
--- 渠道模型定价表（一条定价可绑定多个模型）
-CREATE TABLE IF NOT EXISTS channel_model_pricing (
+-- 渠道模型定价表（一条定价可绑定多个模型�?CREATE TABLE IF NOT EXISTS channel_model_pricing (
     id                 BIGINT NOT NULL AUTO_INCREMENT      PRIMARY KEY,
     channel_id         BIGINT         NOT NULL REFERENCES channels(id) ON DELETE CASCADE,
     models             JSON NULL,

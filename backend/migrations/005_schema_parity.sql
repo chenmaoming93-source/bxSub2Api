@@ -24,7 +24,7 @@ CREATE INDEX IF NOT EXISTS idx_accounts_rate_limit_reset_at ON accounts(rate_lim
 CREATE INDEX IF NOT EXISTS idx_accounts_overload_until ON accounts(overload_until);
 
 -- redeem_codes: subscription redeem fields
-ALTER TABLE redeem_codes ADD COLUMN IF NOT EXISTS group_id BIGINT REFERENCES groups(id) ON DELETE SET NULL;
+ALTER TABLE redeem_codes ADD COLUMN IF NOT EXISTS group_id BIGINT REFERENCES `groups`(id) ON DELETE SET NULL;
 ALTER TABLE redeem_codes ADD COLUMN IF NOT EXISTS validity_days INT NOT NULL DEFAULT 30;
 CREATE INDEX IF NOT EXISTS idx_redeem_codes_group_id ON redeem_codes(group_id);
 

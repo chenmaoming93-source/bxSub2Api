@@ -89,8 +89,8 @@ CREATE INDEX IF NOT EXISTS idx_ops_metrics_daily_platform_bucket_date
 -- Notes:
 -- - Ensure the job uses a consistent timezone (recommended: SET TIME ZONE ''UTC'') to avoid bucket drift.
 -- - Derive the provider/platform similarly to existing dashboard queries:
---     usage_logs: COALESCE(NULLIF(groups.platform, ''), accounts.platform, '')
---     ops_error_logs: COALESCE(NULLIF(ops_error_logs.platform, ''), groups.platform, accounts.platform, '')
+--     usage_logs: COALESCE(NULLIF(`groups`.platform, ''), accounts.platform, '')
+--     ops_error_logs: COALESCE(NULLIF(ops_error_logs.platform, ''), `groups`.platform, accounts.platform, '')
 -- - Keep request_count/success_count/error_count as the authoritative values; compute error_rate from counts.
 --
 -- Example (hourly) shape (pseudo-SQL):

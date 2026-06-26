@@ -1,7 +1,7 @@
 -- Migration: 090_drop_sora
 -- Remove all Sora-related database objects.
 -- Drops tables: sora_tasks, sora_generations, sora_accounts
--- Drops columns from: groups, users, usage_logs
+-- Drops columns from: `groups`, users, usage_logs
 
 -- ============================================================
 -- 1. Drop Sora tables
@@ -11,9 +11,9 @@ DROP TABLE IF EXISTS sora_generations;
 DROP TABLE IF EXISTS sora_accounts;
 
 -- ============================================================
--- 2. Drop Sora columns from groups table
+-- 2. Drop Sora columns from `groups` table
 -- ============================================================
-ALTER TABLE groups
+ALTER TABLE `groups`
     DROP COLUMN IF EXISTS sora_image_price_360,
     DROP COLUMN IF EXISTS sora_image_price_540,
     DROP COLUMN IF EXISTS sora_video_price_per_request,
