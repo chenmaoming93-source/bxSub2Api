@@ -48,7 +48,7 @@ func (r *contentModerationRepository) CreateLog(ctx context.Context, log *servic
 	if log.UpstreamLatencyMS != nil {
 		latency = *log.UpstreamLatencyMS
 	}
-	err = r.db.QueryRowContext(ctx, `
+	res, err := r.db.ExecContext(ctx, `
 INSERT INTO content_moderation_logs (
     request_id, user_id, user_email, api_key_id, api_key_name, group_id, group_name,
     endpoint, provider, model, mode, action, flagged, highest_category, highest_score,
@@ -57,16 +57,24 @@ INSERT INTO content_moderation_logs (
 ) VALUES (
     ?, ?, ?, ?, ?, ?, ?,
     ?, ?, ?, ?, ?, ?, ?, ?,
-    ?::jsonb, ?::jsonb, ?, ?, ?,
+    ?, ?, ?, ?, ?,
     ?, ?, ?, ?
-) RETURNING id, created_at`,
+)`,
 		log.RequestID, userID, log.UserEmail, apiKeyID, log.APIKeyName, groupID, log.GroupName,
 		log.Endpoint, log.Provider, log.Model, log.Mode, log.Action, log.Flagged, log.HighestCategory, log.HighestScore,
 		string(categoryScores), string(thresholdSnapshot), log.InputExcerpt, latency, log.Error,
 		log.ViolationCount, log.AutoBanned, log.EmailSent, nullableIntPtr(log.QueueDelayMS),
-	).Scan(&log.ID, &log.CreatedAt)
+	)
 	if err != nil {
 		return fmt.Errorf("insert content moderation log: %w", err)
+	}
+	id, err := res.LastInsertId()
+	if err != nil {
+		return fmt.Errorf("content moderation log last insert id: %w", err)
+	}
+	log.ID = id
+	if err := r.db.QueryRowContext(ctx, `SELECT created_at FROM content_moderation_logs WHERE id = ?`, id).Scan(&log.CreatedAt); err != nil {
+		return fmt.Errorf("load content moderation log created_at: %w", err)
 	}
 	return nil
 }
@@ -101,7 +109,7 @@ SELECT
 FROM content_moderation_logs l
 LEFT JOIN users u ON u.id = l.user_id `+whereSQL+`
 ORDER BY l.created_at DESC, l.id DESC
-LIMIT $`+fmt.Sprint(len(queryArgs)-1)+` OFFSET $`+fmt.Sprint(len(queryArgs)),
+LIMIT ? OFFSET ?`,
 		queryArgs...,
 	)
 	if err != nil {
@@ -194,10 +202,10 @@ FROM content_moderation_logs
 WHERE user_id = ?
   AND flagged = TRUE
   AND action <> 'hash_block'
-  AND (?::bool IS FALSE OR action <> 'cyber_policy')
+  AND (? = FALSE OR action <> 'cyber_policy')
   AND created_at >= ?
-  AND created_at > COALESCE((SELECT at FROM last_auto_ban), '-infinity'::timestamptz)
-`, userID, since, excludeCyberPolicy).Scan(&count)
+  AND created_at > COALESCE((SELECT at FROM last_auto_ban), '1000-01-01 00:00:00')
+`, userID, userID, excludeCyberPolicy, since).Scan(&count)
 	if err != nil {
 		return 0, fmt.Errorf("count user content moderation flagged logs: %w", err)
 	}
@@ -273,7 +281,7 @@ func buildContentModerationLogWhere(filter service.ContentModerationLogFilter) (
 		like := "%" + search + "%"
 		args = append(args, like, like, like, like, like)
 		idx := len(args) - 4
-		where = append(where, fmt.Sprintf("(l.request_id ILIKE ?/*%d*/ OR l.user_email ILIKE ?/*%d*/ OR l.api_key_name ILIKE ?/*%d*/ OR l.model ILIKE ?/*%d*/ OR l.input_excerpt ILIKE ?/*%d*/)", idx, idx+1, idx+2, idx+3, idx+4))
+		where = append(where, fmt.Sprintf("(LOWER(l.request_id) LIKE LOWER(?/*%d*/) OR LOWER(l.user_email) LIKE LOWER(?/*%d*/) OR LOWER(l.api_key_name) LIKE LOWER(?/*%d*/) OR LOWER(l.model) LIKE LOWER(?/*%d*/) OR LOWER(l.input_excerpt) LIKE LOWER(?/*%d*/))", idx, idx+1, idx+2, idx+3, idx+4))
 	}
 	if filter.From != nil && !filter.From.IsZero() {
 		add("l.created_at >= ?/*%d*/", *filter.From)

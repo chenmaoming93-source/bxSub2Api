@@ -4,6 +4,7 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -56,4 +57,44 @@ func (v jsonDriverValue) Value() (driver.Value, error) {
 
 func quoteMySQLIdentifier(identifier string) string {
 	return "`" + strings.ReplaceAll(identifier, "`", "``") + "`"
+}
+
+func placeholders(n int) string {
+	if n <= 0 {
+		return ""
+	}
+	parts := make([]string, n)
+	for i := range parts {
+		parts[i] = "?"
+	}
+	return strings.Join(parts, ", ")
+}
+
+func appendInt64Args(args []any, values []int64) []any {
+	for _, value := range values {
+		args = append(args, value)
+	}
+	return args
+}
+
+func int64InCondition(column string, values []int64) (string, []any) {
+	if len(values) == 0 {
+		return "1 = 0", nil
+	}
+	return column + " IN (" + placeholders(len(values)) + ")", appendInt64Args(nil, values)
+}
+
+func int64NotInCondition(column string, values []int64) (string, []any) {
+	if len(values) == 0 {
+		return "1 = 1", nil
+	}
+	return column + " NOT IN (" + placeholders(len(values)) + ")", appendInt64Args(nil, values)
+}
+
+func mysqlNullsLastOrder(column, direction string) string {
+	return "ORDER BY (" + column + " IS NULL) ASC, " + column + " " + direction
+}
+
+func numberedComment(index int) string {
+	return "?/*" + strconv.Itoa(index) + "*/"
 }

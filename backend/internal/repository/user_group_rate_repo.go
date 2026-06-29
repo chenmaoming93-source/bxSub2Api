@@ -3,10 +3,10 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"strings"
 	"time"
 
 	"github.com/Wei-Shaw/sub2api/internal/service"
-	"github.com/lib/pq"
 )
 
 type userGroupRateRepository struct {
@@ -66,11 +66,12 @@ func (r *userGroupRateRepository) GetByUserIDs(ctx context.Context, userIDs []in
 		return result, nil
 	}
 
+	condition, conditionArgs := int64InCondition("user_id", uniqueIDs)
 	rows, err := r.sql.QueryContext(ctx, `
 		SELECT user_id, group_id, rate_multiplier
 		FROM user_group_rate_multipliers
-		WHERE user_id = ANY(?) AND rate_multiplier IS NOT NULL
-	`, pq.Array(uniqueIDs))
+		WHERE `+condition+` AND rate_multiplier IS NOT NULL
+	`, conditionArgs...)
 	if err != nil {
 		return nil, err
 	}
@@ -201,36 +202,37 @@ func (r *userGroupRateRepository) SyncUserGroupRates(ctx context.Context, userID
 	}
 
 	if len(clearGroupIDs) > 0 {
+		condition, conditionArgs := int64InCondition("group_id", clearGroupIDs)
+		args := append([]any{userID}, conditionArgs...)
 		if _, err := r.sql.ExecContext(ctx, `
 			UPDATE user_group_rate_multipliers
 			SET rate_multiplier = NULL, updated_at = NOW()
-			WHERE user_id = ? AND group_id = ANY(?)
-		`, userID, pq.Array(clearGroupIDs)); err != nil {
+			WHERE user_id = ? AND `+condition, args...); err != nil {
 			return err
 		}
+		args = append([]any{userID}, conditionArgs...)
 		if _, err := r.sql.ExecContext(ctx,
-			`DELETE FROM user_group_rate_multipliers WHERE user_id = ? AND group_id = ANY(?) AND rate_multiplier IS NULL AND rpm_override IS NULL`,
-			userID, pq.Array(clearGroupIDs)); err != nil {
+			`DELETE FROM user_group_rate_multipliers WHERE user_id = ? AND `+condition+` AND rate_multiplier IS NULL AND rpm_override IS NULL`,
+			args...); err != nil {
 			return err
 		}
 	}
 
 	if len(upsertGroupIDs) > 0 {
 		now := time.Now()
+		values := make([]string, 0, len(upsertGroupIDs))
+		args := make([]any, 0, len(upsertGroupIDs)*5)
+		for i, groupID := range upsertGroupIDs {
+			values = append(values, "(?, ?, ?, ?, ?)")
+			args = append(args, userID, groupID, upsertRates[i], now, now)
+		}
 		_, err := r.sql.ExecContext(ctx, `
 			INSERT INTO user_group_rate_multipliers (user_id, group_id, rate_multiplier, created_at, updated_at)
-			SELECT
-				?::bigint,
-				data.group_id,
-				data.rate_multiplier,
-				?::timestamptz,
-				?::timestamptz
-			FROM unnest(?::bigint[], ?::double precision[]) AS data(group_id, rate_multiplier)
-			ON CONFLICT (user_id, group_id)
-			DO UPDATE SET
-				rate_multiplier = EXCLUDED.rate_multiplier,
-				updated_at = EXCLUDED.updated_at
-		`, userID, now, pq.Array(upsertGroupIDs), pq.Array(upsertRates))
+			VALUES `+strings.Join(values, ", ")+`
+			ON DUPLICATE KEY UPDATE
+				rate_multiplier = VALUES(rate_multiplier),
+				updated_at = VALUES(updated_at)
+		`, args...)
 		if err != nil {
 			return err
 		}
@@ -259,11 +261,12 @@ func (r *userGroupRateRepository) SyncGroupRateMultipliers(ctx context.Context, 
 			return err
 		}
 	} else {
+		condition, conditionArgs := int64NotInCondition("user_id", keepUserIDs)
+		args := append([]any{groupID}, conditionArgs...)
 		if _, err := r.sql.ExecContext(ctx, `
 			UPDATE user_group_rate_multipliers
 			SET rate_multiplier = NULL, updated_at = NOW()
-			WHERE group_id = ? AND user_id <> ALL(?)
-		`, groupID, pq.Array(keepUserIDs)); err != nil {
+			WHERE group_id = ? AND `+condition, args...); err != nil {
 			return err
 		}
 	}
@@ -287,13 +290,17 @@ func (r *userGroupRateRepository) SyncGroupRateMultipliers(ctx context.Context, 
 		rates[i] = e.RateMultiplier
 	}
 	now := time.Now()
+	values := make([]string, 0, len(entries))
+	args := make([]any, 0, len(entries)*5)
+	for i := range entries {
+		values = append(values, "(?, ?, ?, ?, ?)")
+		args = append(args, userIDs[i], groupID, rates[i], now, now)
+	}
 	_, err := r.sql.ExecContext(ctx, `
 		INSERT INTO user_group_rate_multipliers (user_id, group_id, rate_multiplier, created_at, updated_at)
-		SELECT data.user_id, ?::bigint, data.rate_multiplier, ?::timestamptz, ?::timestamptz
-		FROM unnest(?::bigint[], ?::double precision[]) AS data(user_id, rate_multiplier)
-		ON CONFLICT (user_id, group_id)
-		DO UPDATE SET rate_multiplier = EXCLUDED.rate_multiplier, updated_at = EXCLUDED.updated_at
-	`, groupID, now, pq.Array(userIDs), pq.Array(rates))
+		VALUES `+strings.Join(values, ", ")+`
+		ON DUPLICATE KEY UPDATE rate_multiplier = VALUES(rate_multiplier), updated_at = VALUES(updated_at)
+	`, args...)
 	return err
 }
 
@@ -326,22 +333,24 @@ func (r *userGroupRateRepository) SyncGroupRPMOverrides(ctx context.Context, gro
 			return err
 		}
 	} else {
+		condition, conditionArgs := int64NotInCondition("user_id", keepUserIDs)
+		args := append([]any{groupID}, conditionArgs...)
 		if _, err := r.sql.ExecContext(ctx, `
 			UPDATE user_group_rate_multipliers
 			SET rpm_override = NULL, updated_at = NOW()
-			WHERE group_id = ? AND user_id <> ALL(?)
-		`, groupID, pq.Array(keepUserIDs)); err != nil {
+			WHERE group_id = ? AND `+condition, args...); err != nil {
 			return err
 		}
 	}
 
 	// 显式 clear 的行。
 	if len(clearUserIDs) > 0 {
+		condition, conditionArgs := int64InCondition("user_id", clearUserIDs)
+		args := append([]any{groupID}, conditionArgs...)
 		if _, err := r.sql.ExecContext(ctx, `
 			UPDATE user_group_rate_multipliers
 			SET rpm_override = NULL, updated_at = NOW()
-			WHERE group_id = ? AND user_id = ANY(?)
-		`, groupID, pq.Array(clearUserIDs)); err != nil {
+			WHERE group_id = ? AND `+condition, args...); err != nil {
 			return err
 		}
 	}
@@ -356,13 +365,17 @@ func (r *userGroupRateRepository) SyncGroupRPMOverrides(ctx context.Context, gro
 
 	if len(upsertUserIDs) > 0 {
 		now := time.Now()
+		values := make([]string, 0, len(upsertUserIDs))
+		args := make([]any, 0, len(upsertUserIDs)*5)
+		for i, userID := range upsertUserIDs {
+			values = append(values, "(?, ?, ?, ?, ?)")
+			args = append(args, userID, groupID, upsertValues[i], now, now)
+		}
 		_, err := r.sql.ExecContext(ctx, `
 			INSERT INTO user_group_rate_multipliers (user_id, group_id, rpm_override, created_at, updated_at)
-			SELECT data.user_id, ?::bigint, data.rpm_override, ?::timestamptz, ?::timestamptz
-			FROM unnest(?::bigint[], ?::integer[]) AS data(user_id, rpm_override)
-			ON CONFLICT (user_id, group_id)
-			DO UPDATE SET rpm_override = EXCLUDED.rpm_override, updated_at = EXCLUDED.updated_at
-		`, groupID, now, pq.Array(upsertUserIDs), pq.Array(upsertValues))
+			VALUES `+strings.Join(values, ", ")+`
+			ON DUPLICATE KEY UPDATE rpm_override = VALUES(rpm_override), updated_at = VALUES(updated_at)
+		`, args...)
 		if err != nil {
 			return err
 		}

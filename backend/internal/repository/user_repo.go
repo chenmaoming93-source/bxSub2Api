@@ -22,7 +22,6 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/usersubscription"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
 	"github.com/Wei-Shaw/sub2api/internal/service"
-	"github.com/lib/pq"
 
 	entsql "entgo.io/ent/dialect/sql"
 )
@@ -627,14 +626,15 @@ func (r *userRepository) GetLatestUsedAtByUserIDs(ctx context.Context, userIDs [
 		return nil, fmt.Errorf("sql executor is not configured")
 	}
 
-	const query = `
+	condition, conditionArgs := int64InCondition("user_id", userIDs)
+	query := `
 		SELECT user_id, MAX(created_at) AS last_used_at
 		FROM usage_logs
-		WHERE user_id = ANY(?)
+		WHERE ` + condition + `
 		GROUP BY user_id
 	`
 
-	rows, err := r.sql.QueryContext(ctx, query, pq.Array(userIDs))
+	rows, err := r.sql.QueryContext(ctx, query, conditionArgs...)
 	if err != nil {
 		return nil, err
 	}
@@ -669,7 +669,12 @@ func userLastUsedAtOrder(sortOrder string) []func(*entsql.Selector) {
 	orderExpr := func(direction, nulls string, tieOrder func(string) string) func(*entsql.Selector) {
 		return func(s *entsql.Selector) {
 			subquery := fmt.Sprintf("(SELECT MAX(created_at) FROM usage_logs WHERE user_id = %s)", s.C(dbuser.FieldID))
-			s.OrderExpr(entsql.Expr(subquery + " " + direction + " NULLS " + nulls))
+			if nulls == "FIRST" {
+				s.OrderExpr(entsql.Expr("(" + subquery + " IS NULL) DESC"))
+			} else {
+				s.OrderExpr(entsql.Expr("(" + subquery + " IS NULL) ASC"))
+			}
+			s.OrderExpr(entsql.Expr(subquery + " " + direction))
 			s.OrderBy(tieOrder(s.C(dbuser.FieldID)))
 		}
 	}
@@ -698,7 +703,7 @@ func (r *userRepository) filterUsersByAttributes(ctx context.Context, attrs map[
 	args := make([]any, 0, len(attrs)*2+1)
 	argIndex := 1
 	for attrID, value := range attrs {
-		clauses = append(clauses, fmt.Sprintf("(attribute_id = ?/*%d*/ AND value ILIKE ?/*%d*/)", argIndex, argIndex+1))
+		clauses = append(clauses, fmt.Sprintf("(attribute_id = ?/*%d*/ AND LOWER(value) LIKE LOWER(?/*%d*/))", argIndex, argIndex+1))
 		args = append(args, attrID, "%"+value+"%")
 		argIndex += 2
 	}
@@ -788,9 +793,11 @@ func (r *userRepository) BatchSetConcurrency(ctx context.Context, userIDs []int6
 	if value < 0 {
 		value = 0
 	}
+	condition, conditionArgs := int64InCondition("id", userIDs)
+	args := append([]any{value}, conditionArgs...)
 	res, err := r.sql.ExecContext(ctx,
-		"UPDATE users SET concurrency = ?, updated_at = NOW() WHERE id = ANY(?) AND deleted_at IS NULL",
-		value, pq.Array(userIDs))
+		"UPDATE users SET concurrency = ?, updated_at = NOW() WHERE "+condition+" AND deleted_at IS NULL",
+		args...)
 	if err != nil {
 		return 0, fmt.Errorf("batch set concurrency: %w", err)
 	}
@@ -802,9 +809,11 @@ func (r *userRepository) BatchAddConcurrency(ctx context.Context, userIDs []int6
 	if len(userIDs) == 0 {
 		return 0, nil
 	}
+	condition, conditionArgs := int64InCondition("id", userIDs)
+	args := append([]any{delta}, conditionArgs...)
 	res, err := r.sql.ExecContext(ctx,
-		"UPDATE users SET concurrency = GREATEST(concurrency + ?, 0), updated_at = NOW() WHERE id = ANY(?) AND deleted_at IS NULL",
-		delta, pq.Array(userIDs))
+		"UPDATE users SET concurrency = GREATEST(concurrency + ?, 0), updated_at = NOW() WHERE "+condition+" AND deleted_at IS NULL",
+		args...)
 	if err != nil {
 		return 0, fmt.Errorf("batch add concurrency: %w", err)
 	}
