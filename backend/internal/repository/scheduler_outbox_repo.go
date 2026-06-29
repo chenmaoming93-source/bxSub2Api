@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/Wei-Shaw/sub2api/internal/service"
@@ -31,26 +32,24 @@ func (r *schedulerOutboxRepository) ListAfterAndReleaseDedup(ctx context.Context
 	if limit <= 0 {
 		limit = 100
 	}
-	rows, err := r.db.QueryContext(ctx, `
-		WITH selected AS MATERIALIZED (
-			SELECT id, event_type, account_id, group_id, payload, created_at
-			FROM scheduler_outbox
-			WHERE id > ?
-			ORDER BY id ASC
-			LIMIT ?
-			FOR UPDATE
-		), released AS (
-			UPDATE scheduler_outbox AS o
-			SET dedup_key = NULL
-			FROM selected AS s
-			WHERE o.id = s.id
-				AND o.dedup_key IS NOT NULL
-			RETURNING o.id
-		)
-		SELECT s.id, s.event_type, s.account_id, s.group_id, s.payload, s.created_at
-		FROM selected AS s
-		CROSS JOIN (SELECT COUNT(*) FROM released) AS release_barrier
-		ORDER BY s.id ASC
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	committed := false
+	defer func() {
+		if !committed {
+			_ = tx.Rollback()
+		}
+	}()
+
+	rows, err := tx.QueryContext(ctx, `
+		SELECT id, event_type, account_id, group_id, payload, created_at
+		FROM scheduler_outbox
+		WHERE id > ?
+		ORDER BY id ASC
+		LIMIT ?
+		FOR UPDATE
 	`, afterID, limit)
 	if err != nil {
 		return nil, err
@@ -60,6 +59,7 @@ func (r *schedulerOutboxRepository) ListAfterAndReleaseDedup(ctx context.Context
 	}()
 
 	events := make([]service.SchedulerOutboxEvent, 0, limit)
+	ids := make([]int64, 0, limit)
 	for rows.Next() {
 		var (
 			payloadRaw []byte
@@ -86,10 +86,31 @@ func (r *schedulerOutboxRepository) ListAfterAndReleaseDedup(ctx context.Context
 			event.Payload = payload
 		}
 		events = append(events, event)
+		ids = append(ids, event.ID)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if len(ids) > 0 {
+		args := make([]any, 0, len(ids))
+		for _, id := range ids {
+			args = append(args, id)
+		}
+		_, err := tx.ExecContext(ctx,
+			"UPDATE scheduler_outbox SET dedup_key = NULL WHERE dedup_key IS NOT NULL AND id IN ("+sqlPlaceholders(len(ids))+")",
+			args...,
+		)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+	committed = true
 	return events, nil
 }
 
@@ -108,22 +129,22 @@ func (r *schedulerOutboxRepository) DeleteConsumedUpTo(ctx context.Context, wate
 	if limit <= 0 {
 		limit = schedulerOutboxDefaultCleanSize
 	}
-	// created_at < NOW() - INTERVAL '10 seconds' 防御 PG 序列号在事务内提前分配但
+	// created_at < NOW() - INTERVAL 10 SECOND 防御序列号在事务内提前分配但
 	// 提交延迟的竞争：若某 Tx 在 watermark 推进前持有 id=N（未提交），watermark
 	// 跨过 N 后该 Tx 才提交，此时 row N 已经"低于 watermark"但从未被 poll；10s
 	// 宽限期让此类慢事务有机会提交后被消费，再被 cleanup 删除。
 	result, err := r.db.ExecContext(ctx, `
-		WITH doomed AS (
-			SELECT id
-			FROM scheduler_outbox
-			WHERE id <= ?
-				AND created_at < NOW() - INTERVAL '10 seconds'
-			ORDER BY id ASC
-			LIMIT ?
+		DELETE FROM scheduler_outbox
+		WHERE id IN (
+			SELECT id FROM (
+				SELECT id
+				FROM scheduler_outbox
+				WHERE id <= ?
+					AND created_at < NOW() - INTERVAL 10 SECOND
+				ORDER BY id ASC
+				LIMIT ?
+			) AS doomed
 		)
-		DELETE FROM scheduler_outbox o
-		USING doomed d
-		WHERE o.id = d.id
 	`, watermark, limit)
 	if err != nil {
 		return 0, err
@@ -183,9 +204,8 @@ func enqueueSchedulerOutbox(ctx context.Context, exec sqlExecutor, eventType str
 	if schedulerOutboxEventSupportsDedup(eventType) {
 		dedupKey := schedulerOutboxDedupKey(eventType, accountID, groupID, payloadJSON)
 		query = `
-			INSERT INTO scheduler_outbox (event_type, account_id, group_id, payload, dedup_key)
+			INSERT IGNORE INTO scheduler_outbox (event_type, account_id, group_id, payload, dedup_key)
 			VALUES (?, ?, ?, ?, ?)
-			ON CONFLICT (dedup_key) WHERE dedup_key IS NOT NULL DO NOTHING
 		`
 		args = append(args, dedupKey)
 	}
@@ -207,6 +227,13 @@ func schedulerOutboxDedupKey(eventType string, accountID *int64, groupID *int64,
 	_, _ = h.Write([]byte{0})
 	_, _ = h.Write(payloadJSON)
 	return fmt.Sprintf("scheduler_outbox:%s", hex.EncodeToString(h.Sum(nil)))
+}
+
+func sqlPlaceholders(n int) string {
+	if n <= 0 {
+		return ""
+	}
+	return strings.TrimRight(strings.Repeat("?,", n), ",")
 }
 
 func schedulerOutboxEventSupportsDedup(eventType string) bool {
