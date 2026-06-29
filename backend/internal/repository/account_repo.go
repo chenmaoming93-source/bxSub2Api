@@ -28,7 +28,6 @@ import (
 	"github.com/Wei-Shaw/sub2api/internal/pkg/logger"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
 	"github.com/Wei-Shaw/sub2api/internal/service"
-	"github.com/lib/pq"
 
 	entsql "entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqljson"
@@ -444,7 +443,7 @@ func (r *accountRepository) Delete(ctx context.Context, id int64) error {
 	if _, err := txClient.AccountGroup.Delete().Where(dbaccountgroup.AccountIDEQ(id)).Exec(ctx); err != nil {
 		return err
 	}
-	if _, err := txClient.ExecContext(ctx, "DELETE FROM scheduled_test_plans WHERE account_id = $1", id); err != nil {
+	if _, err := txClient.ExecContext(ctx, "DELETE FROM scheduled_test_plans WHERE account_id = ?", id); err != nil {
 		return err
 	}
 	if _, err := txClient.Account.Delete().Where(dbaccount.IDEQ(id)).Exec(ctx); err != nil {
@@ -748,18 +747,20 @@ func (r *accountRepository) BatchUpdateLastUsed(ctx context.Context, updates map
 	args := make([]any, 0, len(updates)*2+1)
 	caseSQL := "UPDATE accounts SET last_used_at = CASE id"
 
-	idx := 1
 	for id, ts := range updates {
-		caseSQL += " WHEN $" + itoa(idx) + " THEN $" + itoa(idx+1) + "::timestamptz"
+		caseSQL += " WHEN ? THEN ?"
 		args = append(args, id, ts)
 		ids = append(ids, id)
-		idx += 2
 	}
 
-	caseSQL += " END, updated_at = NOW() WHERE id = ANY($" + itoa(idx) + ") AND deleted_at IS NULL"
-	args = append(args, pq.Array(ids))
+	idsJSON, err := jsonArrayParam(ids)
+	if err != nil {
+		return err
+	}
+	caseSQL += " END, updated_at = NOW() WHERE id IN (SELECT id FROM JSON_TABLE(?, '$[*]' COLUMNS(id BIGINT PATH '$')) AS account_ids) AND deleted_at IS NULL"
+	args = append(args, idsJSON)
 
-	_, err := r.sql.ExecContext(ctx, caseSQL, args...)
+	_, err = r.sql.ExecContext(ctx, caseSQL, args...)
 	if err != nil {
 		return err
 	}
@@ -1157,15 +1158,14 @@ func (r *accountRepository) SetModelRateLimit(ctx context.Context, id int64, sco
 	client := clientFromContext(ctx, r.client)
 	result, err := client.ExecContext(
 		ctx,
-		`UPDATE accounts SET 
-			extra = jsonb_set(
-				jsonb_set(COALESCE(extra, '{}'::jsonb), '{model_rate_limits}'::text[], COALESCE(extra->'model_rate_limits', '{}'::jsonb), true),
-				ARRAY['model_rate_limits', $1]::text[],
-				$2::jsonb,
-				true
+		`UPDATE accounts SET
+			extra = JSON_SET(
+				JSON_SET(COALESCE(extra, JSON_OBJECT()), '$.model_rate_limits',
+					COALESCE(JSON_EXTRACT(extra, '$.model_rate_limits'), JSON_OBJECT())),
+				CONCAT('$.model_rate_limits.', JSON_QUOTE(?)), CAST(? AS JSON)
 			),
 			updated_at = NOW()
-		WHERE id = $3 AND deleted_at IS NULL`,
+		WHERE id = ? AND deleted_at IS NULL`,
 		scope,
 		raw,
 		id,
@@ -1206,13 +1206,13 @@ func (r *accountRepository) SetOverloaded(ctx context.Context, id int64, until t
 func (r *accountRepository) SetTempUnschedulable(ctx context.Context, id int64, until time.Time, reason string) error {
 	result, err := r.sql.ExecContext(ctx, `
 		UPDATE accounts
-		SET temp_unschedulable_until = $1,
-			temp_unschedulable_reason = $2,
+		SET temp_unschedulable_until = ?,
+			temp_unschedulable_reason = ?,
 			updated_at = NOW()
-		WHERE id = $3
+		WHERE id = ?
 			AND deleted_at IS NULL
-			AND (temp_unschedulable_until IS NULL OR temp_unschedulable_until < $1)
-	`, until, reason, id)
+			AND (temp_unschedulable_until IS NULL OR temp_unschedulable_until < ?)
+	`, until, reason, id, until)
 	if err != nil {
 		return err
 	}
@@ -1236,7 +1236,7 @@ func (r *accountRepository) ClearTempUnschedulable(ctx context.Context, id int64
 		SET temp_unschedulable_until = NULL,
 			temp_unschedulable_reason = NULL,
 			updated_at = NOW()
-		WHERE id = $1
+		WHERE id = ?
 			AND deleted_at IS NULL
 	`, id)
 	if err != nil {
@@ -1270,7 +1270,7 @@ func (r *accountRepository) ClearAntigravityQuotaScopes(ctx context.Context, id 
 	client := clientFromContext(ctx, r.client)
 	result, err := client.ExecContext(
 		ctx,
-		"UPDATE accounts SET extra = COALESCE(extra, '{}'::jsonb) - 'antigravity_quota_scopes', updated_at = NOW() WHERE id = $1 AND deleted_at IS NULL",
+		"UPDATE accounts SET extra = JSON_REMOVE(COALESCE(extra, JSON_OBJECT()), '$.antigravity_quota_scopes'), updated_at = NOW() WHERE id = ? AND deleted_at IS NULL",
 		id,
 	)
 	if err != nil {
@@ -1294,7 +1294,7 @@ func (r *accountRepository) ClearModelRateLimits(ctx context.Context, id int64) 
 	client := clientFromContext(ctx, r.client)
 	result, err := client.ExecContext(
 		ctx,
-		"UPDATE accounts SET extra = COALESCE(extra, '{}'::jsonb) - 'model_rate_limits', updated_at = NOW() WHERE id = $1 AND deleted_at IS NULL",
+		"UPDATE accounts SET extra = JSON_REMOVE(COALESCE(extra, JSON_OBJECT()), '$.model_rate_limits'), updated_at = NOW() WHERE id = ? AND deleted_at IS NULL",
 		id,
 	)
 	if err != nil {
@@ -1378,7 +1378,7 @@ func (r *accountRepository) AutoPauseExpiredAccounts(ctx context.Context, now ti
 			AND schedulable = TRUE
 			AND auto_pause_on_expired = TRUE
 			AND expires_at IS NOT NULL
-			AND expires_at <= $1
+			AND expires_at <= ?
 	`, now)
 	if err != nil {
 		return 0, err
@@ -1409,7 +1409,7 @@ func (r *accountRepository) UpdateExtra(ctx context.Context, id int64, updates m
 	client := clientFromContext(ctx, r.client)
 	result, err := client.ExecContext(
 		ctx,
-		"UPDATE accounts SET extra = COALESCE(extra, '{}'::jsonb) || $1::jsonb, updated_at = NOW() WHERE id = $2 AND deleted_at IS NULL",
+		"UPDATE accounts SET extra = JSON_MERGE_PATCH(COALESCE(extra, JSON_OBJECT()), CAST(? AS JSON)), updated_at = NOW() WHERE id = ? AND deleted_at IS NULL",
 		string(payload), id,
 	)
 
@@ -1474,55 +1474,46 @@ func (r *accountRepository) BulkUpdate(ctx context.Context, ids []int64, updates
 	setClauses := make([]string, 0, 8)
 	args := make([]any, 0, 8)
 
-	idx := 1
 	if updates.Name != nil {
-		setClauses = append(setClauses, "name = $"+itoa(idx))
+		setClauses = append(setClauses, "name = ?")
 		args = append(args, *updates.Name)
-		idx++
 	}
 	if updates.ProxyID != nil {
 		// 0 表示清除代理（前端发送 0 而不是 null 来表达清除意图）
 		if *updates.ProxyID == 0 {
 			setClauses = append(setClauses, "proxy_id = NULL")
 		} else {
-			setClauses = append(setClauses, "proxy_id = $"+itoa(idx))
+			setClauses = append(setClauses, "proxy_id = ?")
 			args = append(args, *updates.ProxyID)
-			idx++
 		}
 	}
 	if updates.Concurrency != nil {
-		setClauses = append(setClauses, "concurrency = $"+itoa(idx))
+		setClauses = append(setClauses, "concurrency = ?")
 		args = append(args, *updates.Concurrency)
-		idx++
 	}
 	if updates.Priority != nil {
-		setClauses = append(setClauses, "priority = $"+itoa(idx))
+		setClauses = append(setClauses, "priority = ?")
 		args = append(args, *updates.Priority)
-		idx++
 	}
 	if updates.RateMultiplier != nil {
-		setClauses = append(setClauses, "rate_multiplier = $"+itoa(idx))
+		setClauses = append(setClauses, "rate_multiplier = ?")
 		args = append(args, *updates.RateMultiplier)
-		idx++
 	}
 	if updates.LoadFactor != nil {
 		if *updates.LoadFactor <= 0 {
 			setClauses = append(setClauses, "load_factor = NULL")
 		} else {
-			setClauses = append(setClauses, "load_factor = $"+itoa(idx))
+			setClauses = append(setClauses, "load_factor = ?")
 			args = append(args, *updates.LoadFactor)
-			idx++
 		}
 	}
 	if updates.Status != nil {
-		setClauses = append(setClauses, "status = $"+itoa(idx))
+		setClauses = append(setClauses, "status = ?")
 		args = append(args, *updates.Status)
-		idx++
 	}
 	if updates.Schedulable != nil {
-		setClauses = append(setClauses, "schedulable = $"+itoa(idx))
+		setClauses = append(setClauses, "schedulable = ?")
 		args = append(args, *updates.Schedulable)
-		idx++
 	}
 	// JSONB 需要合并而非覆盖，使用 raw SQL 保持旧行为。
 	if len(updates.Credentials) > 0 {
@@ -1530,18 +1521,16 @@ func (r *accountRepository) BulkUpdate(ctx context.Context, ids []int64, updates
 		if err != nil {
 			return 0, err
 		}
-		setClauses = append(setClauses, "credentials = COALESCE(credentials, '{}'::jsonb) || $"+itoa(idx)+"::jsonb")
+		setClauses = append(setClauses, "credentials = JSON_MERGE_PATCH(COALESCE(credentials, JSON_OBJECT()), CAST(? AS JSON))")
 		args = append(args, payload)
-		idx++
 	}
 	if len(updates.Extra) > 0 {
 		payload, err := json.Marshal(updates.Extra)
 		if err != nil {
 			return 0, err
 		}
-		setClauses = append(setClauses, "extra = COALESCE(extra, '{}'::jsonb) || $"+itoa(idx)+"::jsonb")
+		setClauses = append(setClauses, "extra = JSON_MERGE_PATCH(COALESCE(extra, JSON_OBJECT()), CAST(? AS JSON))")
 		args = append(args, payload)
-		idx++
 	}
 
 	if len(setClauses) == 0 {
@@ -1550,8 +1539,12 @@ func (r *accountRepository) BulkUpdate(ctx context.Context, ids []int64, updates
 
 	setClauses = append(setClauses, "updated_at = NOW()")
 
-	query := "UPDATE accounts SET " + joinClauses(setClauses, ", ") + " WHERE id = ANY($" + itoa(idx) + ") AND deleted_at IS NULL"
-	args = append(args, pq.Array(ids))
+	idsJSON, err := jsonArrayParam(ids)
+	if err != nil {
+		return 0, err
+	}
+	query := "UPDATE accounts SET " + joinClauses(setClauses, ", ") + " WHERE id IN (SELECT id FROM JSON_TABLE(?, '$[*]' COLUMNS(id BIGINT PATH '$')) AS account_ids) AND deleted_at IS NULL"
+	args = append(args, idsJSON)
 
 	result, err := r.sql.ExecContext(ctx, query, args...)
 	if err != nil {
@@ -2118,14 +2111,14 @@ func (r *accountRepository) IncrementQuotaUsed(ctx context.Context, id int64, am
 		`UPDATE accounts SET extra = (
 			COALESCE(extra, '{}'::jsonb)
 			-- 总额度：始终递增
-			|| jsonb_build_object('quota_used', COALESCE((extra->>'quota_used')::numeric, 0) + $1)
+			|| jsonb_build_object('quota_used', COALESCE((extra->>'quota_used')::numeric, 0) + ?)
 			-- 日额度：仅在 quota_daily_limit > 0 时处理
 			|| CASE WHEN COALESCE((extra->>'quota_daily_limit')::numeric, 0) > 0 THEN
 				jsonb_build_object(
 					'quota_daily_used',
 					CASE WHEN `+dailyExpiredExpr+`
-					THEN $1
-					ELSE COALESCE((extra->>'quota_daily_used')::numeric, 0) + $1 END,
+					THEN ?
+					ELSE COALESCE((extra->>'quota_daily_used')::numeric, 0) + ? END,
 					'quota_daily_start',
 					CASE WHEN `+dailyExpiredExpr+`
 					THEN `+nowUTC+`
@@ -2141,8 +2134,8 @@ func (r *accountRepository) IncrementQuotaUsed(ctx context.Context, id int64, am
 				jsonb_build_object(
 					'quota_weekly_used',
 					CASE WHEN `+weeklyExpiredExpr+`
-					THEN $1
-					ELSE COALESCE((extra->>'quota_weekly_used')::numeric, 0) + $1 END,
+					THEN ?
+					ELSE COALESCE((extra->>'quota_weekly_used')::numeric, 0) + ? END,
 					'quota_weekly_start',
 					CASE WHEN `+weeklyExpiredExpr+`
 					THEN `+nowUTC+`
@@ -2154,7 +2147,7 @@ func (r *accountRepository) IncrementQuotaUsed(ctx context.Context, id int64, am
 				   ELSE '{}'::jsonb END
 			ELSE '{}'::jsonb END
 		), updated_at = NOW()
-		WHERE id = $2 AND deleted_at IS NULL
+		WHERE id = ? AND deleted_at IS NULL
 		RETURNING
 			COALESCE((extra->>'quota_used')::numeric, 0),
 			COALESCE((extra->>'quota_limit')::numeric, 0)`,
@@ -2191,7 +2184,7 @@ func (r *accountRepository) ResetQuotaUsed(ctx context.Context, id int64) error 
 			COALESCE(extra, '{}'::jsonb)
 			|| '{"quota_used": 0, "quota_daily_used": 0, "quota_weekly_used": 0}'::jsonb
 		) - 'quota_daily_start' - 'quota_weekly_start' - 'quota_daily_reset_at' - 'quota_weekly_reset_at', updated_at = NOW()
-		WHERE id = $1 AND deleted_at IS NULL`,
+		WHERE id = ? AND deleted_at IS NULL`,
 		id)
 	if err != nil {
 		return err
@@ -2209,7 +2202,7 @@ func (r *accountRepository) ResetQuotaUsed(ctx context.Context, id int64) error 
 func (r *accountRepository) RevertProxyFallback(ctx context.Context, accountID int64) error {
 	res, err := r.sql.ExecContext(ctx, `
 		UPDATE accounts SET proxy_id=proxy_fallback_origin_id, proxy_fallback_origin_id=NULL, updated_at=NOW()
-		WHERE id=$1 AND proxy_fallback_origin_id IS NOT NULL AND deleted_at IS NULL`, accountID)
+		WHERE id=? AND proxy_fallback_origin_id IS NOT NULL AND deleted_at IS NULL`, accountID)
 	if err != nil {
 		return err
 	}

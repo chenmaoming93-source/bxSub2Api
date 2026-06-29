@@ -606,7 +606,7 @@ func (r *userRepository) RecordProviderGrant(ctx context.Context, input Provider
 
 	result, err := exec.ExecContext(ctx, `
 INSERT INTO user_provider_default_grants (user_id, provider_type, grant_reason)
-VALUES ($1, $2, $3)
+VALUES (?, ?, ?)
 ON CONFLICT (user_id, provider_type, grant_reason) DO NOTHING`,
 		input.UserID,
 		strings.TrimSpace(input.ProviderType),
@@ -718,7 +718,7 @@ func (r *userRepository) GetUserAvatar(ctx context.Context, userID int64) (*serv
 	rows, err := exec.QueryContext(ctx, `
 SELECT storage_provider, storage_key, url, content_type, byte_size, sha256
 FROM user_avatars
-WHERE user_id = $1`, userID)
+WHERE user_id = ?`, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -753,7 +753,7 @@ func (r *userRepository) UpsertUserAvatar(ctx context.Context, userID int64, inp
 
 	_, err = exec.ExecContext(ctx, `
 INSERT INTO user_avatars (user_id, storage_provider, storage_key, url, content_type, byte_size, sha256, updated_at)
-VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
 ON CONFLICT (user_id) DO UPDATE SET
 	storage_provider = EXCLUDED.storage_provider,
 	storage_key = EXCLUDED.storage_key,
@@ -789,7 +789,7 @@ func (r *userRepository) DeleteUserAvatar(ctx context.Context, userID int64) err
 	if err != nil {
 		return err
 	}
-	_, err = exec.ExecContext(ctx, `DELETE FROM user_avatars WHERE user_id = $1`, userID)
+	_, err = exec.ExecContext(ctx, `DELETE FROM user_avatars WHERE user_id = ?`, userID)
 	return err
 }
 

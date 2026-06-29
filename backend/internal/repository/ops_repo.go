@@ -61,7 +61,7 @@ INSERT INTO ops_error_logs (
   deleted_key_name,
   api_key_prefix
 ) VALUES (
-  $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32,$33,$34,$35,$36,$37,$38,$39,$40,$41
+  ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?
 )`
 
 func NewOpsRepository(db *sql.DB) service.OpsRepository {
@@ -441,7 +441,7 @@ LEFT JOIN accounts a ON e.account_id = a.id
 LEFT JOIN groups g ON e.group_id = g.id
 LEFT JOIN users du ON e.deleted_key_owner_user_id = du.id
 LEFT JOIN api_keys ak ON ak.id = e.api_key_id
-WHERE e.id = $1
+WHERE e.id = ?
 LIMIT 1`
 
 	var out service.OpsErrorLogDetail
@@ -625,10 +625,10 @@ func (r *opsRepository) UpdateErrorResolution(ctx context.Context, errorID int64
 	q := `
 UPDATE ops_error_logs
 SET
-  resolved = $2,
-  resolved_at = $3,
-  resolved_by_user_id = $4
-WHERE id = $1`
+  resolved = ?,
+  resolved_at = ?,
+  resolved_by_user_id = ?
+WHERE id = ?`
 
 	at := sql.NullTime{}
 	if resolvedAt != nil && !resolvedAt.IsZero() {
@@ -881,7 +881,7 @@ INSERT INTO ops_system_log_cleanup_audits (
   operator_id,
   conditions,
   deleted_rows
-) VALUES ($1,$2,$3,$4)
+) VALUES (?,?,?,?)
 `, createdAt.UTC(), input.OperatorID, input.Conditions, input.DeletedRows)
 	return err
 }

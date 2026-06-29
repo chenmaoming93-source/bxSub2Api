@@ -66,7 +66,7 @@ func (r *usageBillingRepository) claimUsageBillingKey(ctx context.Context, tx *s
 	var id int64
 	err := tx.QueryRowContext(ctx, `
 		INSERT INTO usage_billing_dedup (request_id, api_key_id, request_fingerprint)
-		VALUES ($1, $2, $3)
+		VALUES (?, ?, ?)
 		ON CONFLICT (request_id, api_key_id) DO NOTHING
 		RETURNING id
 	`, cmd.RequestID, cmd.APIKeyID, cmd.RequestFingerprint).Scan(&id)
@@ -75,7 +75,7 @@ func (r *usageBillingRepository) claimUsageBillingKey(ctx context.Context, tx *s
 		if err := tx.QueryRowContext(ctx, `
 			SELECT request_fingerprint
 			FROM usage_billing_dedup
-			WHERE request_id = $1 AND api_key_id = $2
+			WHERE request_id = ? AND api_key_id = ?
 		`, cmd.RequestID, cmd.APIKeyID).Scan(&existingFingerprint); err != nil {
 			return false, err
 		}
@@ -91,7 +91,7 @@ func (r *usageBillingRepository) claimUsageBillingKey(ctx context.Context, tx *s
 	err = tx.QueryRowContext(ctx, `
 		SELECT request_fingerprint
 		FROM usage_billing_dedup_archive
-		WHERE request_id = $1 AND api_key_id = $2
+		WHERE request_id = ? AND api_key_id = ?
 	`, cmd.RequestID, cmd.APIKeyID).Scan(&archivedFingerprint)
 	if err == nil {
 		if strings.TrimSpace(archivedFingerprint) != strings.TrimSpace(cmd.RequestFingerprint) {
@@ -149,12 +149,12 @@ func incrementUsageBillingSubscription(ctx context.Context, tx *sql.Tx, subscrip
 	const updateSQL = `
 		UPDATE user_subscriptions us
 		SET
-			daily_usage_usd = us.daily_usage_usd + $1,
-			weekly_usage_usd = us.weekly_usage_usd + $1,
-			monthly_usage_usd = us.monthly_usage_usd + $1,
+			daily_usage_usd = us.daily_usage_usd + ?,
+			weekly_usage_usd = us.weekly_usage_usd + ?,
+			monthly_usage_usd = us.monthly_usage_usd + ?,
 			updated_at = NOW()
 		FROM groups g
-		WHERE us.id = $2
+		WHERE us.id = ?
 			AND us.deleted_at IS NULL
 			AND us.group_id = g.id
 			AND g.deleted_at IS NULL
@@ -177,9 +177,9 @@ func deductUsageBillingBalance(ctx context.Context, tx *sql.Tx, userID int64, am
 	var newBalance float64
 	err := tx.QueryRowContext(ctx, `
 		UPDATE users
-		SET balance = balance - $1,
+		SET balance = balance - ?,
 			updated_at = NOW()
-		WHERE id = $2 AND deleted_at IS NULL
+		WHERE id = ? AND deleted_at IS NULL
 		RETURNING balance
 	`, amount, userID).Scan(&newBalance)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -195,18 +195,18 @@ func incrementUsageBillingAPIKeyQuota(ctx context.Context, tx *sql.Tx, apiKeyID 
 	var exhausted bool
 	err := tx.QueryRowContext(ctx, `
 		UPDATE api_keys
-		SET quota_used = quota_used + $1,
+		SET quota_used = quota_used + ?,
 			status = CASE
 				WHEN quota > 0
-					AND status = $3
+					AND status = ?
 					AND quota_used < quota
-					AND quota_used + $1 >= quota
-				THEN $4
+					AND quota_used + ? >= quota
+				THEN ?
 				ELSE status
 			END,
 			updated_at = NOW()
-		WHERE id = $2 AND deleted_at IS NULL
-		RETURNING quota > 0 AND quota_used >= quota AND quota_used - $1 < quota
+		WHERE id = ? AND deleted_at IS NULL
+		RETURNING quota > 0 AND quota_used >= quota AND quota_used - ? < quota
 	`, amount, apiKeyID, service.StatusAPIKeyActive, service.StatusAPIKeyQuotaExhausted).Scan(&exhausted)
 	if errors.Is(err, sql.ErrNoRows) {
 		return false, service.ErrAPIKeyNotFound
@@ -220,14 +220,14 @@ func incrementUsageBillingAPIKeyQuota(ctx context.Context, tx *sql.Tx, apiKeyID 
 func incrementUsageBillingAPIKeyRateLimit(ctx context.Context, tx *sql.Tx, apiKeyID int64, cost float64) error {
 	res, err := tx.ExecContext(ctx, `
 		UPDATE api_keys SET
-			usage_5h = CASE WHEN window_5h_start IS NOT NULL AND window_5h_start + INTERVAL '5 hours' <= NOW() THEN $1 ELSE usage_5h + $1 END,
-			usage_1d = CASE WHEN window_1d_start IS NOT NULL AND window_1d_start + INTERVAL '24 hours' <= NOW() THEN $1 ELSE usage_1d + $1 END,
-			usage_7d = CASE WHEN window_7d_start IS NOT NULL AND window_7d_start + INTERVAL '7 days' <= NOW() THEN $1 ELSE usage_7d + $1 END,
+			usage_5h = CASE WHEN window_5h_start IS NOT NULL AND window_5h_start + INTERVAL '5 hours' <= NOW() THEN ? ELSE usage_5h + ? END,
+			usage_1d = CASE WHEN window_1d_start IS NOT NULL AND window_1d_start + INTERVAL '24 hours' <= NOW() THEN ? ELSE usage_1d + ? END,
+			usage_7d = CASE WHEN window_7d_start IS NOT NULL AND window_7d_start + INTERVAL '7 days' <= NOW() THEN ? ELSE usage_7d + ? END,
 			window_5h_start = CASE WHEN window_5h_start IS NULL OR window_5h_start + INTERVAL '5 hours' <= NOW() THEN NOW() ELSE window_5h_start END,
 			window_1d_start = CASE WHEN window_1d_start IS NULL OR window_1d_start + INTERVAL '24 hours' <= NOW() THEN date_trunc('day', NOW()) ELSE window_1d_start END,
 			window_7d_start = CASE WHEN window_7d_start IS NULL OR window_7d_start + INTERVAL '7 days' <= NOW() THEN date_trunc('day', NOW()) ELSE window_7d_start END,
 			updated_at = NOW()
-		WHERE id = $2 AND deleted_at IS NULL
+		WHERE id = ? AND deleted_at IS NULL
 	`, cost, apiKeyID)
 	if err != nil {
 		return err
@@ -246,13 +246,13 @@ func incrementUsageBillingAccountQuota(ctx context.Context, tx *sql.Tx, accountI
 	rows, err := tx.QueryContext(ctx,
 		`UPDATE accounts SET extra = (
 			COALESCE(extra, '{}'::jsonb)
-			|| jsonb_build_object('quota_used', COALESCE((extra->>'quota_used')::numeric, 0) + $1)
+			|| jsonb_build_object('quota_used', COALESCE((extra->>'quota_used')::numeric, 0) + ?)
 			|| CASE WHEN COALESCE((extra->>'quota_daily_limit')::numeric, 0) > 0 THEN
 				jsonb_build_object(
 					'quota_daily_used',
 					CASE WHEN `+dailyExpiredExpr+`
-					THEN $1
-					ELSE COALESCE((extra->>'quota_daily_used')::numeric, 0) + $1 END,
+					THEN ?
+					ELSE COALESCE((extra->>'quota_daily_used')::numeric, 0) + ? END,
 					'quota_daily_start',
 					CASE WHEN `+dailyExpiredExpr+`
 					THEN `+nowUTC+`
@@ -266,8 +266,8 @@ func incrementUsageBillingAccountQuota(ctx context.Context, tx *sql.Tx, accountI
 				jsonb_build_object(
 					'quota_weekly_used',
 					CASE WHEN `+weeklyExpiredExpr+`
-					THEN $1
-					ELSE COALESCE((extra->>'quota_weekly_used')::numeric, 0) + $1 END,
+					THEN ?
+					ELSE COALESCE((extra->>'quota_weekly_used')::numeric, 0) + ? END,
 					'quota_weekly_start',
 					CASE WHEN `+weeklyExpiredExpr+`
 					THEN `+nowUTC+`
@@ -278,7 +278,7 @@ func incrementUsageBillingAccountQuota(ctx context.Context, tx *sql.Tx, accountI
 				   ELSE '{}'::jsonb END
 			ELSE '{}'::jsonb END
 		), updated_at = NOW()
-		WHERE id = $2 AND deleted_at IS NULL
+		WHERE id = ? AND deleted_at IS NULL
 		RETURNING
 			COALESCE((extra->>'quota_used')::numeric, 0),
 			COALESCE((extra->>'quota_limit')::numeric, 0),

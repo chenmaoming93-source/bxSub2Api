@@ -81,11 +81,11 @@ ORDER BY request_count DESC, model ASC`
 	args = append(args, baseArgs...)
 
 	if filter.IsTopNMode() {
-		querySQL += fmt.Sprintf("\nLIMIT $%d", next)
+		querySQL += fmt.Sprintf("\nLIMIT ?/*%d*/", next)
 		args = append(args, filter.TopN)
 	} else {
 		offset := (filter.Page - 1) * filter.PageSize
-		querySQL += fmt.Sprintf("\nLIMIT $%d OFFSET $%d", next, next+1)
+		querySQL += fmt.Sprintf("\nLIMIT ?/*%d*/ OFFSET ?/*%d*/", next, next+1)
 		args = append(args, filter.PageSize, offset)
 	}
 

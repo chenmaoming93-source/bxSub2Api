@@ -35,9 +35,9 @@ func (r *schedulerOutboxRepository) ListAfterAndReleaseDedup(ctx context.Context
 		WITH selected AS MATERIALIZED (
 			SELECT id, event_type, account_id, group_id, payload, created_at
 			FROM scheduler_outbox
-			WHERE id > $1
+			WHERE id > ?
 			ORDER BY id ASC
-			LIMIT $2
+			LIMIT ?
 			FOR UPDATE
 		), released AS (
 			UPDATE scheduler_outbox AS o
@@ -116,10 +116,10 @@ func (r *schedulerOutboxRepository) DeleteConsumedUpTo(ctx context.Context, wate
 		WITH doomed AS (
 			SELECT id
 			FROM scheduler_outbox
-			WHERE id <= $1
+			WHERE id <= ?
 				AND created_at < NOW() - INTERVAL '10 seconds'
 			ORDER BY id ASC
-			LIMIT $2
+			LIMIT ?
 		)
 		DELETE FROM scheduler_outbox o
 		USING doomed d
@@ -177,14 +177,14 @@ func enqueueSchedulerOutbox(ctx context.Context, exec sqlExecutor, eventType str
 	}
 	query := `
 		INSERT INTO scheduler_outbox (event_type, account_id, group_id, payload)
-		VALUES ($1, $2, $3, $4)
+		VALUES (?, ?, ?, ?)
 	`
 	args := []any{eventType, accountID, groupID, payloadArg}
 	if schedulerOutboxEventSupportsDedup(eventType) {
 		dedupKey := schedulerOutboxDedupKey(eventType, accountID, groupID, payloadJSON)
 		query = `
 			INSERT INTO scheduler_outbox (event_type, account_id, group_id, payload, dedup_key)
-			VALUES ($1, $2, $3, $4, $5)
+			VALUES (?, ?, ?, ?, ?)
 			ON CONFLICT (dedup_key) WHERE dedup_key IS NOT NULL DO NOTHING
 		`
 		args = append(args, dedupKey)

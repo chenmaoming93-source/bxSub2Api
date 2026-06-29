@@ -382,7 +382,7 @@ func (r *opsRepository) listHourlyMetricsRows(ctx context.Context, filter *servi
 		return []opsHourlyMetricsRow{}, nil
 	}
 
-	where := "bucket_start >= $1 AND bucket_start < $2"
+	where := "bucket_start >= ? AND bucket_start < ?"
 	args := []any{start.UTC(), end.UTC()}
 	idx := 3
 
@@ -395,16 +395,16 @@ func (r *opsRepository) listHourlyMetricsRows(ctx context.Context, filter *servi
 
 	switch {
 	case groupID != nil && *groupID > 0:
-		where += fmt.Sprintf(" AND group_id = $%d", idx)
+		where += fmt.Sprintf(" AND group_id = ?/*%d*/", idx)
 		args = append(args, *groupID)
 		idx++
 		if platform != "" {
-			where += fmt.Sprintf(" AND platform = $%d", idx)
+			where += fmt.Sprintf(" AND platform = ?/*%d*/", idx)
 			args = append(args, platform)
 			// idx++ removed - not used after this
 		}
 	case platform != "":
-		where += fmt.Sprintf(" AND platform = $%d AND group_id IS NULL", idx)
+		where += fmt.Sprintf(" AND platform = ?/*%d*/ AND group_id IS NULL", idx)
 		args = append(args, platform)
 		// idx++ removed - not used after this
 	default:
@@ -985,15 +985,15 @@ func buildUsageWhere(filter *service.OpsDashboardFilter, start, end time.Time, s
 	args = make([]any, 0, 4)
 
 	args = append(args, start)
-	clauses = append(clauses, fmt.Sprintf("ul.created_at >= $%d", idx))
+	clauses = append(clauses, fmt.Sprintf("ul.created_at >= ?/*%d*/", idx))
 	idx++
 	args = append(args, end)
-	clauses = append(clauses, fmt.Sprintf("ul.created_at < $%d", idx))
+	clauses = append(clauses, fmt.Sprintf("ul.created_at < ?/*%d*/", idx))
 	idx++
 
 	if groupID != nil && *groupID > 0 {
 		args = append(args, *groupID)
-		clauses = append(clauses, fmt.Sprintf("ul.group_id = $%d", idx))
+		clauses = append(clauses, fmt.Sprintf("ul.group_id = ?/*%d*/", idx))
 		idx++
 	}
 	if platform != "" {
@@ -1001,7 +1001,7 @@ func buildUsageWhere(filter *service.OpsDashboardFilter, start, end time.Time, s
 		// drop rows where group_id is NULL.
 		join = "LEFT JOIN groups g ON g.id = ul.group_id LEFT JOIN accounts a ON a.id = ul.account_id"
 		args = append(args, platform)
-		clauses = append(clauses, fmt.Sprintf("COALESCE(NULLIF(g.platform,''), a.platform) = $%d", idx))
+		clauses = append(clauses, fmt.Sprintf("COALESCE(NULLIF(g.platform,''), a.platform) = ?/*%d*/", idx))
 		idx++
 	}
 
@@ -1022,22 +1022,22 @@ func buildErrorWhere(filter *service.OpsDashboardFilter, start, end time.Time, s
 	args = make([]any, 0, 5)
 
 	args = append(args, start)
-	clauses = append(clauses, fmt.Sprintf("created_at >= $%d", idx))
+	clauses = append(clauses, fmt.Sprintf("created_at >= ?/*%d*/", idx))
 	idx++
 	args = append(args, end)
-	clauses = append(clauses, fmt.Sprintf("created_at < $%d", idx))
+	clauses = append(clauses, fmt.Sprintf("created_at < ?/*%d*/", idx))
 	idx++
 
 	clauses = append(clauses, "is_count_tokens = FALSE")
 
 	if groupID != nil && *groupID > 0 {
 		args = append(args, *groupID)
-		clauses = append(clauses, fmt.Sprintf("group_id = $%d", idx))
+		clauses = append(clauses, fmt.Sprintf("group_id = ?/*%d*/", idx))
 		idx++
 	}
 	if platform != "" {
 		args = append(args, platform)
-		clauses = append(clauses, fmt.Sprintf("platform = $%d", idx))
+		clauses = append(clauses, fmt.Sprintf("platform = ?/*%d*/", idx))
 		idx++
 	}
 

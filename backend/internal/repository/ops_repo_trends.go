@@ -193,14 +193,14 @@ WITH usage_totals AS (
   FROM usage_logs ul
   LEFT JOIN groups g ON g.id = ul.group_id
   LEFT JOIN accounts a ON a.id = ul.account_id
-  WHERE ul.created_at >= $1 AND ul.created_at < $2
+  WHERE ul.created_at >= ? AND ul.created_at < ?
   GROUP BY 1
 ),
 error_totals AS (
   SELECT platform,
          COUNT(*) AS error_count
   FROM ops_error_logs
-  WHERE created_at >= $1 AND created_at < $2
+  WHERE created_at >= ? AND created_at < ?
     AND COALESCE(status_code, 0) >= 400
     AND is_count_tokens = FALSE  -- 排除 count_tokens 请求的错误
   GROUP BY 1
@@ -264,16 +264,16 @@ WITH usage_totals AS (
          COALESCE(SUM(input_tokens + output_tokens + cache_creation_tokens + cache_read_tokens), 0) AS token_consumed
   FROM usage_logs ul
   JOIN groups g ON g.id = ul.group_id
-  WHERE ul.created_at >= $1 AND ul.created_at < $2
-    AND g.platform = $3
+  WHERE ul.created_at >= ? AND ul.created_at < ?
+    AND g.platform = ?
   GROUP BY 1, 2
 ),
 error_totals AS (
   SELECT group_id,
          COUNT(*) AS error_count
   FROM ops_error_logs
-  WHERE created_at >= $1 AND created_at < $2
-    AND platform = $3
+  WHERE created_at >= ? AND created_at < ?
+    AND platform = ?
     AND group_id IS NOT NULL
     AND COALESCE(status_code, 0) >= 400
     AND is_count_tokens = FALSE  -- 排除 count_tokens 请求的错误
@@ -293,7 +293,7 @@ SELECT group_id, group_name, (success_count + error_count) AS request_count, tok
 FROM combined
 WHERE group_id IS NOT NULL
 ORDER BY request_count DESC
-LIMIT $4`
+LIMIT ?`
 
 	rows, err := r.db.QueryContext(ctx, q, start, end, platform, limit)
 	if err != nil {

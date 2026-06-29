@@ -105,7 +105,7 @@ func (r *userPlatformQuotaRepository) BulkInsertInitial(ctx context.Context, rec
 		if i > 0 {
 			_, _ = sb.WriteString(",")
 		}
-		fmt.Fprintf(&sb, "($%d,$%d,$%d,$%d,$%d,0,0,0,$%d,$%d)",
+		fmt.Fprintf(&sb, "(?/*%d*/,?/*%d*/,?/*%d*/,?/*%d*/,?/*%d*/,0,0,0,?/*%d*/,?/*%d*/)",
 			base+1, base+2, base+3, base+4, base+5, base+6, base+6)
 		args = append(args,
 			rec.UserID, rec.Platform,
@@ -194,13 +194,13 @@ func (r *userPlatformQuotaRepository) IncrementUsageWithReset(ctx context.Contex
 			const insertSQL = `INSERT INTO user_platform_quotas
 				(user_id, platform, daily_usage_usd, weekly_usage_usd, monthly_usage_usd,
 				 daily_window_start, weekly_window_start, monthly_window_start, created_at, updated_at)
-				VALUES ($1, $2, $3, $3, $3, $4, $5, $6, $7, $7)
+				VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 				ON CONFLICT (user_id, platform) WHERE deleted_at IS NULL DO UPDATE SET
 					daily_usage_usd   = user_platform_quotas.daily_usage_usd   + EXCLUDED.daily_usage_usd,
 					weekly_usage_usd  = user_platform_quotas.weekly_usage_usd  + EXCLUDED.weekly_usage_usd,
 					monthly_usage_usd = user_platform_quotas.monthly_usage_usd + EXCLUDED.monthly_usage_usd,
 					updated_at        = EXCLUDED.updated_at`
-			// $6 = now：30 天滚动月度窗口以当前时刻为起始
+			// ? = now：30 天滚动月度窗口以当前时刻为起始
 			_, e := txClient.ExecContext(txCtx, insertSQL,
 				userID, platform, cost,
 				timezone.StartOfDay(now), timezone.StartOfWeek(now), now, now)
@@ -370,19 +370,19 @@ func softDeleteMissingPlatforms(ctx context.Context, client *dbent.Client, userI
 		args  []any
 	)
 	if len(keepPlatforms) == 0 {
-		query = `UPDATE user_platform_quotas SET deleted_at = $2, updated_at = $2
-		         WHERE user_id = $1 AND deleted_at IS NULL`
+		query = `UPDATE user_platform_quotas SET deleted_at = ?, updated_at = ?
+		         WHERE user_id = ? AND deleted_at IS NULL`
 		args = []any{userID, now}
 	} else {
 		placeholders := make([]string, len(keepPlatforms))
 		args = make([]any, 0, len(keepPlatforms)+2)
 		args = append(args, userID, now)
 		for i, p := range keepPlatforms {
-			placeholders[i] = fmt.Sprintf("$%d", i+3)
+			placeholders[i] = fmt.Sprintf("?/*%d*/", i+3)
 			args = append(args, p)
 		}
-		query = fmt.Sprintf(`UPDATE user_platform_quotas SET deleted_at = $2, updated_at = $2
-		         WHERE user_id = $1 AND deleted_at IS NULL AND platform NOT IN (%s)`,
+		query = fmt.Sprintf(`UPDATE user_platform_quotas SET deleted_at = ?, updated_at = ?
+		         WHERE user_id = ? AND deleted_at IS NULL AND platform NOT IN (%s)`,
 			strings.Join(placeholders, ","))
 	}
 	_, err := client.ExecContext(ctx, query, args...)
@@ -395,9 +395,9 @@ func softDeleteMissingPlatforms(ctx context.Context, client *dbent.Client, userI
 // affected=0 时由调用方 UpsertForUser 走 insertLimitsRow 路径创建新行。
 func updateLimitsRow(ctx context.Context, client *dbent.Client, userID int64, rec UserPlatformQuotaRecord, now time.Time) (int64, error) {
 	const query = `UPDATE user_platform_quotas
-		SET daily_limit_usd = $1, weekly_limit_usd = $2, monthly_limit_usd = $3,
-		    deleted_at = NULL, updated_at = $4
-		WHERE user_id = $5 AND platform = $6 AND deleted_at IS NULL`
+		SET daily_limit_usd = ?, weekly_limit_usd = ?, monthly_limit_usd = ?,
+		    deleted_at = NULL, updated_at = ?
+		WHERE user_id = ? AND platform = ? AND deleted_at IS NULL`
 	res, err := client.ExecContext(ctx, query,
 		rec.DailyLimitUSD, rec.WeeklyLimitUSD, rec.MonthlyLimitUSD, now,
 		userID, rec.Platform)
@@ -415,7 +415,7 @@ func insertLimitsRow(ctx context.Context, client *dbent.Client, userID int64, re
 	const query = `INSERT INTO user_platform_quotas
 		(user_id, platform, daily_limit_usd, weekly_limit_usd, monthly_limit_usd,
 		 daily_usage_usd, weekly_usage_usd, monthly_usage_usd, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $5, 0, 0, 0, $6, $6)
+		VALUES (?, ?, ?, ?, ?, 0, 0, 0, ?, ?)
 		ON CONFLICT (user_id, platform) WHERE deleted_at IS NULL DO NOTHING`
 	res, err := client.ExecContext(ctx, query,
 		userID, rec.Platform,
@@ -440,7 +440,7 @@ func insertLimitsRow(ctx context.Context, client *dbent.Client, userID int64, re
 const batchRows = 6000
 
 // BatchSnapshotUsage 用一条多行 UPSERT 把整批 usage 以绝对值覆盖写入（非累加）。
-// 每批最多 batchRows 行；$1=now 共用；每行 8 个 per-row 参（user_id, platform, 3×usage, 3×window_start）。
+// 每批最多 batchRows 行；?=now 共用；每行 8 个 per-row 参（user_id, platform, 3×usage, 3×window_start）。
 // FK 违反（user_id 不存在）返回 ErrUserPlatformQuotaFKViolation。
 //
 // 注意:snapshots 超过 batchRows 会分多条 SQL 执行且【非单事务】——若某子批 FK 失败,
@@ -469,14 +469,14 @@ func (r *userPlatformQuotaRepository) BatchSnapshotUsage(ctx context.Context, sn
 				" daily_window_start, weekly_window_start, monthly_window_start, created_at, updated_at)" +
 				" VALUES ")
 
-		// $1 = now（共用）；每行 8 个 per-row 参，从 $2 起连续编号。
+		// ? = now（共用）；每行 8 个 per-row 参，从 ? 起连续编号。
 		args := []any{now}
 		for i, s := range batch {
 			if i > 0 {
 				_, _ = sb.WriteString(",")
 			}
 			b := len(args) // 当前 per-row 第一个参数的 0-based 索引，实际占位符 = b+1
-			fmt.Fprintf(&sb, "($%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$1,$1)",
+			fmt.Fprintf(&sb, "(?/*%d*/,?/*%d*/,?/*%d*/,?/*%d*/,?/*%d*/,?/*%d*/,?/*%d*/,?/*%d*/,?,?)",
 				b+1, b+2, b+3, b+4, b+5, b+6, b+7, b+8)
 			args = append(args,
 				s.UserID, s.Platform,

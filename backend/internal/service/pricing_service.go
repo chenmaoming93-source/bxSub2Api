@@ -25,8 +25,8 @@ var (
 	openAIModelDatePattern     = regexp.MustCompile(`-\d{8}$`)
 	openAIModelBasePattern     = regexp.MustCompile(`^(gpt-\d+(?:\.\d+)?)(?:-|$)`)
 	openAIGPT54FallbackPricing = &LiteLLMModelPricing{
-		InputCostPerToken:               2.5e-06, // $2.5 per MTok
-		OutputCostPerToken:              1.5e-05, // $15 per MTok
+		InputCostPerToken:               2.5e-06, // ?.5 per MTok
+		OutputCostPerToken:              1.5e-05, // ? per MTok
 		CacheReadInputTokenCost:         2.5e-07, // $0.25 per MTok
 		LongContextInputTokenThreshold:  272000,
 		LongContextInputCostMultiplier:  2.0,

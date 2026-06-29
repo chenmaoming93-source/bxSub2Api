@@ -23,15 +23,16 @@ import (
 
 	"entgo.io/ent/dialect"
 	entsql "entgo.io/ent/dialect/sql"
-	_ "github.com/lib/pq"
+	_ "github.com/go-sql-driver/mysql"
 	redisclient "github.com/redis/go-redis/v9"
-	tcpostgres "github.com/testcontainers/testcontainers-go/modules/postgres"
+	"github.com/testcontainers/testcontainers-go"
 	tcredis "github.com/testcontainers/testcontainers-go/modules/redis"
+	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 const (
 	redisImageTag    = "redis:8.4-alpine"
-	postgresImageTag = "postgres:18.1-alpine3.23"
+	mysqlImageTag    = "mysql:8.4"
 )
 
 var (
@@ -60,20 +61,26 @@ func TestMain(m *testing.M) {
 		os.Exit(0)
 	}
 
-	postgresImage := selectDockerImage(ctx, postgresImageTag)
-	pgContainer, err := tcpostgres.Run(
-		ctx,
-		postgresImage,
-		tcpostgres.WithDatabase("sub2api_test"),
-		tcpostgres.WithUsername("postgres"),
-		tcpostgres.WithPassword("postgres"),
-		tcpostgres.BasicWaitStrategies(),
-	)
+	mysqlImage := selectDockerImage(ctx, mysqlImageTag)
+	mysqlContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: testcontainers.ContainerRequest{
+			Image:        mysqlImage,
+			ExposedPorts: []string{"3306/tcp"},
+			Env: map[string]string{
+				"MYSQL_DATABASE":      "sub2api_test",
+				"MYSQL_USER":          "sub2api",
+				"MYSQL_PASSWORD":      "sub2api",
+				"MYSQL_ROOT_PASSWORD": "root",
+			},
+			WaitingFor: wait.ForLog("port: 3306  MySQL Community Server").WithStartupTimeout(90 * time.Second),
+		},
+		Started: true,
+	})
 	if err != nil {
-		log.Printf("failed to start postgres container: %v", err)
+		log.Printf("failed to start mysql container: %v", err)
 		os.Exit(1)
 	}
-	defer func() { _ = pgContainer.Terminate(ctx) }()
+	defer func() { _ = mysqlContainer.Terminate(ctx) }()
 
 	redisContainer, err := tcredis.Run(
 		ctx,
@@ -85,11 +92,17 @@ func TestMain(m *testing.M) {
 	}
 	defer func() { _ = redisContainer.Terminate(ctx) }()
 
-	dsn, err := pgContainer.ConnectionString(ctx, "sslmode=disable", "TimeZone=UTC")
+	mysqlHost, err := mysqlContainer.Host(ctx)
 	if err != nil {
-		log.Printf("failed to get postgres dsn: %v", err)
+		log.Printf("failed to get mysql host: %v", err)
 		os.Exit(1)
 	}
+	mysqlPort, err := mysqlContainer.MappedPort(ctx, "3306/tcp")
+	if err != nil {
+		log.Printf("failed to get mysql port: %v", err)
+		os.Exit(1)
+	}
+	dsn := fmt.Sprintf("sub2api:sub2api@tcp(%s:%d)/sub2api_test?charset=utf8mb4&parseTime=true&loc=UTC&multiStatements=true", mysqlHost, mysqlPort.Int())
 
 	integrationDB, err = openSQLWithRetry(ctx, dsn, 30*time.Second)
 	if err != nil {
@@ -102,7 +115,7 @@ func TestMain(m *testing.M) {
 	}
 
 	// 创建 ent client 用于集成测试
-	drv := entsql.OpenDB(dialect.Postgres, integrationDB)
+	drv := entsql.OpenDB(dialect.MySQL, integrationDB)
 	integrationEntClient = dbent.NewClient(dbent.Driver(drv))
 
 	redisHost, err := redisContainer.Host(ctx)
@@ -161,7 +174,7 @@ func openSQLWithRetry(ctx context.Context, dsn string, timeout time.Duration) (*
 	var lastErr error
 
 	for time.Now().Before(deadline) {
-		db, err := sql.Open("postgres", dsn)
+		db, err := sql.Open("mysql", dsn)
 		if err != nil {
 			lastErr = err
 			time.Sleep(250 * time.Millisecond)

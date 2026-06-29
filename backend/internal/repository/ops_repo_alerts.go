@@ -116,7 +116,7 @@ INSERT INTO ops_alert_rules (
   created_at,
   updated_at
 ) VALUES (
-  $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,NOW(),NOW()
+  ?,?,?,?,?,?,?,?,?,?,?,?,NOW(),NOW()
 )
 RETURNING
   id,
@@ -208,20 +208,20 @@ func (r *opsRepository) UpdateAlertRule(ctx context.Context, input *service.OpsA
 	q := `
 UPDATE ops_alert_rules
 SET
-  name = $2,
-  description = $3,
-  enabled = $4,
-  severity = $5,
-  metric_type = $6,
-  operator = $7,
-  threshold = $8,
-  window_minutes = $9,
-  sustained_minutes = $10,
-  cooldown_minutes = $11,
-  notify_email = $12,
-  filters = $13,
+  name = ?,
+  description = ?,
+  enabled = ?,
+  severity = ?,
+  metric_type = ?,
+  operator = ?,
+  threshold = ?,
+  window_minutes = ?,
+  sustained_minutes = ?,
+  cooldown_minutes = ?,
+  notify_email = ?,
+  filters = ?,
   updated_at = NOW()
-WHERE id = $1
+WHERE id = ?
 RETURNING
   id,
   name,
@@ -303,7 +303,7 @@ func (r *opsRepository) DeleteAlertRule(ctx context.Context, id int64) error {
 		return fmt.Errorf("invalid id")
 	}
 
-	res, err := r.db.ExecContext(ctx, "DELETE FROM ops_alert_rules WHERE id = $1", id)
+	res, err := r.db.ExecContext(ctx, "DELETE FROM ops_alert_rules WHERE id = ?", id)
 	if err != nil {
 		return err
 	}
@@ -437,7 +437,7 @@ SELECT
   email_sent,
   created_at
 FROM ops_alert_events
-WHERE id = $1`
+WHERE id = ?`
 
 	row := r.db.QueryRowContext(ctx, q, eventID)
 	ev, err := scanOpsAlertEvent(row)
@@ -474,7 +474,7 @@ SELECT
   email_sent,
   created_at
 FROM ops_alert_events
-WHERE rule_id = $1 AND status = $2
+WHERE rule_id = ? AND status = ?
 ORDER BY fired_at DESC
 LIMIT 1`
 
@@ -513,7 +513,7 @@ SELECT
   email_sent,
   created_at
 FROM ops_alert_events
-WHERE rule_id = $1
+WHERE rule_id = ?
 ORDER BY fired_at DESC
 LIMIT 1`
 
@@ -556,7 +556,7 @@ INSERT INTO ops_alert_events (
   email_sent,
   created_at
 ) VALUES (
-  $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,NOW()
+  ?,?,?,?,?,?,?,?,?,?,?,NOW()
 )
 RETURNING
   id,
@@ -604,9 +604,9 @@ func (r *opsRepository) UpdateAlertEventStatus(ctx context.Context, eventID int6
 
 	q := `
 UPDATE ops_alert_events
-SET status = $2,
-    resolved_at = $3
-WHERE id = $1`
+SET status = ?,
+    resolved_at = ?
+WHERE id = ?`
 
 	_, err := r.db.ExecContext(ctx, q, eventID, strings.TrimSpace(status), opsNullTime(resolvedAt))
 	return err
@@ -620,7 +620,7 @@ func (r *opsRepository) UpdateAlertEventEmailSent(ctx context.Context, eventID i
 		return fmt.Errorf("invalid event id")
 	}
 
-	_, err := r.db.ExecContext(ctx, "UPDATE ops_alert_events SET email_sent = $2 WHERE id = $1", eventID, emailSent)
+	_, err := r.db.ExecContext(ctx, "UPDATE ops_alert_events SET email_sent = ? WHERE id = ?", eventID, emailSent)
 	return err
 }
 
@@ -657,7 +657,7 @@ INSERT INTO ops_alert_silences (
   created_by,
   created_at
 ) VALUES (
-  $1,$2,$3,$4,$5,$6,$7,NOW()
+  ?,?,?,?,?,?,?,NOW()
 )
 RETURNING id, rule_id, platform, group_id, region, until, COALESCE(reason,''), created_by, created_at`
 
@@ -725,11 +725,11 @@ func (r *opsRepository) IsAlertSilenced(ctx context.Context, ruleID int64, platf
 	q := `
 SELECT 1
 FROM ops_alert_silences
-WHERE rule_id = $1
-  AND platform = $2
-  AND (group_id IS NOT DISTINCT FROM $3)
-  AND (region IS NOT DISTINCT FROM $4)
-  AND until > $5
+WHERE rule_id = ?
+  AND platform = ?
+  AND (group_id IS NOT DISTINCT FROM ?)
+  AND (region IS NOT DISTINCT FROM ?)
+  AND until > ?
 LIMIT 1`
 
 	var dummy int

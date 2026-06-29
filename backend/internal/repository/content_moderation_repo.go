@@ -55,10 +55,10 @@ INSERT INTO content_moderation_logs (
     category_scores, threshold_snapshot, input_excerpt, upstream_latency_ms, error,
     violation_count, auto_banned, email_sent, queue_delay_ms
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7,
-    $8, $9, $10, $11, $12, $13, $14, $15,
-    $16::jsonb, $17::jsonb, $18, $19, $20,
-    $21, $22, $23, $24
+    ?, ?, ?, ?, ?, ?, ?,
+    ?, ?, ?, ?, ?, ?, ?, ?,
+    ?::jsonb, ?::jsonb, ?, ?, ?,
+    ?, ?, ?, ?
 ) RETURNING id, created_at`,
 		log.RequestID, userID, log.UserEmail, apiKeyID, log.APIKeyName, groupID, log.GroupName,
 		log.Endpoint, log.Provider, log.Model, log.Mode, log.Action, log.Flagged, log.HighestCategory, log.HighestScore,
@@ -187,15 +187,15 @@ func (r *contentModerationRepository) CountFlaggedByUserSince(ctx context.Contex
 WITH last_auto_ban AS (
     SELECT MAX(created_at) AS at
     FROM content_moderation_logs
-    WHERE user_id = $1 AND auto_banned = TRUE
+    WHERE user_id = ? AND auto_banned = TRUE
 )
 SELECT COUNT(*)
 FROM content_moderation_logs
-WHERE user_id = $1
+WHERE user_id = ?
   AND flagged = TRUE
   AND action <> 'hash_block'
-  AND ($3::bool IS FALSE OR action <> 'cyber_policy')
-  AND created_at >= $2
+  AND (?::bool IS FALSE OR action <> 'cyber_policy')
+  AND created_at >= ?
   AND created_at > COALESCE((SELECT at FROM last_auto_ban), '-infinity'::timestamptz)
 `, userID, since, excludeCyberPolicy).Scan(&count)
 	if err != nil {
@@ -205,7 +205,7 @@ WHERE user_id = $1
 }
 
 func (r *contentModerationRepository) UpdateLogEmailSent(ctx context.Context, id int64, sent bool) error {
-	_, err := r.db.ExecContext(ctx, `UPDATE content_moderation_logs SET email_sent = $1 WHERE id = $2`, sent, id)
+	_, err := r.db.ExecContext(ctx, `UPDATE content_moderation_logs SET email_sent = ? WHERE id = ?`, sent, id)
 	if err != nil {
 		return fmt.Errorf("update content moderation log email_sent: %w", err)
 	}
@@ -219,7 +219,7 @@ func (r *contentModerationRepository) CleanupExpiredLogs(ctx context.Context, hi
 	}
 	hitExec, err := r.db.ExecContext(ctx, `
 DELETE FROM content_moderation_logs
-WHERE flagged = TRUE AND created_at < $1
+WHERE flagged = TRUE AND created_at < ?
 `, hitBefore)
 	if err != nil {
 		return nil, fmt.Errorf("delete expired hit content moderation logs: %w", err)
@@ -228,7 +228,7 @@ WHERE flagged = TRUE AND created_at < $1
 
 	nonHitExec, err := r.db.ExecContext(ctx, `
 DELETE FROM content_moderation_logs
-WHERE flagged = FALSE AND created_at < $1
+WHERE flagged = FALSE AND created_at < ?
 `, nonHitBefore)
 	if err != nil {
 		return nil, fmt.Errorf("delete expired non-hit content moderation logs: %w", err)
@@ -264,22 +264,22 @@ func buildContentModerationLogWhere(filter service.ContentModerationLogFilter) (
 		where = append(where, "l.error <> ''")
 	}
 	if filter.GroupID != nil {
-		add("l.group_id = $%d", *filter.GroupID)
+		add("l.group_id = ?/*%d*/", *filter.GroupID)
 	}
 	if endpoint := strings.TrimSpace(filter.Endpoint); endpoint != "" {
-		add("l.endpoint = $%d", endpoint)
+		add("l.endpoint = ?/*%d*/", endpoint)
 	}
 	if search := strings.TrimSpace(filter.Search); search != "" {
 		like := "%" + search + "%"
 		args = append(args, like, like, like, like, like)
 		idx := len(args) - 4
-		where = append(where, fmt.Sprintf("(l.request_id ILIKE $%d OR l.user_email ILIKE $%d OR l.api_key_name ILIKE $%d OR l.model ILIKE $%d OR l.input_excerpt ILIKE $%d)", idx, idx+1, idx+2, idx+3, idx+4))
+		where = append(where, fmt.Sprintf("(l.request_id ILIKE ?/*%d*/ OR l.user_email ILIKE ?/*%d*/ OR l.api_key_name ILIKE ?/*%d*/ OR l.model ILIKE ?/*%d*/ OR l.input_excerpt ILIKE ?/*%d*/)", idx, idx+1, idx+2, idx+3, idx+4))
 	}
 	if filter.From != nil && !filter.From.IsZero() {
-		add("l.created_at >= $%d", *filter.From)
+		add("l.created_at >= ?/*%d*/", *filter.From)
 	}
 	if filter.To != nil && !filter.To.IsZero() {
-		add("l.created_at <= $%d", *filter.To)
+		add("l.created_at <= ?/*%d*/", *filter.To)
 	}
 	return where, args
 }

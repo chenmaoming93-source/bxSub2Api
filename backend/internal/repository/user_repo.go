@@ -630,7 +630,7 @@ func (r *userRepository) GetLatestUsedAtByUserIDs(ctx context.Context, userIDs [
 	const query = `
 		SELECT user_id, MAX(created_at) AS last_used_at
 		FROM usage_logs
-		WHERE user_id = ANY($1)
+		WHERE user_id = ANY(?)
 		GROUP BY user_id
 	`
 
@@ -698,7 +698,7 @@ func (r *userRepository) filterUsersByAttributes(ctx context.Context, attrs map[
 	args := make([]any, 0, len(attrs)*2+1)
 	argIndex := 1
 	for attrID, value := range attrs {
-		clauses = append(clauses, fmt.Sprintf("(attribute_id = $%d AND value ILIKE $%d)", argIndex, argIndex+1))
+		clauses = append(clauses, fmt.Sprintf("(attribute_id = ?/*%d*/ AND value ILIKE ?/*%d*/)", argIndex, argIndex+1))
 		args = append(args, attrID, "%"+value+"%")
 		argIndex += 2
 	}
@@ -708,7 +708,7 @@ func (r *userRepository) filterUsersByAttributes(ctx context.Context, attrs map[
 		 FROM user_attribute_values
 		 WHERE %s
 		 GROUP BY user_id
-		 HAVING COUNT(DISTINCT attribute_id) = $%d`,
+		 HAVING COUNT(DISTINCT attribute_id) = ?/*%d*/`,
 		strings.Join(clauses, " OR "),
 		argIndex,
 	)
@@ -789,7 +789,7 @@ func (r *userRepository) BatchSetConcurrency(ctx context.Context, userIDs []int6
 		value = 0
 	}
 	res, err := r.sql.ExecContext(ctx,
-		"UPDATE users SET concurrency = $1, updated_at = NOW() WHERE id = ANY($2) AND deleted_at IS NULL",
+		"UPDATE users SET concurrency = ?, updated_at = NOW() WHERE id = ANY(?) AND deleted_at IS NULL",
 		value, pq.Array(userIDs))
 	if err != nil {
 		return 0, fmt.Errorf("batch set concurrency: %w", err)
@@ -803,7 +803,7 @@ func (r *userRepository) BatchAddConcurrency(ctx context.Context, userIDs []int6
 		return 0, nil
 	}
 	res, err := r.sql.ExecContext(ctx,
-		"UPDATE users SET concurrency = GREATEST(concurrency + $1, 0), updated_at = NOW() WHERE id = ANY($2) AND deleted_at IS NULL",
+		"UPDATE users SET concurrency = GREATEST(concurrency + ?, 0), updated_at = NOW() WHERE id = ANY(?) AND deleted_at IS NULL",
 		delta, pq.Array(userIDs))
 	if err != nil {
 		return 0, fmt.Errorf("batch add concurrency: %w", err)

@@ -343,12 +343,12 @@ func (r *userSubscriptionRepository) IncrementUsage(ctx context.Context, id int6
 	const updateSQL = `
 		UPDATE user_subscriptions us
 		SET
-			daily_usage_usd = us.daily_usage_usd + $1,
-			weekly_usage_usd = us.weekly_usage_usd + $1,
-			monthly_usage_usd = us.monthly_usage_usd + $1,
+			daily_usage_usd = us.daily_usage_usd + ?,
+			weekly_usage_usd = us.weekly_usage_usd + ?,
+			monthly_usage_usd = us.monthly_usage_usd + ?,
 			updated_at = NOW()
 		FROM groups g
-		WHERE us.id = $2
+		WHERE us.id = ?
 			AND us.deleted_at IS NULL
 			AND us.group_id = g.id
 			AND g.deleted_at IS NULL

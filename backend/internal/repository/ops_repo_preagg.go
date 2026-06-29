@@ -38,7 +38,7 @@ WITH usage_base AS (
     (ul.input_tokens + ul.output_tokens + ul.cache_creation_tokens + ul.cache_read_tokens) AS tokens
   FROM usage_logs ul
   JOIN groups g ON g.id = ul.group_id
-  WHERE ul.created_at >= $1 AND ul.created_at < $2
+  WHERE ul.created_at >= ? AND ul.created_at < ?
 ),
 usage_agg AS (
   SELECT
@@ -82,7 +82,7 @@ error_base AS (
     COALESCE(upstream_status_code, status_code, 0) AS effective_status_code
   FROM ops_error_logs
   -- Exclude count_tokens requests from error metrics as they are informational probes
-  WHERE created_at >= $1 AND created_at < $2
+  WHERE created_at >= ? AND created_at < ?
     AND is_count_tokens = FALSE
 ),
 error_agg AS (
@@ -307,7 +307,7 @@ SELECT
 
   NOW()
 FROM ops_metrics_hourly
-WHERE bucket_start >= $1 AND bucket_start < $2
+WHERE bucket_start >= ? AND bucket_start < ?
 GROUP BY 1, 2, 3
 ON CONFLICT (bucket_date, COALESCE(platform, ''), COALESCE(group_id, 0)) DO UPDATE SET
   success_count = EXCLUDED.success_count,

@@ -7,18 +7,22 @@ import (
 	"fmt"
 
 	"github.com/Wei-Shaw/sub2api/internal/service"
-	"github.com/lib/pq"
 )
 
 // --- 账号统计定价规则 ---
 
 // batchLoadAccountStatsPricingRules 批量加载多个渠道的账号统计定价规则（含模型定价）
 func (r *channelRepository) batchLoadAccountStatsPricingRules(ctx context.Context, channelIDs []int64) (map[int64][]service.AccountStatsPricingRule, error) {
+	idsJSON, err := jsonArrayParam(channelIDs)
+	if err != nil {
+		return nil, fmt.Errorf("encode channel ids: %w", err)
+	}
 	// 1. 查询规则
 	rows, err := r.db.QueryContext(ctx,
 		`SELECT id, channel_id, name, group_ids, account_ids, sort_order, created_at, updated_at
-		 FROM channel_account_stats_pricing_rules WHERE channel_id = ANY($1) ORDER BY channel_id, sort_order, id`,
-		pq.Array(channelIDs),
+		 FROM channel_account_stats_pricing_rules
+		 WHERE channel_id IN (SELECT id FROM JSON_TABLE(?, '$[*]' COLUMNS(id BIGINT PATH '$')) AS channel_ids)
+		 ORDER BY channel_id, sort_order, id`, idsJSON,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("batch load account stats pricing rules: %w", err)
@@ -31,7 +35,7 @@ func (r *channelRepository) batchLoadAccountStatsPricingRules(ctx context.Contex
 		var rule service.AccountStatsPricingRule
 		if err := rows.Scan(
 			&rule.ID, &rule.ChannelID, &rule.Name,
-			pq.Array(&rule.GroupIDs), pq.Array(&rule.AccountIDs),
+			scanJSON(&rule.GroupIDs), scanJSON(&rule.AccountIDs),
 			&rule.SortOrder, &rule.CreatedAt, &rule.UpdatedAt,
 		); err != nil {
 			return nil, fmt.Errorf("scan account stats pricing rule: %w", err)
@@ -65,11 +69,16 @@ func (r *channelRepository) batchLoadAccountStatsModelPricing(ctx context.Contex
 		return make(map[int64][]service.ChannelModelPricing), nil
 	}
 
+	idsJSON, err := jsonArrayParam(ruleIDs)
+	if err != nil {
+		return nil, fmt.Errorf("encode rule ids: %w", err)
+	}
 	rows, err := r.db.QueryContext(ctx,
 		`SELECT id, rule_id, platform, models, billing_mode, input_price, output_price,
 		        cache_write_price, cache_read_price, image_output_price, per_request_price, created_at, updated_at
-		 FROM channel_account_stats_model_pricing WHERE rule_id = ANY($1) ORDER BY rule_id, id`,
-		pq.Array(ruleIDs),
+		 FROM channel_account_stats_model_pricing
+		 WHERE rule_id IN (SELECT id FROM JSON_TABLE(?, '$[*]' COLUMNS(id BIGINT PATH '$')) AS rule_ids)
+		 ORDER BY rule_id, id`, idsJSON,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("batch load account stats model pricing: %w", err)
@@ -133,7 +142,7 @@ func (r *channelRepository) loadAccountStatsPricingRules(ctx context.Context, ch
 func replaceAccountStatsPricingRulesTx(ctx context.Context, tx *sql.Tx, channelID int64, rules []service.AccountStatsPricingRule) error {
 	// CASCADE 会自动删除关联的 model_pricing
 	if _, err := tx.ExecContext(ctx,
-		`DELETE FROM channel_account_stats_pricing_rules WHERE channel_id = $1`, channelID,
+		`DELETE FROM channel_account_stats_pricing_rules WHERE channel_id = ?`, channelID,
 	); err != nil {
 		return fmt.Errorf("delete old account stats pricing rules: %w", err)
 	}
@@ -149,13 +158,29 @@ func replaceAccountStatsPricingRulesTx(ctx context.Context, tx *sql.Tx, channelI
 
 // createAccountStatsPricingRuleTx 在事务中创建单条账号统计定价规则及其模型定价
 func createAccountStatsPricingRuleTx(ctx context.Context, tx *sql.Tx, rule *service.AccountStatsPricingRule) error {
-	err := tx.QueryRowContext(ctx,
+	groupIDsJSON, err := jsonArrayParam(rule.GroupIDs)
+	if err != nil {
+		return fmt.Errorf("encode group ids: %w", err)
+	}
+	accountIDsJSON, err := jsonArrayParam(rule.AccountIDs)
+	if err != nil {
+		return fmt.Errorf("encode account ids: %w", err)
+	}
+	result, err := tx.ExecContext(ctx,
 		`INSERT INTO channel_account_stats_pricing_rules (channel_id, name, group_ids, account_ids, sort_order)
-		 VALUES ($1, $2, $3, $4, $5) RETURNING id, created_at, updated_at`,
-		rule.ChannelID, rule.Name, pq.Array(rule.GroupIDs), pq.Array(rule.AccountIDs), rule.SortOrder,
-	).Scan(&rule.ID, &rule.CreatedAt, &rule.UpdatedAt)
+		 VALUES (?, ?, ?, ?, ?)`,
+		rule.ChannelID, rule.Name, groupIDsJSON, accountIDsJSON, rule.SortOrder,
+	)
 	if err != nil {
 		return fmt.Errorf("insert account stats pricing rule: %w", err)
+	}
+	rule.ID, err = result.LastInsertId()
+	if err != nil {
+		return fmt.Errorf("get inserted account stats pricing rule id: %w", err)
+	}
+	if err := tx.QueryRowContext(ctx, `SELECT created_at, updated_at FROM channel_account_stats_pricing_rules WHERE id = ?`, rule.ID).
+		Scan(&rule.CreatedAt, &rule.UpdatedAt); err != nil {
+		return fmt.Errorf("load inserted account stats pricing rule timestamps: %w", err)
 	}
 
 	for j := range rule.Pricing {
@@ -177,15 +202,23 @@ func createAccountStatsModelPricingTx(ctx context.Context, tx *sql.Tx, ruleID in
 		billingMode = service.BillingModeToken
 	}
 	platform := pricing.Platform
-	err = tx.QueryRowContext(ctx,
+	result, err := tx.ExecContext(ctx,
 		`INSERT INTO channel_account_stats_model_pricing (rule_id, platform, models, billing_mode, input_price, output_price, cache_write_price, cache_read_price, image_output_price, per_request_price)
-		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id, created_at, updated_at`,
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		ruleID, platform, modelsJSON, billingMode,
 		pricing.InputPrice, pricing.OutputPrice, pricing.CacheWritePrice, pricing.CacheReadPrice,
 		pricing.ImageOutputPrice, pricing.PerRequestPrice,
-	).Scan(&pricing.ID, &pricing.CreatedAt, &pricing.UpdatedAt)
+	)
 	if err != nil {
 		return fmt.Errorf("insert account stats model pricing: %w", err)
+	}
+	pricing.ID, err = result.LastInsertId()
+	if err != nil {
+		return fmt.Errorf("get inserted account stats model pricing id: %w", err)
+	}
+	if err := tx.QueryRowContext(ctx, `SELECT created_at, updated_at FROM channel_account_stats_model_pricing WHERE id = ?`, pricing.ID).
+		Scan(&pricing.CreatedAt, &pricing.UpdatedAt); err != nil {
+		return fmt.Errorf("load inserted account stats model pricing timestamps: %w", err)
 	}
 	// Persist intervals (mirrors channel_pricing_intervals logic).
 	for i := range pricing.Intervals {
@@ -200,14 +233,23 @@ func createAccountStatsModelPricingTx(ctx context.Context, tx *sql.Tx, ruleID in
 
 // createAccountStatsIntervalTx inserts a single interval for an account stats pricing entry.
 func createAccountStatsIntervalTx(ctx context.Context, tx *sql.Tx, iv *service.PricingInterval) error {
-	return tx.QueryRowContext(ctx,
+	result, err := tx.ExecContext(ctx,
 		`INSERT INTO channel_account_stats_pricing_intervals
 		 (pricing_id, min_tokens, max_tokens, tier_label, input_price, output_price, cache_write_price, cache_read_price, per_request_price, sort_order)
-		 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id, created_at, updated_at`,
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 		iv.PricingID, iv.MinTokens, iv.MaxTokens, iv.TierLabel,
 		iv.InputPrice, iv.OutputPrice, iv.CacheWritePrice, iv.CacheReadPrice,
 		iv.PerRequestPrice, iv.SortOrder,
-	).Scan(&iv.ID, &iv.CreatedAt, &iv.UpdatedAt)
+	)
+	if err != nil {
+		return err
+	}
+	iv.ID, err = result.LastInsertId()
+	if err != nil {
+		return err
+	}
+	return tx.QueryRowContext(ctx, `SELECT created_at, updated_at FROM channel_account_stats_pricing_intervals WHERE id = ?`, iv.ID).
+		Scan(&iv.CreatedAt, &iv.UpdatedAt)
 }
 
 // batchLoadAccountStatsIntervals loads intervals for account stats pricing entries.
@@ -215,13 +257,17 @@ func (r *channelRepository) batchLoadAccountStatsIntervals(ctx context.Context, 
 	if len(pricingIDs) == 0 {
 		return nil, nil
 	}
+	idsJSON, err := jsonArrayParam(pricingIDs)
+	if err != nil {
+		return nil, fmt.Errorf("encode pricing ids: %w", err)
+	}
 	rows, err := r.db.QueryContext(ctx,
 		`SELECT id, pricing_id, min_tokens, max_tokens, tier_label,
 		        input_price, output_price, cache_write_price, cache_read_price,
 		        per_request_price, sort_order, created_at, updated_at
 		 FROM channel_account_stats_pricing_intervals
-		 WHERE pricing_id = ANY($1) ORDER BY pricing_id, sort_order, id`,
-		pq.Array(pricingIDs),
+		 WHERE pricing_id IN (SELECT id FROM JSON_TABLE(?, '$[*]' COLUMNS(id BIGINT PATH '$')) AS pricing_ids)
+		 ORDER BY pricing_id, sort_order, id`, idsJSON,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("batch load account stats pricing intervals: %w", err)

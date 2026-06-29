@@ -21,7 +21,7 @@ func (r *opsRepository) ListRequestDetails(ctx context.Context, filter *service.
 	conditions := make([]string, 0, 16)
 	args := make([]any, 0, 24)
 
-	// Placeholders $1/$2 reserved for time window inside the CTE.
+	// Placeholders ?/? reserved for time window inside the CTE.
 	args = append(args, startTime.UTC(), endTime.UTC())
 
 	addCondition := func(condition string, values ...any) {
@@ -34,37 +34,37 @@ func (r *opsRepository) ListRequestDetails(ctx context.Context, filter *service.
 			if kind != string(service.OpsRequestKindSuccess) && kind != string(service.OpsRequestKindError) {
 				return nil, 0, fmt.Errorf("invalid kind")
 			}
-			addCondition(fmt.Sprintf("kind = $%d", len(args)+1), kind)
+			addCondition(fmt.Sprintf("kind = ?/*%d*/", len(args)+1), kind)
 		}
 
 		if platform := strings.TrimSpace(strings.ToLower(filter.Platform)); platform != "" {
-			addCondition(fmt.Sprintf("platform = $%d", len(args)+1), platform)
+			addCondition(fmt.Sprintf("platform = ?/*%d*/", len(args)+1), platform)
 		}
 		if filter.GroupID != nil && *filter.GroupID > 0 {
-			addCondition(fmt.Sprintf("group_id = $%d", len(args)+1), *filter.GroupID)
+			addCondition(fmt.Sprintf("group_id = ?/*%d*/", len(args)+1), *filter.GroupID)
 		}
 
 		if filter.UserID != nil && *filter.UserID > 0 {
-			addCondition(fmt.Sprintf("user_id = $%d", len(args)+1), *filter.UserID)
+			addCondition(fmt.Sprintf("user_id = ?/*%d*/", len(args)+1), *filter.UserID)
 		}
 		if filter.APIKeyID != nil && *filter.APIKeyID > 0 {
-			addCondition(fmt.Sprintf("api_key_id = $%d", len(args)+1), *filter.APIKeyID)
+			addCondition(fmt.Sprintf("api_key_id = ?/*%d*/", len(args)+1), *filter.APIKeyID)
 		}
 		if filter.AccountID != nil && *filter.AccountID > 0 {
-			addCondition(fmt.Sprintf("account_id = $%d", len(args)+1), *filter.AccountID)
+			addCondition(fmt.Sprintf("account_id = ?/*%d*/", len(args)+1), *filter.AccountID)
 		}
 
 		if model := strings.TrimSpace(filter.Model); model != "" {
-			addCondition(fmt.Sprintf("model = $%d", len(args)+1), model)
+			addCondition(fmt.Sprintf("model = ?/*%d*/", len(args)+1), model)
 		}
 		if requestID := strings.TrimSpace(filter.RequestID); requestID != "" {
-			addCondition(fmt.Sprintf("request_id = $%d", len(args)+1), requestID)
+			addCondition(fmt.Sprintf("request_id = ?/*%d*/", len(args)+1), requestID)
 		}
 		if q := strings.TrimSpace(filter.Query); q != "" {
 			like := "%" + strings.ToLower(q) + "%"
 			startIdx := len(args) + 1
 			addCondition(
-				fmt.Sprintf("(LOWER(COALESCE(request_id,'')) LIKE $%d OR LOWER(COALESCE(model,'')) LIKE $%d OR LOWER(COALESCE(message,'')) LIKE $%d)",
+				fmt.Sprintf("(LOWER(COALESCE(request_id,'')) LIKE ?/*%d*/ OR LOWER(COALESCE(model,'')) LIKE ?/*%d*/ OR LOWER(COALESCE(message,'')) LIKE ?/*%d*/)",
 					startIdx, startIdx+1, startIdx+2,
 				),
 				like, like, like,
@@ -72,10 +72,10 @@ func (r *opsRepository) ListRequestDetails(ctx context.Context, filter *service.
 		}
 
 		if filter.MinDurationMs != nil {
-			addCondition(fmt.Sprintf("duration_ms >= $%d", len(args)+1), *filter.MinDurationMs)
+			addCondition(fmt.Sprintf("duration_ms >= ?/*%d*/", len(args)+1), *filter.MinDurationMs)
 		}
 		if filter.MaxDurationMs != nil {
-			addCondition(fmt.Sprintf("duration_ms <= $%d", len(args)+1), *filter.MaxDurationMs)
+			addCondition(fmt.Sprintf("duration_ms <= ?/*%d*/", len(args)+1), *filter.MaxDurationMs)
 		}
 	}
 
@@ -106,7 +106,7 @@ WITH combined AS (
   FROM usage_logs ul
   LEFT JOIN groups g ON g.id = ul.group_id
   LEFT JOIN accounts a ON a.id = ul.account_id
-  WHERE ul.created_at >= $1 AND ul.created_at < $2
+  WHERE ul.created_at >= ? AND ul.created_at < ?
 
   UNION ALL
 
@@ -130,7 +130,7 @@ WITH combined AS (
   FROM ops_error_logs o
   LEFT JOIN groups g ON g.id = o.group_id
   LEFT JOIN accounts a ON a.id = o.account_id
-  WHERE o.created_at >= $1 AND o.created_at < $2
+  WHERE o.created_at >= ? AND o.created_at < ?
     AND COALESCE(o.status_code, 0) >= 400
 )
 `
@@ -179,7 +179,7 @@ SELECT
 FROM combined
 %s
 %s
-LIMIT $%d OFFSET $%d
+LIMIT ?/*%d*/ OFFSET ?/*%d*/
 `, cte, where, sort, len(args)+1, len(args)+2)
 
 	listArgs := append(append([]any{}, args...), pageSize, offset)
