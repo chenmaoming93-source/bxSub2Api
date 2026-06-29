@@ -59,12 +59,13 @@ error_buckets AS (
 switch_buckets AS (
   SELECT ` + errorBucketExpr + ` AS bucket,
          COALESCE(SUM(CASE
-           WHEN split_part(ev->>'kind', ':', 1) IN ('failover', 'retry_exhausted_failover', 'failover_on_400') THEN 1
+           WHEN SUBSTRING_INDEX(ev.kind, ':', 1) IN ('failover', 'retry_exhausted_failover', 'failover_on_400') THEN 1
            ELSE 0
          END), 0) AS switch_count
   FROM ops_error_logs
-  CROSS JOIN LATERAL jsonb_array_elements(
-    COALESCE(NULLIF(upstream_errors, 'null'::jsonb), '[]'::jsonb)
+  CROSS JOIN JSON_TABLE(
+    COALESCE(upstream_errors, JSON_ARRAY()),
+    '$[*]' COLUMNS(kind VARCHAR(255) PATH '$.kind')
   ) AS ev
   ` + errorWhere + `
     AND upstream_errors IS NOT NULL
@@ -97,7 +98,12 @@ SELECT
 FROM combined
 ORDER BY bucket ASC`
 
-	args := append(usageArgs, errorArgs...)
+	args := make([]any, 0, len(usageArgs)+2*len(errorArgs))
+	args = append(args, usageArgs...)
+	args = append(args, errorArgs...)
+	// errorWhere is embedded in both error_buckets and switch_buckets; MySQL
+	// positional placeholders require a second copy of the arguments.
+	args = append(args, errorArgs...)
 
 	rows, err := r.db.QueryContext(ctx, q, args...)
 	if err != nil {
@@ -206,19 +212,23 @@ error_totals AS (
   GROUP BY 1
 ),
 combined AS (
-  SELECT COALESCE(u.platform, e.platform) AS platform,
-         COALESCE(u.success_count, 0) AS success_count,
-         COALESCE(e.error_count, 0) AS error_count,
-         COALESCE(u.token_consumed, 0) AS token_consumed
-  FROM usage_totals u
-  FULL OUTER JOIN error_totals e ON u.platform = e.platform
+  SELECT platform,
+         SUM(success_count) AS success_count,
+         SUM(error_count) AS error_count,
+         SUM(token_consumed) AS token_consumed
+  FROM (
+    SELECT platform, success_count, 0 AS error_count, token_consumed FROM usage_totals
+    UNION ALL
+    SELECT platform, 0, error_count, 0 FROM error_totals
+  ) totals
+  GROUP BY platform
 )
 SELECT platform, (success_count + error_count) AS request_count, token_consumed
 FROM combined
 WHERE platform IS NOT NULL AND platform <> ''
 ORDER BY request_count DESC`
 
-	rows, err := r.db.QueryContext(ctx, q, start, end)
+	rows, err := r.db.QueryContext(ctx, q, start, end, start, end)
 	if err != nil {
 		return nil, err
 	}
@@ -270,24 +280,29 @@ WITH usage_totals AS (
 ),
 error_totals AS (
   SELECT group_id,
+         COALESCE(MAX(g.name), '') AS group_name,
          COUNT(*) AS error_count
-  FROM ops_error_logs
-  WHERE created_at >= ? AND created_at < ?
-    AND platform = ?
-    AND group_id IS NOT NULL
-    AND COALESCE(status_code, 0) >= 400
-    AND is_count_tokens = FALSE  -- 排除 count_tokens 请求的错误
-  GROUP BY 1
+  FROM ops_error_logs oel
+  LEFT JOIN groups g ON g.id = oel.group_id
+  WHERE oel.created_at >= ? AND oel.created_at < ?
+    AND oel.platform = ?
+    AND oel.group_id IS NOT NULL
+    AND COALESCE(oel.status_code, 0) >= 400
+    AND oel.is_count_tokens = FALSE  -- 排除 count_tokens 请求的错误
+  GROUP BY oel.group_id
 ),
 combined AS (
-  SELECT COALESCE(u.group_id, e.group_id) AS group_id,
-         COALESCE(u.group_name, g2.name, '') AS group_name,
-         COALESCE(u.success_count, 0) AS success_count,
-         COALESCE(e.error_count, 0) AS error_count,
-         COALESCE(u.token_consumed, 0) AS token_consumed
-  FROM usage_totals u
-  FULL OUTER JOIN error_totals e ON u.group_id = e.group_id
-  LEFT JOIN groups g2 ON g2.id = COALESCE(u.group_id, e.group_id)
+  SELECT group_id,
+         COALESCE(MAX(NULLIF(group_name, '')), '') AS group_name,
+         SUM(success_count) AS success_count,
+         SUM(error_count) AS error_count,
+         SUM(token_consumed) AS token_consumed
+  FROM (
+    SELECT group_id, group_name, success_count, 0 AS error_count, token_consumed FROM usage_totals
+    UNION ALL
+    SELECT group_id, group_name, 0, error_count, 0 FROM error_totals
+  ) totals
+  GROUP BY group_id
 )
 SELECT group_id, group_name, (success_count + error_count) AS request_count, token_consumed
 FROM combined
@@ -295,7 +310,7 @@ WHERE group_id IS NOT NULL
 ORDER BY request_count DESC
 LIMIT ?`
 
-	rows, err := r.db.QueryContext(ctx, q, start, end, platform, limit)
+	rows, err := r.db.QueryContext(ctx, q, start, end, platform, start, end, platform, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -334,23 +349,22 @@ LIMIT ?`
 func opsBucketExprForUsage(bucketSeconds int) string {
 	switch bucketSeconds {
 	case 3600:
-		return "date_trunc('hour', ul.created_at)"
+		return "CAST(DATE_FORMAT(ul.created_at, '%Y-%m-%d %H:00:00') AS DATETIME)"
 	case 300:
-		// 5-minute buckets in UTC.
-		return "to_timestamp(floor(extract(epoch from ul.created_at) / 300) * 300)"
+		return "TIMESTAMP(DATE(ul.created_at), MAKETIME(HOUR(ul.created_at), FLOOR(MINUTE(ul.created_at) / 5) * 5, 0))"
 	default:
-		return "date_trunc('minute', ul.created_at)"
+		return "CAST(DATE_FORMAT(ul.created_at, '%Y-%m-%d %H:%i:00') AS DATETIME)"
 	}
 }
 
 func opsBucketExprForError(bucketSeconds int) string {
 	switch bucketSeconds {
 	case 3600:
-		return "date_trunc('hour', created_at)"
+		return "CAST(DATE_FORMAT(created_at, '%Y-%m-%d %H:00:00') AS DATETIME)"
 	case 300:
-		return "to_timestamp(floor(extract(epoch from created_at) / 300) * 300)"
+		return "TIMESTAMP(DATE(created_at), MAKETIME(HOUR(created_at), FLOOR(MINUTE(created_at) / 5) * 5, 0))"
 	default:
-		return "date_trunc('minute', created_at)"
+		return "CAST(DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:00') AS DATETIME)"
 	}
 }
 
@@ -451,12 +465,12 @@ func (r *opsRepository) GetErrorTrend(ctx context.Context, filter *service.OpsDa
 	q := `
 SELECT
   ` + bucketExpr + ` AS bucket,
-  COUNT(*) FILTER (WHERE COALESCE(status_code, 0) >= 400) AS error_total,
-  COUNT(*) FILTER (WHERE COALESCE(status_code, 0) >= 400 AND is_business_limited) AS business_limited,
-  COUNT(*) FILTER (WHERE COALESCE(status_code, 0) >= 400 AND NOT is_business_limited) AS error_sla,
-  COUNT(*) FILTER (WHERE error_owner = 'provider' AND NOT is_business_limited AND COALESCE(upstream_status_code, status_code, 0) NOT IN (429, 529)) AS upstream_excl,
-  COUNT(*) FILTER (WHERE error_owner = 'provider' AND NOT is_business_limited AND COALESCE(upstream_status_code, status_code, 0) = 429) AS upstream_429,
-  COUNT(*) FILTER (WHERE error_owner = 'provider' AND NOT is_business_limited AND COALESCE(upstream_status_code, status_code, 0) = 529) AS upstream_529
+  SUM(CASE WHEN COALESCE(status_code, 0) >= 400 THEN 1 ELSE 0 END) AS error_total,
+  SUM(CASE WHEN COALESCE(status_code, 0) >= 400 AND is_business_limited THEN 1 ELSE 0 END) AS business_limited,
+  SUM(CASE WHEN COALESCE(status_code, 0) >= 400 AND NOT is_business_limited THEN 1 ELSE 0 END) AS error_sla,
+  SUM(CASE WHEN error_owner = 'provider' AND NOT is_business_limited AND COALESCE(upstream_status_code, status_code, 0) NOT IN (429, 529) THEN 1 ELSE 0 END) AS upstream_excl,
+  SUM(CASE WHEN error_owner = 'provider' AND NOT is_business_limited AND COALESCE(upstream_status_code, status_code, 0) = 429 THEN 1 ELSE 0 END) AS upstream_429,
+  SUM(CASE WHEN error_owner = 'provider' AND NOT is_business_limited AND COALESCE(upstream_status_code, status_code, 0) = 529 THEN 1 ELSE 0 END) AS upstream_529
 FROM ops_error_logs
 ` + where + `
 GROUP BY 1
@@ -564,8 +578,8 @@ func (r *opsRepository) GetErrorDistribution(ctx context.Context, filter *servic
 SELECT
   COALESCE(upstream_status_code, status_code, 0) AS status_code,
   COUNT(*) AS total,
-  COUNT(*) FILTER (WHERE NOT is_business_limited) AS sla,
-  COUNT(*) FILTER (WHERE is_business_limited) AS business_limited
+  SUM(CASE WHEN NOT is_business_limited THEN 1 ELSE 0 END) AS sla,
+  SUM(CASE WHEN is_business_limited THEN 1 ELSE 0 END) AS business_limited
 FROM ops_error_logs
 ` + where + `
   AND COALESCE(status_code, 0) >= 400

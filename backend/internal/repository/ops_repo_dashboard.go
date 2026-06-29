@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"sort"
 	"strings"
 	"time"
 
@@ -812,59 +813,74 @@ FROM usage_logs ul
 func (r *opsRepository) queryUsageLatency(ctx context.Context, filter *service.OpsDashboardFilter, start, end time.Time) (duration service.OpsPercentiles, ttft service.OpsPercentiles, ttftSampleCount int64, err error) {
 	join, where, args, _ := buildUsageWhere(filter, start, end, 1)
 	q := `
-SELECT
-  percentile_cont(0.50) WITHIN GROUP (ORDER BY duration_ms) FILTER (WHERE duration_ms IS NOT NULL) AS duration_p50,
-  percentile_cont(0.90) WITHIN GROUP (ORDER BY duration_ms) FILTER (WHERE duration_ms IS NOT NULL) AS duration_p90,
-  percentile_cont(0.95) WITHIN GROUP (ORDER BY duration_ms) FILTER (WHERE duration_ms IS NOT NULL) AS duration_p95,
-  percentile_cont(0.99) WITHIN GROUP (ORDER BY duration_ms) FILTER (WHERE duration_ms IS NOT NULL) AS duration_p99,
-  AVG(duration_ms) FILTER (WHERE duration_ms IS NOT NULL) AS duration_avg,
-  MAX(duration_ms) AS duration_max,
-  percentile_cont(0.50) WITHIN GROUP (ORDER BY first_token_ms) FILTER (WHERE first_token_ms IS NOT NULL) AS ttft_p50,
-  percentile_cont(0.90) WITHIN GROUP (ORDER BY first_token_ms) FILTER (WHERE first_token_ms IS NOT NULL) AS ttft_p90,
-  percentile_cont(0.95) WITHIN GROUP (ORDER BY first_token_ms) FILTER (WHERE first_token_ms IS NOT NULL) AS ttft_p95,
-  percentile_cont(0.99) WITHIN GROUP (ORDER BY first_token_ms) FILTER (WHERE first_token_ms IS NOT NULL) AS ttft_p99,
-  AVG(first_token_ms) FILTER (WHERE first_token_ms IS NOT NULL) AS ttft_avg,
-  MAX(first_token_ms) AS ttft_max,
-  COUNT(first_token_ms) AS ttft_sample_count
+SELECT duration_ms, first_token_ms
 FROM usage_logs ul
 ` + join + `
-` + where
+` + where + `
+  AND (duration_ms IS NOT NULL OR first_token_ms IS NOT NULL)`
 
-	var dP50, dP90, dP95, dP99 sql.NullFloat64
-	var dAvg sql.NullFloat64
-	var dMax sql.NullInt64
-	var tP50, tP90, tP95, tP99 sql.NullFloat64
-	var tAvg sql.NullFloat64
-	var tMax sql.NullInt64
-	var tCount int64
-	if err := r.db.QueryRowContext(ctx, q, args...).Scan(
-		&dP50, &dP90, &dP95, &dP99, &dAvg, &dMax,
-		&tP50, &tP90, &tP95, &tP99, &tAvg, &tMax, &tCount,
-	); err != nil {
+	rows, err := r.db.QueryContext(ctx, q, args...)
+	if err != nil {
+		return service.OpsPercentiles{}, service.OpsPercentiles{}, 0, err
+	}
+	defer func() { _ = rows.Close() }()
+
+	durationValues := make([]int, 0, 1024)
+	ttftValues := make([]int, 0, 1024)
+	for rows.Next() {
+		var durationMS, firstTokenMS sql.NullInt64
+		if err := rows.Scan(&durationMS, &firstTokenMS); err != nil {
+			return service.OpsPercentiles{}, service.OpsPercentiles{}, 0, err
+		}
+		if durationMS.Valid {
+			durationValues = append(durationValues, int(durationMS.Int64))
+		}
+		if firstTokenMS.Valid {
+			ttftValues = append(ttftValues, int(firstTokenMS.Int64))
+		}
+	}
+	if err := rows.Err(); err != nil {
 		return service.OpsPercentiles{}, service.OpsPercentiles{}, 0, err
 	}
 
-	duration.P50 = floatToIntPtr(dP50)
-	duration.P90 = floatToIntPtr(dP90)
-	duration.P95 = floatToIntPtr(dP95)
-	duration.P99 = floatToIntPtr(dP99)
-	duration.Avg = floatToIntPtr(dAvg)
-	if dMax.Valid {
-		v := int(dMax.Int64)
-		duration.Max = &v
+	sort.Ints(durationValues)
+	sort.Ints(ttftValues)
+	return opsPercentilesFromSortedInts(durationValues), opsPercentilesFromSortedInts(ttftValues), int64(len(ttftValues)), nil
+}
+
+// opsPercentilesFromSortedInts preserves continuous-percentile semantics by
+// linearly interpolating adjacent ordered values and rounding to the service's int fields.
+func opsPercentilesFromSortedInts(values []int) service.OpsPercentiles {
+	if len(values) == 0 {
+		return service.OpsPercentiles{}
 	}
 
-	ttft.P50 = floatToIntPtr(tP50)
-	ttft.P90 = floatToIntPtr(tP90)
-	ttft.P95 = floatToIntPtr(tP95)
-	ttft.P99 = floatToIntPtr(tP99)
-	ttft.Avg = floatToIntPtr(tAvg)
-	if tMax.Valid {
-		v := int(tMax.Int64)
-		ttft.Max = &v
+	percentile := func(p float64) *int {
+		position := float64(len(values)-1) * p
+		lower := int(math.Floor(position))
+		upper := int(math.Ceil(position))
+		value := float64(values[lower])
+		if upper != lower {
+			value += (float64(values[upper]) - value) * (position - float64(lower))
+		}
+		rounded := int(math.Round(value))
+		return &rounded
 	}
 
-	return duration, ttft, tCount, nil
+	var sum float64
+	for _, value := range values {
+		sum += float64(value)
+	}
+	avg := int(math.Round(sum / float64(len(values))))
+	maxValue := values[len(values)-1]
+	return service.OpsPercentiles{
+		P50: percentile(0.50),
+		P90: percentile(0.90),
+		P95: percentile(0.95),
+		P99: percentile(0.99),
+		Avg: &avg,
+		Max: &maxValue,
+	}
 }
 
 func (r *opsRepository) queryErrorCounts(ctx context.Context, filter *service.OpsDashboardFilter, start, end time.Time) (
@@ -880,12 +896,12 @@ func (r *opsRepository) queryErrorCounts(ctx context.Context, filter *service.Op
 
 	q := `
 SELECT
-  COALESCE(COUNT(*) FILTER (WHERE COALESCE(status_code, 0) >= 400), 0) AS error_total,
-  COALESCE(COUNT(*) FILTER (WHERE COALESCE(status_code, 0) >= 400 AND is_business_limited), 0) AS business_limited,
-  COALESCE(COUNT(*) FILTER (WHERE COALESCE(status_code, 0) >= 400 AND NOT is_business_limited), 0) AS error_sla,
-  COALESCE(COUNT(*) FILTER (WHERE error_owner = 'provider' AND NOT is_business_limited AND COALESCE(upstream_status_code, status_code, 0) NOT IN (429, 529)), 0) AS upstream_excl,
-  COALESCE(COUNT(*) FILTER (WHERE error_owner = 'provider' AND NOT is_business_limited AND COALESCE(upstream_status_code, status_code, 0) = 429), 0) AS upstream_429,
-  COALESCE(COUNT(*) FILTER (WHERE error_owner = 'provider' AND NOT is_business_limited AND COALESCE(upstream_status_code, status_code, 0) = 529), 0) AS upstream_529
+  COALESCE(SUM(CASE WHEN COALESCE(status_code, 0) >= 400 THEN 1 ELSE 0 END), 0) AS error_total,
+  COALESCE(SUM(CASE WHEN COALESCE(status_code, 0) >= 400 AND is_business_limited THEN 1 ELSE 0 END), 0) AS business_limited,
+  COALESCE(SUM(CASE WHEN COALESCE(status_code, 0) >= 400 AND NOT is_business_limited THEN 1 ELSE 0 END), 0) AS error_sla,
+  COALESCE(SUM(CASE WHEN error_owner = 'provider' AND NOT is_business_limited AND COALESCE(upstream_status_code, status_code, 0) NOT IN (429, 529) THEN 1 ELSE 0 END), 0) AS upstream_excl,
+  COALESCE(SUM(CASE WHEN error_owner = 'provider' AND NOT is_business_limited AND COALESCE(upstream_status_code, status_code, 0) = 429 THEN 1 ELSE 0 END), 0) AS upstream_429,
+  COALESCE(SUM(CASE WHEN error_owner = 'provider' AND NOT is_business_limited AND COALESCE(upstream_status_code, status_code, 0) = 529 THEN 1 ELSE 0 END), 0) AS upstream_529
 FROM ops_error_logs
 ` + where
 
@@ -926,7 +942,7 @@ func (r *opsRepository) queryPeakRates(ctx context.Context, filter *service.OpsD
 	q := `
 WITH usage_buckets AS (
   SELECT
-    date_trunc('minute', ul.created_at) AS bucket,
+    CAST(DATE_FORMAT(ul.created_at, '%Y-%m-%d %H:%i:00') AS DATETIME) AS bucket,
     COUNT(*) AS req_cnt,
     COALESCE(SUM(input_tokens + output_tokens + cache_creation_tokens + cache_read_tokens), 0) AS token_cnt
   FROM usage_logs ul
@@ -935,18 +951,22 @@ WITH usage_buckets AS (
   GROUP BY 1
 ),
 error_buckets AS (
-  SELECT date_trunc('minute', created_at) AS bucket, COUNT(*) AS err_cnt
+  SELECT CAST(DATE_FORMAT(created_at, '%Y-%m-%d %H:%i:00') AS DATETIME) AS bucket, COUNT(*) AS err_cnt
   FROM ops_error_logs
   ` + errorWhere + `
     AND COALESCE(status_code, 0) >= 400
   GROUP BY 1
 ),
 combined AS (
-  SELECT COALESCE(u.bucket, e.bucket) AS bucket,
-         COALESCE(u.req_cnt, 0) + COALESCE(e.err_cnt, 0) AS total_req,
-         COALESCE(u.token_cnt, 0) AS total_tokens
-  FROM usage_buckets u
-  FULL OUTER JOIN error_buckets e ON u.bucket = e.bucket
+  SELECT bucket,
+         SUM(req_cnt) + SUM(err_cnt) AS total_req,
+         SUM(token_cnt) AS total_tokens
+  FROM (
+    SELECT bucket, req_cnt, 0 AS err_cnt, token_cnt FROM usage_buckets
+    UNION ALL
+    SELECT bucket, 0, err_cnt, 0 FROM error_buckets
+  ) totals
+  GROUP BY bucket
 )
 SELECT
   COALESCE(MAX(total_req), 0) AS max_req_per_min,

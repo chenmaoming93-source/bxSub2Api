@@ -260,19 +260,6 @@ func (r *channelMonitorRepository) ListHistory(ctx context.Context, monitorID in
 // 借助 (monitor_id, model, checked_at DESC) 索引可走 Index Scan。
 func (r *channelMonitorRepository) ListLatestPerModel(ctx context.Context, monitorID int64) ([]*service.ChannelMonitorLatest, error) {
 	const q = `
-<<<<<<< Updated upstream
-=======
-<<<<<<< HEAD
-		WITH ranked AS (
-			SELECT model, status, latency_ms, ping_latency_ms, checked_at,
-				ROW_NUMBER() OVER (PARTITION BY model ORDER BY checked_at DESC, id DESC) AS rn
-			FROM channel_monitor_histories
-			WHERE monitor_id = ?
-		)
-		SELECT model, status, latency_ms, ping_latency_ms, checked_at
-		FROM ranked
-=======
->>>>>>> Stashed changes
 		SELECT model, status, latency_ms, ping_latency_ms, checked_at
 		FROM (
 		    SELECT model, status, latency_ms, ping_latency_ms, checked_at,
@@ -280,10 +267,6 @@ func (r *channelMonitorRepository) ListLatestPerModel(ctx context.Context, monit
 		    FROM channel_monitor_histories
 		    WHERE monitor_id = ?
 		) ranked
-<<<<<<< Updated upstream
-=======
->>>>>>> b8b0dfac4a13354cc88788f3e499c69d7a14914f
->>>>>>> Stashed changes
 		WHERE rn = 1
 		ORDER BY model
 	`
@@ -387,7 +370,6 @@ func (r *channelMonitorRepository) ListLatestForMonitorIDs(ctx context.Context, 
 	if len(ids) == 0 {
 		return out, nil
 	}
-<<<<<<< Updated upstream
 	condition, conditionArgs := int64InCondition("monitor_id", ids)
 	q := `
 		SELECT monitor_id, model, status, latency_ms, ping_latency_ms, checked_at
@@ -401,41 +383,6 @@ func (r *channelMonitorRepository) ListLatestForMonitorIDs(ctx context.Context, 
 		ORDER BY monitor_id, model
 	`
 	rows, err := r.db.QueryContext(ctx, q, conditionArgs...)
-=======
-<<<<<<< HEAD
-	idsJSON, err := jsonArrayParam(ids)
-	if err != nil {
-		return nil, err
-	}
-	const q = `
-		WITH ranked AS (
-			SELECT monitor_id, model, status, latency_ms, ping_latency_ms, checked_at,
-				ROW_NUMBER() OVER (PARTITION BY monitor_id, model ORDER BY checked_at DESC, id DESC) AS rn
-			FROM channel_monitor_histories
-			WHERE monitor_id IN (SELECT id FROM JSON_TABLE(?, '$[*]' COLUMNS(id BIGINT PATH '$')) AS monitor_ids)
-		)
-		SELECT monitor_id, model, status, latency_ms, ping_latency_ms, checked_at
-		FROM ranked
-		WHERE rn = 1
-		ORDER BY monitor_id, model
-	`
-	rows, err := r.db.QueryContext(ctx, q, idsJSON)
-=======
-	condition, conditionArgs := int64InCondition("monitor_id", ids)
-	q := `
-		SELECT monitor_id, model, status, latency_ms, ping_latency_ms, checked_at
-		FROM (
-		    SELECT monitor_id, model, status, latency_ms, ping_latency_ms, checked_at,
-		           ROW_NUMBER() OVER (PARTITION BY monitor_id, model ORDER BY checked_at DESC) AS rn
-		    FROM channel_monitor_histories
-		    WHERE ` + condition + `
-		) ranked
-		WHERE rn = 1
-		ORDER BY monitor_id, model
-	`
-	rows, err := r.db.QueryContext(ctx, q, conditionArgs...)
->>>>>>> b8b0dfac4a13354cc88788f3e499c69d7a14914f
->>>>>>> Stashed changes
 	if err != nil {
 		return nil, fmt.Errorf("query latest batch: %w", err)
 	}
@@ -478,32 +425,9 @@ func (r *channelMonitorRepository) ListRecentHistoryForMonitors(
 	}
 	perMonitorLimit = clampTimelineLimit(perMonitorLimit)
 
-<<<<<<< Updated upstream
 	targetSQL, targetArgs := buildMonitorModelTargetSQL(pairIDs, pairModels)
 	q := `
 		WITH targets AS (` + targetSQL + `),
-=======
-<<<<<<< HEAD
-	pairIDsJSON, err := jsonArrayParam(pairIDs)
-	if err != nil {
-		return nil, err
-	}
-	pairModelsJSON, err := jsonArrayParam(pairModels)
-	if err != nil {
-		return nil, err
-	}
-	const q = `
-		WITH targets AS (
-		    SELECT ids.monitor_id, models.model
-		    FROM JSON_TABLE(?, '$[*]' COLUMNS(ord FOR ORDINALITY, monitor_id BIGINT PATH '$')) AS ids
-		    JOIN JSON_TABLE(?, '$[*]' COLUMNS(ord FOR ORDINALITY, model VARCHAR(255) PATH '$')) AS models USING (ord)
-		),
-=======
-	targetSQL, targetArgs := buildMonitorModelTargetSQL(pairIDs, pairModels)
-	q := `
-		WITH targets AS (` + targetSQL + `),
->>>>>>> b8b0dfac4a13354cc88788f3e499c69d7a14914f
->>>>>>> Stashed changes
 		ranked AS (
 		    SELECT h.monitor_id,
 		           h.status,
@@ -520,17 +444,8 @@ func (r *channelMonitorRepository) ListRecentHistoryForMonitors(
 		WHERE rn <= ?
 		ORDER BY monitor_id, checked_at DESC
 	`
-<<<<<<< Updated upstream
 	args := append(targetArgs, perMonitorLimit)
 	rows, err := r.db.QueryContext(ctx, q, args...)
-=======
-<<<<<<< HEAD
-	rows, err := r.db.QueryContext(ctx, q, pairIDsJSON, pairModelsJSON, perMonitorLimit)
-=======
-	args := append(targetArgs, perMonitorLimit)
-	rows, err := r.db.QueryContext(ctx, q, args...)
->>>>>>> b8b0dfac4a13354cc88788f3e499c69d7a14914f
->>>>>>> Stashed changes
 	if err != nil {
 		return nil, fmt.Errorf("query recent history batch: %w", err)
 	}
@@ -600,21 +515,8 @@ func (r *channelMonitorRepository) ComputeAvailabilityForMonitors(ctx context.Co
 	if windowDays <= 0 {
 		windowDays = 7
 	}
-<<<<<<< Updated upstream
 	condition, conditionArgs := int64InCondition("monitor_id", ids)
 	q := `
-=======
-<<<<<<< HEAD
-	idsJSON, err := jsonArrayParam(ids)
-	if err != nil {
-		return nil, err
-	}
-	const q = `
-=======
-	condition, conditionArgs := int64InCondition("monitor_id", ids)
-	q := `
->>>>>>> b8b0dfac4a13354cc88788f3e499c69d7a14914f
->>>>>>> Stashed changes
 		SELECT monitor_id,
 		       model,
 		       COUNT(*)                                                             AS total,
@@ -623,29 +525,12 @@ func (r *channelMonitorRepository) ComputeAvailabilityForMonitors(ctx context.Co
 		            THEN SUM(CASE WHEN latency_ms IS NOT NULL THEN latency_ms ELSE 0 END) / COUNT(latency_ms)
 		            ELSE NULL END                                                   AS avg_latency_ms
 		FROM channel_monitor_histories
-<<<<<<< Updated upstream
 		WHERE ` + condition + `
 		  AND checked_at >= DATE_SUB(NOW(), INTERVAL ? DAY)
 		GROUP BY monitor_id, model
 	`
 	args := append(conditionArgs, windowDays)
 	rows, err := r.db.QueryContext(ctx, q, args...)
-=======
-<<<<<<< HEAD
-		WHERE monitor_id IN (SELECT id FROM JSON_TABLE(?, '$[*]' COLUMNS(id BIGINT PATH '$')) AS monitor_ids)
-		  AND checked_at >= DATE_SUB(NOW(), INTERVAL ? DAY)
-		GROUP BY monitor_id, model
-	`
-	rows, err := r.db.QueryContext(ctx, q, idsJSON, windowDays)
-=======
-		WHERE ` + condition + `
-		  AND checked_at >= DATE_SUB(NOW(), INTERVAL ? DAY)
-		GROUP BY monitor_id, model
-	`
-	args := append(conditionArgs, windowDays)
-	rows, err := r.db.QueryContext(ctx, q, args...)
->>>>>>> b8b0dfac4a13354cc88788f3e499c69d7a14914f
->>>>>>> Stashed changes
 	if err != nil {
 		return nil, fmt.Errorf("query availability batch: %w", err)
 	}
@@ -703,15 +588,7 @@ func (r *channelMonitorRepository) UpsertDailyRollupsFor(ctx context.Context, ta
 		    NOW()
 		FROM channel_monitor_histories
 		WHERE checked_at >= DATE(?)
-<<<<<<< Updated upstream
 		  AND checked_at <  DATE_ADD(DATE(?), INTERVAL 1 DAY)
-=======
-<<<<<<< HEAD
-		  AND checked_at < DATE_ADD(DATE(?), INTERVAL 1 DAY)
-=======
-		  AND checked_at <  DATE_ADD(DATE(?), INTERVAL 1 DAY)
->>>>>>> b8b0dfac4a13354cc88788f3e499c69d7a14914f
->>>>>>> Stashed changes
 		GROUP BY monitor_id, model
 		ON DUPLICATE KEY UPDATE
 		    total_checks        = VALUES(total_checks),
@@ -748,38 +625,27 @@ const channelMonitorPruneBatchSize = 5000
 
 // channelMonitorPruneHistorySQL 分批物理删明细表过期行。
 const channelMonitorPruneHistorySQL = `
-DELETE FROM channel_monitor_histories
-WHERE id IN (
-    SELECT id FROM (
-        SELECT id FROM channel_monitor_histories
-        WHERE checked_at < ?
-        ORDER BY id
-        LIMIT ?
-    ) AS batch
+WITH batch AS (
+    SELECT id FROM channel_monitor_histories
+    WHERE checked_at < ?
+    ORDER BY id
+    LIMIT ?
 )
+DELETE FROM channel_monitor_histories
+WHERE id IN (SELECT id FROM batch)
 `
 
 // channelMonitorPruneRollupSQL 分批物理删 rollup 表过期行。bucket_date 需要 ::date 转型
 // 保证与 DATE 列一致比较。
 const channelMonitorPruneRollupSQL = `
-<<<<<<< HEAD
-=======
 WITH batch AS (
     SELECT id FROM channel_monitor_daily_rollups
     WHERE bucket_date < DATE(?)
     ORDER BY id
     LIMIT ?
 )
->>>>>>> b8b0dfac4a13354cc88788f3e499c69d7a14914f
 DELETE FROM channel_monitor_daily_rollups
-WHERE id IN (
-    SELECT id FROM (
-        SELECT id FROM channel_monitor_daily_rollups
-        WHERE bucket_date < DATE(?)
-        ORDER BY id
-        LIMIT ?
-    ) AS batch
-)
+WHERE id IN (SELECT id FROM batch)
 `
 
 // deleteChannelMonitorBatched 循环执行分批 DELETE，直到影响行为 0。返回累计删除行数。

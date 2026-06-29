@@ -31,65 +31,19 @@ import (
 
 const usageLogSelectColumns = "id, user_id, api_key_id, account_id, request_id, model, requested_model, upstream_model, group_id, subscription_id, input_tokens, output_tokens, cache_creation_tokens, cache_read_tokens, cache_creation_5m_tokens, cache_creation_1h_tokens, image_output_tokens, image_output_cost, input_cost, output_cost, cache_creation_cost, cache_read_cost, total_cost, actual_cost, rate_multiplier, account_rate_multiplier, billing_type, request_type, stream, openai_ws_mode, duration_ms, first_token_ms, user_agent, ip_address, image_count, image_size, image_input_size, image_output_size, image_size_source, image_size_breakdown, service_tier, reasoning_effort, inbound_endpoint, upstream_endpoint, cache_ttl_overridden, channel_id, model_mapping_chain, billing_tier, billing_mode, account_stats_cost, created_at"
 
-// usageLogInsertArgTypes must stay in the same order as:
-//  1. prepareUsageLogInsert().args
-//  2. every INSERT/CTE VALUES column list in this file
-//  3. execUsageLogInsertNoResult placeholder positions
-//  4. scanUsageLog selected column order (via usageLogSelectColumns)
-//
-// When adding a usage_logs column, update all of those call sites together.
-var usageLogInsertArgTypes = [...]string{
-	"bigint",      // user_id
-	"bigint",      // api_key_id
-	"bigint",      // account_id
-	"text",        // request_id
-	"text",        // model
-	"text",        // requested_model
-	"text",        // upstream_model
-	"bigint",      // group_id
-	"bigint",      // subscription_id
-	"integer",     // input_tokens
-	"integer",     // output_tokens
-	"integer",     // cache_creation_tokens
-	"integer",     // cache_read_tokens
-	"integer",     // cache_creation_5m_tokens
-	"integer",     // cache_creation_1h_tokens
-	"integer",     // image_output_tokens
-	"numeric",     // image_output_cost
-	"numeric",     // input_cost
-	"numeric",     // output_cost
-	"numeric",     // cache_creation_cost
-	"numeric",     // cache_read_cost
-	"numeric",     // total_cost
-	"numeric",     // actual_cost
-	"numeric",     // rate_multiplier
-	"numeric",     // account_rate_multiplier
-	"smallint",    // billing_type
-	"smallint",    // request_type
-	"boolean",     // stream
-	"boolean",     // openai_ws_mode
-	"integer",     // duration_ms
-	"integer",     // first_token_ms
-	"text",        // user_agent
-	"text",        // ip_address
-	"integer",     // image_count
-	"text",        // image_size
-	"text",        // image_input_size
-	"text",        // image_output_size
-	"text",        // image_size_source
-	"jsonb",       // image_size_breakdown
-	"text",        // service_tier
-	"text",        // reasoning_effort
-	"text",        // inbound_endpoint
-	"text",        // upstream_endpoint
-	"boolean",     // cache_ttl_overridden
-	"bigint",      // channel_id
-	"text",        // model_mapping_chain
-	"text",        // billing_tier
-	"text",        // billing_mode
-	"numeric",     // account_stats_cost
-	"timestamptz", // created_at
-}
+// usageLogInsertColumns must stay in the same order as prepareUsageLogInsert().args.
+// When adding a usage_logs column, update this list and prepareUsageLogInsert together.
+const usageLogInsertColumns = `
+	user_id, api_key_id, account_id, request_id, model, requested_model, upstream_model,
+	group_id, subscription_id, input_tokens, output_tokens, cache_creation_tokens,
+	cache_read_tokens, cache_creation_5m_tokens, cache_creation_1h_tokens,
+	image_output_tokens, image_output_cost, input_cost, output_cost, cache_creation_cost,
+	cache_read_cost, total_cost, actual_cost, rate_multiplier, account_rate_multiplier,
+	billing_type, request_type, stream, openai_ws_mode, duration_ms, first_token_ms,
+	user_agent, ip_address, image_count, image_size, image_input_size, image_output_size,
+	image_size_source, image_size_breakdown, service_tier, reasoning_effort,
+	inbound_endpoint, upstream_endpoint, cache_ttl_overridden, channel_id,
+	model_mapping_chain, billing_tier, billing_mode, account_stats_cost, created_at`
 
 const rawUsageLogModelColumn = "model"
 
@@ -354,84 +308,14 @@ func (r *usageLogRepository) createSingle(ctx context.Context, sqlq sqlExecutor,
 		return false, service.MarkUsageLogCreateNotPersisted(ctx.Err())
 	}
 
-	query := `
-		INSERT INTO usage_logs (
-			user_id,
-			api_key_id,
-			account_id,
-			request_id,
-			model,
-			requested_model,
-			upstream_model,
-			group_id,
-			subscription_id,
-			input_tokens,
-			output_tokens,
-			cache_creation_tokens,
-			cache_read_tokens,
-			cache_creation_5m_tokens,
-			cache_creation_1h_tokens,
-			image_output_tokens,
-			image_output_cost,
-			input_cost,
-			output_cost,
-			cache_creation_cost,
-			cache_read_cost,
-			total_cost,
-			actual_cost,
-			rate_multiplier,
-			account_rate_multiplier,
-			billing_type,
-			request_type,
-			stream,
-			openai_ws_mode,
-			duration_ms,
-			first_token_ms,
-			user_agent,
-			ip_address,
-			image_count,
-			image_size,
-			image_input_size,
-			image_output_size,
-			image_size_source,
-			image_size_breakdown,
-			service_tier,
-			reasoning_effort,
-			inbound_endpoint,
-			upstream_endpoint,
-			cache_ttl_overridden,
-			channel_id,
-			model_mapping_chain,
-			billing_tier,
-			billing_mode,
-			account_stats_cost,
-			created_at
-		) VALUES (
-			?, ?, ?, ?, ?, ?, ?,
-			?, ?,
-			?, ?, ?, ?,
-			?, ?, ?, ?,
-			?, ?, ?, ?, ?, ?,
-			?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-		)
-		ON CONFLICT (request_id, api_key_id) DO NOTHING
-		RETURNING id, created_at
-	`
-
-	if err := scanSingleRow(ctx, sqlq, query, prepared.args, &log.ID, &log.CreatedAt); err != nil {
-		if errors.Is(err, sql.ErrNoRows) && prepared.requestID != "" {
-			selectQuery := "SELECT id, created_at FROM usage_logs WHERE request_id = ? AND api_key_id = ?"
-			if err := scanSingleRow(ctx, sqlq, selectQuery, []any{prepared.requestID, log.APIKeyID}, &log.ID, &log.CreatedAt); err != nil {
-				return false, err
-			}
-			log.RateMultiplier = prepared.rateMultiplier
-			return false, nil
-		} else {
-			return false, err
-		}
+	inserted, state, err := insertUsageLogPrepared(ctx, sqlq, prepared, log.APIKeyID)
+	if err != nil {
+		return false, err
 	}
+	log.ID = state.ID
+	log.CreatedAt = state.CreatedAt
 	log.RateMultiplier = prepared.rateMultiplier
-	return true, nil
+	return inserted, nil
 }
 
 func (r *usageLogRepository) createBatched(ctx context.Context, log *service.UsageLog) (bool, error) {
@@ -768,512 +652,107 @@ func (r *usageLogRepository) batchInsertUsageLogs(db *sql.DB, keys []string, pre
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 
-	query, args := buildUsageLogBatchInsertQuery(keys, preparedByKey)
-	var payload []byte
-	if err := db.QueryRowContext(ctx, query, args...).Scan(&payload); err != nil {
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
 		return nil, nil, true, err
 	}
-	var rows []usageLogBatchRow
-	if err := json.Unmarshal(payload, &rows); err != nil {
-		return nil, nil, false, err
-	}
+	defer func() { _ = tx.Rollback() }()
+
 	insertedMap := make(map[string]bool, len(keys))
 	stateMap := make(map[string]usageLogBatchState, len(keys))
-	for _, row := range rows {
-		key := usageLogBatchKey(row.RequestID, row.APIKeyID)
-		insertedMap[key] = row.Inserted
-		stateMap[key] = usageLogBatchState{
-			ID:        row.ID,
-			CreatedAt: row.CreatedAt,
+	for _, key := range keys {
+		prepared, ok := preparedByKey[key]
+		if !ok {
+			return insertedMap, stateMap, true, fmt.Errorf("usage log batch input missing for key=%s", key)
 		}
+		apiKeyID, ok := usageLogAPIKeyID(prepared)
+		if !ok {
+			return insertedMap, stateMap, true, fmt.Errorf("usage log batch api key missing for key=%s", key)
+		}
+		inserted, state, err := insertUsageLogPrepared(ctx, tx, prepared, apiKeyID)
+		if err != nil {
+			return insertedMap, stateMap, true, err
+		}
+		insertedMap[key] = inserted
+		stateMap[key] = state
 	}
-	if len(stateMap) != len(keys) {
-		return insertedMap, stateMap, false, fmt.Errorf("usage log batch state count mismatch: got=%d want=%d", len(stateMap), len(keys))
+	if err := tx.Commit(); err != nil {
+		return insertedMap, stateMap, false, err
 	}
 	return insertedMap, stateMap, false, nil
 }
 
-func buildUsageLogBatchInsertQuery(keys []string, preparedByKey map[string]usageLogInsertPrepared) (string, []any) {
-	var query strings.Builder
-	_, _ = query.WriteString(`
-		WITH input (
-			input_idx,
-			user_id,
-			api_key_id,
-			account_id,
-			request_id,
-			model,
-			requested_model,
-			upstream_model,
-			group_id,
-			subscription_id,
-			input_tokens,
-			output_tokens,
-			cache_creation_tokens,
-			cache_read_tokens,
-			cache_creation_5m_tokens,
-			cache_creation_1h_tokens,
-			image_output_tokens,
-			image_output_cost,
-			input_cost,
-			output_cost,
-			cache_creation_cost,
-			cache_read_cost,
-			total_cost,
-			actual_cost,
-			rate_multiplier,
-			account_rate_multiplier,
-			billing_type,
-			request_type,
-			stream,
-			openai_ws_mode,
-			duration_ms,
-			first_token_ms,
-			user_agent,
-			ip_address,
-			image_count,
-			image_size,
-			image_input_size,
-			image_output_size,
-			image_size_source,
-			image_size_breakdown,
-			service_tier,
-			reasoning_effort,
-			inbound_endpoint,
-			upstream_endpoint,
-			cache_ttl_overridden,
-			channel_id,
-			model_mapping_chain,
-			billing_tier,
-			billing_mode,
-			account_stats_cost,
-			created_at
-		) AS (VALUES `)
-
-	args := make([]any, 0, len(keys)*50)
-	argPos := 1
-	for idx, key := range keys {
-		if idx > 0 {
-			_, _ = query.WriteString(",")
-		}
-		_, _ = query.WriteString("(")
-		_, _ = query.WriteString("$")
-		_, _ = query.WriteString(strconv.Itoa(argPos))
-		args = append(args, idx)
-		argPos++
-		prepared := preparedByKey[key]
-		for i := 0; i < len(prepared.args); i++ {
-			_, _ = query.WriteString(",")
-			_, _ = query.WriteString("$")
-			_, _ = query.WriteString(strconv.Itoa(argPos))
-			if i < len(usageLogInsertArgTypes) {
-				_, _ = query.WriteString("::")
-				_, _ = query.WriteString(usageLogInsertArgTypes[i])
-			}
-			argPos++
-		}
-		_, _ = query.WriteString(")")
-		args = append(args, prepared.args...)
+func usageLogInsertPlaceholders(argCount int) string {
+	if argCount <= 0 {
+		return "()"
 	}
-	_, _ = query.WriteString(`
-		),
-		inserted AS (
-			INSERT INTO usage_logs (
-				user_id,
-				api_key_id,
-				account_id,
-				request_id,
-				model,
-				requested_model,
-				upstream_model,
-				group_id,
-				subscription_id,
-				input_tokens,
-				output_tokens,
-				cache_creation_tokens,
-				cache_read_tokens,
-				cache_creation_5m_tokens,
-				cache_creation_1h_tokens,
-				image_output_tokens,
-				image_output_cost,
-				input_cost,
-				output_cost,
-				cache_creation_cost,
-				cache_read_cost,
-				total_cost,
-				actual_cost,
-				rate_multiplier,
-				account_rate_multiplier,
-				billing_type,
-				request_type,
-				stream,
-				openai_ws_mode,
-				duration_ms,
-				first_token_ms,
-				user_agent,
-				ip_address,
-				image_count,
-				image_size,
-				image_input_size,
-				image_output_size,
-				image_size_source,
-				image_size_breakdown,
-				service_tier,
-				reasoning_effort,
-				inbound_endpoint,
-				upstream_endpoint,
-				cache_ttl_overridden,
-				channel_id,
-				model_mapping_chain,
-				billing_tier,
-				billing_mode,
-				account_stats_cost,
-				created_at
-			)
-			SELECT
-				user_id,
-				api_key_id,
-				account_id,
-				request_id,
-				model,
-				requested_model,
-				upstream_model,
-				group_id,
-				subscription_id,
-				input_tokens,
-				output_tokens,
-				cache_creation_tokens,
-				cache_read_tokens,
-				cache_creation_5m_tokens,
-				cache_creation_1h_tokens,
-				image_output_tokens,
-				image_output_cost,
-				input_cost,
-				output_cost,
-				cache_creation_cost,
-				cache_read_cost,
-				total_cost,
-				actual_cost,
-				rate_multiplier,
-				account_rate_multiplier,
-				billing_type,
-				request_type,
-				stream,
-				openai_ws_mode,
-				duration_ms,
-				first_token_ms,
-				user_agent,
-				ip_address,
-				image_count,
-				image_size,
-				image_input_size,
-				image_output_size,
-				image_size_source,
-				image_size_breakdown,
-				service_tier,
-				reasoning_effort,
-				inbound_endpoint,
-				upstream_endpoint,
-				cache_ttl_overridden,
-				channel_id,
-				model_mapping_chain,
-				billing_tier,
-				billing_mode,
-				account_stats_cost,
-				created_at
-			FROM input
-			ON CONFLICT (request_id, api_key_id) DO NOTHING
-			RETURNING request_id, api_key_id, id, created_at
-		),
-		resolved AS (
-			SELECT
-				input.input_idx,
-				input.request_id,
-				input.api_key_id,
-				COALESCE(inserted.id, existing.id) AS id,
-				COALESCE(inserted.created_at, existing.created_at) AS created_at,
-				(inserted.id IS NOT NULL) AS inserted
-			FROM input
-			LEFT JOIN inserted
-				ON inserted.request_id = input.request_id
-				AND inserted.api_key_id = input.api_key_id
-			LEFT JOIN usage_logs existing
-				ON existing.request_id = input.request_id
-				AND existing.api_key_id = input.api_key_id
-		)
-		SELECT COALESCE(
-			json_agg(
-				json_build_object(
-					'request_id', resolved.request_id,
-					'api_key_id', resolved.api_key_id,
-					'id', resolved.id,
-					'created_at', resolved.created_at,
-					'inserted', resolved.inserted
-				)
-				ORDER BY resolved.input_idx
-			),
-			'[]'::json
-		)
-		FROM resolved
-	`)
-	return query.String(), args
+	return "(" + strings.TrimSuffix(strings.Repeat("?,", argCount), ",") + ")"
 }
 
 func buildUsageLogBestEffortInsertQuery(preparedList []usageLogInsertPrepared) (string, []any) {
-	var query strings.Builder
-	_, _ = query.WriteString(`
-		WITH input (
-			user_id,
-			api_key_id,
-			account_id,
-			request_id,
-			model,
-			requested_model,
-			upstream_model,
-			group_id,
-			subscription_id,
-			input_tokens,
-			output_tokens,
-			cache_creation_tokens,
-			cache_read_tokens,
-			cache_creation_5m_tokens,
-			cache_creation_1h_tokens,
-			image_output_tokens,
-			image_output_cost,
-			input_cost,
-			output_cost,
-			cache_creation_cost,
-			cache_read_cost,
-			total_cost,
-			actual_cost,
-			rate_multiplier,
-			account_rate_multiplier,
-			billing_type,
-			request_type,
-			stream,
-			openai_ws_mode,
-			duration_ms,
-			first_token_ms,
-			user_agent,
-			ip_address,
-			image_count,
-			image_size,
-			image_input_size,
-			image_output_size,
-			image_size_source,
-			image_size_breakdown,
-			service_tier,
-			reasoning_effort,
-			inbound_endpoint,
-			upstream_endpoint,
-			cache_ttl_overridden,
-			channel_id,
-			model_mapping_chain,
-			billing_tier,
-			billing_mode,
-			account_stats_cost,
-			created_at
-		) AS (VALUES `)
-
-	args := make([]any, 0, len(preparedList)*50)
-	argPos := 1
-	for idx, prepared := range preparedList {
-		if idx > 0 {
-			_, _ = query.WriteString(",")
-		}
-		_, _ = query.WriteString("(")
-		for i := 0; i < len(prepared.args); i++ {
-			if i > 0 {
-				_, _ = query.WriteString(",")
-			}
-			_, _ = query.WriteString("$")
-			_, _ = query.WriteString(strconv.Itoa(argPos))
-			if i < len(usageLogInsertArgTypes) {
-				_, _ = query.WriteString("::")
-				_, _ = query.WriteString(usageLogInsertArgTypes[i])
-			}
-			argPos++
-		}
-		_, _ = query.WriteString(")")
-		args = append(args, prepared.args...)
+	if len(preparedList) == 0 {
+		return "", nil
 	}
 
-	_, _ = query.WriteString(`
-		)
-		INSERT INTO usage_logs (
-			user_id,
-			api_key_id,
-			account_id,
-			request_id,
-			model,
-			requested_model,
-			upstream_model,
-			group_id,
-			subscription_id,
-			input_tokens,
-			output_tokens,
-			cache_creation_tokens,
-			cache_read_tokens,
-			cache_creation_5m_tokens,
-			cache_creation_1h_tokens,
-			image_output_tokens,
-			image_output_cost,
-			input_cost,
-			output_cost,
-			cache_creation_cost,
-			cache_read_cost,
-			total_cost,
-			actual_cost,
-			rate_multiplier,
-			account_rate_multiplier,
-			billing_type,
-			request_type,
-			stream,
-			openai_ws_mode,
-			duration_ms,
-			first_token_ms,
-			user_agent,
-			ip_address,
-			image_count,
-			image_size,
-			image_input_size,
-			image_output_size,
-			image_size_source,
-			image_size_breakdown,
-			service_tier,
-			reasoning_effort,
-			inbound_endpoint,
-			upstream_endpoint,
-			cache_ttl_overridden,
-			channel_id,
-			model_mapping_chain,
-			billing_tier,
-			billing_mode,
-			account_stats_cost,
-			created_at
-		)
-		SELECT
-			user_id,
-			api_key_id,
-			account_id,
-			request_id,
-			model,
-			requested_model,
-			upstream_model,
-			group_id,
-			subscription_id,
-			input_tokens,
-			output_tokens,
-			cache_creation_tokens,
-			cache_read_tokens,
-			cache_creation_5m_tokens,
-			cache_creation_1h_tokens,
-			image_output_tokens,
-			image_output_cost,
-			input_cost,
-			output_cost,
-			cache_creation_cost,
-			cache_read_cost,
-			total_cost,
-			actual_cost,
-			rate_multiplier,
-			account_rate_multiplier,
-			billing_type,
-			request_type,
-			stream,
-			openai_ws_mode,
-			duration_ms,
-			first_token_ms,
-			user_agent,
-			ip_address,
-			image_count,
-			image_size,
-			image_input_size,
-			image_output_size,
-			image_size_source,
-			image_size_breakdown,
-			service_tier,
-			reasoning_effort,
-			inbound_endpoint,
-			upstream_endpoint,
-			cache_ttl_overridden,
-			channel_id,
-			model_mapping_chain,
-			billing_tier,
-			billing_mode,
-			account_stats_cost,
-			created_at
-		FROM input
-		ON CONFLICT (request_id, api_key_id) DO NOTHING
-	`)
+	var query strings.Builder
+	_, _ = query.WriteString("INSERT IGNORE INTO usage_logs (")
+	_, _ = query.WriteString(usageLogInsertColumns)
+	_, _ = query.WriteString(") VALUES ")
 
+	args := make([]any, 0, len(preparedList)*len(preparedList[0].args))
+	for i, prepared := range preparedList {
+		if i > 0 {
+			_, _ = query.WriteString(",")
+		}
+		_, _ = query.WriteString(usageLogInsertPlaceholders(len(prepared.args)))
+		args = append(args, prepared.args...)
+	}
 	return query.String(), args
 }
 
+func execUsageLogInsert(ctx context.Context, sqlq sqlExecutor, prepared usageLogInsertPrepared) (sql.Result, error) {
+	query := "INSERT INTO usage_logs (" + usageLogInsertColumns + ") VALUES " + usageLogInsertPlaceholders(len(prepared.args))
+	return sqlq.ExecContext(ctx, query, prepared.args...)
+}
+
 func execUsageLogInsertNoResult(ctx context.Context, sqlq sqlExecutor, prepared usageLogInsertPrepared) error {
-	_, err := sqlq.ExecContext(ctx, `
-		INSERT INTO usage_logs (
-			user_id,
-			api_key_id,
-			account_id,
-			request_id,
-			model,
-			requested_model,
-			upstream_model,
-			group_id,
-			subscription_id,
-			input_tokens,
-			output_tokens,
-			cache_creation_tokens,
-			cache_read_tokens,
-			cache_creation_5m_tokens,
-			cache_creation_1h_tokens,
-			image_output_tokens,
-			image_output_cost,
-			input_cost,
-			output_cost,
-			cache_creation_cost,
-			cache_read_cost,
-			total_cost,
-			actual_cost,
-			rate_multiplier,
-			account_rate_multiplier,
-			billing_type,
-			request_type,
-			stream,
-			openai_ws_mode,
-			duration_ms,
-			first_token_ms,
-			user_agent,
-			ip_address,
-			image_count,
-			image_size,
-			image_input_size,
-			image_output_size,
-			image_size_source,
-			image_size_breakdown,
-			service_tier,
-			reasoning_effort,
-			inbound_endpoint,
-			upstream_endpoint,
-			cache_ttl_overridden,
-			channel_id,
-			model_mapping_chain,
-			billing_tier,
-			billing_mode,
-			account_stats_cost,
-			created_at
-		) VALUES (
-			?, ?, ?, ?, ?, ?, ?,
-			?, ?,
-			?, ?, ?, ?,
-			?, ?, ?, ?,
-			?, ?, ?, ?, ?, ?,
-			?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
-		)
-		ON CONFLICT (request_id, api_key_id) DO NOTHING
-	`, prepared.args...)
+	query := "INSERT IGNORE INTO usage_logs (" + usageLogInsertColumns + ") VALUES " + usageLogInsertPlaceholders(len(prepared.args))
+	_, err := sqlq.ExecContext(ctx, query, prepared.args...)
 	return err
+}
+
+func insertUsageLogPrepared(ctx context.Context, sqlq sqlExecutor, prepared usageLogInsertPrepared, apiKeyID int64) (bool, usageLogBatchState, error) {
+	result, err := execUsageLogInsert(ctx, sqlq, prepared)
+	if err != nil {
+		if prepared.requestID == "" || !isUniqueConstraintViolation(err) {
+			return false, usageLogBatchState{}, err
+		}
+
+		var state usageLogBatchState
+		selectQuery := "SELECT id, created_at FROM usage_logs WHERE request_id = ? AND api_key_id = ? FOR UPDATE"
+		if selectErr := scanSingleRow(ctx, sqlq, selectQuery, []any{prepared.requestID, apiKeyID}, &state.ID, &state.CreatedAt); selectErr != nil {
+			return false, usageLogBatchState{}, err
+		}
+		return false, state, nil
+	}
+
+	id, err := result.LastInsertId()
+	if err != nil {
+		return false, usageLogBatchState{}, err
+	}
+	state := usageLogBatchState{ID: id, CreatedAt: prepared.createdAt}
+	if err := scanSingleRow(ctx, sqlq, "SELECT id, created_at FROM usage_logs WHERE id = ?", []any{id}, &state.ID, &state.CreatedAt); err != nil {
+		return false, usageLogBatchState{}, err
+	}
+	return true, state, nil
+}
+
+func usageLogAPIKeyID(prepared usageLogInsertPrepared) (int64, bool) {
+	if len(prepared.args) < 2 {
+		return 0, false
+	}
+	apiKeyID, ok := prepared.args[1].(int64)
+	return apiKeyID, ok
 }
 
 func prepareUsageLogInsert(log *service.UsageLog) usageLogInsertPrepared {
@@ -1687,7 +1166,9 @@ func (r *usageLogRepository) fillDashboardUsageStatsAggregated(ctx context.Conte
 func (r *usageLogRepository) fillDashboardUsageStatsFromUsageLogs(ctx context.Context, stats *DashboardStats, startUTC, endUTC, todayUTC, now time.Time) error {
 	todayEnd := todayUTC.Add(24 * time.Hour)
 	combinedStatsQuery := `
-		WITH scoped AS (
+		WITH bounds AS (
+			SELECT ? AS total_start, ? AS total_end, ? AS today_start, ? AS today_end
+		), scoped AS (
 			SELECT
 				created_at,
 				input_tokens,
@@ -1697,29 +1178,32 @@ func (r *usageLogRepository) fillDashboardUsageStatsFromUsageLogs(ctx context.Co
 				total_cost,
 				actual_cost,
 				COALESCE(account_stats_cost, total_cost) * COALESCE(account_rate_multiplier, 1) AS account_cost,
-				COALESCE(duration_ms, 0) AS duration_ms
+				COALESCE(duration_ms, 0) AS duration_ms,
+				(created_at >= bounds.total_start AND created_at < bounds.total_end) AS in_total,
+				(created_at >= bounds.today_start AND created_at < bounds.today_end) AS in_today
 			FROM usage_logs
-			WHERE created_at >= LEAST(?::timestamptz, ?::timestamptz)
-				AND created_at < GREATEST(?::timestamptz, ?::timestamptz)
+			CROSS JOIN bounds
+			WHERE created_at >= LEAST(bounds.total_start, bounds.today_start)
+				AND created_at < GREATEST(bounds.total_end, bounds.today_end)
 		)
 		SELECT
-			COUNT(*) FILTER (WHERE created_at >= ?::timestamptz AND created_at < ?::timestamptz) AS total_requests,
-			COALESCE(SUM(input_tokens) FILTER (WHERE created_at >= ?::timestamptz AND created_at < ?::timestamptz), 0) AS total_input_tokens,
-			COALESCE(SUM(output_tokens) FILTER (WHERE created_at >= ?::timestamptz AND created_at < ?::timestamptz), 0) AS total_output_tokens,
-			COALESCE(SUM(cache_creation_tokens) FILTER (WHERE created_at >= ?::timestamptz AND created_at < ?::timestamptz), 0) AS total_cache_creation_tokens,
-			COALESCE(SUM(cache_read_tokens) FILTER (WHERE created_at >= ?::timestamptz AND created_at < ?::timestamptz), 0) AS total_cache_read_tokens,
-			COALESCE(SUM(total_cost) FILTER (WHERE created_at >= ?::timestamptz AND created_at < ?::timestamptz), 0) AS total_cost,
-			COALESCE(SUM(actual_cost) FILTER (WHERE created_at >= ?::timestamptz AND created_at < ?::timestamptz), 0) AS total_actual_cost,
-			COALESCE(SUM(account_cost) FILTER (WHERE created_at >= ?::timestamptz AND created_at < ?::timestamptz), 0) AS total_account_cost,
-			COALESCE(SUM(duration_ms) FILTER (WHERE created_at >= ?::timestamptz AND created_at < ?::timestamptz), 0) AS total_duration_ms,
-			COUNT(*) FILTER (WHERE created_at >= ?::timestamptz AND created_at < ?::timestamptz) AS today_requests,
-			COALESCE(SUM(input_tokens) FILTER (WHERE created_at >= ?::timestamptz AND created_at < ?::timestamptz), 0) AS today_input_tokens,
-			COALESCE(SUM(output_tokens) FILTER (WHERE created_at >= ?::timestamptz AND created_at < ?::timestamptz), 0) AS today_output_tokens,
-			COALESCE(SUM(cache_creation_tokens) FILTER (WHERE created_at >= ?::timestamptz AND created_at < ?::timestamptz), 0) AS today_cache_creation_tokens,
-			COALESCE(SUM(cache_read_tokens) FILTER (WHERE created_at >= ?::timestamptz AND created_at < ?::timestamptz), 0) AS today_cache_read_tokens,
-			COALESCE(SUM(total_cost) FILTER (WHERE created_at >= ?::timestamptz AND created_at < ?::timestamptz), 0) AS today_cost,
-			COALESCE(SUM(actual_cost) FILTER (WHERE created_at >= ?::timestamptz AND created_at < ?::timestamptz), 0) AS today_actual_cost,
-			COALESCE(SUM(account_cost) FILTER (WHERE created_at >= ?::timestamptz AND created_at < ?::timestamptz), 0) AS today_account_cost
+			COALESCE(SUM(CASE WHEN in_total THEN 1 ELSE 0 END), 0) AS total_requests,
+			COALESCE(SUM(CASE WHEN in_total THEN input_tokens ELSE 0 END), 0) AS total_input_tokens,
+			COALESCE(SUM(CASE WHEN in_total THEN output_tokens ELSE 0 END), 0) AS total_output_tokens,
+			COALESCE(SUM(CASE WHEN in_total THEN cache_creation_tokens ELSE 0 END), 0) AS total_cache_creation_tokens,
+			COALESCE(SUM(CASE WHEN in_total THEN cache_read_tokens ELSE 0 END), 0) AS total_cache_read_tokens,
+			COALESCE(SUM(CASE WHEN in_total THEN total_cost ELSE 0 END), 0) AS total_cost,
+			COALESCE(SUM(CASE WHEN in_total THEN actual_cost ELSE 0 END), 0) AS total_actual_cost,
+			COALESCE(SUM(CASE WHEN in_total THEN account_cost ELSE 0 END), 0) AS total_account_cost,
+			COALESCE(SUM(CASE WHEN in_total THEN duration_ms ELSE 0 END), 0) AS total_duration_ms,
+			COALESCE(SUM(CASE WHEN in_today THEN 1 ELSE 0 END), 0) AS today_requests,
+			COALESCE(SUM(CASE WHEN in_today THEN input_tokens ELSE 0 END), 0) AS today_input_tokens,
+			COALESCE(SUM(CASE WHEN in_today THEN output_tokens ELSE 0 END), 0) AS today_output_tokens,
+			COALESCE(SUM(CASE WHEN in_today THEN cache_creation_tokens ELSE 0 END), 0) AS today_cache_creation_tokens,
+			COALESCE(SUM(CASE WHEN in_today THEN cache_read_tokens ELSE 0 END), 0) AS today_cache_read_tokens,
+			COALESCE(SUM(CASE WHEN in_today THEN total_cost ELSE 0 END), 0) AS today_cost,
+			COALESCE(SUM(CASE WHEN in_today THEN actual_cost ELSE 0 END), 0) AS today_actual_cost,
+			COALESCE(SUM(CASE WHEN in_today THEN account_cost ELSE 0 END), 0) AS today_account_cost
 		FROM scoped
 	`
 	var totalDurationMs int64
@@ -1758,16 +1242,20 @@ func (r *usageLogRepository) fillDashboardUsageStatsFromUsageLogs(ctx context.Co
 	hourStart := now.UTC().Truncate(time.Hour)
 	hourEnd := hourStart.Add(time.Hour)
 	activeUsersQuery := `
-		WITH scoped AS (
+		WITH bounds AS (
+			SELECT ? AS today_start, ? AS today_end, ? AS hour_start, ? AS hour_end
+		), scoped AS (
 			SELECT user_id, created_at
 			FROM usage_logs
-			WHERE created_at >= LEAST(?::timestamptz, ?::timestamptz)
-				AND created_at < GREATEST(?::timestamptz, ?::timestamptz)
+			CROSS JOIN bounds
+			WHERE created_at >= LEAST(bounds.today_start, bounds.hour_start)
+				AND created_at < GREATEST(bounds.today_end, bounds.hour_end)
 		)
 		SELECT
-			COUNT(DISTINCT CASE WHEN created_at >= ?::timestamptz AND created_at < ?::timestamptz THEN user_id END) AS active_users,
-			COUNT(DISTINCT CASE WHEN created_at >= ?::timestamptz AND created_at < ?::timestamptz THEN user_id END) AS hourly_active_users
+			COUNT(DISTINCT CASE WHEN created_at >= bounds.today_start AND created_at < bounds.today_end THEN user_id END) AS active_users,
+			COUNT(DISTINCT CASE WHEN created_at >= bounds.hour_start AND created_at < bounds.hour_end THEN user_id END) AS hourly_active_users
 		FROM scoped
+		CROSS JOIN bounds
 	`
 	if err := scanSingleRow(ctx, r.sql, activeUsersQuery, []any{todayUTC, todayEnd, hourStart, hourEnd}, &stats.ActiveUsers, &stats.HourlyActiveUsers); err != nil {
 		return err

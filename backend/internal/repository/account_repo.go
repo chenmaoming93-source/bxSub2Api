@@ -33,7 +33,8 @@ import (
 // 璁捐璇存槑锛?//   - client: Ent 瀹㈡埛绔紝鐢ㄤ簬绫诲瀷瀹夊叏鐨?ORM 鎿嶄綔
 //   - sql: 鍘熺敓 SQL 鎵ц鍣紝鐢ㄤ簬澶嶆潅鏌ヨ鍜屾壒閲忔搷浣?//   - schedulerCache: 璋冨害鍣ㄧ紦瀛橈紝鐢ㄤ簬鍦ㄨ处鍙风姸鎬佸彉鏇存椂鍚屾蹇収
 type accountRepository struct {
-	client *dbent.Client // Ent ORM 瀹㈡埛绔?	sql    sqlExecutor   // 鍘熺敓 SQL 鎵ц鎺ュ彛
+	client *dbent.Client
+	sql    sqlExecutor
 	// schedulerCache 鐢ㄤ簬鍦ㄨ处鍙风姸鎬佸彉鏇存椂涓诲姩鍚屾蹇収鍒扮紦瀛橈紝
 	// 纭繚绮樻€т細璇濊兘鍙婃椂鎰熺煡璐﹀彿涓嶅彲鐢ㄧ姸鎬併€?	// Used to proactively sync account snapshot to cache when status changes,
 	// ensuring sticky sessions can promptly detect unavailable accounts.
@@ -55,11 +56,12 @@ var schedulerNeutralExtraKeys = map[string]struct{}{
 
 const postgresParameterBatchSize = 50000
 
-// NewAccountRepository 鍒涘缓璐︽埛浠撳偍瀹炰緥銆?// 杩欐槸瀵瑰鏆撮湶鐨勬瀯閫犲嚱鏁帮紝杩斿洖鎺ュ彛绫诲瀷浠ヤ究浜庝緷璧栨敞鍏ャ€?func NewAccountRepository(client *dbent.Client, sqlDB *sql.DB, schedulerCache service.SchedulerCache) service.AccountRepository {
+// NewAccountRepository 创建账户仓储实例。
+func NewAccountRepository(client *dbent.Client, sqlDB *sql.DB, schedulerCache service.SchedulerCache) service.AccountRepository {
 	return newAccountRepositoryWithSQL(client, sqlDB, schedulerCache)
 }
 
-// newAccountRepositoryWithSQL 鏄唴閮ㄦ瀯閫犲嚱鏁帮紝鏀寔渚濊禆娉ㄥ叆 SQL 鎵ц鍣ㄣ€?// 杩欑璁捐渚夸簬鍗曞厓娴嬭瘯鏃舵敞鍏?mock 瀵硅薄銆?func newAccountRepositoryWithSQL(client *dbent.Client, sqlq sqlExecutor, schedulerCache service.SchedulerCache) *accountRepository {
+func newAccountRepositoryWithSQL(client *dbent.Client, sqlq sqlExecutor, schedulerCache service.SchedulerCache) *accountRepository {
 	return &accountRepository{client: client, sql: sqlq, schedulerCache: schedulerCache}
 }
 
@@ -233,7 +235,9 @@ func (r *accountRepository) GetByIDs(ctx context.Context, ids []int64) ([]*servi
 
 // ExistsByID 妫€鏌ユ寚瀹?ID 鐨勮处鍙锋槸鍚﹀瓨鍦ㄣ€?// 鐩告瘮 GetByID锛屾鏂规硶鎬ц兘鏇翠紭锛屽洜涓猴細
 //   - 浣跨敤 Exist() 鏂规硶鐢熸垚 SELECT EXISTS 鏌ヨ锛屽彧杩斿洖甯冨皵鍊?//   - 涓嶅姞杞藉畬鏁寸殑璐﹀彿瀹炰綋鍙婂叾鍏宠仈鏁版嵁锛圙roups銆丳roxy 绛夛級
-//   - 閫傜敤浜庡垹闄ゅ墠鐨勫瓨鍦ㄦ€ф鏌ョ瓑鍙渶鍒ゆ柇鏈夋棤鐨勫満鏅?func (r *accountRepository) ExistsByID(ctx context.Context, id int64) (bool, error) {
+//
+// ExistsByID 检查指定 ID 的账号是否存在。
+func (r *accountRepository) ExistsByID(ctx context.Context, id int64) (bool, error) {
 	exists, err := r.client.Account.Query().Where(dbaccount.IDEQ(id)).Exist(ctx)
 	if err != nil {
 		return false, err
@@ -246,7 +250,8 @@ func (r *accountRepository) GetByCRSAccountID(ctx context.Context, crsAccountID 
 		return nil, nil
 	}
 
-	// 浣跨敤 sqljson.ValueEQ 鐢熸垚 JSON 璺緞杩囨护锛岄伩鍏嶆墜鍐?SQL 鐗囨瀵艰嚧璇硶鍏煎闂銆?	m, err := r.client.Account.Query().
+	// 使用 sqljson.ValueEQ 生成 JSON 路径过滤。
+	m, err := r.client.Account.Query().
 		Where(func(s *entsql.Selector) {
 			s.Where(sqljson.ValueEQ(dbaccount.FieldExtra, crsAccountID, sqljson.Path("crs_account_id")))
 		}).
@@ -385,7 +390,8 @@ func (r *accountRepository) Update(ctx context.Context, account *service.Account
 	if err := enqueueSchedulerOutbox(ctx, r.sql, service.SchedulerOutboxEventAccountChanged, &account.ID, nil, buildSchedulerGroupPayload(account.GroupIDs)); err != nil {
 		logger.LegacyPrintf("repository.account", "[SchedulerOutbox] enqueue account update failed: account=%d err=%v", account.ID, err)
 	}
-	// 鏅€氳处鍙风紪杈戯紙濡?model_mapping / credentials锛変篃闇€瑕佺珛鍗冲埛鏂板崟璐﹀彿蹇収锛?	// 鍚﹀垯缃戝叧鍦?outbox worker 寤惰繜鎴栧紓甯告椂浠嶅彲鑳借鍒版棫閰嶇疆銆?	r.syncSchedulerAccountSnapshot(ctx, account.ID)
+	// 普通账号编辑也需要立即刷新单账号快照。
+	r.syncSchedulerAccountSnapshot(ctx, account.ID)
 	return nil
 }
 
@@ -405,7 +411,8 @@ func (r *accountRepository) Delete(ctx context.Context, id int64) error {
 	if err != nil {
 		return err
 	}
-	// 浣跨敤浜嬪姟淇濊瘉璐﹀彿涓庡叧鑱斿垎缁勭殑鍒犻櫎鍘熷瓙鎬?	tx, err := r.client.Tx(ctx)
+	// 使用事务保证账号与关联分组的删除原子性。
+	tx, err := r.client.Tx(ctx)
 	if err != nil && !errors.Is(err, dbent.ErrTxStarted) {
 		return err
 	}
@@ -634,7 +641,8 @@ func (r *accountRepository) ListOAuthRefreshCandidates(ctx context.Context) ([]s
 	// (cond) IS NOT TRUE 鎶?NULL 鍜?FALSE 閮借涓?鍙鍒锋柊"銆傜洿鎺ュ啓
 	// NOT (a AND b) 鍦?PG 涓夊€奸€昏緫涓嬩細鎶?a 鎴?b 涓?NULL 鐨勮锛堝嵆缁濆ぇ澶氭暟
 	// 鍋ュ悍璐﹀彿锛歵emp_unschedulable_until=NULL锛変篃鎺掗櫎锛屽鑷村悗鍙?token
-	// 鍒锋柊宸ヤ綔鍣ㄦ紡鎺夋墍鏈夋甯歌处鍙?鈫?access_token 鍒版湡鍚庤姹傚紑濮?401銆?	rows, err := r.sql.QueryContext(ctx, `
+	// 保留 NULL/FALSE 均可刷新语义，避免漏掉健康账号。
+	rows, err := r.sql.QueryContext(ctx, `
 		SELECT id
 		FROM accounts
 		WHERE deleted_at IS NULL
@@ -906,7 +914,8 @@ func (r *accountRepository) BindGroups(ctx context.Context, accountID int64, gro
 	if err != nil {
 		return err
 	}
-	// 浣跨敤浜嬪姟淇濊瘉鍒犻櫎鏃х粦瀹氫笌鍒涘缓鏂扮粦瀹氱殑鍘熷瓙鎬?	tx, err := r.client.Tx(ctx)
+	// 使用事务保证删除旧绑定与创建新绑定的原子性。
+	tx, err := r.client.Tx(ctx)
 	if err != nil && !errors.Is(err, dbent.ErrTxStarted) {
 		return err
 	}
@@ -1003,7 +1012,7 @@ func (r *accountRepository) ListSchedulableByPlatform(ctx context.Context, platf
 }
 
 func (r *accountRepository) ListSchedulableByGroupIDAndPlatform(ctx context.Context, groupID int64, platform string) ([]service.Account, error) {
-	// 鍗曞钩鍙版煡璇㈠鐢ㄥ骞冲彴閫昏緫锛屼繚鎸佽繃婊ゆ潯浠朵笌鎺掑簭绛栫暐涓€鑷淬€?	return r.queryAccountsByGroup(ctx, groupID, accountGroupQueryOptions{
+	return r.queryAccountsByGroup(ctx, groupID, accountGroupQueryOptions{
 		status:      service.StatusActive,
 		schedulable: true,
 		platforms:   []string{platform},
@@ -1014,7 +1023,7 @@ func (r *accountRepository) ListSchedulableByPlatforms(ctx context.Context, plat
 	if len(platforms) == 0 {
 		return nil, nil
 	}
-	// 浠呰繑鍥炲彲璋冨害鐨勬椿璺冭处鍙凤紝骞惰繃婊ゅ浜庤繃杞?闄愭祦绐楀彛鐨勮处鍙枫€?	// 浠ｇ悊涓庡垎缁勪俊鎭粺涓€鍦?accountsToService 涓壒閲忓姞杞斤紝閬垮厤 N+1 鏌ヨ銆?	now := time.Now()
+	now := time.Now()
 	accounts, err := r.client.Account.Query().
 		Where(
 			dbaccount.PlatformIn(platforms...),
@@ -1082,7 +1091,7 @@ func (r *accountRepository) ListSchedulableByGroupIDAndPlatforms(ctx context.Con
 	if len(platforms) == 0 {
 		return nil, nil
 	}
-	// 澶嶇敤鎸夊垎缁勬煡璇㈤€昏緫锛屼繚璇佸垎缁勪紭鍏堢骇 + 璐﹀彿浼樺厛绾х殑鎺掑簭涓庣瓫閫変竴鑷淬€?	return r.queryAccountsByGroup(ctx, groupID, accountGroupQueryOptions{
+	return r.queryAccountsByGroup(ctx, groupID, accountGroupQueryOptions{
 		status:      service.StatusActive,
 		schedulable: true,
 		platforms:   platforms,
@@ -1299,7 +1308,7 @@ func (r *accountRepository) UpdateSessionWindow(ctx context.Context, id int64, s
 	if err != nil {
 		return err
 	}
-	// 瑙﹀彂璋冨害鍣ㄧ紦瀛樻洿鏂帮紙浠呭綋绐楀彛鏃堕棿鏈夊彉鍖栨椂锛?	if start != nil || end != nil {
+	if start != nil || end != nil {
 		if err := enqueueSchedulerOutbox(ctx, r.sql, service.SchedulerOutboxEventAccountChanged, &id, nil, nil); err != nil {
 			logger.LegacyPrintf("repository.account", "[SchedulerOutbox] enqueue session window update failed: account=%d err=%v", id, err)
 		}
@@ -1398,8 +1407,8 @@ func (r *accountRepository) UpdateExtra(ctx context.Context, id int64, updates m
 			logger.LegacyPrintf("repository.account", "[SchedulerOutbox] enqueue extra update failed: account=%d err=%v", id, err)
 		}
 	} else {
-		// 瑙傛祴鍨?extra 瀛楁涓嶉渶瑕佽Е鍙?bucket 閲嶅缓锛屼絾浠嶅悓姝ュ崟璐﹀彿蹇収锛?		// 璁?sticky session / GetAccount 鍛戒腑缂撳瓨鏃朵篃鑳借鍒版渶鏂版暟鎹紝
-		// 鍚屾椂閬垮厤缂撳瓨灞€閮?patch 瑕嗙洊鎺夊苟鍙戝啓鍏ョ殑鍏跺畠璐﹀彿瀛楁銆?		r.syncSchedulerAccountSnapshot(ctx, id)
+		// 观测型 extra 字段不重建 bucket，但仍同步单账号快照。
+		r.syncSchedulerAccountSnapshot(ctx, id)
 	}
 	return nil
 }
@@ -1482,7 +1491,8 @@ func (r *accountRepository) BulkUpdate(ctx context.Context, ids []int64, updates
 		setClauses = append(setClauses, "schedulable = ?")
 		args = append(args, *updates.Schedulable)
 	}
-	// JSONB 闇€瑕佸悎骞惰€岄潪瑕嗙洊锛屼娇鐢?raw SQL 淇濇寔鏃ц涓恒€?	if len(updates.Credentials) > 0 {
+	// JSON 字段需要合并而非覆盖。
+	if len(updates.Credentials) > 0 {
 		payload, err := json.Marshal(updates.Credentials)
 		if err != nil {
 			return 0, err
@@ -1549,7 +1559,7 @@ func (r *accountRepository) queryAccountsByGroup(ctx context.Context, groupID in
 	q := r.client.AccountGroup.Query().
 		Where(dbaccountgroup.GroupIDEQ(groupID))
 
-	// 閫氳繃 account_groups 涓棿琛ㄦ煡璇㈣处鍙凤紝骞舵寜闇€鍙犲姞鐘舵€?骞冲彴/璋冨害鑳藉姏杩囨护銆?	preds := make([]dbpredicate.Account, 0, 6)
+	preds := make([]dbpredicate.Account, 0, 6)
 	preds = append(preds, dbaccount.DeletedAtIsNil())
 	if opts.status != "" {
 		preds = append(preds, dbaccount.StatusEQ(opts.status))
@@ -1842,7 +1852,8 @@ func mergeGroupIDs(a []int64, b []int64) []int64 {
 
 // buildSchedulerGroupPayload 鏋勯€?EventAccountChanged / EventAccountGroupsChanged
 // 浜嬩欢鐨?payload銆傜┖ groupIDs 蹇呴』杩斿洖 untyped nil锛坅ny 鑰岄潪 map[string]any(nil)锛夛紝
-// 鍚﹀垯 enqueueSchedulerOutbox 鐨?"payload != nil" 鎺ュ彛鍒ょ┖浼氳 typed-nil 娆洪獥锛?// 鎶?payload marshal 鎴?"null" 鍐欏叆 dedup_key 鍝堝笇锛岀牬鍧忎笌鍏朵粬 nil-payload 璋冪敤鐨勫幓閲嶄竴鑷存€с€?func buildSchedulerGroupPayload(groupIDs []int64) any {
+// 空 groupIDs 返回 untyped nil，保持 outbox 去重语义。
+func buildSchedulerGroupPayload(groupIDs []int64) any {
 	if len(groupIDs) == 0 {
 		return nil
 	}
@@ -2005,7 +2016,8 @@ const nextDailyResetAtExpr = `NULL`
 const nextWeeklyResetAtExpr = `NULL`
 
 // IncrementQuotaUsed 鍘熷瓙閫掑璐﹀彿鐨勯厤棰濈敤閲忥紙鎬?鏃?鍛ㄤ笁涓淮搴︼級
-// 鏃?鍛ㄩ搴﹀湪鍛ㄦ湡杩囨湡鏃惰嚜鍔ㄩ噸缃负 0 鍐嶉€掑銆?// 鏀寔婊氬姩绐楀彛锛坮olling锛夊拰鍥哄畾鏃堕棿锛坒ixed锛変袱绉嶉噸缃ā寮忋€?func (r *accountRepository) IncrementQuotaUsed(ctx context.Context, id int64, amount float64) error {
+// IncrementQuotaUsed 原子递增账号的总、日、周配额用量。
+func (r *accountRepository) IncrementQuotaUsed(ctx context.Context, id int64, amount float64) error {
 	res, err := r.sql.ExecContext(ctx,
 		`UPDATE accounts SET extra = JSON_SET(
 			COALESCE(extra, JSON_OBJECT()),
@@ -2054,8 +2066,10 @@ WHERE id = ? AND deleted_at IS NULL`, []any{id}, &newUsed, &limit); err != nil {
 	}
 	return nil
 }
+
 // ResetQuotaUsed 閲嶇疆璐﹀彿鎵€鏈夌淮搴︾殑閰嶉鐢ㄩ噺涓?0
-// 淇濈暀鍥哄畾閲嶇疆妯″紡鐨勯厤缃瓧娈碉紙quota_daily_reset_mode 绛夛級锛屼粎娓呴浂鐢ㄩ噺鍜岀獥鍙ｈ捣濮嬫椂闂?func (r *accountRepository) ResetQuotaUsed(ctx context.Context, id int64) error {
+// ResetQuotaUsed 重置账号各维度配额用量。
+func (r *accountRepository) ResetQuotaUsed(ctx context.Context, id int64) error {
 	_, err := r.sql.ExecContext(ctx,
 		`UPDATE accounts SET extra = JSON_REMOVE(
 			JSON_SET(COALESCE(extra, JSON_OBJECT()), '$.quota_used', 0, '$.quota_daily_used', 0, '$.quota_weekly_used', 0),
@@ -2071,8 +2085,10 @@ WHERE id = ? AND deleted_at IS NULL`, []any{id}, &newUsed, &limit); err != nil {
 	}
 	return nil
 }
+
 // RevertProxyFallback 灏嗚处鍙风殑 proxy_id 鍒囧洖 proxy_fallback_origin_id锛屽苟娓呯┖ origin 瀛楁銆?// 浠呭綋 proxy_fallback_origin_id IS NOT NULL 鏃舵墽琛屾洿鏂帮紱
-// 鑻ュ奖鍝嶈鏁颁负 0锛屽垯杩斿洖 ErrAccountNotInFallback锛堣处鍙峰瓨鍦ㄤ絾涓嶅湪 fallback 鐘舵€侊級銆?func (r *accountRepository) RevertProxyFallback(ctx context.Context, accountID int64) error {
+// RevertProxyFallback 将账号切回原代理。
+func (r *accountRepository) RevertProxyFallback(ctx context.Context, accountID int64) error {
 	res, err := r.sql.ExecContext(ctx, `
 		UPDATE accounts SET proxy_id=proxy_fallback_origin_id, proxy_fallback_origin_id=NULL, updated_at=NOW()
 		WHERE id=? AND proxy_fallback_origin_id IS NOT NULL AND deleted_at IS NULL`, accountID)

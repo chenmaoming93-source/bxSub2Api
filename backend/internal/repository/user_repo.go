@@ -626,7 +626,6 @@ func (r *userRepository) GetLatestUsedAtByUserIDs(ctx context.Context, userIDs [
 		return nil, fmt.Errorf("sql executor is not configured")
 	}
 
-<<<<<<< Updated upstream
 	condition, conditionArgs := int64InCondition("user_id", userIDs)
 	query := `
 		SELECT user_id, MAX(created_at) AS last_used_at
@@ -636,32 +635,6 @@ func (r *userRepository) GetLatestUsedAtByUserIDs(ctx context.Context, userIDs [
 	`
 
 	rows, err := r.sql.QueryContext(ctx, query, conditionArgs...)
-=======
-<<<<<<< HEAD
-	idsJSON, err := jsonArrayParam(userIDs)
-	if err != nil {
-		return nil, err
-	}
-	const query = `
-		SELECT user_id, MAX(created_at) AS last_used_at
-		FROM usage_logs
-		WHERE user_id IN (SELECT id FROM JSON_TABLE(?, '$[*]' COLUMNS(id BIGINT PATH '$')) AS user_ids)
-		GROUP BY user_id
-	`
-
-	rows, err := r.sql.QueryContext(ctx, query, idsJSON)
-=======
-	condition, conditionArgs := int64InCondition("user_id", userIDs)
-	query := `
-		SELECT user_id, MAX(created_at) AS last_used_at
-		FROM usage_logs
-		WHERE ` + condition + `
-		GROUP BY user_id
-	`
-
-	rows, err := r.sql.QueryContext(ctx, query, conditionArgs...)
->>>>>>> b8b0dfac4a13354cc88788f3e499c69d7a14914f
->>>>>>> Stashed changes
 	if err != nil {
 		return nil, err
 	}
@@ -693,24 +666,14 @@ func (r *userRepository) GetLatestUsedAtByUserID(ctx context.Context, userID int
 }
 
 func userLastUsedAtOrder(sortOrder string) []func(*entsql.Selector) {
-	orderExpr := func(direction, nullDirection string, tieOrder func(string) string) func(*entsql.Selector) {
+	orderExpr := func(direction, nulls string, tieOrder func(string) string) func(*entsql.Selector) {
 		return func(s *entsql.Selector) {
 			subquery := fmt.Sprintf("(SELECT MAX(created_at) FROM usage_logs WHERE user_id = %s)", s.C(dbuser.FieldID))
-<<<<<<< Updated upstream
-=======
-<<<<<<< HEAD
-			s.OrderExpr(entsql.Expr(subquery + " IS NULL " + nullDirection))
-=======
->>>>>>> Stashed changes
 			if nulls == "FIRST" {
 				s.OrderExpr(entsql.Expr("(" + subquery + " IS NULL) DESC"))
 			} else {
 				s.OrderExpr(entsql.Expr("(" + subquery + " IS NULL) ASC"))
 			}
-<<<<<<< Updated upstream
-=======
->>>>>>> b8b0dfac4a13354cc88788f3e499c69d7a14914f
->>>>>>> Stashed changes
 			s.OrderExpr(entsql.Expr(subquery + " " + direction))
 			s.OrderBy(tieOrder(s.C(dbuser.FieldID)))
 		}
@@ -718,11 +681,11 @@ func userLastUsedAtOrder(sortOrder string) []func(*entsql.Selector) {
 
 	if sortOrder == pagination.SortOrderAsc {
 		return []func(*entsql.Selector){
-			orderExpr("ASC", "DESC", entsql.Asc),
+			orderExpr("ASC", "FIRST", entsql.Asc),
 		}
 	}
 	return []func(*entsql.Selector){
-		orderExpr("DESC", "ASC", entsql.Desc),
+		orderExpr("DESC", "LAST", entsql.Desc),
 	}
 }
 
@@ -830,29 +793,11 @@ func (r *userRepository) BatchSetConcurrency(ctx context.Context, userIDs []int6
 	if value < 0 {
 		value = 0
 	}
-<<<<<<< Updated upstream
 	condition, conditionArgs := int64InCondition("id", userIDs)
 	args := append([]any{value}, conditionArgs...)
 	res, err := r.sql.ExecContext(ctx,
 		"UPDATE users SET concurrency = ?, updated_at = NOW() WHERE "+condition+" AND deleted_at IS NULL",
 		args...)
-=======
-<<<<<<< HEAD
-	idsJSON, err := jsonArrayParam(userIDs)
-	if err != nil {
-		return 0, err
-	}
-	res, err := r.sql.ExecContext(ctx,
-		"UPDATE users SET concurrency = ?, updated_at = NOW() WHERE id IN (SELECT id FROM JSON_TABLE(?, '$[*]' COLUMNS(id BIGINT PATH '$')) AS user_ids) AND deleted_at IS NULL",
-		value, idsJSON)
-=======
-	condition, conditionArgs := int64InCondition("id", userIDs)
-	args := append([]any{value}, conditionArgs...)
-	res, err := r.sql.ExecContext(ctx,
-		"UPDATE users SET concurrency = ?, updated_at = NOW() WHERE "+condition+" AND deleted_at IS NULL",
-		args...)
->>>>>>> b8b0dfac4a13354cc88788f3e499c69d7a14914f
->>>>>>> Stashed changes
 	if err != nil {
 		return 0, fmt.Errorf("batch set concurrency: %w", err)
 	}
@@ -864,29 +809,11 @@ func (r *userRepository) BatchAddConcurrency(ctx context.Context, userIDs []int6
 	if len(userIDs) == 0 {
 		return 0, nil
 	}
-<<<<<<< Updated upstream
 	condition, conditionArgs := int64InCondition("id", userIDs)
 	args := append([]any{delta}, conditionArgs...)
 	res, err := r.sql.ExecContext(ctx,
 		"UPDATE users SET concurrency = GREATEST(concurrency + ?, 0), updated_at = NOW() WHERE "+condition+" AND deleted_at IS NULL",
 		args...)
-=======
-<<<<<<< HEAD
-	idsJSON, err := jsonArrayParam(userIDs)
-	if err != nil {
-		return 0, err
-	}
-	res, err := r.sql.ExecContext(ctx,
-		"UPDATE users SET concurrency = GREATEST(concurrency + ?, 0), updated_at = NOW() WHERE id IN (SELECT id FROM JSON_TABLE(?, '$[*]' COLUMNS(id BIGINT PATH '$')) AS user_ids) AND deleted_at IS NULL",
-		delta, idsJSON)
-=======
-	condition, conditionArgs := int64InCondition("id", userIDs)
-	args := append([]any{delta}, conditionArgs...)
-	res, err := r.sql.ExecContext(ctx,
-		"UPDATE users SET concurrency = GREATEST(concurrency + ?, 0), updated_at = NOW() WHERE "+condition+" AND deleted_at IS NULL",
-		args...)
->>>>>>> b8b0dfac4a13354cc88788f3e499c69d7a14914f
->>>>>>> Stashed changes
 	if err != nil {
 		return 0, fmt.Errorf("batch add concurrency: %w", err)
 	}

@@ -191,35 +191,7 @@ func (r *affiliateRepository) ThawFrozenQuota(ctx context.Context, userID int64)
 
 // thawFrozenQuotaTx moves matured frozen quota to available quota within an existing tx.
 func thawFrozenQuotaTx(txCtx context.Context, txClient *dbent.Client, userID int64) (float64, error) {
-<<<<<<< Updated upstream
 	var thawed float64
-=======
-<<<<<<< HEAD
-	rows, err := txClient.QueryContext(txCtx, `
-SELECT amount
-FROM user_affiliate_ledger
-WHERE user_id = ?
-  AND frozen_until IS NOT NULL
-  AND frozen_until <= NOW()
-FOR UPDATE`, userID)
-	if err != nil {
-		return 0, fmt.Errorf("thaw frozen quota: %w", err)
-	}
-	defer func() { _ = rows.Close() }()
-
-	var thawed float64
-	for rows.Next() {
-		var amount float64
-		if err := rows.Scan(&amount); err != nil {
-			return 0, err
-		}
-		thawed += amount
-	}
-	if err := rows.Close(); err != nil {
-		return 0, err
-=======
-	var thawed float64
->>>>>>> Stashed changes
 	if err := scanSingleRow(txCtx, txClient, `
 SELECT COALESCE(SUM(amount), 0)
 FROM user_affiliate_ledger
@@ -228,21 +200,9 @@ WHERE user_id = ?
   AND frozen_until <= NOW()
 FOR UPDATE`, []any{userID}, &thawed); err != nil {
 		return 0, fmt.Errorf("thaw frozen quota: %w", err)
-<<<<<<< Updated upstream
-=======
->>>>>>> b8b0dfac4a13354cc88788f3e499c69d7a14914f
->>>>>>> Stashed changes
 	}
 	if thawed <= 0 {
 		return 0, nil
-	}
-	if _, err = txClient.ExecContext(txCtx, `
-UPDATE user_affiliate_ledger
-SET frozen_until = NULL, updated_at = NOW()
-WHERE user_id = ?
-  AND frozen_until IS NOT NULL
-  AND frozen_until <= NOW()`, userID); err != nil {
-		return 0, fmt.Errorf("mark affiliate quota thawed: %w", err)
 	}
 
 	if _, err := txClient.ExecContext(txCtx, `
@@ -280,25 +240,6 @@ func (r *affiliateRepository) TransferQuotaToBalance(ctx context.Context, userID
 			return fmt.Errorf("thaw before transfer: %w", err)
 		}
 
-<<<<<<< Updated upstream
-=======
-<<<<<<< HEAD
-		rows, err := txClient.QueryContext(txCtx, `
-SELECT aff_quota
-FROM user_affiliates
-WHERE user_id = ?
-  AND aff_quota > 0
-FOR UPDATE`, userID)
-		if err != nil {
-			return fmt.Errorf("claim affiliate quota: %w", err)
-		}
-
-		if !rows.Next() {
-			_ = rows.Close()
-			if err := rows.Err(); err != nil {
-				return err
-=======
->>>>>>> Stashed changes
 		if err := scanSingleRow(txCtx, txClient, `
 SELECT aff_quota AS amount
 FROM user_affiliates
@@ -307,10 +248,6 @@ WHERE user_id = ?
 FOR UPDATE`, []any{userID}, &transferred); err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				return service.ErrAffiliateQuotaEmpty
-<<<<<<< Updated upstream
-=======
->>>>>>> b8b0dfac4a13354cc88788f3e499c69d7a14914f
->>>>>>> Stashed changes
 			}
 			return fmt.Errorf("claim affiliate quota: %w", err)
 		}
@@ -319,17 +256,8 @@ FOR UPDATE`, []any{userID}, &transferred); err != nil {
 		}
 		if _, err := txClient.ExecContext(txCtx, `
 UPDATE user_affiliates
-<<<<<<< Updated upstream
 SET aff_quota = 0,
     updated_at = NOW()
-=======
-<<<<<<< HEAD
-SET aff_quota = 0, updated_at = NOW()
-=======
-SET aff_quota = 0,
-    updated_at = NOW()
->>>>>>> b8b0dfac4a13354cc88788f3e499c69d7a14914f
->>>>>>> Stashed changes
 WHERE user_id = ?`, userID); err != nil {
 			return fmt.Errorf("clear affiliate quota: %w", err)
 		}
@@ -733,10 +661,9 @@ func buildAffiliateRecordWhere(filter service.AffiliateRecordFilter, timeColumn 
 	}
 	search := strings.TrimSpace(filter.Search)
 	if search != "" && len(searchColumns) > 0 {
-		like := "%" + strings.ToLower(search) + "%"
+		args = append(args, "%"+strings.ToLower(search)+"%")
 		parts := make([]string, 0, len(searchColumns))
 		for _, col := range searchColumns {
-			args = append(args, like)
 			parts = append(parts, fmt.Sprintf("LOWER(%s) LIKE ?/*%d*/", col, len(args)))
 		}
 		clauses = append(clauses, "("+strings.Join(parts, " OR ")+")")
@@ -756,15 +683,7 @@ func buildAffiliateRecordOrderBy(filter service.AffiliateRecordFilter, sortColum
 	if !filter.SortDesc {
 		direction = "ASC"
 	}
-<<<<<<< Updated upstream
 	return mysqlNullsLastOrder(column, direction)
-=======
-<<<<<<< HEAD
-	return "ORDER BY " + column + " IS NULL ASC, " + column + " " + direction
-=======
-	return mysqlNullsLastOrder(column, direction)
->>>>>>> b8b0dfac4a13354cc88788f3e499c69d7a14914f
->>>>>>> Stashed changes
 }
 
 func queryAffiliateRecordCount(ctx context.Context, client affiliateQueryExecer, query string, args ...any) (int64, error) {
@@ -822,22 +741,11 @@ func ensureUserAffiliateWithClient(ctx context.Context, client affiliateQueryExe
 		_, insertErr := client.ExecContext(ctx, `
 INSERT INTO user_affiliates (user_id, aff_code, created_at, updated_at)
 VALUES (?, ?, NOW(), NOW())
-<<<<<<< Updated upstream
 ON DUPLICATE KEY UPDATE user_id = user_id`, userID, code)
-=======
-<<<<<<< HEAD
-`, userID, code)
-=======
-ON DUPLICATE KEY UPDATE user_id = user_id`, userID, code)
->>>>>>> b8b0dfac4a13354cc88788f3e499c69d7a14914f
->>>>>>> Stashed changes
 		if insertErr == nil {
 			break
 		}
 		if isAffiliateUniqueViolation(insertErr) {
-			if existing, queryErr := queryAffiliateByUserID(ctx, client, userID); queryErr == nil {
-				return existing, nil
-			}
 			continue
 		}
 		return nil, insertErr
@@ -1159,33 +1067,13 @@ func (r *affiliateRepository) BatchSetUserRebateRate(ctx context.Context, userID
 				return err
 			}
 		}
-<<<<<<< Updated upstream
 		condition, conditionArgs := int64InCondition("user_id", userIDs)
 		args := append([]any{nullableArg(ratePercent)}, conditionArgs...)
-=======
-<<<<<<< HEAD
-		userIDsJSON, err := jsonArrayParam(userIDs)
-		if err != nil {
-			return err
-		}
-=======
-		condition, conditionArgs := int64InCondition("user_id", userIDs)
-		args := append([]any{nullableArg(ratePercent)}, conditionArgs...)
->>>>>>> b8b0dfac4a13354cc88788f3e499c69d7a14914f
->>>>>>> Stashed changes
 		_, err := txClient.ExecContext(txCtx, `
 UPDATE user_affiliates
 SET aff_rebate_rate_percent = ?,
     updated_at = NOW()
-<<<<<<< Updated upstream
 WHERE `+condition, args...)
-=======
-<<<<<<< HEAD
-WHERE user_id IN (SELECT id FROM JSON_TABLE(?, '$[*]' COLUMNS(id BIGINT PATH '$')) AS user_ids)`, nullableArg(ratePercent), userIDsJSON)
-=======
-WHERE `+condition, args...)
->>>>>>> b8b0dfac4a13354cc88788f3e499c69d7a14914f
->>>>>>> Stashed changes
 		if err != nil {
 			return fmt.Errorf("batch set aff_rebate_rate_percent: %w", err)
 		}

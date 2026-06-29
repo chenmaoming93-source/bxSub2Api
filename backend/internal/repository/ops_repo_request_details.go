@@ -21,8 +21,9 @@ func (r *opsRepository) ListRequestDetails(ctx context.Context, filter *service.
 	conditions := make([]string, 0, 16)
 	args := make([]any, 0, 24)
 
-	// Placeholders ?/? reserved for time window inside the CTE.
-	args = append(args, startTime.UTC(), endTime.UTC())
+	// The time window is embedded in both UNION branches; MySQL positional
+	// placeholders require one argument pair per branch.
+	args = append(args, startTime.UTC(), endTime.UTC(), startTime.UTC(), endTime.UTC())
 
 	addCondition := func(condition string, values ...any) {
 		conditions = append(conditions, condition)
@@ -87,17 +88,17 @@ func (r *opsRepository) ListRequestDetails(ctx context.Context, filter *service.
 	cte := `
 WITH combined AS (
   SELECT
-    'success'::TEXT AS kind,
+    'success' AS kind,
     ul.created_at AS created_at,
     ul.request_id AS request_id,
     COALESCE(NULLIF(g.platform, ''), NULLIF(a.platform, ''), '') AS platform,
     ul.model AS model,
     ul.duration_ms AS duration_ms,
-    NULL::INT AS status_code,
-    NULL::BIGINT AS error_id,
-    NULL::TEXT AS phase,
-    NULL::TEXT AS severity,
-    NULL::TEXT AS message,
+    NULL AS status_code,
+    NULL AS error_id,
+    NULL AS phase,
+    NULL AS severity,
+    NULL AS message,
     ul.user_id AS user_id,
     ul.api_key_id AS api_key_id,
     ul.account_id AS account_id,
@@ -111,7 +112,7 @@ WITH combined AS (
   UNION ALL
 
   SELECT
-    'error'::TEXT AS kind,
+    'error' AS kind,
     o.created_at AS created_at,
     COALESCE(NULLIF(o.request_id,''), NULLIF(o.client_request_id,''), '') AS request_id,
     COALESCE(NULLIF(o.platform, ''), NULLIF(g.platform, ''), NULLIF(a.platform, ''), '') AS platform,
@@ -151,7 +152,7 @@ WITH combined AS (
 		case "", "created_at_desc":
 			// default
 		case "duration_desc":
-			sort = "ORDER BY duration_ms DESC NULLS LAST, created_at DESC"
+			sort = "ORDER BY duration_ms IS NULL ASC, duration_ms DESC, created_at DESC"
 		default:
 			return nil, 0, fmt.Errorf("invalid sort")
 		}

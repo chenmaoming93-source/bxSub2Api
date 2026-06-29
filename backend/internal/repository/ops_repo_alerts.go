@@ -117,8 +117,39 @@ INSERT INTO ops_alert_rules (
   updated_at
 ) VALUES (
   ?,?,?,?,?,?,?,?,?,?,?,?,NOW(),NOW()
-)
-RETURNING
+ )`
+
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	res, err := tx.ExecContext(
+		ctx,
+		q,
+		strings.TrimSpace(input.Name),
+		strings.TrimSpace(input.Description),
+		input.Enabled,
+		strings.TrimSpace(input.Severity),
+		strings.TrimSpace(input.MetricType),
+		strings.TrimSpace(input.Operator),
+		input.Threshold,
+		input.WindowMinutes,
+		input.SustainedMinutes,
+		input.CooldownMinutes,
+		input.NotifyEmail,
+		filtersArg,
+	)
+	if err != nil {
+		return nil, err
+	}
+	id, err := res.LastInsertId()
+	if err != nil {
+		return nil, err
+	}
+
+	selectQuery := `SELECT
   id,
   name,
   COALESCE(description, ''),
@@ -134,28 +165,15 @@ RETURNING
   filters,
   last_triggered_at,
   created_at,
-  updated_at`
+  updated_at
+FROM ops_alert_rules
+WHERE id = ?`
 
 	var out service.OpsAlertRule
 	var filtersRaw []byte
 	var lastTriggeredAt sql.NullTime
 
-	if err := r.db.QueryRowContext(
-		ctx,
-		q,
-		strings.TrimSpace(input.Name),
-		strings.TrimSpace(input.Description),
-		input.Enabled,
-		strings.TrimSpace(input.Severity),
-		strings.TrimSpace(input.MetricType),
-		strings.TrimSpace(input.Operator),
-		input.Threshold,
-		input.WindowMinutes,
-		input.SustainedMinutes,
-		input.CooldownMinutes,
-		input.NotifyEmail,
-		filtersArg,
-	).Scan(
+	if err := tx.QueryRowContext(ctx, selectQuery, id).Scan(
 		&out.ID,
 		&out.Name,
 		&out.Description,
@@ -173,6 +191,9 @@ RETURNING
 		&out.CreatedAt,
 		&out.UpdatedAt,
 	); err != nil {
+		return nil, err
+	}
+	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
 	if lastTriggeredAt.Valid {
@@ -221,8 +242,35 @@ SET
   notify_email = ?,
   filters = ?,
   updated_at = NOW()
-WHERE id = ?
-RETURNING
+WHERE id = ?`
+
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	if _, err := tx.ExecContext(
+		ctx,
+		q,
+		strings.TrimSpace(input.Name),
+		strings.TrimSpace(input.Description),
+		input.Enabled,
+		strings.TrimSpace(input.Severity),
+		strings.TrimSpace(input.MetricType),
+		strings.TrimSpace(input.Operator),
+		input.Threshold,
+		input.WindowMinutes,
+		input.SustainedMinutes,
+		input.CooldownMinutes,
+		input.NotifyEmail,
+		filtersArg,
+		input.ID,
+	); err != nil {
+		return nil, err
+	}
+
+	selectQuery := `SELECT
   id,
   name,
   COALESCE(description, ''),
@@ -238,29 +286,15 @@ RETURNING
   filters,
   last_triggered_at,
   created_at,
-  updated_at`
+  updated_at
+FROM ops_alert_rules
+WHERE id = ?`
 
 	var out service.OpsAlertRule
 	var filtersRaw []byte
 	var lastTriggeredAt sql.NullTime
 
-	if err := r.db.QueryRowContext(
-		ctx,
-		q,
-		input.ID,
-		strings.TrimSpace(input.Name),
-		strings.TrimSpace(input.Description),
-		input.Enabled,
-		strings.TrimSpace(input.Severity),
-		strings.TrimSpace(input.MetricType),
-		strings.TrimSpace(input.Operator),
-		input.Threshold,
-		input.WindowMinutes,
-		input.SustainedMinutes,
-		input.CooldownMinutes,
-		input.NotifyEmail,
-		filtersArg,
-	).Scan(
+	if err := tx.QueryRowContext(ctx, selectQuery, input.ID).Scan(
 		&out.ID,
 		&out.Name,
 		&out.Description,
@@ -278,6 +312,9 @@ RETURNING
 		&out.CreatedAt,
 		&out.UpdatedAt,
 	); err != nil {
+		return nil, err
+	}
+	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
 
@@ -335,7 +372,6 @@ func (r *opsRepository) ListAlertEvents(ctx context.Context, filter *service.Ops
 
 	where, args := buildOpsAlertEventsWhere(filter)
 	args = append(args, limit)
-	limitArg := "$" + itoa(len(args))
 
 	q := `
 SELECT
@@ -355,7 +391,7 @@ SELECT
 FROM ops_alert_events
 ` + where + `
 ORDER BY fired_at DESC, id DESC
-LIMIT ` + limitArg
+LIMIT ?`
 
 	rows, err := r.db.QueryContext(ctx, q, args...)
 	if err != nil {
@@ -557,23 +593,15 @@ INSERT INTO ops_alert_events (
   created_at
 ) VALUES (
   ?,?,?,?,?,?,?,?,?,?,?,NOW()
-)
-RETURNING
-  id,
-  COALESCE(rule_id, 0),
-  COALESCE(severity, ''),
-  COALESCE(status, ''),
-  COALESCE(title, ''),
-  COALESCE(description, ''),
-  metric_value,
-  threshold_value,
-  dimensions,
-  fired_at,
-  resolved_at,
-  email_sent,
-  created_at`
+ )`
 
-	row := r.db.QueryRowContext(
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	res, err := tx.ExecContext(
 		ctx,
 		q,
 		opsNullInt64(&event.RuleID),
@@ -588,7 +616,38 @@ RETURNING
 		opsNullTime(event.ResolvedAt),
 		event.EmailSent,
 	)
-	return scanOpsAlertEvent(row)
+	if err != nil {
+		return nil, err
+	}
+	id, err := res.LastInsertId()
+	if err != nil {
+		return nil, err
+	}
+
+	selectQuery := `SELECT
+  id,
+  COALESCE(rule_id, 0),
+  COALESCE(severity, ''),
+  COALESCE(status, ''),
+  COALESCE(title, ''),
+  COALESCE(description, ''),
+  metric_value,
+  threshold_value,
+  dimensions,
+  fired_at,
+  resolved_at,
+  email_sent,
+	created_at
+FROM ops_alert_events
+WHERE id = ?`
+	out, err := scanOpsAlertEvent(tx.QueryRowContext(ctx, selectQuery, id))
+	if err != nil {
+		return nil, err
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (r *opsRepository) UpdateAlertEventStatus(ctx context.Context, eventID int64, status string, resolvedAt *time.Time) error {
@@ -608,7 +667,7 @@ SET status = ?,
     resolved_at = ?
 WHERE id = ?`
 
-	_, err := r.db.ExecContext(ctx, q, eventID, strings.TrimSpace(status), opsNullTime(resolvedAt))
+	_, err := r.db.ExecContext(ctx, q, strings.TrimSpace(status), opsNullTime(resolvedAt), eventID)
 	return err
 }
 
@@ -620,7 +679,7 @@ func (r *opsRepository) UpdateAlertEventEmailSent(ctx context.Context, eventID i
 		return fmt.Errorf("invalid event id")
 	}
 
-	_, err := r.db.ExecContext(ctx, "UPDATE ops_alert_events SET email_sent = ? WHERE id = ?", eventID, emailSent)
+	_, err := r.db.ExecContext(ctx, "UPDATE ops_alert_events SET email_sent = ? WHERE id = ?", emailSent, eventID)
 	return err
 }
 
@@ -658,10 +717,15 @@ INSERT INTO ops_alert_silences (
   created_at
 ) VALUES (
   ?,?,?,?,?,?,?,NOW()
-)
-RETURNING id, rule_id, platform, group_id, region, until, COALESCE(reason,''), created_by, created_at`
+ )`
 
-	row := r.db.QueryRowContext(
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	res, err := tx.ExecContext(
 		ctx,
 		q,
 		input.RuleID,
@@ -672,12 +736,22 @@ RETURNING id, rule_id, platform, group_id, region, until, COALESCE(reason,''), c
 		opsNullString(input.Reason),
 		opsNullInt64(input.CreatedBy),
 	)
+	if err != nil {
+		return nil, err
+	}
+	id, err := res.LastInsertId()
+	if err != nil {
+		return nil, err
+	}
 
 	var out service.OpsAlertSilence
 	var groupID sql.NullInt64
 	var region sql.NullString
 	var createdBy sql.NullInt64
-	if err := row.Scan(
+	selectQuery := `SELECT id, rule_id, platform, group_id, region, until, COALESCE(reason,''), created_by, created_at
+FROM ops_alert_silences
+WHERE id = ?`
+	if err := tx.QueryRowContext(ctx, selectQuery, id).Scan(
 		&out.ID,
 		&out.RuleID,
 		&out.Platform,
@@ -688,6 +762,9 @@ RETURNING id, rule_id, platform, group_id, region, until, COALESCE(reason,''), c
 		&createdBy,
 		&out.CreatedAt,
 	); err != nil {
+		return nil, err
+	}
+	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
 	if groupID.Valid {
@@ -727,8 +804,8 @@ SELECT 1
 FROM ops_alert_silences
 WHERE rule_id = ?
   AND platform = ?
-  AND (group_id IS NOT DISTINCT FROM ?)
-  AND (region IS NOT DISTINCT FROM ?)
+  AND (group_id <=> ?)
+  AND (region <=> ?)
   AND until > ?
 LIMIT 1`
 
@@ -798,41 +875,38 @@ func buildOpsAlertEventsWhere(filter *service.OpsAlertEventFilter) (string, []an
 
 	if status := strings.TrimSpace(filter.Status); status != "" {
 		args = append(args, status)
-		clauses = append(clauses, "status = $"+itoa(len(args)))
+		clauses = append(clauses, "status = ?")
 	}
 	if severity := strings.TrimSpace(filter.Severity); severity != "" {
 		args = append(args, severity)
-		clauses = append(clauses, "severity = $"+itoa(len(args)))
+		clauses = append(clauses, "severity = ?")
 	}
 	if filter.EmailSent != nil {
 		args = append(args, *filter.EmailSent)
-		clauses = append(clauses, "email_sent = $"+itoa(len(args)))
+		clauses = append(clauses, "email_sent = ?")
 	}
 	if filter.StartTime != nil && !filter.StartTime.IsZero() {
 		args = append(args, *filter.StartTime)
-		clauses = append(clauses, "fired_at >= $"+itoa(len(args)))
+		clauses = append(clauses, "fired_at >= ?")
 	}
 	if filter.EndTime != nil && !filter.EndTime.IsZero() {
 		args = append(args, *filter.EndTime)
-		clauses = append(clauses, "fired_at < $"+itoa(len(args)))
+		clauses = append(clauses, "fired_at < ?")
 	}
 
 	// Cursor pagination (descending by fired_at, then id)
 	if filter.BeforeFiredAt != nil && !filter.BeforeFiredAt.IsZero() && filter.BeforeID != nil && *filter.BeforeID > 0 {
-		args = append(args, *filter.BeforeFiredAt)
-		tsArg := "$" + itoa(len(args))
-		args = append(args, *filter.BeforeID)
-		idArg := "$" + itoa(len(args))
-		clauses = append(clauses, fmt.Sprintf("(fired_at < %s OR (fired_at = %s AND id < %s))", tsArg, tsArg, idArg))
+		args = append(args, *filter.BeforeFiredAt, *filter.BeforeFiredAt, *filter.BeforeID)
+		clauses = append(clauses, "(fired_at < ? OR (fired_at = ? AND id < ?))")
 	}
-	// Dimensions are stored in JSONB. We filter best-effort without requiring GIN indexes.
+	// Dimensions are stored as MySQL JSON.
 	if platform := strings.TrimSpace(filter.Platform); platform != "" {
 		args = append(args, platform)
-		clauses = append(clauses, "(dimensions->>'platform') = $"+itoa(len(args)))
+		clauses = append(clauses, "JSON_UNQUOTE(JSON_EXTRACT(dimensions, '$.platform')) = ?")
 	}
 	if filter.GroupID != nil && *filter.GroupID > 0 {
 		args = append(args, fmt.Sprintf("%d", *filter.GroupID))
-		clauses = append(clauses, "(dimensions->>'group_id') = $"+itoa(len(args)))
+		clauses = append(clauses, "JSON_UNQUOTE(JSON_EXTRACT(dimensions, '$.group_id')) = ?")
 	}
 
 	return "WHERE " + strings.Join(clauses, " AND "), args

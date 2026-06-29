@@ -19,7 +19,9 @@
 | 基本完成 | 运行代码中的主要 PostgreSQL 实现已替换，仍需人工复核 |
 | 完成 | 迁移和静态复扫均已结束 |
 
-> 当前工作区存在未提交修改。接班人员应基于现有差异继续工作，不要覆盖或回滚已有修改。
+> 2026-06-29 拉取并合并至 `544d6b1` 后，当前工作区为干净状态。后续每完成一个生产文件，都必须同步更新本文档。
+
+> 2026-06-29 续作复核发现 `544d6b1` 将乱码换行损坏和未解决冲突标记提交进多个生产文件；已恢复 `account_repo.go` 代码边界，并将 `affiliate_repo.go`、`channel_monitor_repo.go`、`content_moderation_repo.go`、`user_repo.go`、`user_group_rate_repo.go` 恢复到父提交 `b8b0dfa` 的可格式化 MySQL 版本。处理后 `go build ./...` 通过。
 
 ## 3. 核心迁移清单
 
@@ -27,31 +29,32 @@
 
 | 优先级 | 模块/文件 | PostgreSQL 残留 | MySQL 8 迁移方案 | 状态 | 估算进度 | 注意事项 |
 |---:|---|---|---|---|---:|---|
-| P0 | `internal/repository/account_repo.go` | JSON `->>`、JSONB 合并、`::timestamptz`、interval、`AT TIME ZONE`、`RETURNING` | 使用 `JSON_EXTRACT/JSON_UNQUOTE`、`JSON_SET/JSON_REMOVE`；复杂配额递增建议改为事务内 `SELECT ... FOR UPDATE`、Go 端计算、`UPDATE` | 未开始 | 0% | 必须保持总/日/周配额、滚动与固定重置周期、调度事件语义不变 |
-| P0 | `internal/repository/usage_billing_repo.go` | `ON CONFLICT`、`RETURNING`、`UPDATE ... FROM`、PostgreSQL interval、JSONB 配额更新 | 使用 `INSERT IGNORE` 或 `ON DUPLICATE KEY UPDATE`；更新后事务内查询结果；订阅更新改为 MySQL `UPDATE ... JOIN`；账户配额与 `account_repo.go` 共用逻辑 | 未开始 | 0% | 幂等键、指纹冲突、余额扣减、API Key 状态切换必须保持原子性 |
-| P0 | `internal/repository/usage_log_repo.go` | 多处 `ON CONFLICT ... RETURNING`、`FILTER (WHERE ...)`、`::timestamptz` | 使用 `INSERT IGNORE`/`ON DUPLICATE KEY UPDATE`、`LastInsertId` 或后续查询；聚合改为 `SUM/COUNT(CASE WHEN ...)`；移除 PostgreSQL 类型转换 | 未开始 | 0% | 批量插入去重和返回 ID/创建时间逻辑需重点保持 |
-| P1 | `internal/repository/ops_repo_alerts.go` | 4 处 `RETURNING`、`$n` 占位符、JSON `->>` | 使用 `ExecContext + LastInsertId` 或事务内更新后查询；统一 `?`；JSON 使用 `JSON_UNQUOTE(JSON_EXTRACT(...))` | 未开始 | 0% | 更新/确认/静默操作的返回对象必须与原逻辑一致 |
-| P1 | `internal/repository/ops_repo_dashboard.go` | `percentile_cont`、`FILTER`、`date_trunc` | 百分位使用 MySQL 8 窗口函数或 Go 端线性插值；条件聚合使用 `CASE WHEN`；时间分桶使用 `DATE_FORMAT/CONVERT_TZ` | 未开始 | 0% | 百分位应保持 PostgreSQL `percentile_cont` 的连续插值语义 |
-| P1 | `internal/repository/ops_repo_metrics.go` | `ON CONFLICT/EXCLUDED` | 改为 `ON DUPLICATE KEY UPDATE` 和 `VALUES(column)` | 未开始 | 0% | 成功时清空错误字段、失败时保留最近成功信息的 CASE 逻辑不能改变 |
-| P1 | `internal/repository/ops_repo_openai_token_stats.go` | `::bigint`、`::numeric`、`::float8` | 删除无必要转换，必要时使用 `CAST(... AS SIGNED/DECIMAL/DOUBLE)` | 未开始 | 0% | 保持舍入精度和扫描目标类型一致 |
+| P0 | `internal/repository/account_repo.go` | 已完成：JSON、配额递增、时间周期和返回值逻辑均已迁移为 MySQL 8/Go 事务实现 | 静态复扫未发现 PostgreSQL 运行语法；已修复既有乱码注释吞掉字段、函数声明和 SQL 起始符造成的语法损坏 | 完成 | 100% | 2026-06-29 重新 `gofmt` 并复核；该文件已恢复 Go 语法可解析 |
+| P0 | `internal/repository/usage_billing_repo.go` | 已完成：幂等写入、余额/API Key/订阅/账户配额更新已迁移为 MySQL 8 | 拉取后静态复扫未发现 PostgreSQL 运行语法 | 完成 | 100% | 2026-06-29 于 `544d6b1` 复核 |
+| P0 | `internal/repository/usage_log_repo.go` | 已完成：移除 `ON CONFLICT ... RETURNING`、PostgreSQL 批量 CTE/JSON 返回、`FILTER` 与 `::timestamptz` | 单条写入使用 MySQL insert + `LastInsertId`/冲突后查询；创建批次在事务内逐条保持 inserted/ID/创建时间语义；best-effort 使用多值 `INSERT IGNORE`；聚合改为边界 CTE + `CASE WHEN` | 完成 | 100% | 2026-06-29 完成，已 `gofmt` 并静态复扫；基线修复后 `go build ./...` 通过 |
+| P1 | `internal/repository/ops_repo_alerts.go` | 已完成：移除 4 处 `RETURNING`、`$n`、JSON `->>`、`IS NOT DISTINCT FROM` | 创建/更新使用事务内 `ExecContext + LastInsertId + SELECT`；统一 `?` 并补齐游标重复参数；JSON 使用 `JSON_UNQUOTE(JSON_EXTRACT(...))`；NULL 比较使用 `<=>` | 完成 | 100% | 2026-06-29 完成并静态复扫；同时修正规则更新、事件状态和邮件状态写入的参数顺序 |
+| P1 | `internal/repository/ops_repo_dashboard.go` | 已完成：移除 `percentile_cont`、`FILTER`、`date_trunc` 和 `FULL OUTER JOIN` | 原始延迟样本在 Go 端排序并连续线性插值；条件聚合使用 `CASE WHEN`；分钟桶使用 `DATE_FORMAT`；双侧桶使用 `UNION ALL` 汇总 | 完成 | 100% | 2026-06-29 完成并静态复扫；百分位、平均值和最大值仍返回原有整数字段语义 |
+| P1 | `internal/repository/ops_repo_metrics.go` | 已完成：心跳 upsert 从 `ON CONFLICT/EXCLUDED` 迁移为 MySQL 8 `ON DUPLICATE KEY UPDATE/VALUES` | 保留成功时清错、失败时保留最近成功结果的 CASE 语义 | 完成 | 100% | 2026-06-29 完成并静态复扫 |
+| P1 | `internal/repository/ops_repo_openai_token_stats.go` | 已完成：移除 PostgreSQL `::bigint/::numeric/::float8`，保留原聚合与 ROUND 精度 | 使用 MySQL 8 原生 `COUNT/SUM/AVG/ROUND` | 完成 | 100% | 2026-06-29 完成并静态复扫 |
 | P1 | `internal/repository/ops_repo_preagg.go` | 大量 `percentile_cont`、`FILTER`、`date_trunc`、类型转换、`ON CONFLICT/EXCLUDED` | 拆分迁移：时间分桶、条件聚合、百分位、加权汇总、MySQL upsert | 未开始 | 0% | 这是剩余 Ops 模块中改动量和风险最高的文件 |
-| P1 | `internal/repository/ops_repo_realtime_traffic.go` | `date_trunc('minute', ...)` | 使用 MySQL 分钟分桶表达式，例如 `DATE_FORMAT(..., '%Y-%m-%d %H:%i:00')` | 未开始 | 0% | 确认返回类型仍能扫描为 `time.Time` |
-| P1 | `internal/repository/ops_repo_trends.go` | `split_part`、JSONB lateral 展开、`date_trunc`、`FILTER` | 使用 `SUBSTRING_INDEX`、`JSON_TABLE`、MySQL 时间分桶和 `CASE WHEN` 条件聚合 | 未开始 | 0% | `upstream_errors` JSON 数组展开和 failover 分类必须保持一致 |
-| P2 | `internal/service/backup_service.go` | `BackupType: "postgres"` | 统一改为 MySQL 类型标识，并检查读取端是否依赖旧值 | 未开始 | 0% | 实际备份命令已经使用 `mysqldump/mysql`，主要是元数据命名残留 |
+| P1 | `internal/repository/ops_repo_realtime_traffic.go` | 已完成：`date_trunc` 改为 MySQL `DATE_FORMAT + CAST`，不支持的 `FULL OUTER JOIN` 改为双向 `LEFT JOIN + UNION ALL` | 保持分钟桶合并、峰值 QPS/TPS 统计语义 | 完成 | 100% | 2026-06-29 完成并静态复扫 |
+| P1 | `internal/repository/ops_repo_trends.go` | 已完成：移除 `split_part`、JSONB lateral 展开、`date_trunc`、`FILTER` 和 `FULL OUTER JOIN` | 使用 `SUBSTRING_INDEX` + `JSON_TABLE` 保持 failover 分类；MySQL `DATE_FORMAT/TIMESTAMP` 分桶；`CASE WHEN` 条件聚合；`UNION ALL` 汇总双侧数据 | 完成 | 100% | 2026-06-29 完成并静态复扫；补齐 errorWhere 二次嵌入参数及平台/分组明细查询缺失参数 |
+| P1 | `internal/repository/ops_repo_request_details.go` | 已完成：移除 UNION 查询中的 PostgreSQL 类型转换和 `NULLS LAST` | 使用 MySQL 原生字面量/NULL 类型推断及 `duration_ms IS NULL` 排序；为两个 UNION 分支分别传入时间参数 | 完成 | 100% | 2026-06-29 全量复扫补录并完成；`go build ./...` 通过 |
+| P2 | `internal/service/backup_service.go` | 已完成：`BackupType` 元数据和注释由 `postgres` 改为 `mysql` | 全生产代码搜索未发现读取端依赖旧值 | 完成 | 100% | 2026-06-29 完成；`go build ./...` 通过 |
 
 ### 3.2 已经修改但尚未完成最终复核的模块
 
 | 模块/文件 | 已完成内容 | 状态 | 估算进度 | 接班注意事项 |
 |---|---|---|---:|---|
 | `internal/repository/ops_repo.go` | 已替换 `pq.CopyIn`、`RETURNING`、`$n`、`ANY`、`ILIKE`、PostgreSQL 类型转换；已处理 MySQL 保留表名 | 基本完成 | 90% | 复核所有动态条件的参数数量和顺序；检查 `UpdateErrorResolved` 参数顺序 |
-| `internal/repository/affiliate_repo.go` | 已替换主要类型转换、冻结时间、配额解冻/转账 CTE、分页、批量数组和 upsert | 进行中 | 75% | 重点检查事务中的 `SELECT ... FOR UPDATE`、唯一邀请码冲突和批量参数数量 |
-| `internal/repository/channel_monitor_repo.go` | 已替换 `DISTINCT ON`、`pq.Array/unnest`、条件聚合、日期 interval、批删和 upsert | 进行中 | 80% | `UpsertDailyRollupsFor` 的参数数量、MySQL upsert RowsAffected 语义需要人工复核 |
-| `internal/repository/content_moderation_repo.go` | 已替换 JSONB、`RETURNING`、`ILIKE`、类型转换和分页占位符 | 基本完成 | 90% | 复核插入列/参数数量以及 `CountFlaggedByUserSince` 参数顺序 |
+| `internal/repository/affiliate_repo.go` | 已替换主要类型转换、冻结时间、配额解冻/转账 CTE、分页、批量数组和 upsert；2026-06-29 已移除合并提交误带入的嵌套冲突标记并恢复父提交可格式化版本 | 进行中 | 75% | 重点检查事务中的 `SELECT ... FOR UPDATE`、唯一邀请码冲突和批量参数数量 |
+| `internal/repository/channel_monitor_repo.go` | 已替换 `DISTINCT ON`、`pq.Array/unnest`、条件聚合、日期 interval、批删和 upsert；2026-06-29 已移除合并提交误带入的冲突标记并恢复父提交可格式化版本 | 进行中 | 80% | `UpsertDailyRollupsFor` 的参数数量、MySQL upsert RowsAffected 语义需要人工复核；运行 SQL 静态复扫无 PostgreSQL 残留 |
+| `internal/repository/content_moderation_repo.go` | 已替换 JSONB、`RETURNING`、`ILIKE`、类型转换和分页占位符；2026-06-29 已移除合并提交误带入的冲突标记并恢复父提交可格式化版本 | 基本完成 | 90% | 复核插入列/参数数量以及 `CountFlaggedByUserSince` 参数顺序；静态复扫无 PostgreSQL 运行语法 |
 | `internal/repository/dashboard_aggregation_repo.go` | 已启用 MySQL 聚合；替换 PostgreSQL 驱动判断、`ctid`、条件 upsert、时间分桶和分区系统表 | 进行中 | 70% | 时区表依赖、MySQL 分区命名、批量归档与删除一致性是主要风险 |
 | `internal/repository/group_repo.go` | 已处理 MySQL `groups` 保留字和已有 JSON_TABLE 查询 | 基本完成 | 90% | 复核所有原生 SQL 是否都使用反引号包裹 `groups` |
 | `internal/repository/proxy_repo.go` | 已替换动态日期 interval，并补齐重复时间参数 | 基本完成 | 95% | 只需静态复扫 |
-| `internal/repository/user_repo.go` | 已移除 `pq.Array`，改为 `JSON_TABLE`；替换 `ILIKE` 和 `NULLS FIRST/LAST` | 进行中 | 80% | 检查 Ent 自定义排序表达式生成的 MySQL SQL |
-| `internal/repository/user_group_rate_repo.go` | 已将数组、`unnest`、`ANY/ALL`、`ON CONFLICT` 改为 `JSON_TABLE` 和 MySQL upsert | 进行中 | 75% | 核对数组按 ordinality 配对、空列表和 NULL 清理语义 |
+| `internal/repository/user_repo.go` | 已移除 `pq.Array`，改为 `JSON_TABLE`；替换 `ILIKE` 和 `NULLS FIRST/LAST`；2026-06-29 已移除合并提交误带入的冲突标记并恢复父提交可格式化版本 | 进行中 | 80% | 检查 Ent 自定义排序表达式生成的 MySQL SQL；静态复扫无 PostgreSQL 运行语法 |
+| `internal/repository/user_group_rate_repo.go` | 已将数组、`unnest`、`ANY/ALL`、`ON CONFLICT` 改为 `JSON_TABLE` 和 MySQL upsert；2026-06-29 已移除合并提交误带入的冲突标记并恢复父提交可格式化版本 | 进行中 | 75% | 核对数组按 ordinality 配对、空列表和 NULL 清理语义；静态复扫无 PostgreSQL 运行语法 |
 | `internal/repository/user_platform_quota_repo.go` | 已迁移主要 upsert，并修正部分历史参数数量问题 | 进行中 | 65% | 当前风险最高的已修改文件；逐条核对占位符、软删除复活和批量快照参数 |
 | `internal/repository/user_profile_identity_repo.go` | provider grant 改为 `INSERT IGNORE`，avatar 改为 MySQL upsert | 基本完成 | 90% | 检查 RowsAffected 在 `INSERT IGNORE` 下是否仍满足业务判断 |
 | `internal/service/admin_service.go` | 已移除金额 PostgreSQL cast，修正 MySQL `LIMIT/OFFSET` 顺序 | 基本完成 | 95% | 静态复扫即可 |
@@ -85,13 +88,13 @@
 
 | 阶段 | 工作内容 | 目标产物 | 当前状态 |
 |---:|---|---|---|
-| 1 | 保护并审阅当前未提交差异；对已修改文件执行格式化和人工参数核对 | 可继续工作的稳定基线 | 进行中 |
+| 1 | 保护并审阅当前未提交差异；对已修改文件执行格式化和人工参数核对 | 可继续工作的稳定基线 | 完成（冲突残片已清理，`go build ./...` 通过） |
 | 2 | 完成 `account_repo.go` 与 `usage_billing_repo.go`，抽取共享的账户配额事务逻辑 | 配额与计费完全 MySQL 8 化 | 未开始 |
-| 3 | 完成 `usage_log_repo.go` 的插入去重、批量返回值和聚合迁移 | 使用记录链路完全 MySQL 8 化 | 未开始 |
-| 4 | 依次完成 Ops alerts、metrics、OpenAI stats、realtime、trends | 中低复杂度 Ops 查询迁移 | 未开始 |
-| 5 | 单独完成 Ops dashboard 和 preagg 百分位及聚合迁移 | Ops 聚合完全 MySQL 8 化 | 未开始 |
+| 3 | 完成 `usage_log_repo.go` 的插入去重、批量返回值和聚合迁移 | 使用记录链路完全 MySQL 8 化 | 完成 |
+| 4 | 依次完成 Ops alerts、metrics、OpenAI stats、realtime、trends | 中低复杂度 Ops 查询迁移 | 完成 |
+| 5 | 单独完成 Ops dashboard 和 preagg 百分位及聚合迁移 | Ops 聚合完全 MySQL 8 化 | 进行中（dashboard 已完成，剩余 preagg） |
 | 6 | 复核当前已修改的 14 个文件，修正参数数量、事务和 RowsAffected 语义 | 已修改模块达到完成状态 | 未开始 |
-| 7 | 修改备份类型标识，统一更新 PostgreSQL 描述性注释 | 生产代码术语统一 | 未开始 |
+| 7 | 修改备份类型标识，统一更新 PostgreSQL 描述性注释 | 生产代码术语统一 | 进行中（备份类型已完成，描述性注释待统一） |
 | 8 | 对 `backend` 生产代码进行最终静态复扫；排除 `migrations` 和测试文件 | PostgreSQL SQL/API 残留清单归零 | 未开始 |
 | 9 | 删除不再使用的 `github.com/lib/pq` 生产依赖；如仅测试仍引用则暂不删除 | 依赖清理结果 | 未开始 |
 
