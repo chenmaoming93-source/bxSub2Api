@@ -25,7 +25,6 @@ import (
 	"github.com/Wei-Shaw/sub2api/internal/pkg/timezone"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/usagestats"
 	"github.com/Wei-Shaw/sub2api/internal/service"
-	"github.com/lib/pq"
 	gocache "github.com/patrickmn/go-cache"
 	"golang.org/x/sync/errgroup"
 )
@@ -111,15 +110,15 @@ const usageLogSuccessFilterUL = "ul.actual_cost > 0"
 
 // usageLogEffectivePlatformExpr 用于按"有效平台"维度聚合 usage_logs：
 // 优先取请求实际走的分组 platform，若分组未设置 platform 再 fallback 到 account.platform。
-// 配套要求查询里 LEFT JOIN groups g ON g.id = ul.group_id 与 LEFT JOIN accounts a ON a.id = ul.account_id。
+// 配套要求查询里 LEFT JOIN `groups` g ON g.id = ul.group_id 与 LEFT JOIN accounts a ON a.id = ul.account_id。
 const usageLogEffectivePlatformExpr = "COALESCE(NULLIF(g.platform,''), a.platform)"
 
-// dateFormatWhitelist 将 granularity 参数映射为 PostgreSQL TO_CHAR 格式字符串，防止外部输入直接拼入 SQL
+// dateFormatWhitelist 将 granularity 参数映射为 MySQL DATE_FORMAT 格式字符串，防止外部输入直接拼入 SQL
 var dateFormatWhitelist = map[string]string{
-	"hour":  "YYYY-MM-DD HH24:00",
-	"day":   "YYYY-MM-DD",
-	"week":  "IYYY-IW",
-	"month": "YYYY-MM",
+	"hour":  "%Y-%m-%d %H:00",
+	"day":   "%Y-%m-%d",
+	"week":  "%x-%v",
+	"month": "%Y-%m",
 }
 
 // safeDateFormat 根据白名单获取 dateFormat，未匹配时返回默认值
@@ -127,7 +126,7 @@ func safeDateFormat(granularity string) string {
 	if f, ok := dateFormatWhitelist[granularity]; ok {
 		return f
 	}
-	return "YYYY-MM-DD"
+	return "%Y-%m-%d"
 }
 
 // appendRawUsageLogModelWhereCondition keeps direct model filters on the raw model column for backward
@@ -1647,7 +1646,7 @@ func (r *usageLogRepository) fillDashboardUsageStatsAggregated(ctx context.Conte
 			account_cost as today_account_cost,
 			active_users as active_users
 		FROM usage_dashboard_daily
-		WHERE bucket_date = ?::date
+		WHERE bucket_date = DATE(?)
 	`
 	if err := scanSingleRow(
 		ctx,
@@ -1957,11 +1956,9 @@ func (r *usageLogRepository) GetModelStatsAggregated(ctx context.Context, modelN
 // GetDailyStatsAggregated 使用 SQL 聚合统计用户的每日使用数据
 // 性能优化：使用 GROUP BY 在数据库层按日期分组聚合，避免应用层循环分组统计
 func (r *usageLogRepository) GetDailyStatsAggregated(ctx context.Context, userID int64, startTime, endTime time.Time) (result []map[string]any, err error) {
-	tzName := resolveUsageStatsTimezone()
 	query := `
 		SELECT
-			-- 使用应用时区分组，避免数据库会话时区导致日边界偏移。
-			TO_CHAR(created_at AT TIME ZONE ?, 'YYYY-MM-DD') as date,
+			DATE_FORMAT(created_at, '%Y-%m-%d') as date,
 			COUNT(*) as total_requests,
 			COALESCE(SUM(input_tokens), 0) as total_input_tokens,
 			COALESCE(SUM(output_tokens), 0) as total_output_tokens,
@@ -1975,7 +1972,7 @@ func (r *usageLogRepository) GetDailyStatsAggregated(ctx context.Context, userID
 		ORDER BY 1
 	`
 
-	rows, err := r.sql.QueryContext(ctx, query, userID, startTime, endTime, tzName)
+	rows, err := r.sql.QueryContext(ctx, query, userID, startTime, endTime)
 	if err != nil {
 		return nil, err
 	}
@@ -2145,10 +2142,15 @@ func (r *usageLogRepository) GetAccountWindowStatsBatch(ctx context.Context, acc
 			COALESCE(SUM(total_cost), 0) as standard_cost,
 			COALESCE(SUM(actual_cost), 0) as user_cost
 		FROM usage_logs
-		WHERE account_id = ANY(?) AND created_at >= ?
+		WHERE account_id IN (` + sqlPlaceholders(len(accountIDs)) + `) AND created_at >= ?
 		GROUP BY account_id
 	`
-	rows, err := r.sql.QueryContext(ctx, query, pq.Array(accountIDs), startTime)
+	args := make([]any, 0, len(accountIDs)+1)
+	for _, id := range accountIDs {
+		args = append(args, id)
+	}
+	args = append(args, startTime)
+	rows, err := r.sql.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -2199,10 +2201,15 @@ func (r *usageLogRepository) GetGeminiUsageTotalsBatch(ctx context.Context, acco
 			COALESCE(SUM(CASE WHEN LOWER(COALESCE(model, '')) LIKE '%flash%' OR LOWER(COALESCE(model, '')) LIKE '%lite%' THEN actual_cost ELSE 0 END), 0) AS flash_cost,
 			COALESCE(SUM(CASE WHEN LOWER(COALESCE(model, '')) LIKE '%flash%' OR LOWER(COALESCE(model, '')) LIKE '%lite%' THEN 0 ELSE actual_cost END), 0) AS pro_cost
 		FROM usage_logs
-		WHERE account_id = ANY(?) AND created_at >= ? AND created_at < ?
+		WHERE account_id IN (` + sqlPlaceholders(len(accountIDs)) + `) AND created_at >= ? AND created_at < ?
 		GROUP BY account_id
 	`
-	rows, err := r.sql.QueryContext(ctx, query, pq.Array(accountIDs), startTime, endTime)
+	args := make([]any, 0, len(accountIDs)+2)
+	for _, id := range accountIDs {
+		args = append(args, id)
+	}
+	args = append(args, startTime, endTime)
+	rows, err := r.sql.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -2266,7 +2273,7 @@ func (r *usageLogRepository) GetAPIKeyUsageTrend(ctx context.Context, startTime,
 			LIMIT ?
 		)
 		SELECT
-			TO_CHAR(u.created_at, '%s') as date,
+			DATE_FORMAT(u.created_at, '%s') as date,
 			u.api_key_id,
 			COALESCE(k.name, '') as key_name,
 			COUNT(*) as requests,
@@ -2321,7 +2328,7 @@ func (r *usageLogRepository) GetUserUsageTrend(ctx context.Context, startTime, e
 			LIMIT ?
 		)
 		SELECT
-			TO_CHAR(u.created_at, '%s') as date,
+			DATE_FORMAT(u.created_at, '%s') as date,
 			u.user_id,
 			COALESCE(us.email, '') as email,
 			COALESCE(us.username, '') as username,
@@ -2558,19 +2565,19 @@ func (r *usageLogRepository) GetUserDashboardStats(ctx context.Context, userID i
 			COUNT(*) as total_requests,
 			COALESCE(SUM(ul.input_tokens + ul.output_tokens + ul.cache_creation_tokens + ul.cache_read_tokens), 0) as total_tokens,
 			COALESCE(SUM(ul.actual_cost), 0) as total_actual_cost,
-			COUNT(*) FILTER (WHERE ul.created_at >= ?) as today_requests,
-			COALESCE(SUM(ul.input_tokens + ul.output_tokens + ul.cache_creation_tokens + ul.cache_read_tokens) FILTER (WHERE ul.created_at >= ?), 0) as today_tokens,
-			COALESCE(SUM(ul.actual_cost) FILTER (WHERE ul.created_at >= ?), 0) as today_actual_cost
+			COALESCE(SUM(CASE WHEN ul.created_at >= ? THEN 1 ELSE 0 END), 0) as today_requests,
+			COALESCE(SUM(CASE WHEN ul.created_at >= ? THEN ul.input_tokens + ul.output_tokens + ul.cache_creation_tokens + ul.cache_read_tokens ELSE 0 END), 0) as today_tokens,
+			COALESCE(SUM(CASE WHEN ul.created_at >= ? THEN ul.actual_cost ELSE 0 END), 0) as today_actual_cost
 		FROM usage_logs ul
-		LEFT JOIN groups g ON g.id = ul.group_id
+		LEFT JOIN ` + "`groups`" + ` g ON g.id = ul.group_id
 		LEFT JOIN accounts a ON a.id = ul.account_id
 		WHERE ul.user_id = ?
 		  AND ` + usageLogSuccessFilterUL + `
-		GROUP BY ` + usageLogEffectivePlatformExpr + `
-		HAVING ` + usageLogEffectivePlatformExpr + ` IS NOT NULL AND ` + usageLogEffectivePlatformExpr + ` <> ''
+		GROUP BY platform
+		HAVING platform IS NOT NULL AND platform <> ''
 		ORDER BY total_actual_cost DESC
 	`
-	rows, err := r.sql.QueryContext(ctx, platformQuery, userID, today)
+	rows, err := r.sql.QueryContext(ctx, platformQuery, today, today, today, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -2707,7 +2714,7 @@ func (r *usageLogRepository) GetUserUsageTrendByUserID(ctx context.Context, user
 
 	query := fmt.Sprintf(`
 		SELECT
-			TO_CHAR(created_at, '%s') as date,
+			DATE_FORMAT(created_at, '%s') as date,
 			COUNT(*) as requests,
 			COALESCE(SUM(input_tokens), 0) as input_tokens,
 			COALESCE(SUM(output_tokens), 0) as output_tokens,
@@ -2906,18 +2913,24 @@ func (r *usageLogRepository) GetBatchUserUsageStats(ctx context.Context, userIDs
 		SELECT
 			ul.user_id,
 			` + usageLogEffectivePlatformExpr + ` as platform,
-			COALESCE(SUM(ul.actual_cost) FILTER (WHERE ul.created_at >= ? AND ul.created_at < ?), 0) as total_cost,
-			COALESCE(SUM(ul.actual_cost) FILTER (WHERE ul.created_at >= ?), 0) as today_cost
+			COALESCE(SUM(CASE WHEN ul.created_at >= ? AND ul.created_at < ? THEN ul.actual_cost ELSE 0 END), 0) as total_cost,
+			COALESCE(SUM(CASE WHEN ul.created_at >= ? THEN ul.actual_cost ELSE 0 END), 0) as today_cost
 		FROM usage_logs ul
-		LEFT JOIN groups g ON g.id = ul.group_id
+		LEFT JOIN ` + "`groups`" + ` g ON g.id = ul.group_id
 		LEFT JOIN accounts a ON a.id = ul.account_id
-		WHERE ul.user_id = ANY(?)
+		WHERE ul.user_id IN (` + sqlPlaceholders(len(normalizedUserIDs)) + `)
 		  AND ul.created_at >= LEAST(?, ?)
 		  AND ` + usageLogSuccessFilterUL + `
-		GROUP BY ul.user_id, ` + usageLogEffectivePlatformExpr + `
+		GROUP BY ul.user_id, platform
 	`
 	today := timezone.Today()
-	rows, err := r.sql.QueryContext(ctx, query, pq.Array(normalizedUserIDs), startTime, endTime, today)
+	args := make([]any, 0, 3+len(normalizedUserIDs)+2)
+	args = append(args, startTime, endTime, today)
+	for _, id := range normalizedUserIDs {
+		args = append(args, id)
+	}
+	args = append(args, startTime, today)
+	rows, err := r.sql.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -2981,15 +2994,21 @@ func (r *usageLogRepository) GetBatchAPIKeyUsageStats(ctx context.Context, apiKe
 	query := `
 		SELECT
 			api_key_id,
-			COALESCE(SUM(actual_cost) FILTER (WHERE created_at >= ? AND created_at < ?), 0) as total_cost,
-			COALESCE(SUM(actual_cost) FILTER (WHERE created_at >= ?), 0) as today_cost
+			COALESCE(SUM(CASE WHEN created_at >= ? AND created_at < ? THEN actual_cost ELSE 0 END), 0) as total_cost,
+			COALESCE(SUM(CASE WHEN created_at >= ? THEN actual_cost ELSE 0 END), 0) as today_cost
 		FROM usage_logs
-		WHERE api_key_id = ANY(?)
+		WHERE api_key_id IN (` + sqlPlaceholders(len(normalizedAPIKeyIDs)) + `)
 		  AND created_at >= LEAST(?, ?)
 		GROUP BY api_key_id
 	`
 	today := timezone.Today()
-	rows, err := r.sql.QueryContext(ctx, query, pq.Array(normalizedAPIKeyIDs), startTime, endTime, today)
+	args := make([]any, 0, 3+len(normalizedAPIKeyIDs)+2)
+	args = append(args, startTime, endTime, today)
+	for _, id := range normalizedAPIKeyIDs {
+		args = append(args, id)
+	}
+	args = append(args, startTime, today)
+	rows, err := r.sql.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -3029,7 +3048,7 @@ func (r *usageLogRepository) GetUsageTrendWithFilters(ctx context.Context, start
 
 	query := fmt.Sprintf(`
 		SELECT
-			TO_CHAR(created_at, '%s') as date,
+			DATE_FORMAT(created_at, '%s') as date,
 			COUNT(*) as requests,
 			COALESCE(SUM(input_tokens), 0) as input_tokens,
 			COALESCE(SUM(output_tokens), 0) as output_tokens,
@@ -3110,7 +3129,7 @@ func (r *usageLogRepository) getUsageTrendFromAggregates(ctx context.Context, st
 	case "hour":
 		query = fmt.Sprintf(`
 			SELECT
-				TO_CHAR(bucket_start, '%s') as date,
+				DATE_FORMAT(bucket_start, '%s') as date,
 				total_requests as requests,
 				input_tokens,
 				output_tokens,
@@ -3126,7 +3145,7 @@ func (r *usageLogRepository) getUsageTrendFromAggregates(ctx context.Context, st
 	case "day":
 		query = fmt.Sprintf(`
 			SELECT
-				TO_CHAR(bucket_date::timestamp, '%s') as date,
+				DATE_FORMAT(bucket_date, '%s') as date,
 				total_requests as requests,
 				input_tokens,
 				output_tokens,
@@ -3136,7 +3155,7 @@ func (r *usageLogRepository) getUsageTrendFromAggregates(ctx context.Context, st
 				total_cost as cost,
 				actual_cost
 			FROM usage_dashboard_daily
-			WHERE bucket_date >= ?::date AND bucket_date < ?::date
+			WHERE bucket_date >= DATE(?) AND bucket_date < DATE(?)
 			ORDER BY bucket_date ASC
 		`, dateFormat)
 	default:
@@ -3253,7 +3272,7 @@ func (r *usageLogRepository) GetGroupStatsWithFilters(ctx context.Context, start
 			COALESCE(SUM(ul.actual_cost), 0) as actual_cost,
 			COALESCE(SUM(COALESCE(ul.account_stats_cost, ul.total_cost) * COALESCE(ul.account_rate_multiplier, 1)), 0) as account_cost
 		FROM usage_logs ul
-		LEFT JOIN groups g ON g.id = ul.group_id
+		LEFT JOIN ` + "`groups`" + ` g ON g.id = ul.group_id
 		WHERE ul.created_at >= ? AND ul.created_at < ?
 	`
 
@@ -3418,7 +3437,7 @@ func (r *usageLogRepository) GetAllGroupUsageSummary(ctx context.Context, todayS
 			g.id AS group_id,
 			COALESCE(SUM(ul.actual_cost), 0) AS total_cost,
 			COALESCE(SUM(CASE WHEN ul.created_at >= ? THEN ul.actual_cost ELSE 0 END), 0) AS today_cost
-		FROM groups g
+		FROM ` + "`groups`" + ` g
 		LEFT JOIN usage_logs ul ON ul.group_id = g.id
 		GROUP BY g.id
 	`
@@ -3811,7 +3830,7 @@ func (r *usageLogRepository) GetAccountUsageStats(ctx context.Context, accountID
 
 	query := `
 		SELECT
-			TO_CHAR(created_at, 'YYYY-MM-DD') as date,
+			DATE_FORMAT(created_at, '%Y-%m-%d') as date,
 			COUNT(*) as requests,
 			COALESCE(SUM(input_tokens + output_tokens + cache_creation_tokens + cache_read_tokens), 0) as tokens,
 			COALESCE(SUM(total_cost), 0) as cost,
