@@ -663,8 +663,7 @@ func (r *accountRepository) ListOAuthRefreshCandidates(ctx context.Context) ([]s
 			AND status = 'active'
 			AND type = 'oauth'
 			AND platform IN ('anthropic', 'openai', 'gemini', 'antigravity')
-			AND credentials ? 'refresh_token'
-			AND btrim(credentials->>'refresh_token') <> ''
+			AND TRIM(COALESCE(JSON_UNQUOTE(JSON_EXTRACT(credentials, '$.refresh_token')), '')) <> ''
 			AND (
 				temp_unschedulable_until > NOW()
 				AND temp_unschedulable_reason LIKE 'token refresh retry exhausted:%'
