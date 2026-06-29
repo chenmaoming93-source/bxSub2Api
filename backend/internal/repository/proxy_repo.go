@@ -604,7 +604,7 @@ func (r *proxyRepository) CountExpiringSoon(ctx context.Context, now time.Time) 
 	err := scanSingleRow(ctx, r.sql, `
 		SELECT COUNT(*) FROM proxies
 		WHERE deleted_at IS NULL AND status=? AND expires_at IS NOT NULL
-		  AND expires_at > ? AND expires_at <= ? + (expiry_warn_days || ' days')::interval`,
-		[]any{service.StatusActive, now}, &c)
+		  AND expires_at > ? AND expires_at <= DATE_ADD(?, INTERVAL expiry_warn_days DAY)`,
+		[]any{service.StatusActive, now, now}, &c)
 	return c, err
 }

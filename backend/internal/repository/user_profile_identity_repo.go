@@ -604,10 +604,9 @@ func (r *userRepository) RecordProviderGrant(ctx context.Context, input Provider
 		return false, fmt.Errorf("sql executor is not configured")
 	}
 
-	result, err := exec.ExecContext(ctx, `
-INSERT INTO user_provider_default_grants (user_id, provider_type, grant_reason)
-VALUES (?, ?, ?)
-ON CONFLICT (user_id, provider_type, grant_reason) DO NOTHING`,
+result, err := exec.ExecContext(ctx, `
+INSERT IGNORE INTO user_provider_default_grants (user_id, provider_type, grant_reason)
+VALUES (?, ?, ?)`,
 		input.UserID,
 		strings.TrimSpace(input.ProviderType),
 		string(input.GrantReason),
@@ -754,13 +753,13 @@ func (r *userRepository) UpsertUserAvatar(ctx context.Context, userID int64, inp
 	_, err = exec.ExecContext(ctx, `
 INSERT INTO user_avatars (user_id, storage_provider, storage_key, url, content_type, byte_size, sha256, updated_at)
 VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
-ON CONFLICT (user_id) DO UPDATE SET
-	storage_provider = EXCLUDED.storage_provider,
-	storage_key = EXCLUDED.storage_key,
-	url = EXCLUDED.url,
-	content_type = EXCLUDED.content_type,
-	byte_size = EXCLUDED.byte_size,
-	sha256 = EXCLUDED.sha256,
+ON DUPLICATE KEY UPDATE
+	storage_provider = VALUES(storage_provider),
+	storage_key = VALUES(storage_key),
+	url = VALUES(url),
+	content_type = VALUES(content_type),
+	byte_size = VALUES(byte_size),
+	sha256 = VALUES(sha256),
 	updated_at = NOW()`,
 		userID,
 		strings.TrimSpace(input.StorageProvider),

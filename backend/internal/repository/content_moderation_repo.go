@@ -48,7 +48,15 @@ func (r *contentModerationRepository) CreateLog(ctx context.Context, log *servic
 	if log.UpstreamLatencyMS != nil {
 		latency = *log.UpstreamLatencyMS
 	}
+<<<<<<< Updated upstream
 	res, err := r.db.ExecContext(ctx, `
+=======
+<<<<<<< HEAD
+	result, err := r.db.ExecContext(ctx, `
+=======
+	res, err := r.db.ExecContext(ctx, `
+>>>>>>> b8b0dfac4a13354cc88788f3e499c69d7a14914f
+>>>>>>> Stashed changes
 INSERT INTO content_moderation_logs (
     request_id, user_id, user_email, api_key_id, api_key_name, group_id, group_name,
     endpoint, provider, model, mode, action, flagged, highest_category, highest_score,
@@ -58,7 +66,15 @@ INSERT INTO content_moderation_logs (
     ?, ?, ?, ?, ?, ?, ?,
     ?, ?, ?, ?, ?, ?, ?, ?,
     ?, ?, ?, ?, ?,
+<<<<<<< Updated upstream
     ?, ?, ?, ?
+=======
+<<<<<<< HEAD
+	?, ?, ?, ?
+=======
+    ?, ?, ?, ?
+>>>>>>> b8b0dfac4a13354cc88788f3e499c69d7a14914f
+>>>>>>> Stashed changes
 )`,
 		log.RequestID, userID, log.UserEmail, apiKeyID, log.APIKeyName, groupID, log.GroupName,
 		log.Endpoint, log.Provider, log.Model, log.Mode, log.Action, log.Flagged, log.HighestCategory, log.HighestScore,
@@ -68,6 +84,16 @@ INSERT INTO content_moderation_logs (
 	if err != nil {
 		return fmt.Errorf("insert content moderation log: %w", err)
 	}
+<<<<<<< Updated upstream
+=======
+<<<<<<< HEAD
+	log.ID, err = result.LastInsertId()
+	if err != nil {
+		return fmt.Errorf("get content moderation log id: %w", err)
+	}
+	return r.db.QueryRowContext(ctx, "SELECT created_at FROM content_moderation_logs WHERE id = ?", log.ID).Scan(&log.CreatedAt)
+=======
+>>>>>>> Stashed changes
 	id, err := res.LastInsertId()
 	if err != nil {
 		return fmt.Errorf("content moderation log last insert id: %w", err)
@@ -77,6 +103,7 @@ INSERT INTO content_moderation_logs (
 		return fmt.Errorf("load content moderation log created_at: %w", err)
 	}
 	return nil
+>>>>>>> b8b0dfac4a13354cc88788f3e499c69d7a14914f
 }
 
 func (r *contentModerationRepository) ListLogs(ctx context.Context, filter service.ContentModerationLogFilter) ([]service.ContentModerationLog, *pagination.PaginationResult, error) {
@@ -203,7 +230,15 @@ WHERE user_id = ?
   AND flagged = TRUE
   AND action <> 'hash_block'
   AND (? = FALSE OR action <> 'cyber_policy')
+<<<<<<< Updated upstream
   AND created_at >= ?
+=======
+<<<<<<< HEAD
+	AND created_at >= ?
+=======
+  AND created_at >= ?
+>>>>>>> b8b0dfac4a13354cc88788f3e499c69d7a14914f
+>>>>>>> Stashed changes
   AND created_at > COALESCE((SELECT at FROM last_auto_ban), '1000-01-01 00:00:00')
 `, userID, userID, excludeCyberPolicy, since).Scan(&count)
 	if err != nil {

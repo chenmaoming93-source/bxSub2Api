@@ -66,12 +66,34 @@ func (r *userGroupRateRepository) GetByUserIDs(ctx context.Context, userIDs []in
 		return result, nil
 	}
 
+<<<<<<< Updated upstream
 	condition, conditionArgs := int64InCondition("user_id", uniqueIDs)
 	rows, err := r.sql.QueryContext(ctx, `
 		SELECT user_id, group_id, rate_multiplier
 		FROM user_group_rate_multipliers
 		WHERE `+condition+` AND rate_multiplier IS NOT NULL
 	`, conditionArgs...)
+=======
+<<<<<<< HEAD
+	idsJSON, err := jsonArrayParam(uniqueIDs)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := r.sql.QueryContext(ctx, `
+		SELECT user_id, group_id, rate_multiplier
+		FROM user_group_rate_multipliers
+		WHERE user_id IN (SELECT id FROM JSON_TABLE(?, '$[*]' COLUMNS(id BIGINT PATH '$')) AS user_ids)
+		  AND rate_multiplier IS NOT NULL
+	`, idsJSON)
+=======
+	condition, conditionArgs := int64InCondition("user_id", uniqueIDs)
+	rows, err := r.sql.QueryContext(ctx, `
+		SELECT user_id, group_id, rate_multiplier
+		FROM user_group_rate_multipliers
+		WHERE `+condition+` AND rate_multiplier IS NOT NULL
+	`, conditionArgs...)
+>>>>>>> b8b0dfac4a13354cc88788f3e499c69d7a14914f
+>>>>>>> Stashed changes
 	if err != nil {
 		return nil, err
 	}
@@ -202,24 +224,57 @@ func (r *userGroupRateRepository) SyncUserGroupRates(ctx context.Context, userID
 	}
 
 	if len(clearGroupIDs) > 0 {
+<<<<<<< Updated upstream
 		condition, conditionArgs := int64InCondition("group_id", clearGroupIDs)
 		args := append([]any{userID}, conditionArgs...)
 		if _, err := r.sql.ExecContext(ctx, `
 			UPDATE user_group_rate_multipliers
 			SET rate_multiplier = NULL, updated_at = NOW()
 			WHERE user_id = ? AND `+condition, args...); err != nil {
+=======
+<<<<<<< HEAD
+		clearIDsJSON, err := jsonArrayParam(clearGroupIDs)
+		if err != nil {
+			return err
+		}
+		if _, err := r.sql.ExecContext(ctx, `
+			UPDATE user_group_rate_multipliers
+			SET rate_multiplier = NULL, updated_at = NOW()
+			WHERE user_id = ?
+			  AND group_id IN (SELECT id FROM JSON_TABLE(?, '$[*]' COLUMNS(id BIGINT PATH '$')) AS group_ids)
+		`, userID, clearIDsJSON); err != nil {
+=======
+		condition, conditionArgs := int64InCondition("group_id", clearGroupIDs)
+		args := append([]any{userID}, conditionArgs...)
+		if _, err := r.sql.ExecContext(ctx, `
+			UPDATE user_group_rate_multipliers
+			SET rate_multiplier = NULL, updated_at = NOW()
+			WHERE user_id = ? AND `+condition, args...); err != nil {
+>>>>>>> b8b0dfac4a13354cc88788f3e499c69d7a14914f
+>>>>>>> Stashed changes
 			return err
 		}
 		args = append([]any{userID}, conditionArgs...)
 		if _, err := r.sql.ExecContext(ctx,
+<<<<<<< Updated upstream
 			`DELETE FROM user_group_rate_multipliers WHERE user_id = ? AND `+condition+` AND rate_multiplier IS NULL AND rpm_override IS NULL`,
 			args...); err != nil {
+=======
+<<<<<<< HEAD
+			`DELETE FROM user_group_rate_multipliers WHERE user_id = ? AND group_id IN (SELECT id FROM JSON_TABLE(?, '$[*]' COLUMNS(id BIGINT PATH '$')) AS group_ids) AND rate_multiplier IS NULL AND rpm_override IS NULL`,
+			userID, clearIDsJSON); err != nil {
+=======
+			`DELETE FROM user_group_rate_multipliers WHERE user_id = ? AND `+condition+` AND rate_multiplier IS NULL AND rpm_override IS NULL`,
+			args...); err != nil {
+>>>>>>> b8b0dfac4a13354cc88788f3e499c69d7a14914f
+>>>>>>> Stashed changes
 			return err
 		}
 	}
 
 	if len(upsertGroupIDs) > 0 {
 		now := time.Now()
+<<<<<<< Updated upstream
 		values := make([]string, 0, len(upsertGroupIDs))
 		args := make([]any, 0, len(upsertGroupIDs)*5)
 		for i, groupID := range upsertGroupIDs {
@@ -228,11 +283,44 @@ func (r *userGroupRateRepository) SyncUserGroupRates(ctx context.Context, userID
 		}
 		_, err := r.sql.ExecContext(ctx, `
 			INSERT INTO user_group_rate_multipliers (user_id, group_id, rate_multiplier, created_at, updated_at)
+=======
+<<<<<<< HEAD
+		groupIDsJSON, err := jsonArrayParam(upsertGroupIDs)
+		if err != nil {
+			return err
+		}
+		ratesJSON, err := jsonArrayParam(upsertRates)
+		if err != nil {
+			return err
+		}
+		_, err := r.sql.ExecContext(ctx, `
+			INSERT INTO user_group_rate_multipliers (user_id, group_id, rate_multiplier, created_at, updated_at)
+			SELECT ?, group_ids.group_id, rates.rate_multiplier, ?, ?
+			FROM JSON_TABLE(?, '$[*]' COLUMNS(ord FOR ORDINALITY, group_id BIGINT PATH '$')) AS group_ids
+			JOIN JSON_TABLE(?, '$[*]' COLUMNS(ord FOR ORDINALITY, rate_multiplier DOUBLE PATH '$')) AS rates USING (ord)
+			ON DUPLICATE KEY UPDATE
+				rate_multiplier = VALUES(rate_multiplier),
+				updated_at = VALUES(updated_at)
+		`, userID, now, now, groupIDsJSON, ratesJSON)
+=======
+		values := make([]string, 0, len(upsertGroupIDs))
+		args := make([]any, 0, len(upsertGroupIDs)*5)
+		for i, groupID := range upsertGroupIDs {
+			values = append(values, "(?, ?, ?, ?, ?)")
+			args = append(args, userID, groupID, upsertRates[i], now, now)
+		}
+		_, err := r.sql.ExecContext(ctx, `
+			INSERT INTO user_group_rate_multipliers (user_id, group_id, rate_multiplier, created_at, updated_at)
+>>>>>>> Stashed changes
 			VALUES `+strings.Join(values, ", ")+`
 			ON DUPLICATE KEY UPDATE
 				rate_multiplier = VALUES(rate_multiplier),
 				updated_at = VALUES(updated_at)
 		`, args...)
+<<<<<<< Updated upstream
+=======
+>>>>>>> b8b0dfac4a13354cc88788f3e499c69d7a14914f
+>>>>>>> Stashed changes
 		if err != nil {
 			return err
 		}
@@ -261,12 +349,34 @@ func (r *userGroupRateRepository) SyncGroupRateMultipliers(ctx context.Context, 
 			return err
 		}
 	} else {
+<<<<<<< Updated upstream
 		condition, conditionArgs := int64NotInCondition("user_id", keepUserIDs)
 		args := append([]any{groupID}, conditionArgs...)
 		if _, err := r.sql.ExecContext(ctx, `
 			UPDATE user_group_rate_multipliers
 			SET rate_multiplier = NULL, updated_at = NOW()
 			WHERE group_id = ? AND `+condition, args...); err != nil {
+=======
+<<<<<<< HEAD
+		keepIDsJSON, err := jsonArrayParam(keepUserIDs)
+		if err != nil {
+			return err
+		}
+		if _, err := r.sql.ExecContext(ctx, `
+			UPDATE user_group_rate_multipliers
+			SET rate_multiplier = NULL, updated_at = NOW()
+			WHERE group_id = ?
+			  AND user_id NOT IN (SELECT id FROM JSON_TABLE(?, '$[*]' COLUMNS(id BIGINT PATH '$')) AS user_ids)
+		`, groupID, keepIDsJSON); err != nil {
+=======
+		condition, conditionArgs := int64NotInCondition("user_id", keepUserIDs)
+		args := append([]any{groupID}, conditionArgs...)
+		if _, err := r.sql.ExecContext(ctx, `
+			UPDATE user_group_rate_multipliers
+			SET rate_multiplier = NULL, updated_at = NOW()
+			WHERE group_id = ? AND `+condition, args...); err != nil {
+>>>>>>> b8b0dfac4a13354cc88788f3e499c69d7a14914f
+>>>>>>> Stashed changes
 			return err
 		}
 	}
@@ -290,6 +400,7 @@ func (r *userGroupRateRepository) SyncGroupRateMultipliers(ctx context.Context, 
 		rates[i] = e.RateMultiplier
 	}
 	now := time.Now()
+<<<<<<< Updated upstream
 	values := make([]string, 0, len(entries))
 	args := make([]any, 0, len(entries)*5)
 	for i := range entries {
@@ -301,6 +412,37 @@ func (r *userGroupRateRepository) SyncGroupRateMultipliers(ctx context.Context, 
 		VALUES `+strings.Join(values, ", ")+`
 		ON DUPLICATE KEY UPDATE rate_multiplier = VALUES(rate_multiplier), updated_at = VALUES(updated_at)
 	`, args...)
+=======
+<<<<<<< HEAD
+	userIDsJSON, err := jsonArrayParam(userIDs)
+	if err != nil {
+		return err
+	}
+	ratesJSON, err := jsonArrayParam(rates)
+	if err != nil {
+		return err
+	}
+	_, err := r.sql.ExecContext(ctx, `
+		INSERT INTO user_group_rate_multipliers (user_id, group_id, rate_multiplier, created_at, updated_at)
+		SELECT user_ids.user_id, ?, rates.rate_multiplier, ?, ?
+		FROM JSON_TABLE(?, '$[*]' COLUMNS(ord FOR ORDINALITY, user_id BIGINT PATH '$')) AS user_ids
+		JOIN JSON_TABLE(?, '$[*]' COLUMNS(ord FOR ORDINALITY, rate_multiplier DOUBLE PATH '$')) AS rates USING (ord)
+		ON DUPLICATE KEY UPDATE rate_multiplier = VALUES(rate_multiplier), updated_at = VALUES(updated_at)
+	`, groupID, now, now, userIDsJSON, ratesJSON)
+=======
+	values := make([]string, 0, len(entries))
+	args := make([]any, 0, len(entries)*5)
+	for i := range entries {
+		values = append(values, "(?, ?, ?, ?, ?)")
+		args = append(args, userIDs[i], groupID, rates[i], now, now)
+	}
+	_, err := r.sql.ExecContext(ctx, `
+		INSERT INTO user_group_rate_multipliers (user_id, group_id, rate_multiplier, created_at, updated_at)
+		VALUES `+strings.Join(values, ", ")+`
+		ON DUPLICATE KEY UPDATE rate_multiplier = VALUES(rate_multiplier), updated_at = VALUES(updated_at)
+	`, args...)
+>>>>>>> b8b0dfac4a13354cc88788f3e499c69d7a14914f
+>>>>>>> Stashed changes
 	return err
 }
 
@@ -333,24 +475,68 @@ func (r *userGroupRateRepository) SyncGroupRPMOverrides(ctx context.Context, gro
 			return err
 		}
 	} else {
+<<<<<<< Updated upstream
 		condition, conditionArgs := int64NotInCondition("user_id", keepUserIDs)
 		args := append([]any{groupID}, conditionArgs...)
 		if _, err := r.sql.ExecContext(ctx, `
 			UPDATE user_group_rate_multipliers
 			SET rpm_override = NULL, updated_at = NOW()
 			WHERE group_id = ? AND `+condition, args...); err != nil {
+=======
+<<<<<<< HEAD
+		keepIDsJSON, err := jsonArrayParam(keepUserIDs)
+		if err != nil {
+			return err
+		}
+		if _, err := r.sql.ExecContext(ctx, `
+			UPDATE user_group_rate_multipliers
+			SET rpm_override = NULL, updated_at = NOW()
+			WHERE group_id = ?
+			  AND user_id NOT IN (SELECT id FROM JSON_TABLE(?, '$[*]' COLUMNS(id BIGINT PATH '$')) AS user_ids)
+		`, groupID, keepIDsJSON); err != nil {
+=======
+		condition, conditionArgs := int64NotInCondition("user_id", keepUserIDs)
+		args := append([]any{groupID}, conditionArgs...)
+		if _, err := r.sql.ExecContext(ctx, `
+			UPDATE user_group_rate_multipliers
+			SET rpm_override = NULL, updated_at = NOW()
+			WHERE group_id = ? AND `+condition, args...); err != nil {
+>>>>>>> b8b0dfac4a13354cc88788f3e499c69d7a14914f
+>>>>>>> Stashed changes
 			return err
 		}
 	}
 
 	// 显式 clear 的行。
 	if len(clearUserIDs) > 0 {
+<<<<<<< Updated upstream
 		condition, conditionArgs := int64InCondition("user_id", clearUserIDs)
 		args := append([]any{groupID}, conditionArgs...)
 		if _, err := r.sql.ExecContext(ctx, `
 			UPDATE user_group_rate_multipliers
 			SET rpm_override = NULL, updated_at = NOW()
 			WHERE group_id = ? AND `+condition, args...); err != nil {
+=======
+<<<<<<< HEAD
+		clearIDsJSON, err := jsonArrayParam(clearUserIDs)
+		if err != nil {
+			return err
+		}
+		if _, err := r.sql.ExecContext(ctx, `
+			UPDATE user_group_rate_multipliers
+			SET rpm_override = NULL, updated_at = NOW()
+			WHERE group_id = ?
+			  AND user_id IN (SELECT id FROM JSON_TABLE(?, '$[*]' COLUMNS(id BIGINT PATH '$')) AS user_ids)
+		`, groupID, clearIDsJSON); err != nil {
+=======
+		condition, conditionArgs := int64InCondition("user_id", clearUserIDs)
+		args := append([]any{groupID}, conditionArgs...)
+		if _, err := r.sql.ExecContext(ctx, `
+			UPDATE user_group_rate_multipliers
+			SET rpm_override = NULL, updated_at = NOW()
+			WHERE group_id = ? AND `+condition, args...); err != nil {
+>>>>>>> b8b0dfac4a13354cc88788f3e499c69d7a14914f
+>>>>>>> Stashed changes
 			return err
 		}
 	}
@@ -365,6 +551,7 @@ func (r *userGroupRateRepository) SyncGroupRPMOverrides(ctx context.Context, gro
 
 	if len(upsertUserIDs) > 0 {
 		now := time.Now()
+<<<<<<< Updated upstream
 		values := make([]string, 0, len(upsertUserIDs))
 		args := make([]any, 0, len(upsertUserIDs)*5)
 		for i, userID := range upsertUserIDs {
@@ -376,6 +563,37 @@ func (r *userGroupRateRepository) SyncGroupRPMOverrides(ctx context.Context, gro
 			VALUES `+strings.Join(values, ", ")+`
 			ON DUPLICATE KEY UPDATE rpm_override = VALUES(rpm_override), updated_at = VALUES(updated_at)
 		`, args...)
+=======
+<<<<<<< HEAD
+		userIDsJSON, err := jsonArrayParam(upsertUserIDs)
+		if err != nil {
+			return err
+		}
+		valuesJSON, err := jsonArrayParam(upsertValues)
+		if err != nil {
+			return err
+		}
+		_, err := r.sql.ExecContext(ctx, `
+			INSERT INTO user_group_rate_multipliers (user_id, group_id, rpm_override, created_at, updated_at)
+			SELECT user_ids.user_id, ?, rpm_values.rpm_override, ?, ?
+			FROM JSON_TABLE(?, '$[*]' COLUMNS(ord FOR ORDINALITY, user_id BIGINT PATH '$')) AS user_ids
+			JOIN JSON_TABLE(?, '$[*]' COLUMNS(ord FOR ORDINALITY, rpm_override INT PATH '$')) AS rpm_values USING (ord)
+			ON DUPLICATE KEY UPDATE rpm_override = VALUES(rpm_override), updated_at = VALUES(updated_at)
+		`, groupID, now, now, userIDsJSON, valuesJSON)
+=======
+		values := make([]string, 0, len(upsertUserIDs))
+		args := make([]any, 0, len(upsertUserIDs)*5)
+		for i, userID := range upsertUserIDs {
+			values = append(values, "(?, ?, ?, ?, ?)")
+			args = append(args, userID, groupID, upsertValues[i], now, now)
+		}
+		_, err := r.sql.ExecContext(ctx, `
+			INSERT INTO user_group_rate_multipliers (user_id, group_id, rpm_override, created_at, updated_at)
+			VALUES `+strings.Join(values, ", ")+`
+			ON DUPLICATE KEY UPDATE rpm_override = VALUES(rpm_override), updated_at = VALUES(updated_at)
+		`, args...)
+>>>>>>> b8b0dfac4a13354cc88788f3e499c69d7a14914f
+>>>>>>> Stashed changes
 		if err != nil {
 			return err
 		}

@@ -522,7 +522,7 @@ func (r *groupRepository) ExistsByIDs(ctx context.Context, ids []int64) (map[int
 	}
 	rows, err := r.sql.QueryContext(ctx, `
 		SELECT id
-		FROM groups
+		FROM `+"`groups`"+`
 		WHERE id IN (SELECT id FROM JSON_TABLE(?, '$[*]' COLUMNS(id BIGINT PATH '$')) AS group_ids)
 		  AND deleted_at IS NULL
 	`, idsJSON)
@@ -593,7 +593,7 @@ func (r *groupRepository) DeleteCascade(ctx context.Context, id int64) ([]int64,
 
 	// Lock the group row to avoid concurrent writes while we cascade.
 	// 这里使用 exec.QueryContext 手动扫描，确保同一事务内加锁并能区分"未找到"与其他错误。
-	rows, err := exec.QueryContext(ctx, "SELECT id FROM groups WHERE id = ? AND deleted_at IS NULL FOR UPDATE", id)
+	rows, err := exec.QueryContext(ctx, "SELECT id FROM `groups` WHERE id = ? AND deleted_at IS NULL FOR UPDATE", id)
 	if err != nil {
 		return nil, err
 	}
@@ -842,8 +842,8 @@ func (r *groupRepository) UpdateSortOrders(ctx context.Context, updates []servic
 	if err := scanSingleRow(
 		ctx,
 		r.sql,
-		`SELECT COUNT(*) FROM groups WHERE deleted_at IS NULL
-		 AND id IN (SELECT id FROM JSON_TABLE(?, '$[*]' COLUMNS(id BIGINT PATH '$')) AS group_ids)`,
+		"SELECT COUNT(*) FROM `groups` WHERE deleted_at IS NULL "+
+			`AND id IN (SELECT id FROM JSON_TABLE(?, '$[*]' COLUMNS(id BIGINT PATH '$')) AS group_ids)`,
 		[]any{idsJSON},
 		&existingCount,
 	); err != nil {
@@ -862,7 +862,7 @@ func (r *groupRepository) UpdateSortOrders(ctx context.Context, updates []servic
 	args = append(args, idsJSON)
 
 	query := fmt.Sprintf(`
-		UPDATE groups
+		UPDATE `+"`groups`"+`
 		SET sort_order = CASE id
 			%s
 			ELSE sort_order

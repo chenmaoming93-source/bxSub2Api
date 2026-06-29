@@ -96,33 +96,33 @@ func (r *userPlatformQuotaRepository) BulkInsertInitial(ctx context.Context, rec
 
 	var sb strings.Builder
 	_, _ = sb.WriteString("INSERT INTO user_platform_quotas (user_id, platform, daily_limit_usd, weekly_limit_usd, monthly_limit_usd, daily_usage_usd, weekly_usage_usd, monthly_usage_usd, created_at, updated_at) VALUES ")
-	args := make([]any, 0, len(records)*6)
+	args := make([]any, 0, len(records)*7)
 	// 统一时间戳：避免循环内多次 time.Now() 让同一批记录的 created_at/updated_at
 	// 出现亚毫秒级偏差（与 UpsertForUser 的 now := time.Now() 风格一致）。
 	now := time.Now()
 	for i, rec := range records {
-		base := i * 6
+		base := i * 7
 		if i > 0 {
 			_, _ = sb.WriteString(",")
 		}
 		fmt.Fprintf(&sb, "(?/*%d*/,?/*%d*/,?/*%d*/,?/*%d*/,?/*%d*/,0,0,0,?/*%d*/,?/*%d*/)",
-			base+1, base+2, base+3, base+4, base+5, base+6, base+6)
+			base+1, base+2, base+3, base+4, base+5, base+6, base+7)
 		args = append(args,
 			rec.UserID, rec.Platform,
 			rec.DailyLimitUSD, rec.WeeklyLimitUSD, rec.MonthlyLimitUSD,
-			now,
+			now, now,
 		)
 	}
 	// 精确命中 partial unique index（deleted_at IS NULL），避免对软删记录的歧义冲突。
 	// 条件覆盖：仅在现有 limit 为 NULL 时才写入 EXCLUDED，否则保留现有非 NULL 值。
 	// - 修复 IncrementUsageWithReset 已用 NULL limit 建行的场景（NULL → 注册默认）
 	// - 保护管理员通过 UpsertForUser 设置的个性化 limit 不被静默覆盖
-	_, _ = sb.WriteString(` ON CONFLICT (user_id, platform) WHERE deleted_at IS NULL
-		DO UPDATE SET
-			daily_limit_usd   = COALESCE(user_platform_quotas.daily_limit_usd, EXCLUDED.daily_limit_usd),
-			weekly_limit_usd  = COALESCE(user_platform_quotas.weekly_limit_usd, EXCLUDED.weekly_limit_usd),
-			monthly_limit_usd = COALESCE(user_platform_quotas.monthly_limit_usd, EXCLUDED.monthly_limit_usd),
-			updated_at        = EXCLUDED.updated_at`)
+	_, _ = sb.WriteString(` ON DUPLICATE KEY UPDATE
+			daily_limit_usd   = COALESCE(user_platform_quotas.daily_limit_usd, VALUES(daily_limit_usd)),
+			weekly_limit_usd  = COALESCE(user_platform_quotas.weekly_limit_usd, VALUES(weekly_limit_usd)),
+			monthly_limit_usd = COALESCE(user_platform_quotas.monthly_limit_usd, VALUES(monthly_limit_usd)),
+			deleted_at        = NULL,
+			updated_at        = VALUES(updated_at)`)
 
 	_, err := client.ExecContext(ctx, sb.String(), args...)
 	return err
@@ -195,15 +195,16 @@ func (r *userPlatformQuotaRepository) IncrementUsageWithReset(ctx context.Contex
 				(user_id, platform, daily_usage_usd, weekly_usage_usd, monthly_usage_usd,
 				 daily_window_start, weekly_window_start, monthly_window_start, created_at, updated_at)
 				VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-				ON CONFLICT (user_id, platform) WHERE deleted_at IS NULL DO UPDATE SET
-					daily_usage_usd   = user_platform_quotas.daily_usage_usd   + EXCLUDED.daily_usage_usd,
-					weekly_usage_usd  = user_platform_quotas.weekly_usage_usd  + EXCLUDED.weekly_usage_usd,
-					monthly_usage_usd = user_platform_quotas.monthly_usage_usd + EXCLUDED.monthly_usage_usd,
-					updated_at        = EXCLUDED.updated_at`
+				ON DUPLICATE KEY UPDATE
+					daily_usage_usd   = user_platform_quotas.daily_usage_usd   + VALUES(daily_usage_usd),
+					weekly_usage_usd  = user_platform_quotas.weekly_usage_usd  + VALUES(weekly_usage_usd),
+					monthly_usage_usd = user_platform_quotas.monthly_usage_usd + VALUES(monthly_usage_usd),
+					deleted_at        = NULL,
+					updated_at        = VALUES(updated_at)`
 			// ? = now：30 天滚动月度窗口以当前时刻为起始
 			_, e := txClient.ExecContext(txCtx, insertSQL,
-				userID, platform, cost,
-				timezone.StartOfDay(now), timezone.StartOfWeek(now), now, now)
+				userID, platform, cost, cost, cost,
+				timezone.StartOfDay(now), timezone.StartOfWeek(now), now, now, now)
 			return e
 		}
 		if err != nil {
@@ -372,13 +373,13 @@ func softDeleteMissingPlatforms(ctx context.Context, client *dbent.Client, userI
 	if len(keepPlatforms) == 0 {
 		query = `UPDATE user_platform_quotas SET deleted_at = ?, updated_at = ?
 		         WHERE user_id = ? AND deleted_at IS NULL`
-		args = []any{userID, now}
+		args = []any{now, now, userID}
 	} else {
 		placeholders := make([]string, len(keepPlatforms))
-		args = make([]any, 0, len(keepPlatforms)+2)
-		args = append(args, userID, now)
+		args = make([]any, 0, len(keepPlatforms)+3)
+		args = append(args, now, now, userID)
 		for i, p := range keepPlatforms {
-			placeholders[i] = fmt.Sprintf("?/*%d*/", i+3)
+			placeholders[i] = fmt.Sprintf("?/*%d*/", i+4)
 			args = append(args, p)
 		}
 		query = fmt.Sprintf(`UPDATE user_platform_quotas SET deleted_at = ?, updated_at = ?
@@ -416,11 +417,16 @@ func insertLimitsRow(ctx context.Context, client *dbent.Client, userID int64, re
 		(user_id, platform, daily_limit_usd, weekly_limit_usd, monthly_limit_usd,
 		 daily_usage_usd, weekly_usage_usd, monthly_usage_usd, created_at, updated_at)
 		VALUES (?, ?, ?, ?, ?, 0, 0, 0, ?, ?)
-		ON CONFLICT (user_id, platform) WHERE deleted_at IS NULL DO NOTHING`
+		ON DUPLICATE KEY UPDATE
+			daily_limit_usd = VALUES(daily_limit_usd),
+			weekly_limit_usd = VALUES(weekly_limit_usd),
+			monthly_limit_usd = VALUES(monthly_limit_usd),
+			deleted_at = NULL,
+			updated_at = VALUES(updated_at)`
 	res, err := client.ExecContext(ctx, query,
 		userID, rec.Platform,
 		rec.DailyLimitUSD, rec.WeeklyLimitUSD, rec.MonthlyLimitUSD,
-		now)
+		now, now)
 	if err != nil {
 		return err
 	}
@@ -469,8 +475,7 @@ func (r *userPlatformQuotaRepository) BatchSnapshotUsage(ctx context.Context, sn
 				" daily_window_start, weekly_window_start, monthly_window_start, created_at, updated_at)" +
 				" VALUES ")
 
-		// ? = now（共用）；每行 8 个 per-row 参，从 ? 起连续编号。
-		args := []any{now}
+		args := make([]any, 0, len(batch)*10)
 		for i, s := range batch {
 			if i > 0 {
 				_, _ = sb.WriteString(",")
@@ -482,18 +487,20 @@ func (r *userPlatformQuotaRepository) BatchSnapshotUsage(ctx context.Context, sn
 				s.UserID, s.Platform,
 				s.DailyUsageUSD, s.WeeklyUsageUSD, s.MonthlyUsageUSD,
 				s.DailyWindowStart, s.WeeklyWindowStart, s.MonthlyWindowStart,
+				now, now,
 			)
 		}
 
 		_, _ = sb.WriteString(
-			" ON CONFLICT (user_id, platform) WHERE deleted_at IS NULL DO UPDATE SET" +
-				"  daily_usage_usd      = EXCLUDED.daily_usage_usd," +
-				"  weekly_usage_usd     = EXCLUDED.weekly_usage_usd," +
-				"  monthly_usage_usd    = EXCLUDED.monthly_usage_usd," +
-				"  daily_window_start   = EXCLUDED.daily_window_start," +
-				"  weekly_window_start  = EXCLUDED.weekly_window_start," +
-				"  monthly_window_start = EXCLUDED.monthly_window_start," +
-				"  updated_at           = EXCLUDED.updated_at")
+			" ON DUPLICATE KEY UPDATE" +
+				"  daily_usage_usd      = VALUES(daily_usage_usd)," +
+				"  weekly_usage_usd     = VALUES(weekly_usage_usd)," +
+				"  monthly_usage_usd    = VALUES(monthly_usage_usd)," +
+				"  daily_window_start   = VALUES(daily_window_start)," +
+				"  weekly_window_start  = VALUES(weekly_window_start)," +
+				"  monthly_window_start = VALUES(monthly_window_start)," +
+				"  deleted_at           = NULL," +
+				"  updated_at           = VALUES(updated_at)")
 
 		if _, err := client.ExecContext(ctx, sb.String(), args...); err != nil {
 			msg := strings.ToLower(err.Error())
