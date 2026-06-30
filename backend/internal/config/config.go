@@ -1394,8 +1394,8 @@ func load(allowMissingJWTSecret bool) (*Config, error) {
 	if dataDir := os.Getenv("DATA_DIR"); dataDir != "" {
 		viper.AddConfigPath(dataDir)
 	}
-	// 2. Docker data directory
-	viper.AddConfigPath("/app/data")
+	// 2. Primary data directory
+	viper.AddConfigPath("/opt/iba/sub2api/config")
 	// 3. Current directory
 	viper.AddConfigPath(".")
 	// 4. Config subdirectory

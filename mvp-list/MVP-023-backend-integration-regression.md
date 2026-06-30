@@ -1,7 +1,7 @@
 # MVP-023: 完成每日配额与分组路由后端集成回归
 
 - Protocol: `mvp-list/v1`
-- State: `PLANNED`
+- State: `ACTIVE`
 - Estimate: `20min`
 - Estimate rationale: 只补计划列出的跨组件高风险用例并运行聚焦套件，功能实现已在前置 MVP 完成。
 - Dependencies: `MVP-016`
@@ -47,5 +47,4 @@
 |---|---|---|
 
 ## Execution Notes
-
 

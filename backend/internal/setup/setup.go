@@ -25,7 +25,6 @@ import (
 // Config paths
 const (
 	ConfigFileName             = "config.yaml"
-	InstallLockFile            = ".installed"
 	defaultUserConcurrency     = 5
 	simpleModeAdminConcurrency = 30
 )
@@ -38,27 +37,12 @@ func setupDefaultAdminConcurrency() int {
 }
 
 // GetDataDir returns the data directory for storing config and lock files.
-// Priority: DATA_DIR env > /app/data (if exists and writable) > current directory
+// Default is /opt/iba/sub2api/config; can be overridden by DATA_DIR env for testing.
 func GetDataDir() string {
-	// Check DATA_DIR environment variable first
 	if dir := os.Getenv("DATA_DIR"); dir != "" {
 		return dir
 	}
-
-	// Check if /app/data exists and is writable (Docker environment)
-	dockerDataDir := "/app/data"
-	if info, err := os.Stat(dockerDataDir); err == nil && info.IsDir() {
-		// Try to check if writable by creating a temp file
-		testFile := dockerDataDir + "/.write_test"
-		if f, err := os.Create(testFile); err == nil {
-			_ = f.Close()
-			_ = os.Remove(testFile)
-			return dockerDataDir
-		}
-	}
-
-	// Default to current directory
-	return "."
+	return "/opt/iba/sub2api/config"
 }
 
 // GetConfigFilePath returns the full path to config.yaml
@@ -68,7 +52,7 @@ func GetConfigFilePath() string {
 
 // GetInstallLockPath returns the full path to .installed lock file
 func GetInstallLockPath() string {
-	return GetDataDir() + "/" + InstallLockFile
+	return "/data/.installed"
 }
 
 // SetupConfig holds the setup configuration

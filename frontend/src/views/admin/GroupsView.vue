@@ -69,6 +69,13 @@
               {{ t("admin.groups.sortOrder") }}
             </button>
             <button
+              @click="showGlobalModelTokenQuotaModal = true"
+              class="btn btn-secondary"
+            >
+              <Icon name="chartBar" size="md" class="mr-2" />
+              {{ t("admin.groups.modelTokenQuota.menuItem", "Model token limits") }}
+            </button>
+            <button
               @click="openCreateModal"
               class="btn btn-primary"
               data-tour="groups-create-btn"
@@ -1475,97 +1482,65 @@
               class="rounded-lg border border-gray-200 p-3 dark:border-dark-600"
             >
               <div class="flex items-start gap-3">
-                <div class="flex-1 space-y-2">
+                <div class="min-w-0 flex-1 space-y-3">
                   <div>
                     <label class="input-label text-xs">{{
-                      t("admin.groups.modelRouting.modelPattern")
+                      t("admin.groups.modelRouting.routeAlias", "Route alias")
                     }}</label>
                     <input
-                      v-model="rule.pattern"
+                      v-model="rule.alias"
                       type="text"
                       class="input text-sm"
                       :placeholder="
-                        t('admin.groups.modelRouting.modelPatternPlaceholder')
+                        t('admin.groups.modelRouting.routeAliasPlaceholder', 'e.g. coding-fast')
                       "
                     />
                   </div>
-                  <div>
-                    <label class="input-label text-xs">{{
-                      t("admin.groups.modelRouting.accounts")
-                    }}</label>
-                    <!-- 已选账号标签 -->
-                    <div
-                      v-if="rule.accounts.length > 0"
-                      class="flex flex-wrap gap-1.5 mb-2"
-                    >
-                      <span
-                        v-for="account in rule.accounts"
-                        :key="account.id"
-                        class="inline-flex items-center gap-1 rounded-full bg-primary-100 px-2.5 py-1 text-xs font-medium text-primary-700 dark:bg-primary-900/30 dark:text-primary-300"
-                      >
+                  <div
+                    v-for="candidate in rule.candidates"
+                    :key="getCreateCandidateRenderKey(candidate)"
+                    class="relative space-y-2 rounded-md bg-gray-50 p-3 dark:bg-dark-700/50"
+                  >
+                    <div class="grid gap-2 md:grid-cols-3">
+                      <div>
+                        <label class="input-label text-xs">{{
+                          t("admin.groups.modelRouting.candidateModel", "Upstream model")
+                        }}</label>
+                        <input v-model="candidate.model" type="text" class="input text-sm" />
+                      </div>
+                      <div>
+                        <label class="input-label text-xs">{{
+                          t("admin.groups.modelRouting.priority", "Priority")
+                        }}</label>
+                        <input v-model.number="candidate.priority" type="number" min="0" step="1" class="input text-sm" />
+                      </div>
+                      <div>
+                        <label class="input-label text-xs">{{
+                          t("admin.groups.modelRouting.dailyTokenLimit", "Daily token limit")
+                        }}</label>
+                        <input v-model.number="candidate.daily_token_limit" type="number" min="0" step="1" class="input text-sm" :placeholder="t('admin.groups.modelRouting.unlimited', 'Unlimited')" />
+                      </div>
+                    </div>
+                    <div v-if="candidate.accounts.length > 0" class="mb-2 flex flex-wrap gap-1.5">
+                      <span v-for="account in candidate.accounts" :key="account.id" class="inline-flex items-center gap-1 rounded-full bg-primary-100 px-2.5 py-1 text-xs font-medium text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">
                         {{ account.name }}
-                        <button
-                          type="button"
-                          @click="removeSelectedAccount(rule, account.id)"
-                          class="ml-0.5 text-primary-500 hover:text-primary-700 dark:hover:text-primary-200"
-                        >
-                          <Icon name="x" size="xs" />
-                        </button>
+                        <button type="button" @click="removeSelectedAccount(candidate, account.id)" class="ml-0.5 text-primary-500 hover:text-primary-700 dark:hover:text-primary-200"><Icon name="x" size="xs" /></button>
                       </span>
                     </div>
-                    <!-- 账号搜索输入框 -->
                     <div class="relative account-search-container">
-                      <input
-                        v-model="
-                          accountSearchKeyword[getCreateRuleSearchKey(rule)]
-                        "
-                        type="text"
-                        class="input text-sm"
-                        :placeholder="
-                          t(
-                            'admin.groups.modelRouting.searchAccountPlaceholder',
-                          )
-                        "
-                        @input="searchAccountsByRule(rule)"
-                        @focus="onAccountSearchFocus(rule)"
-                      />
-                      <!-- 搜索结果下拉框 -->
-                      <div
-                        v-if="
-                          showAccountDropdown[getCreateRuleSearchKey(rule)] &&
-                          accountSearchResults[getCreateRuleSearchKey(rule)]
-                            ?.length > 0
-                        "
-                        class="absolute z-50 mt-1 max-h-48 w-full overflow-auto rounded-lg border bg-white shadow-lg dark:border-dark-600 dark:bg-dark-800"
-                      >
-                        <button
-                          v-for="account in accountSearchResults[
-                            getCreateRuleSearchKey(rule)
-                          ]"
-                          :key="account.id"
-                          type="button"
-                          @click="selectAccount(rule, account)"
-                          class="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-dark-700"
-                          :class="{
-                            'opacity-50': rule.accounts.some(
-                              (a) => a.id === account.id,
-                            ),
-                          }"
-                          :disabled="
-                            rule.accounts.some((a) => a.id === account.id)
-                          "
-                        >
-                          <span>{{ account.name }}</span>
-                          <span class="ml-2 text-xs text-gray-400"
-                            >#{{ account.id }}</span
-                          >
+                      <input v-model="accountSearchKeyword[getCreateCandidateSearchKey(candidate)]" type="text" class="input text-sm" :placeholder="t('admin.groups.modelRouting.searchAccountPlaceholder')" @input="searchAccountsByRule(candidate)" @focus="onAccountSearchFocus(candidate)" />
+                      <div v-if="showAccountDropdown[getCreateCandidateSearchKey(candidate)] && accountSearchResults[getCreateCandidateSearchKey(candidate)]?.length > 0" class="absolute z-50 mt-1 max-h-48 w-full overflow-auto rounded-lg border bg-white shadow-lg dark:border-dark-600 dark:bg-dark-800">
+                        <button v-for="account in accountSearchResults[getCreateCandidateSearchKey(candidate)]" :key="account.id" type="button" @click="selectAccount(candidate, account)" class="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-dark-700" :class="{ 'opacity-50': candidate.accounts.some((a) => a.id === account.id) }" :disabled="candidate.accounts.some((a) => a.id === account.id)">
+                          <span>{{ account.name }}</span><span class="ml-2 text-xs text-gray-400">#{{ account.id }}</span>
                         </button>
                       </div>
                     </div>
-                    <p class="text-xs text-gray-400 mt-1">
-                      {{ t("admin.groups.modelRouting.accountsHint") }}
+                    <p v-if="!candidate.model.trim() || candidate.accounts.length === 0 || !Number.isInteger(Number(candidate.priority)) || Number(candidate.priority) < 0 || (candidate.daily_token_limit !== null && candidate.daily_token_limit !== '' && (!Number.isInteger(Number(candidate.daily_token_limit)) || Number(candidate.daily_token_limit) < 0))" class="text-xs text-red-500">
+                      {{ t("admin.groups.modelRouting.candidateValidation", "Model, account, and non-negative integer values are required") }}
                     </p>
+                    <button type="button" @click="removeRoutingCandidate(rule, candidate)" class="absolute right-2 top-2 p-1 text-gray-400 hover:text-red-500" :title="t('admin.groups.modelRouting.removeCandidate', 'Remove candidate')"><Icon name="x" size="xs" /></button>
                   </div>
+                  <button type="button" @click="addRoutingCandidate(rule)" class="flex items-center gap-1 text-xs text-primary-600 hover:text-primary-700 dark:text-primary-400"><Icon name="plus" size="xs" />{{ t("admin.groups.modelRouting.addCandidate", "Add candidate") }}</button>
                 </div>
                 <button
                   type="button"
@@ -2758,97 +2733,59 @@
               class="rounded-lg border border-gray-200 p-3 dark:border-dark-600"
             >
               <div class="flex items-start gap-3">
-                <div class="flex-1 space-y-2">
+                <div class="min-w-0 flex-1 space-y-3">
                   <div>
                     <label class="input-label text-xs">{{
-                      t("admin.groups.modelRouting.modelPattern")
+                      t("admin.groups.modelRouting.routeAlias", "Route alias")
                     }}</label>
                     <input
-                      v-model="rule.pattern"
+                      v-model="rule.alias"
                       type="text"
                       class="input text-sm"
                       :placeholder="
-                        t('admin.groups.modelRouting.modelPatternPlaceholder')
+                        t('admin.groups.modelRouting.routeAliasPlaceholder', 'e.g. coding-fast')
                       "
                     />
                   </div>
-                  <div>
-                    <label class="input-label text-xs">{{
-                      t("admin.groups.modelRouting.accounts")
-                    }}</label>
-                    <!-- 已选账号标签 -->
-                    <div
-                      v-if="rule.accounts.length > 0"
-                      class="flex flex-wrap gap-1.5 mb-2"
-                    >
-                      <span
-                        v-for="account in rule.accounts"
-                        :key="account.id"
-                        class="inline-flex items-center gap-1 rounded-full bg-primary-100 px-2.5 py-1 text-xs font-medium text-primary-700 dark:bg-primary-900/30 dark:text-primary-300"
-                      >
+                  <div
+                    v-for="candidate in rule.candidates"
+                    :key="getEditCandidateRenderKey(candidate)"
+                    class="relative space-y-2 rounded-md bg-gray-50 p-3 dark:bg-dark-700/50"
+                  >
+                    <div class="grid gap-2 md:grid-cols-3">
+                      <div>
+                        <label class="input-label text-xs">{{ t("admin.groups.modelRouting.candidateModel", "Upstream model") }}</label>
+                        <input v-model="candidate.model" type="text" class="input text-sm" />
+                      </div>
+                      <div>
+                        <label class="input-label text-xs">{{ t("admin.groups.modelRouting.priority", "Priority") }}</label>
+                        <input v-model.number="candidate.priority" type="number" min="0" step="1" class="input text-sm" />
+                      </div>
+                      <div>
+                        <label class="input-label text-xs">{{ t("admin.groups.modelRouting.dailyTokenLimit", "Daily token limit") }}</label>
+                        <input v-model.number="candidate.daily_token_limit" type="number" min="0" step="1" class="input text-sm" :placeholder="t('admin.groups.modelRouting.unlimited', 'Unlimited')" />
+                      </div>
+                    </div>
+                    <div v-if="candidate.accounts.length > 0" class="mb-2 flex flex-wrap gap-1.5">
+                      <span v-for="account in candidate.accounts" :key="account.id" class="inline-flex items-center gap-1 rounded-full bg-primary-100 px-2.5 py-1 text-xs font-medium text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">
                         {{ account.name }}
-                        <button
-                          type="button"
-                          @click="removeSelectedAccount(rule, account.id, true)"
-                          class="ml-0.5 text-primary-500 hover:text-primary-700 dark:hover:text-primary-200"
-                        >
-                          <Icon name="x" size="xs" />
-                        </button>
+                        <button type="button" @click="removeSelectedAccount(candidate, account.id, true)" class="ml-0.5 text-primary-500 hover:text-primary-700 dark:hover:text-primary-200"><Icon name="x" size="xs" /></button>
                       </span>
                     </div>
-                    <!-- 账号搜索输入框 -->
                     <div class="relative account-search-container">
-                      <input
-                        v-model="
-                          accountSearchKeyword[getEditRuleSearchKey(rule)]
-                        "
-                        type="text"
-                        class="input text-sm"
-                        :placeholder="
-                          t(
-                            'admin.groups.modelRouting.searchAccountPlaceholder',
-                          )
-                        "
-                        @input="searchAccountsByRule(rule, true)"
-                        @focus="onAccountSearchFocus(rule, true)"
-                      />
-                      <!-- 搜索结果下拉框 -->
-                      <div
-                        v-if="
-                          showAccountDropdown[getEditRuleSearchKey(rule)] &&
-                          accountSearchResults[getEditRuleSearchKey(rule)]
-                            ?.length > 0
-                        "
-                        class="absolute z-50 mt-1 max-h-48 w-full overflow-auto rounded-lg border bg-white shadow-lg dark:border-dark-600 dark:bg-dark-800"
-                      >
-                        <button
-                          v-for="account in accountSearchResults[
-                            getEditRuleSearchKey(rule)
-                          ]"
-                          :key="account.id"
-                          type="button"
-                          @click="selectAccount(rule, account, true)"
-                          class="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-dark-700"
-                          :class="{
-                            'opacity-50': rule.accounts.some(
-                              (a) => a.id === account.id,
-                            ),
-                          }"
-                          :disabled="
-                            rule.accounts.some((a) => a.id === account.id)
-                          "
-                        >
-                          <span>{{ account.name }}</span>
-                          <span class="ml-2 text-xs text-gray-400"
-                            >#{{ account.id }}</span
-                          >
+                      <input v-model="accountSearchKeyword[getEditCandidateSearchKey(candidate)]" type="text" class="input text-sm" :placeholder="t('admin.groups.modelRouting.searchAccountPlaceholder')" @input="searchAccountsByRule(candidate, true)" @focus="onAccountSearchFocus(candidate, true)" />
+                      <div v-if="showAccountDropdown[getEditCandidateSearchKey(candidate)] && accountSearchResults[getEditCandidateSearchKey(candidate)]?.length > 0" class="absolute z-50 mt-1 max-h-48 w-full overflow-auto rounded-lg border bg-white shadow-lg dark:border-dark-600 dark:bg-dark-800">
+                        <button v-for="account in accountSearchResults[getEditCandidateSearchKey(candidate)]" :key="account.id" type="button" @click="selectAccount(candidate, account, true)" class="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-dark-700" :class="{ 'opacity-50': candidate.accounts.some((a) => a.id === account.id) }" :disabled="candidate.accounts.some((a) => a.id === account.id)">
+                          <span>{{ account.name }}</span><span class="ml-2 text-xs text-gray-400">#{{ account.id }}</span>
                         </button>
                       </div>
                     </div>
-                    <p class="text-xs text-gray-400 mt-1">
-                      {{ t("admin.groups.modelRouting.accountsHint") }}
+                    <p v-if="!candidate.model.trim() || candidate.accounts.length === 0 || !Number.isInteger(Number(candidate.priority)) || Number(candidate.priority) < 0 || (candidate.daily_token_limit !== null && candidate.daily_token_limit !== '' && (!Number.isInteger(Number(candidate.daily_token_limit)) || Number(candidate.daily_token_limit) < 0))" class="text-xs text-red-500">
+                      {{ t("admin.groups.modelRouting.candidateValidation", "Model, account, and non-negative integer values are required") }}
                     </p>
+                    <button type="button" @click="removeRoutingCandidate(rule, candidate, true)" class="absolute right-2 top-2 p-1 text-gray-400 hover:text-red-500" :title="t('admin.groups.modelRouting.removeCandidate', 'Remove candidate')"><Icon name="x" size="xs" /></button>
                   </div>
+                  <button type="button" @click="addRoutingCandidate(rule)" class="flex items-center gap-1 text-xs text-primary-600 hover:text-primary-700 dark:text-primary-400"><Icon name="plus" size="xs" />{{ t("admin.groups.modelRouting.addCandidate", "Add candidate") }}</button>
                 </div>
                 <button
                   type="button"
@@ -3033,6 +2970,11 @@
       @close="showRPMOverridesModal = false"
       @success="loadGroups"
     />
+
+    <GlobalModelTokenQuotaModal
+      :show="showGlobalModelTokenQuotaModal"
+      @close="showGlobalModelTokenQuotaModal = false"
+    />
   </AppLayout>
 </template>
 
@@ -3042,7 +2984,14 @@ import { useI18n } from "vue-i18n";
 import { useAppStore } from "@/stores/app";
 import { useOnboardingStore } from "@/stores/onboarding";
 import { adminAPI } from "@/api/admin";
-import type { AdminGroup, GroupPlatform, SubscriptionType } from "@/types";
+import type {
+  AdminGroup,
+  GroupPlatform,
+  ModelRoutingCandidate,
+  ModelRoutingConfig,
+  ModelRoutingRuleRow,
+  SubscriptionType,
+} from "@/types";
 import type { Column } from "@/components/common/types";
 import AppLayout from "@/components/layout/AppLayout.vue";
 import TablePageLayout from "@/components/layout/TablePageLayout.vue";
@@ -3056,6 +3005,7 @@ import PlatformIcon from "@/components/common/PlatformIcon.vue";
 import Icon from "@/components/icons/Icon.vue";
 import GroupRateMultipliersModal from "@/components/admin/group/GroupRateMultipliersModal.vue";
 import GroupRPMOverridesModal from "@/components/admin/group/GroupRPMOverridesModal.vue";
+import GlobalModelTokenQuotaModal from "@/components/admin/group/GlobalModelTokenQuotaModal.vue";
 import GroupCapacityBadge from "@/components/common/GroupCapacityBadge.vue";
 import { VueDraggable } from "vue-draggable-plus";
 import { createStableObjectKeyResolver } from "@/utils/stableObjectKey";
@@ -3078,6 +3028,12 @@ import {
 } from "./groupsModelsList";
 import { createModelsListCandidatesTracker } from "./groupsModelsListCandidates";
 import { normalizeSupportedModelScopesForPlatform } from "./groupsSupportedModelScopes";
+import {
+  normalizeModelRouting,
+  serializeModelRouting,
+  validateModelRouting,
+  type ModelRoutingValidationCode,
+} from "./groupsModelRouting";
 
 const { t } = useI18n();
 const appStore = useAppStore();
@@ -3307,6 +3263,7 @@ const deletingGroup = ref<AdminGroup | null>(null);
 const showRateMultipliersModal = ref(false);
 const rateMultipliersGroup = ref<AdminGroup | null>(null);
 const showRPMOverridesModal = ref(false);
+const showGlobalModelTokenQuotaModal = ref(false);
 const rpmOverridesGroup = ref<AdminGroup | null>(null);
 const sortableGroups = ref<AdminGroup[]>([]);
 const createMessagesDispatchDefaults = createDefaultMessagesDispatchFormState();
@@ -3372,9 +3329,16 @@ interface SimpleAccount {
 }
 
 // 模型路由规则类型
+interface ModelRoutingCandidateForm {
+  model: string;
+  accounts: SimpleAccount[];
+  priority: number | string;
+  daily_token_limit: number | string | null;
+}
+
 interface ModelRoutingRule {
-  pattern: string;
-  accounts: SimpleAccount[]; // 选中的账号对象数组
+  alias: string;
+  candidates: ModelRoutingCandidateForm[];
 }
 
 // 创建表单的模型路由规则
@@ -3388,6 +3352,10 @@ const resolveCreateRuleKey =
   createStableObjectKeyResolver<ModelRoutingRule>("create-rule");
 const resolveEditRuleKey =
   createStableObjectKeyResolver<ModelRoutingRule>("edit-rule");
+const resolveCreateCandidateKey =
+  createStableObjectKeyResolver<ModelRoutingCandidateForm>("create-candidate");
+const resolveEditCandidateKey =
+  createStableObjectKeyResolver<ModelRoutingCandidateForm>("edit-candidate");
 const resolveCreateMessagesDispatchRowKey =
   createStableObjectKeyResolver<MessagesDispatchMappingRow>(
     "create-messages-dispatch-row",
@@ -3401,18 +3369,27 @@ const getCreateRuleRenderKey = (rule: ModelRoutingRule) =>
   resolveCreateRuleKey(rule);
 const getEditRuleRenderKey = (rule: ModelRoutingRule) =>
   resolveEditRuleKey(rule);
+const getCreateCandidateRenderKey = (candidate: ModelRoutingCandidateForm) =>
+  resolveCreateCandidateKey(candidate);
+const getEditCandidateRenderKey = (candidate: ModelRoutingCandidateForm) =>
+  resolveEditCandidateKey(candidate);
 const getCreateMessagesDispatchRowKey = (row: MessagesDispatchMappingRow) =>
   resolveCreateMessagesDispatchRowKey(row);
 const getEditMessagesDispatchRowKey = (row: MessagesDispatchMappingRow) =>
   resolveEditMessagesDispatchRowKey(row);
 
-const getCreateRuleSearchKey = (rule: ModelRoutingRule) =>
-  `create-${resolveCreateRuleKey(rule)}`;
-const getEditRuleSearchKey = (rule: ModelRoutingRule) =>
-  `edit-${resolveEditRuleKey(rule)}`;
+const getCreateCandidateSearchKey = (candidate: ModelRoutingCandidateForm) =>
+  `create-${resolveCreateCandidateKey(candidate)}`;
+const getEditCandidateSearchKey = (candidate: ModelRoutingCandidateForm) =>
+  `edit-${resolveEditCandidateKey(candidate)}`;
 
-const getRuleSearchKey = (rule: ModelRoutingRule, isEdit: boolean = false) => {
-  return isEdit ? getEditRuleSearchKey(rule) : getCreateRuleSearchKey(rule);
+const getCandidateSearchKey = (
+  candidate: ModelRoutingCandidateForm,
+  isEdit: boolean = false,
+) => {
+  return isEdit
+    ? getEditCandidateSearchKey(candidate)
+    : getCreateCandidateSearchKey(candidate);
 };
 
 // 账号搜索相关状态
@@ -3460,40 +3437,40 @@ const searchAccounts = (key: string) => {
 };
 
 const searchAccountsByRule = (
-  rule: ModelRoutingRule,
+  candidate: ModelRoutingCandidateForm,
   isEdit: boolean = false,
 ) => {
-  searchAccounts(getRuleSearchKey(rule, isEdit));
+  searchAccounts(getCandidateSearchKey(candidate, isEdit));
 };
 
 // 选择账号
 const selectAccount = (
-  rule: ModelRoutingRule,
+  candidate: ModelRoutingCandidateForm,
   account: SimpleAccount,
   isEdit: boolean = false,
 ) => {
-  if (!rule) return;
+  if (!candidate) return;
 
   // 检查是否已选择
-  if (!rule.accounts.some((a) => a.id === account.id)) {
-    rule.accounts.push(account);
+  if (!candidate.accounts.some((a) => a.id === account.id)) {
+    candidate.accounts.push(account);
   }
 
   // 清空搜索
-  const key = getRuleSearchKey(rule, isEdit);
+  const key = getCandidateSearchKey(candidate, isEdit);
   accountSearchKeyword.value[key] = "";
   showAccountDropdown.value[key] = false;
 };
 
 // 移除已选账号
 const removeSelectedAccount = (
-  rule: ModelRoutingRule,
+  candidate: ModelRoutingCandidateForm,
   accountId: number,
   _isEdit: boolean = false,
 ) => {
-  if (!rule) return;
+  if (!candidate) return;
 
-  rule.accounts = rule.accounts.filter((a) => a.id !== accountId);
+  candidate.accounts = candidate.accounts.filter((a) => a.id !== accountId);
 };
 
 // 切换创建表单的模型系列选择
@@ -3518,10 +3495,10 @@ const toggleEditScope = (scope: string) => {
 
 // 处理账号搜索输入框聚焦
 const onAccountSearchFocus = (
-  rule: ModelRoutingRule,
+  candidate: ModelRoutingCandidateForm,
   isEdit: boolean = false,
 ) => {
-  const key = getRuleSearchKey(rule, isEdit);
+  const key = getCandidateSearchKey(candidate, isEdit);
   showAccountDropdown.value[key] = true;
   // 如果没有搜索结果，触发一次搜索
   if (!accountSearchResults.value[key]?.length) {
@@ -3531,7 +3508,10 @@ const onAccountSearchFocus = (
 
 // 添加创建表单的路由规则
 const addCreateRoutingRule = () => {
-  createModelRoutingRules.value.push({ pattern: "", accounts: [] });
+  createModelRoutingRules.value.push({
+    alias: "",
+    candidates: [createEmptyRoutingCandidate()],
+  });
 };
 
 // 删除创建表单的路由规则
@@ -3539,15 +3519,20 @@ const removeCreateRoutingRule = (rule: ModelRoutingRule) => {
   const index = createModelRoutingRules.value.indexOf(rule);
   if (index === -1) return;
 
-  const key = getCreateRuleSearchKey(rule);
-  accountSearchRunner.clearKey(key);
-  clearAccountSearchStateByKey(key);
+  rule.candidates.forEach((candidate) => {
+    const key = getCreateCandidateSearchKey(candidate);
+    accountSearchRunner.clearKey(key);
+    clearAccountSearchStateByKey(key);
+  });
   createModelRoutingRules.value.splice(index, 1);
 };
 
 // 添加编辑表单的路由规则
 const addEditRoutingRule = () => {
-  editModelRoutingRules.value.push({ pattern: "", accounts: [] });
+  editModelRoutingRules.value.push({
+    alias: "",
+    candidates: [createEmptyRoutingCandidate()],
+  });
 };
 
 // 删除编辑表单的路由规则
@@ -3555,10 +3540,41 @@ const removeEditRoutingRule = (rule: ModelRoutingRule) => {
   const index = editModelRoutingRules.value.indexOf(rule);
   if (index === -1) return;
 
-  const key = getEditRuleSearchKey(rule);
+  rule.candidates.forEach((candidate) => {
+    const key = getEditCandidateSearchKey(candidate);
+    accountSearchRunner.clearKey(key);
+    clearAccountSearchStateByKey(key);
+  });
+  editModelRoutingRules.value.splice(index, 1);
+};
+
+const createEmptyRoutingCandidate = (): ModelRoutingCandidateForm => ({
+  model: "",
+  accounts: [],
+  priority: 0,
+  daily_token_limit: null,
+});
+
+const addRoutingCandidate = (rule: ModelRoutingRule) => {
+  const candidate = createEmptyRoutingCandidate();
+  candidate.priority =
+    rule.candidates.length === 0
+      ? 0
+      : Math.max(...rule.candidates.map((item) => Number(item.priority) || 0)) + 1;
+  rule.candidates.push(candidate);
+};
+
+const removeRoutingCandidate = (
+  rule: ModelRoutingRule,
+  candidate: ModelRoutingCandidateForm,
+  isEdit: boolean = false,
+) => {
+  const index = rule.candidates.indexOf(candidate);
+  if (index === -1) return;
+  const key = getCandidateSearchKey(candidate, isEdit);
   accountSearchRunner.clearKey(key);
   clearAccountSearchStateByKey(key);
-  editModelRoutingRules.value.splice(index, 1);
+  rule.candidates.splice(index, 1);
 };
 
 const resetModelsListState = (
@@ -3608,49 +3624,84 @@ const moveEditModelsListItem = (fromIndex: number, toIndex: number) => {
 };
 
 // 将 UI 格式的路由规则转换为 API 格式
+const routingFormToRows = (rules: ModelRoutingRule[]): ModelRoutingRuleRow[] =>
+  rules.map((rule) => ({
+    alias: rule.alias,
+    candidates: rule.candidates.map(
+      (candidate): ModelRoutingCandidate => ({
+        model: candidate.model,
+        account_ids: candidate.accounts.map((account) => account.id),
+        priority: Number(candidate.priority),
+        daily_token_limit:
+          candidate.daily_token_limit === null ||
+          candidate.daily_token_limit === undefined ||
+          candidate.daily_token_limit === ""
+            ? null
+            : Number(candidate.daily_token_limit),
+      }),
+    ),
+  }));
+
 const convertRoutingRulesToApiFormat = (
   rules: ModelRoutingRule[],
-): Record<string, number[]> | null => {
-  const result: Record<string, number[]> = {};
-  let hasValidRules = false;
-
-  for (const rule of rules) {
-    const pattern = rule.pattern.trim();
-    if (!pattern) continue;
-
-    const accountIds = rule.accounts.map((a) => a.id).filter((id) => id > 0);
-
-    if (accountIds.length > 0) {
-      result[pattern] = accountIds;
-      hasValidRules = true;
-    }
-  }
-
-  return hasValidRules ? result : null;
+): ModelRoutingConfig | null => {
+  if (rules.length === 0) return null;
+  return serializeModelRouting(routingFormToRows(rules));
 };
 
 // 将 API 格式的路由规则转换为 UI 格式（需要加载账号名称）
 const convertApiFormatToRoutingRules = async (
-  apiFormat: Record<string, number[]> | null,
+  apiFormat: ModelRoutingConfig | null,
 ): Promise<ModelRoutingRule[]> => {
   if (!apiFormat) return [];
 
-  const rules: ModelRoutingRule[] = [];
-  for (const [pattern, accountIds] of Object.entries(apiFormat)) {
-    // 加载账号信息
-    const accounts: SimpleAccount[] = [];
-    for (const id of accountIds) {
-      try {
-        const account = await adminAPI.accounts.getById(id);
-        accounts.push({ id: account.id, name: account.name });
-      } catch {
-        // 如果账号不存在，仍然显示 ID
-        accounts.push({ id, name: `#${id}` });
-      }
-    }
-    rules.push({ pattern, accounts });
-  }
-  return rules;
+  return Promise.all(
+    normalizeModelRouting(apiFormat).map(async (rule) => ({
+      alias: rule.alias,
+      candidates: await Promise.all(
+        rule.candidates.map(async (candidate) => ({
+          model: candidate.model,
+          priority: candidate.priority,
+          daily_token_limit: candidate.daily_token_limit,
+          accounts: await Promise.all(
+            candidate.account_ids.map(async (id) => {
+              try {
+                const account = await adminAPI.accounts.getById(id);
+                return { id: account.id, name: account.name };
+              } catch {
+                return { id, name: `#${id}` };
+              }
+            }),
+          ),
+        })),
+      ),
+    })),
+  );
+};
+
+const routingValidationFallbacks: Record<ModelRoutingValidationCode, string> = {
+  alias_required: "Route alias is required",
+  duplicate_alias: "Route aliases must be unique",
+  candidate_required: "At least one candidate is required",
+  model_required: "Candidate model is required",
+  duplicate_model: "Candidate models must be unique within an alias",
+  account_ids_required: "Select at least one account for each candidate",
+  invalid_account_id: "Candidate accounts are invalid",
+  invalid_priority: "Priority must be a non-negative integer",
+  duplicate_priority: "Candidate priorities must be unique within an alias",
+  invalid_daily_token_limit: "Daily token limit must be a non-negative integer",
+};
+
+const validateRoutingForm = (rules: ModelRoutingRule[]): boolean => {
+  const issue = validateModelRouting(routingFormToRows(rules))[0];
+  if (!issue) return true;
+  appStore.showError(
+    t(
+      `admin.groups.modelRouting.validation.${issue.code}`,
+      routingValidationFallbacks[issue.code],
+    ),
+  );
+  return false;
 };
 
 const editForm = reactive({
@@ -3904,7 +3955,9 @@ const openCreateModal = () => {
 const closeCreateModal = () => {
   showCreateModal.value = false;
   createModelRoutingRules.value.forEach((rule) => {
-    accountSearchRunner.clearKey(getCreateRuleSearchKey(rule));
+    rule.candidates.forEach((candidate) =>
+      accountSearchRunner.clearKey(getCreateCandidateSearchKey(candidate)),
+    );
   });
   clearAllAccountSearchState();
   createForm.name = "";
@@ -3968,6 +4021,12 @@ const normalizeImageRateMultiplier = (
 const handleCreateGroup = async () => {
   if (!createForm.name.trim()) {
     appStore.showError(t("admin.groups.nameRequired"));
+    return;
+  }
+  if (
+    createForm.model_routing_enabled &&
+    !validateRoutingForm(createModelRoutingRules.value)
+  ) {
     return;
   }
   submitting.value = true;
@@ -4085,7 +4144,9 @@ const handleEdit = async (group: AdminGroup) => {
 
 const closeEditModal = () => {
   editModelRoutingRules.value.forEach((rule) => {
-    accountSearchRunner.clearKey(getEditRuleSearchKey(rule));
+    rule.candidates.forEach((candidate) =>
+      accountSearchRunner.clearKey(getEditCandidateSearchKey(candidate)),
+    );
   });
   clearAllAccountSearchState();
   showEditModal.value = false;
@@ -4100,6 +4161,12 @@ const handleUpdateGroup = async () => {
   if (!editingGroup.value) return;
   if (!editForm.name.trim()) {
     appStore.showError(t("admin.groups.nameRequired"));
+    return;
+  }
+  if (
+    editForm.model_routing_enabled &&
+    !validateRoutingForm(editModelRoutingRules.value)
+  ) {
     return;
   }
 

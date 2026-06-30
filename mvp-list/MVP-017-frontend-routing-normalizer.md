@@ -1,7 +1,7 @@
 # MVP-017: 增加前端新旧模型路由类型与归一化助手
 
 - Protocol: `mvp-list/v1`
-- State: `PLANNED`
+- State: `VERIFIED`
 - Estimate: `15min`
 - Estimate rationale: 纯 TypeScript 类型与函数，测试快速且不涉及 Vue 布局。
 - Dependencies: `MVP-002`
@@ -31,9 +31,9 @@
 
 ## Acceptance Criteria
 
-- [ ] 旧数据加载后账号顺序不丢失。
-- [ ] 新候选所有字段往返不丢失。
-- [ ] 重复别名、模型、优先级或负限额给出校验结果。
+- [x] 旧数据加载后账号顺序不丢失。
+- [x] 新候选所有字段往返不丢失。
+- [x] 重复别名、模型、优先级或负限额给出校验结果。
 
 ## Verification Plan
 
@@ -41,11 +41,15 @@
 
 ## Completion Evidence
 
-> Leave this section empty until work has actually been performed.
-
 | Type | Command or path | Result |
 |---|---|---|
+| Implementation | `frontend/src/types/index.ts`, `frontend/src/views/admin/groupsModelRouting.ts`, `frontend/src/api/admin/groups.ts` | Added legacy/new routing types, deterministic normalization and serialization, stable priority sorting, and structured validation issues. |
+| Focused tests | `cd frontend; pnpm exec vitest run src/views/admin/__tests__/groupsModelRouting.spec.ts` | PASS: 1 file, 3 tests; legacy account order, complete candidate round trip, and duplicate/negative validation covered. |
+| Targeted lint | `cd frontend; pnpm exec eslint src/views/admin/groupsModelRouting.ts src/views/admin/__tests__/groupsModelRouting.spec.ts src/api/admin/groups.ts src/types/index.ts` | PASS. |
+| Broader check | `cd frontend; pnpm run typecheck` | One expected MVP-018 integration error remains: legacy `GroupsView.vue` converter accepts only `Record<string, number[]>`; no errors were reported in the new helper/types. |
 
 ## Execution Notes
 
-
+- Legacy account arrays normalize to one candidate whose model is the route alias, priority is `0`, limit is `null`, and account order is unchanged.
+- Alias keys and candidate priority are serialized deterministically. Equal priorities retain input order.
+- View integration is intentionally deferred to MVP-018 per this MVP's non-goal; its existing legacy converter is the sole current full-typecheck failure.

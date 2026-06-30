@@ -1,7 +1,7 @@
 # MVP-022: 补齐中英文文案与管理端 UI 回归
 
 - Protocol: `mvp-list/v1`
-- State: `PLANNED`
+- State: `VERIFIED`
 - Estimate: `15min`
 - Estimate rationale: 文案键和三处聚焦测试可在短周期内完成，不再增加功能。
 - Dependencies: `MVP-018`, `MVP-020`, `MVP-021`
@@ -31,9 +31,9 @@ locale 位于 `frontend/src/i18n/locales/zh.ts`、`en.ts`；项目已有 locale 
 
 ## Acceptance Criteria
 
-- [ ] 新增 key 在 zh/en 均存在。
-- [ ] 页面测试中不出现裸 i18n key。
-- [ ] 相关 Vitest、lint:check、typecheck 通过。
+- [x] 新增 key 在 zh/en 均存在。
+- [x] 页面测试中不出现裸 i18n key。
+- [x] 相关 Vitest、lint:check、typecheck 通过。
 
 ## Verification Plan
 
@@ -41,11 +41,14 @@ locale 位于 `frontend/src/i18n/locales/zh.ts`、`en.ts`；项目已有 locale 
 
 ## Completion Evidence
 
-> Leave this section empty until work has actually been performed.
-
 | Type | Command or path | Result |
 |---|---|---|
+| Locales | `frontend/src/i18n/locales/en.ts`, `frontend/src/i18n/locales/zh.ts` | Added symmetric candidate-routing, validation, global quota, and user quota labels/errors in both languages. |
+| UI and locale tests | `cd frontend; pnpm exec vitest run src/i18n/__tests__ src/views/admin/__tests__/groupsModelRouting.spec.ts src/views/admin/__tests__/UsersView.spec.ts src/views/admin/__tests__/GroupsView.modelTokenQuota.spec.ts` | PASS: 6 files, 13 tests; locale symmetry and absence of raw model-quota keys in rendered modal tests covered. |
+| Full lint | `cd frontend; pnpm run lint:check` | PASS. |
+| Full typecheck | `cd frontend; pnpm run typecheck` | PASS (`vue-tsc --noEmit`). |
 
 ## Execution Notes
 
-
+- `modelTokenQuotaLocales.spec.ts` compares the nested key shapes for zh/en rather than checking only a handpicked subset.
+- Modal tests translate the new key prefixes and explicitly assert rendered output does not contain raw `admin.users.modelTokenQuota.*` or `admin.groups.modelTokenQuota.*` keys.

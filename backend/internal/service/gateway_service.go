@@ -9830,6 +9830,21 @@ func (s *GatewayService) recordUsageCore(ctx context.Context, input *recordUsage
 	}
 
 	if s.cfg != nil && s.cfg.RunMode == config.RunModeSimple {
+		if s.dailyTokenQuotaRepo != nil {
+			inserted, err := createUsageLogForTokenQuota(ctx, s.usageLogRepo, usageLog)
+			if err != nil {
+				logger.LegacyPrintf("service.gateway", "Create usage log failed; token quota not incremented: %v", err)
+				return nil
+			}
+			if inserted {
+				if err := incrementDailyTokenQuotasForUsage(ctx, s.dailyTokenQuotaRepo, usageLog, apiKey); err != nil {
+					logger.LegacyPrintf("service.gateway", "Token quota accounting failed without retry: %v", err)
+					return err
+				}
+			}
+			s.deferredService.ScheduleLastUsedUpdate(account.ID)
+			return nil
+		}
 		writeUsageLogBestEffort(ctx, s.usageLogRepo, usageLog, "service.gateway")
 		logger.LegacyPrintf("service.gateway", "[SIMPLE MODE] Usage recorded (not billed): user=%d, tokens=%d", usageLog.UserID, usageLog.TotalTokens())
 		s.deferredService.ScheduleLastUsedUpdate(account.ID)
@@ -9844,7 +9859,7 @@ func (s *GatewayService) recordUsageCore(ctx context.Context, input *recordUsage
 		quotaPlatform = PlatformFromAPIKey(apiKey)
 	}
 	requestID := usageLog.RequestID
-	_, billingErr := applyUsageBilling(ctx, requestID, usageLog, &postUsageBillingParams{
+	billingApplied, billingErr := applyUsageBilling(ctx, requestID, usageLog, &postUsageBillingParams{
 		Cost:                  cost,
 		User:                  user,
 		APIKey:                apiKey,
@@ -9861,6 +9876,12 @@ func (s *GatewayService) recordUsageCore(ctx context.Context, input *recordUsage
 		return billingErr
 	}
 	writeUsageLogBestEffort(ctx, s.usageLogRepo, usageLog, "service.gateway")
+	if billingApplied {
+		if err := incrementDailyTokenQuotasForUsage(ctx, s.dailyTokenQuotaRepo, usageLog, apiKey); err != nil {
+			logger.LegacyPrintf("service.gateway", "Token quota accounting failed without retry: %v", err)
+			return err
+		}
+	}
 
 	return nil
 }

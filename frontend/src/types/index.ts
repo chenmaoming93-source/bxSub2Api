@@ -498,6 +498,20 @@ export interface OpenAIMessagesDispatchModelConfig {
   exact_model_mappings?: Record<string, string>
 }
 
+export interface ModelRoutingCandidate {
+  model: string
+  account_ids: number[]
+  priority: number
+  daily_token_limit: number | null
+}
+
+export type ModelRoutingConfig = Record<string, number[] | ModelRoutingCandidate[]>
+
+export interface ModelRoutingRuleRow {
+  alias: string
+  candidates: ModelRoutingCandidate[]
+}
+
 export interface Group {
   id: number
   name: string
@@ -534,7 +548,7 @@ export interface Group {
 
 export interface AdminGroup extends Group {
   // 模型路由配置（仅管理员可见，内部信息）
-  model_routing: Record<string, number[]> | null
+  model_routing: ModelRoutingConfig | null
   model_routing_enabled: boolean
 
   // MCP XML 协议注入（仅 antigravity 平台使用）
@@ -645,7 +659,7 @@ export interface CreateGroupRequest {
   allow_messages_dispatch?: boolean
   default_mapped_model?: string
   messages_dispatch_model_config?: OpenAIMessagesDispatchModelConfig
-  model_routing?: Record<string, number[]> | null
+  model_routing?: ModelRoutingConfig | null
   model_routing_enabled?: boolean
   rpm_limit?: number
   require_oauth_only?: boolean
@@ -680,7 +694,7 @@ export interface UpdateGroupRequest {
   allow_messages_dispatch?: boolean
   default_mapped_model?: string
   messages_dispatch_model_config?: OpenAIMessagesDispatchModelConfig
-  model_routing?: Record<string, number[]> | null
+  model_routing?: ModelRoutingConfig | null
   model_routing_enabled?: boolean
   rpm_limit?: number
   require_oauth_only?: boolean

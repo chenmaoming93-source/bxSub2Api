@@ -4,8 +4,8 @@
 - Source plan: `../PLAN.md`
 - Target effort per MVP: `20min以内`
 - Update batch size: `1 completed MVP`
-- Last updated: `2026-06-30T16:08:31+08:00`
-- Overall: `15/23 (65%)`
+- Last updated: `2026-06-30T17:03:43+08:00`
+- Overall: `22/23 (96%)`
 
 ## Status Rules
 
@@ -33,13 +33,13 @@
 | MVP-013 | [MVP-013-quota-aware-routing.md](./MVP-013-quota-aware-routing.md) | DONE | MVP-007, MVP-009, MVP-012 | 20min | 2026-06-30T15:42:47+08:00 | [Quota-aware candidate routing preflight and stub tests](./MVP-013-quota-aware-routing.md#completion-evidence) |
 | MVP-014 | [MVP-014-candidate-failover.md](./MVP-014-candidate-failover.md) | DONE | MVP-013 | 20min | 2026-06-30T15:57:04+08:00 | [Candidate account and cross-model failover tests](./MVP-014-candidate-failover.md#completion-evidence) |
 | MVP-015 | [MVP-015-model-identity.md](./MVP-015-model-identity.md) | DONE | MVP-012 | 20min | 2026-06-30T16:08:31+08:00 | [Requested and upstream model identity tests](./MVP-015-model-identity.md#completion-evidence) |
-| MVP-016 | [MVP-016-usage-quota-accounting.md](./MVP-016-usage-quota-accounting.md) | PENDING | MVP-008, MVP-009, MVP-014, MVP-015 | 20min |  |  |
-| MVP-017 | [MVP-017-frontend-routing-normalizer.md](./MVP-017-frontend-routing-normalizer.md) | PENDING | MVP-002 | 15min |  |  |
-| MVP-018 | [MVP-018-group-routing-editor.md](./MVP-018-group-routing-editor.md) | PENDING | MVP-003, MVP-017 | 20min |  |  |
-| MVP-019 | [MVP-019-frontend-quota-api.md](./MVP-019-frontend-quota-api.md) | PENDING | MVP-010, MVP-011 | 15min |  |  |
-| MVP-020 | [MVP-020-user-quota-modal.md](./MVP-020-user-quota-modal.md) | PENDING | MVP-019 | 20min |  |  |
-| MVP-021 | [MVP-021-global-quota-modal.md](./MVP-021-global-quota-modal.md) | PENDING | MVP-019 | 20min |  |  |
-| MVP-022 | [MVP-022-i18n-ui-regression.md](./MVP-022-i18n-ui-regression.md) | PENDING | MVP-018, MVP-020, MVP-021 | 15min |  |  |
+| MVP-016 | [MVP-016-usage-quota-accounting.md](./MVP-016-usage-quota-accounting.md) | DONE | MVP-008, MVP-009, MVP-014, MVP-015 | 20min | 2026-06-30T16:31:43+08:00 | [Usage-gated three-scope token accounting and tests](./MVP-016-usage-quota-accounting.md#completion-evidence) |
+| MVP-017 | [MVP-017-frontend-routing-normalizer.md](./MVP-017-frontend-routing-normalizer.md) | DONE | MVP-002 | 15min | 2026-06-30T16:37:43+08:00 | [Legacy/new routing normalization, serialization, and validation tests](./MVP-017-frontend-routing-normalizer.md#completion-evidence) |
+| MVP-018 | [MVP-018-group-routing-editor.md](./MVP-018-group-routing-editor.md) | DONE | MVP-003, MVP-017 | 20min | 2026-06-30T16:44:43+08:00 | [Shared create/edit candidate routing editor and validation](./MVP-018-group-routing-editor.md#completion-evidence) |
+| MVP-019 | [MVP-019-frontend-quota-api.md](./MVP-019-frontend-quota-api.md) | DONE | MVP-010, MVP-011 | 15min | 2026-06-30T16:48:41+08:00 | [Typed global/user model token quota API tests](./MVP-019-frontend-quota-api.md#completion-evidence) |
+| MVP-020 | [MVP-020-user-quota-modal.md](./MVP-020-user-quota-modal.md) | DONE | MVP-019 | 20min | 2026-06-30T16:54:58+08:00 | [Target-user model token quota modal and tests](./MVP-020-user-quota-modal.md#completion-evidence) |
+| MVP-021 | [MVP-021-global-quota-modal.md](./MVP-021-global-quota-modal.md) | DONE | MVP-019 | 20min | 2026-06-30T16:59:34+08:00 | [Global model token quota modal and response-refresh tests](./MVP-021-global-quota-modal.md#completion-evidence) |
+| MVP-022 | [MVP-022-i18n-ui-regression.md](./MVP-022-i18n-ui-regression.md) | DONE | MVP-018, MVP-020, MVP-021 | 15min | 2026-06-30T17:03:43+08:00 | [Symmetric locale keys and management UI regressions](./MVP-022-i18n-ui-regression.md#completion-evidence) |
 | MVP-023 | [MVP-023-backend-integration-regression.md](./MVP-023-backend-integration-regression.md) | PENDING | MVP-016 | 20min |  |  |
 
 ## Dependency Notes

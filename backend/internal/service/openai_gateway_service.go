@@ -356,6 +356,7 @@ type OpenAIGatewayService struct {
 	balanceNotifyService  *BalanceNotifyService
 	settingService        *SettingService
 	userPlatformQuotaRepo UserPlatformQuotaRepository
+	dailyTokenQuotaRepo   DailyTokenQuotaRepository
 
 	openaiWSPoolOnce              sync.Once
 	openaiWSStateStoreOnce        sync.Once
@@ -401,6 +402,7 @@ func NewOpenAIGatewayService(
 	balanceNotifyService *BalanceNotifyService,
 	settingService *SettingService,
 	userPlatformQuotaRepo UserPlatformQuotaRepository,
+	dailyTokenQuotaRepo DailyTokenQuotaRepository,
 ) *OpenAIGatewayService {
 	svc := &OpenAIGatewayService{
 		accountRepo:         accountRepo,
@@ -433,6 +435,7 @@ func NewOpenAIGatewayService(
 		balanceNotifyService:  balanceNotifyService,
 		settingService:        settingService,
 		userPlatformQuotaRepo: userPlatformQuotaRepo,
+		dailyTokenQuotaRepo:   dailyTokenQuotaRepo,
 		responseHeaderFilter:  compileResponseHeaderFilter(cfg),
 		codexSnapshotThrottle: newAccountWriteThrottle(openAICodexSnapshotPersistMinInterval),
 	}
@@ -6091,14 +6094,29 @@ func (s *OpenAIGatewayService) RecordUsage(ctx context.Context, input *OpenAIRec
 	}
 
 	if s.cfg != nil && s.cfg.RunMode == config.RunModeSimple {
+		if s.dailyTokenQuotaRepo != nil {
+			inserted, err := createUsageLogForTokenQuota(ctx, s.usageLogRepo, usageLog)
+			if err != nil {
+				logger.LegacyPrintf("service.openai_gateway", "Create usage log failed; token quota not incremented: %v", err)
+				return nil
+			}
+			if inserted {
+				if err := incrementDailyTokenQuotasForUsage(ctx, s.dailyTokenQuotaRepo, usageLog, apiKey); err != nil {
+					logger.LegacyPrintf("service.openai_gateway", "Token quota accounting failed without retry: %v", err)
+					return err
+				}
+			}
+			s.deferredService.ScheduleLastUsedUpdate(account.ID)
+			return nil
+		}
 		writeUsageLogBestEffort(ctx, s.usageLogRepo, usageLog, "service.openai_gateway")
 		logger.LegacyPrintf("service.openai_gateway", "[SIMPLE MODE] Usage recorded (not billed): user=%d, tokens=%d", usageLog.UserID, usageLog.TotalTokens())
 		s.deferredService.ScheduleLastUsedUpdate(account.ID)
 		return nil
 	}
 
-	billingErr := func() error {
-		_, err := applyUsageBilling(ctx, requestID, usageLog, &postUsageBillingParams{
+	billingApplied, billingErr := func() (bool, error) {
+		return applyUsageBilling(ctx, requestID, usageLog, &postUsageBillingParams{
 			Cost:                  cost,
 			User:                  user,
 			APIKey:                apiKey,
@@ -6110,13 +6128,18 @@ func (s *OpenAIGatewayService) RecordUsage(ctx context.Context, input *OpenAIRec
 			APIKeyService:         input.APIKeyService,
 			Platform:              PlatformFromAPIKey(apiKey),
 		}, s.billingDeps(), s.usageBillingRepo)
-		return err
 	}()
 
 	if billingErr != nil {
 		return billingErr
 	}
 	writeUsageLogBestEffort(ctx, s.usageLogRepo, usageLog, "service.openai_gateway")
+	if billingApplied {
+		if err := incrementDailyTokenQuotasForUsage(ctx, s.dailyTokenQuotaRepo, usageLog, apiKey); err != nil {
+			logger.LegacyPrintf("service.openai_gateway", "Token quota accounting failed without retry: %v", err)
+			return err
+		}
+	}
 
 	return nil
 }

@@ -12,6 +12,8 @@ import type {
   PaginatedResponse
 } from '@/types'
 
+export type { ModelRoutingCandidate, ModelRoutingConfig, ModelRoutingRuleRow } from '@/types'
+
 /**
  * List all groups with pagination
  * @param page - Page number (default: 1)

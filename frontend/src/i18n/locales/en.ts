@@ -2100,6 +2100,19 @@ export default {
         cellColumnTooltip: 'Only platforms with a limit are shown',
         subscriptionWarning: 'This user has an active subscription. Platform quotas only apply to balance (standard) mode requests; subscription mode requests are not subject to these limits.',
         invalidNumber: 'The following fields contain invalid numbers. Please fix them before saving: {fields}',
+      },
+      modelTokenQuota: {
+        menuItem: 'Model Token Limits',
+        title: 'User Model Daily Token Limits',
+        subtitle: 'Configure daily token limits by upstream model for user {email}',
+        model: 'Upstream Model',
+        limit: 'Daily Token Limit',
+        unlimited: 'Unlimited',
+        used: 'Used Today',
+        add: 'Add Model',
+        loadFailed: 'Failed to load model token limits',
+        invalid: 'Models must be unique and limits must be non-negative integers',
+        updateFailed: 'Failed to update model token limits'
       }
     },
 
@@ -2317,7 +2330,40 @@ export default {
         noRules: 'No routing rules',
         noRulesHint: 'Add routing rules to route specific model requests to designated accounts',
         searchAccountPlaceholder: 'Search accounts...',
-        accountsHint: 'Select accounts to prioritize for this model pattern'
+        accountsHint: 'Select accounts to prioritize for this model pattern',
+        routeAlias: 'Route Alias',
+        routeAliasPlaceholder: 'e.g. coding-fast',
+        candidateModel: 'Upstream Model',
+        priority: 'Priority',
+        dailyTokenLimit: 'Daily Token Limit',
+        unlimited: 'Unlimited',
+        candidateValidation: 'Model, account, and non-negative integer values are required',
+        removeCandidate: 'Remove Candidate',
+        addCandidate: 'Add Candidate',
+        validation: {
+          alias_required: 'Route alias is required',
+          duplicate_alias: 'Route aliases must be unique',
+          candidate_required: 'At least one candidate is required',
+          model_required: 'Candidate model is required',
+          duplicate_model: 'Candidate models must be unique within an alias',
+          account_ids_required: 'Select at least one account for each candidate',
+          invalid_account_id: 'Candidate accounts are invalid',
+          invalid_priority: 'Priority must be a non-negative integer',
+          duplicate_priority: 'Candidate priorities must be unique within an alias',
+          invalid_daily_token_limit: 'Daily token limit must be a non-negative integer'
+        }
+      },
+      modelTokenQuota: {
+        menuItem: 'Model Token Limits',
+        title: 'Global Model Daily Token Limits',
+        model: 'Upstream Model',
+        limit: 'Daily Token Limit',
+        unlimited: 'Unlimited',
+        used: 'Used Today',
+        add: 'Add Model',
+        loadFailed: 'Failed to load global model token limits',
+        invalid: 'Models must be unique and limits must be non-negative integers',
+        updateFailed: 'Failed to update global model token limits'
       },
       mcpXml: {
         title: 'MCP XML Protocol Injection',

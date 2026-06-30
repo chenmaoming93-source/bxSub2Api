@@ -704,6 +704,14 @@
                 {{ t('admin.users.platformQuota.menuItem') }}
               </button>
 
+              <button
+                @click="handleModelTokenQuota(user); closeActionMenu()"
+                class="flex w-full items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-dark-700"
+              >
+                <Icon name="chartBar" size="sm" class="text-gray-400" :stroke-width="2" />
+                {{ t('admin.users.modelTokenQuota.menuItem', 'Model token limits') }}
+              </button>
+
               <!-- Balance History -->
               <button
                 @click="handleBalanceHistory(user); closeActionMenu()"
@@ -738,6 +746,11 @@
       :user="platformQuotaUser"
       @close="closePlatformQuotaModal"
       @success="loadUsers"
+    />
+    <UserModelTokenQuotaModal
+      :show="showModelTokenQuotaModal"
+      :user="modelTokenQuotaUser"
+      @close="closeModelTokenQuotaModal"
     />
     <UserApiKeysModal :show="showApiKeysModal" :user="viewingUser" @close="closeApiKeysModal" />
     <UserAllowedGroupsModal :show="showAllowedGroupsModal" :user="allowedGroupsUser" @close="closeAllowedGroupsModal" @success="loadUsers" />
@@ -780,6 +793,7 @@ import UserPlatformQuotaCell from '@/components/user/UserPlatformQuotaCell.vue'
 import UserCreateModal from '@/components/admin/user/UserCreateModal.vue'
 import UserEditModal from '@/components/admin/user/UserEditModal.vue'
 import UserPlatformQuotaModal from '@/components/admin/user/UserPlatformQuotaModal.vue'
+import UserModelTokenQuotaModal from '@/components/admin/user/UserModelTokenQuotaModal.vue'
 import UserApiKeysModal from '@/components/admin/user/UserApiKeysModal.vue'
 import UserAllowedGroupsModal from '@/components/admin/user/UserAllowedGroupsModal.vue'
 import UserBalanceModal from '@/components/admin/user/UserBalanceModal.vue'
@@ -1276,10 +1290,12 @@ const showDeleteDialog = ref(false)
 const showApiKeysModal = ref(false)
 const showAttributesModal = ref(false)
 const showPlatformQuotaModal = ref(false)
+const showModelTokenQuotaModal = ref(false)
 const editingUser = ref<AdminUser | null>(null)
 const deletingUser = ref<AdminUser | null>(null)
 const viewingUser = ref<AdminUser | null>(null)
 const platformQuotaUser = ref<AdminUser | null>(null)
+const modelTokenQuotaUser = ref<AdminUser | null>(null)
 
 const handlePlatformQuota = (user: AdminUser) => {
   platformQuotaUser.value = user
@@ -1289,6 +1305,16 @@ const handlePlatformQuota = (user: AdminUser) => {
 const closePlatformQuotaModal = () => {
   showPlatformQuotaModal.value = false
   platformQuotaUser.value = null
+}
+
+const handleModelTokenQuota = (user: AdminUser) => {
+  modelTokenQuotaUser.value = user
+  showModelTokenQuotaModal.value = true
+}
+
+const closeModelTokenQuotaModal = () => {
+  showModelTokenQuotaModal.value = false
+  modelTokenQuotaUser.value = null
 }
 let abortController: AbortController | null = null
 let secondaryDataSeq = 0

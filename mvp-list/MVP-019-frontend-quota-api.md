@@ -1,7 +1,7 @@
 # MVP-019: 增加管理端模型 Token 配额 API 与共享类型
 
 - Protocol: `mvp-list/v1`
-- State: `PLANNED`
+- State: `VERIFIED`
 - Estimate: `15min`
 - Estimate rationale: 只封装四个端点和共享 DTO，使用 mock client 快速验证。
 - Dependencies: `MVP-010`, `MVP-011`
@@ -31,9 +31,9 @@
 
 ## Acceptance Criteria
 
-- [ ] API 路径与后端 routes 完全一致。
-- [ ] null/0/正整数不会被客户端错误转换。
-- [ ] 类型导出可被 UsersView 和 GroupsView/SettingsView 使用。
+- [x] API 路径与后端 routes 完全一致。
+- [x] null/0/正整数不会被客户端错误转换。
+- [x] 类型导出可被 UsersView 和 GroupsView/SettingsView 使用。
 
 ## Verification Plan
 
@@ -41,11 +41,13 @@
 
 ## Completion Evidence
 
-> Leave this section empty until work has actually been performed.
-
 | Type | Command or path | Result |
 |---|---|---|
+| Implementation | `frontend/src/api/admin/modelTokenQuotas.ts`, `frontend/src/api/admin/index.ts` | Added shared quota DTOs, global GET/PUT, user GET/PUT, unified `adminAPI.modelTokenQuotas`, and barrel type exports. |
+| Focused tests | `cd frontend; pnpm exec vitest run src/api/__tests__/admin.modelTokenQuotas.spec.ts` | PASS: 1 file, 2 tests; exact URLs/methods/payloads and null/0/positive preservation covered. |
+| Typecheck and lint | `cd frontend; pnpm run typecheck`; `pnpm exec eslint src/api/admin/modelTokenQuotas.ts src/api/admin/index.ts src/api/__tests__/admin.modelTokenQuotas.spec.ts` | PASS. |
 
 ## Execution Notes
 
-
+- Global endpoints use `/admin/model-token-quotas`; user endpoints use `/admin/users/:id/model-token-quotas`, exactly matching backend route registration.
+- Update functions pass quota values through unchanged. The API wrapper performs no truthiness coercion, so `null`, `0`, and positive limits remain distinct transport values.

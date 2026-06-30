@@ -1,16 +1,14 @@
 package logger
 
 import (
-	"os"
-	"path/filepath"
 	"strings"
 	"time"
 )
 
 const (
-	// DefaultContainerLogPath 为容器内默认日志文件路径。
-	DefaultContainerLogPath = "/app/data/logs/sub2api.log"
-	defaultLogFilename      = "sub2api.log"
+	// DefaultLogPath 为默认日志文件路径。
+	DefaultLogPath     = "/var/log/iba/sub2api/sub2api.log"
+	defaultLogFilename = "sub2api.log"
 )
 
 type InitOptions struct {
@@ -96,11 +94,7 @@ func resolveLogFilePath(explicit string) string {
 	if explicit != "" {
 		return explicit
 	}
-	dataDir := strings.TrimSpace(os.Getenv("DATA_DIR"))
-	if dataDir != "" {
-		return filepath.Join(dataDir, "logs", defaultLogFilename)
-	}
-	return DefaultContainerLogPath
+	return DefaultLogPath
 }
 
 func bootstrapOptions() InitOptions {

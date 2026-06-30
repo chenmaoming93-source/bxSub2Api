@@ -1,7 +1,7 @@
 # MVP-020: 在用户管理页增加模型每日限额弹窗
 
 - Protocol: `mvp-list/v1`
-- State: `PLANNED`
+- State: `VERIFIED`
 - Estimate: `20min`
 - Estimate rationale: 复用现有平台额度单元格和弹窗交互，限定查询、编辑、保存与回显。
 - Dependencies: `MVP-019`
@@ -31,9 +31,9 @@
 
 ## Acceptance Criteria
 
-- [ ] 打开弹窗加载目标用户数据。
-- [ ] 非法模型或限额不能提交。
-- [ ] 保存只调用目标用户端点并显示后端结果。
+- [x] 打开弹窗加载目标用户数据。
+- [x] 非法模型或限额不能提交。
+- [x] 保存只调用目标用户端点并显示后端结果。
 
 ## Verification Plan
 
@@ -41,11 +41,14 @@
 
 ## Completion Evidence
 
-> Leave this section empty until work has actually been performed.
-
 | Type | Command or path | Result |
 |---|---|---|
+| Implementation | `frontend/src/components/admin/user/UserModelTokenQuotaModal.vue`, `frontend/src/views/admin/UsersView.vue` | Added target-user action/modal, load/edit/add/remove/save states, integer/model validation, backend result refresh, and error display without reloading the users list. |
+| Focused tests | `cd frontend; pnpm exec vitest run src/views/admin/__tests__/UsersView.spec.ts` | PASS: 1 file, 2 tests; target user load, invalid submit rejection, exact user update payload, backend used-token refresh, and no list reload covered. |
+| Typecheck and lint | `cd frontend; pnpm run typecheck`; `pnpm exec eslint src/components/admin/user/UserModelTokenQuotaModal.vue src/views/admin/UsersView.vue src/views/admin/__tests__/UsersView.spec.ts` | PASS. |
 
 ## Execution Notes
 
-
+- Saving keeps the modal open and replaces rows with the backend response, making the latest limit and usage visible immediately.
+- The modal does not emit a users-list reload on save; current filters, sorting, and pagination remain intact.
+- Empty limits serialize to `null`; `0` remains `0`. Empty/duplicate models and negative/non-integer limits are rejected before the API call.

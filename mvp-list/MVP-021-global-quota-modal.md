@@ -1,7 +1,7 @@
 # MVP-021: 增加全局模型每日限额管理弹窗
 
 - Protocol: `mvp-list/v1`
-- State: `PLANNED`
+- State: `VERIFIED`
 - Estimate: `20min`
 - Estimate rationale: 一个独立弹窗与入口，范围不包含统计图表。
 - Dependencies: `MVP-019`
@@ -31,9 +31,9 @@
 
 ## Acceptance Criteria
 
-- [ ] 打开时从全局配额端点加载。
-- [ ] 保存后回显新限额和保留用量。
-- [ ] 重复/空模型和非法限额不能提交。
+- [x] 打开时从全局配额端点加载。
+- [x] 保存后回显新限额和保留用量。
+- [x] 重复/空模型和非法限额不能提交。
 
 ## Verification Plan
 
@@ -41,11 +41,14 @@
 
 ## Completion Evidence
 
-> Leave this section empty until work has actually been performed.
-
 | Type | Command or path | Result |
 |---|---|---|
+| Implementation | `frontend/src/components/admin/group/GlobalModelTokenQuotaModal.vue`, `frontend/src/views/admin/GroupsView.vue` | Added Groups toolbar entry, global list/edit/add/save modal, used-token display, backend response refresh, loading/error states, and validation. |
+| Focused tests | `cd frontend; pnpm exec vitest run src/views/admin/__tests__/GroupsView.modelTokenQuota.spec.ts` | PASS: 1 file, 1 test; global load, invalid-row rejection, exact update calls, 0 semantics, and usage preservation covered. |
+| Typecheck and lint | `cd frontend; pnpm run typecheck`; `pnpm exec eslint src/components/admin/group/GlobalModelTokenQuotaModal.vue src/views/admin/GroupsView.vue src/views/admin/__tests__/GroupsView.modelTokenQuota.spec.ts` | PASS. |
 
 ## Execution Notes
 
-
+- The backend exposes a single-item global PUT, so the modal validates the complete form first and then saves rows concurrently through that endpoint.
+- Saved rows are replaced with server responses, preserving each model's current `used_tokens` and normalized limit.
+- Empty limits serialize as `null`, `0` remains unlimited according to the backend contract, and duplicate/empty models or negative/non-integer limits never reach the API.

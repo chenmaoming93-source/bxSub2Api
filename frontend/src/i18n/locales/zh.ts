@@ -2153,6 +2153,19 @@ export default {
         cellColumnTooltip: '仅展示已设限额的平台',
         subscriptionWarning: '此用户有活跃订阅，平台限额仅在余额（标准）模式下生效，订阅模式请求不受此限额约束。',
         invalidNumber: '以下字段填写不是合法数字，请修正后再保存：{fields}',
+      },
+      modelTokenQuota: {
+        menuItem: '模型 Token 限额',
+        title: '用户模型每日 Token 限额',
+        subtitle: '为用户 {email} 按实际上游模型配置每日 Token 限额',
+        model: '上游模型',
+        limit: '每日 Token 限额',
+        unlimited: '不限制',
+        used: '今日已用',
+        add: '添加模型',
+        loadFailed: '加载模型 Token 限额失败',
+        invalid: '模型不能为空或重复，限额必须是非负整数',
+        updateFailed: '保存模型 Token 限额失败'
       }
     },
 
@@ -2402,7 +2415,40 @@ export default {
         noRules: '暂无路由规则',
         noRulesHint: '添加路由规则以将特定模型请求优先路由到指定账号',
         searchAccountPlaceholder: '搜索账号...',
-        accountsHint: '选择此模型模式优先使用的账号'
+        accountsHint: '选择此模型模式优先使用的账号',
+        routeAlias: '路由别名',
+        routeAliasPlaceholder: '例如：coding-fast',
+        candidateModel: '上游模型',
+        priority: '优先级',
+        dailyTokenLimit: '每日 Token 限额',
+        unlimited: '不限制',
+        candidateValidation: '必须填写模型、选择账号，并使用非负整数',
+        removeCandidate: '删除候选',
+        addCandidate: '添加候选',
+        validation: {
+          alias_required: '路由别名不能为空',
+          duplicate_alias: '路由别名不能重复',
+          candidate_required: '每个别名至少需要一个候选',
+          model_required: '候选模型不能为空',
+          duplicate_model: '同一别名下候选模型不能重复',
+          account_ids_required: '每个候选至少选择一个账号',
+          invalid_account_id: '候选账号无效',
+          invalid_priority: '优先级必须是非负整数',
+          duplicate_priority: '同一别名下优先级不能重复',
+          invalid_daily_token_limit: '每日 Token 限额必须是非负整数'
+        }
+      },
+      modelTokenQuota: {
+        menuItem: '模型 Token 限额',
+        title: '全局模型每日 Token 限额',
+        model: '上游模型',
+        limit: '每日 Token 限额',
+        unlimited: '不限制',
+        used: '今日已用',
+        add: '添加模型',
+        loadFailed: '加载全局模型 Token 限额失败',
+        invalid: '模型不能为空或重复，限额必须是非负整数',
+        updateFailed: '保存全局模型 Token 限额失败'
       },
       mcpXml: {
         title: 'MCP XML 协议注入',
