@@ -218,7 +218,7 @@ func incrementUsageBillingAPIKeyQuota(ctx context.Context, tx *sql.Tx, apiKeyID 
 			END,
 			updated_at = NOW()
 		WHERE id = ? AND deleted_at IS NULL
-	`, amount, amount, service.StatusAPIKeyActive, amount, service.StatusAPIKeyQuotaExhausted, apiKeyID)
+	`, amount, service.StatusAPIKeyActive, amount, service.StatusAPIKeyQuotaExhausted, apiKeyID)
 	if err != nil {
 		return false, err
 	}
@@ -240,7 +240,7 @@ func incrementUsageBillingAPIKeyRateLimit(ctx context.Context, tx *sql.Tx, apiKe
 			window_7d_start = CASE WHEN window_7d_start IS NULL OR DATE_ADD(window_7d_start, INTERVAL 7 DAY) <= NOW() THEN DATE(NOW()) ELSE window_7d_start END,
 			updated_at = NOW()
 		WHERE id = ? AND deleted_at IS NULL
-	`, cost, apiKeyID)
+	`, cost, cost, cost, cost, cost, cost, apiKeyID)
 	if err != nil {
 		return err
 	}
