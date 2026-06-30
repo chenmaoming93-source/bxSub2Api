@@ -26,6 +26,7 @@ import (
 	"unsafe"
 
 	"github.com/Wei-Shaw/sub2api/internal/config"
+	"github.com/Wei-Shaw/sub2api/internal/domain"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/claude"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/ctxkey"
 	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
@@ -415,6 +416,9 @@ var (
 // ErrNoAvailableAccounts 表示没有可用的账号
 var ErrNoAvailableAccounts = errors.New("no available accounts")
 
+// ErrRoutedTokenQuotaExhausted means every routed model candidate was skipped by daily token quota.
+var ErrRoutedTokenQuotaExhausted = errors.New("routed token quota exhausted")
+
 // ErrClaudeCodeOnly 表示分组仅允许 Claude Code 客户端访问
 var ErrClaudeCodeOnly = errors.New("this group only allows Claude Code clients")
 
@@ -532,10 +536,21 @@ type AccountWaitPlan struct {
 }
 
 type AccountSelectionResult struct {
-	Account     *Account
-	Acquired    bool
-	ReleaseFunc func()
-	WaitPlan    *AccountWaitPlan // nil means no wait allowed
+	Account        *Account
+	Acquired       bool
+	ReleaseFunc    func()
+	WaitPlan       *AccountWaitPlan // nil means no wait allowed
+	RequestedModel string
+	UpstreamModel  string
+}
+
+func withSelectionModelIdentity(result *AccountSelectionResult, requestedModel, upstreamModel string) *AccountSelectionResult {
+	if result == nil {
+		return nil
+	}
+	result.RequestedModel = requestedModel
+	result.UpstreamModel = upstreamModel
+	return result
 }
 
 // ClaudeUsage 表示Claude API返回的usage信息
@@ -650,6 +665,7 @@ type GatewayService struct {
 	tlsFPProfileService   *TLSFingerprintProfileService
 	balanceNotifyService  *BalanceNotifyService
 	userPlatformQuotaRepo UserPlatformQuotaRepository
+	dailyTokenQuotaRepo   DailyTokenQuotaRepository
 }
 
 // NewGatewayService creates a new GatewayService
@@ -681,6 +697,7 @@ func NewGatewayService(
 	resolver *ModelPricingResolver,
 	balanceNotifyService *BalanceNotifyService,
 	userPlatformQuotaRepo UserPlatformQuotaRepository,
+	dailyTokenQuotaRepo DailyTokenQuotaRepository,
 ) *GatewayService {
 	userGroupRateTTL := resolveUserGroupRateCacheTTL(cfg)
 	modelsListTTL := resolveModelsListCacheTTL(cfg)
@@ -717,6 +734,7 @@ func NewGatewayService(
 		resolver:              resolver,
 		balanceNotifyService:  balanceNotifyService,
 		userPlatformQuotaRepo: userPlatformQuotaRepo,
+		dailyTokenQuotaRepo:   dailyTokenQuotaRepo,
 	}
 	svc.userGroupRateResolver = newUserGroupRateResolver(
 		userGroupRateRepo,
@@ -1765,8 +1783,12 @@ func (s *GatewayService) SelectAccountWithLoadAwareness(ctx context.Context, gro
 
 	// 获取模型路由配置（仅 anthropic 平台）
 	var routingAccountIDs []int64
+	var routeCandidates []domain.ModelRouteCandidate
 	if group != nil && requestedModel != "" && group.Platform == PlatformAnthropic {
-		routingAccountIDs = group.GetRoutingAccountIDs(requestedModel)
+		routeCandidates = group.GetRoutingCandidates(requestedModel)
+		if len(routeCandidates) > 0 {
+			routingAccountIDs = routeCandidates[0].AccountIDs
+		}
 		if s.debugModelRoutingEnabled() {
 			keys := group.ModelRoutingRuleNames()
 			logger.LegacyPrintf("service.gateway", "[ModelRoutingDebug] context group routing: group_id=%d model=%s enabled=%v rules=%d matched_ids=%v session=%s sticky_account=%d",
@@ -1782,6 +1804,42 @@ func (s *GatewayService) SelectAccountWithLoadAwareness(ctx context.Context, gro
 	}
 
 	// ============ Layer 1: 模型路由优先选择（优先级高于粘性会话） ============
+	routingModelForSelection := requestedModel
+	if len(routeCandidates) > 0 {
+		quotaSkipped := 0
+		quotaAllowed := 0
+		for _, routeCandidate := range routeCandidates {
+			candidateModel := routeCandidate.Model
+			if candidateModel == "" {
+				candidateModel = requestedModel
+			}
+			exhausted, err := s.quotaAwareRouteCandidateExhausted(ctx, group.ID, requestedModel, candidateModel, sub2apiUserID)
+			if err != nil {
+				return nil, err
+			}
+			if exhausted {
+				quotaSkipped++
+				if s.debugModelRoutingEnabled() {
+					logger.LegacyPrintf("service.gateway", "[ModelRoutingDebug] quota exhausted skip: group_id=%v route=%s model=%s user_id=%d",
+						group.ID, requestedModel, candidateModel, sub2apiUserID)
+				}
+				continue
+			}
+			quotaAllowed++
+			result, ok, err := s.trySelectRouteCandidateAccounts(ctx, groupID, requestedModel, candidateModel, sessionHash, stickyAccountID, routeCandidate.AccountIDs, accountByID, isExcluded, platform, useMixed, cfg)
+			if err != nil {
+				return nil, err
+			}
+			if ok {
+				return result, nil
+			}
+		}
+		if quotaAllowed == 0 && quotaSkipped > 0 {
+			return nil, ErrRoutedTokenQuotaExhausted
+		}
+		return nil, ErrNoAvailableAccounts
+	}
+
 	if len(routingAccountIDs) > 0 && s.concurrencyService != nil {
 		// 1. 过滤出路由列表中可调度的账号
 		var routingCandidates []*Account
@@ -1805,11 +1863,11 @@ func (s *GatewayService) SelectAccountWithLoadAwareness(ctx context.Context, gro
 				filteredPlatform++
 				continue
 			}
-			if requestedModel != "" && !s.isModelSupportedByAccountWithContext(ctx, account, requestedModel) {
+			if routingModelForSelection != "" && !s.isModelSupportedByAccountWithContext(ctx, account, routingModelForSelection) {
 				filteredModelMapping++
 				continue
 			}
-			if !s.isAccountSchedulableForModelSelection(ctx, account, requestedModel) {
+			if !s.isAccountSchedulableForModelSelection(ctx, account, routingModelForSelection) {
 				filteredModelScope++
 				modelScopeSkippedIDs = append(modelScopeSkippedIDs, account.ID)
 				continue
@@ -1857,8 +1915,8 @@ func (s *GatewayService) SelectAccountWithLoadAwareness(ctx context.Context, gro
 
 						gatePass := s.isAccountSchedulableForSelection(stickyAccount) &&
 							s.isAccountAllowedForPlatform(stickyAccount, platform, useMixed) &&
-							(requestedModel == "" || s.isModelSupportedByAccountWithContext(ctx, stickyAccount, requestedModel)) &&
-							s.isAccountSchedulableForModelSelection(ctx, stickyAccount, requestedModel) &&
+							(routingModelForSelection == "" || s.isModelSupportedByAccountWithContext(ctx, stickyAccount, routingModelForSelection)) &&
+							s.isAccountSchedulableForModelSelection(ctx, stickyAccount, routingModelForSelection) &&
 							s.isAccountSchedulableForQuota(stickyAccount) &&
 							s.isAccountSchedulableForWindowCost(ctx, stickyAccount, true)
 
@@ -2270,6 +2328,305 @@ func (s *GatewayService) SelectAccountWithLoadAwareness(ctx context.Context, gro
 		})
 	}
 	return nil, ErrNoAvailableAccounts
+}
+
+func (s *GatewayService) trySelectRouteCandidateAccounts(ctx context.Context, groupID *int64, requestedModel, routingModelForSelection, sessionHash string, stickyAccountID int64, routingAccountIDs []int64, accountByID map[int64]*Account, isExcluded func(int64) bool, platform string, useMixed bool, cfg config.GatewaySchedulingConfig) (*AccountSelectionResult, bool, error) {
+	if len(routingAccountIDs) == 0 || s.concurrencyService == nil {
+		return nil, false, nil
+	}
+	var routingCandidates []*Account
+	var filteredExcluded, filteredMissing, filteredUnsched, filteredPlatform, filteredModelScope, filteredModelMapping, filteredWindowCost int
+	var modelScopeSkippedIDs []int64
+	for _, routingAccountID := range routingAccountIDs {
+		if isExcluded(routingAccountID) {
+			filteredExcluded++
+			continue
+		}
+		account, ok := accountByID[routingAccountID]
+		if !ok || !s.isAccountSchedulableForSelection(account) {
+			if !ok {
+				filteredMissing++
+			} else {
+				filteredUnsched++
+			}
+			continue
+		}
+		if !s.isAccountAllowedForPlatform(account, platform, useMixed) {
+			filteredPlatform++
+			continue
+		}
+		if routingModelForSelection != "" && !s.isModelSupportedByAccountWithContext(ctx, account, routingModelForSelection) {
+			filteredModelMapping++
+			continue
+		}
+		if !s.isAccountSchedulableForModelSelection(ctx, account, routingModelForSelection) {
+			filteredModelScope++
+			modelScopeSkippedIDs = append(modelScopeSkippedIDs, account.ID)
+			continue
+		}
+		if !s.isAccountSchedulableForQuota(account) {
+			continue
+		}
+		if !s.isAccountSchedulableForWindowCost(ctx, account, false) {
+			filteredWindowCost++
+			continue
+		}
+		if !s.isAccountSchedulableForRPM(ctx, account, false) {
+			continue
+		}
+		routingCandidates = append(routingCandidates, account)
+	}
+
+	if s.debugModelRoutingEnabled() {
+		logger.LegacyPrintf("service.gateway", "[ModelRoutingDebug] routed candidates: group_id=%v route=%s model=%s routed=%d candidates=%d filtered(excluded=%d missing=%d unsched=%d platform=%d model_scope=%d model_mapping=%d window_cost=%d)",
+			derefGroupID(groupID), requestedModel, routingModelForSelection, len(routingAccountIDs), len(routingCandidates),
+			filteredExcluded, filteredMissing, filteredUnsched, filteredPlatform, filteredModelScope, filteredModelMapping, filteredWindowCost)
+		if len(modelScopeSkippedIDs) > 0 {
+			logger.LegacyPrintf("service.gateway", "[ModelRoutingDebug] model_rate_limited accounts skipped: group_id=%v model=%s account_ids=%v",
+				derefGroupID(groupID), routingModelForSelection, modelScopeSkippedIDs)
+		}
+	}
+
+	if len(routingCandidates) == 0 {
+		return nil, false, nil
+	}
+
+	if sessionHash != "" && stickyAccountID > 0 {
+		slog.Debug("sticky.layer1_5_checking",
+			"sticky_account_id", stickyAccountID,
+			"in_routing_list", containsInt64(routingAccountIDs, stickyAccountID),
+			"is_excluded", isExcluded(stickyAccountID),
+			"in_account_map", func() bool { _, ok := accountByID[stickyAccountID]; return ok }(),
+			"session", shortSessionHash(sessionHash),
+		)
+		if containsInt64(routingAccountIDs, stickyAccountID) && !isExcluded(stickyAccountID) {
+			if stickyAccount, ok := accountByID[stickyAccountID]; ok {
+				var stickyCacheMissReason string
+
+				gatePass := s.isAccountSchedulableForSelection(stickyAccount) &&
+					s.isAccountAllowedForPlatform(stickyAccount, platform, useMixed) &&
+					(routingModelForSelection == "" || s.isModelSupportedByAccountWithContext(ctx, stickyAccount, routingModelForSelection)) &&
+					s.isAccountSchedulableForModelSelection(ctx, stickyAccount, routingModelForSelection) &&
+					s.isAccountSchedulableForQuota(stickyAccount) &&
+					s.isAccountSchedulableForWindowCost(ctx, stickyAccount, true)
+
+				rpmPass := gatePass && s.isAccountSchedulableForRPM(ctx, stickyAccount, true)
+
+				if rpmPass {
+					result, err := s.tryAcquireAccountSlot(ctx, stickyAccountID, stickyAccount.Concurrency)
+					if err == nil && result.Acquired {
+						if !s.checkAndRegisterSession(ctx, stickyAccount, sessionHash) {
+							result.ReleaseFunc()
+							stickyCacheMissReason = "session_limit"
+						} else {
+							slog.Debug("sticky.layer1_5_hit",
+								"account_id", stickyAccountID,
+								"session", shortSessionHash(sessionHash),
+								"result", "slot_acquired",
+							)
+							if s.debugModelRoutingEnabled() {
+								logger.LegacyPrintf("service.gateway", "[ModelRoutingDebug] routed sticky hit: group_id=%v route=%s model=%s session=%s account=%d", derefGroupID(groupID), requestedModel, routingModelForSelection, shortSessionHash(sessionHash), stickyAccountID)
+							}
+							selection, err := s.newSelectionResult(ctx, stickyAccount, true, result.ReleaseFunc, nil)
+							return withSelectionModelIdentity(selection, requestedModel, routingModelForSelection), true, err
+						}
+					}
+
+					if stickyCacheMissReason == "" {
+						waitingCount, _ := s.concurrencyService.GetAccountWaitingCount(ctx, stickyAccountID)
+						if waitingCount < cfg.StickySessionMaxWaiting {
+							if !s.checkAndRegisterSession(ctx, stickyAccount, sessionHash) {
+								stickyCacheMissReason = "session_limit"
+							} else {
+								selection, err := s.newSelectionResult(ctx, stickyAccount, false, nil, &AccountWaitPlan{
+									AccountID:      stickyAccountID,
+									MaxConcurrency: stickyAccount.Concurrency,
+									Timeout:        cfg.StickySessionWaitTimeout,
+									MaxWaiting:     cfg.StickySessionMaxWaiting,
+								})
+								return withSelectionModelIdentity(selection, requestedModel, routingModelForSelection), true, err
+							}
+						} else {
+							stickyCacheMissReason = "wait_queue_full"
+						}
+					}
+				} else if !gatePass {
+					stickyCacheMissReason = "gate_check"
+				} else {
+					stickyCacheMissReason = "rpm_red"
+				}
+
+				if stickyCacheMissReason != "" {
+					baseRPM := stickyAccount.GetBaseRPM()
+					var currentRPM int
+					if count, ok := rpmFromPrefetchContext(ctx, stickyAccount.ID); ok {
+						currentRPM = count
+					}
+					logger.LegacyPrintf("service.gateway", "[StickyCacheMiss] reason=%s account_id=%d session=%s current_rpm=%d base_rpm=%d",
+						stickyCacheMissReason, stickyAccountID, shortSessionHash(sessionHash), currentRPM, baseRPM)
+				}
+			} else if s.cache != nil {
+				_ = s.cache.DeleteSessionAccountID(ctx, derefGroupID(groupID), sessionHash)
+				logger.LegacyPrintf("service.gateway", "[StickyCacheMiss] reason=account_cleared account_id=%d session=%s current_rpm=0 base_rpm=0",
+					stickyAccountID, shortSessionHash(sessionHash))
+			}
+		}
+	}
+
+	routingLoads := make([]AccountWithConcurrency, 0, len(routingCandidates))
+	for _, acc := range routingCandidates {
+		routingLoads = append(routingLoads, AccountWithConcurrency{
+			ID:             acc.ID,
+			MaxConcurrency: acc.EffectiveLoadFactor(),
+		})
+	}
+	routingLoadMap, _ := s.concurrencyService.GetAccountsLoadBatch(ctx, routingLoads)
+
+	var routingAvailable []accountWithLoad
+	for _, acc := range routingCandidates {
+		loadInfo := routingLoadMap[acc.ID]
+		if loadInfo == nil {
+			loadInfo = &AccountLoadInfo{AccountID: acc.ID}
+		}
+		if loadInfo.LoadRate < 100 {
+			routingAvailable = append(routingAvailable, accountWithLoad{account: acc, loadInfo: loadInfo})
+		}
+	}
+
+	if len(routingAvailable) == 0 {
+		logger.LegacyPrintf("service.gateway", "[ModelRouting] All routed accounts unavailable for route=%s model=%s", requestedModel, routingModelForSelection)
+		return nil, false, nil
+	}
+
+	sort.SliceStable(routingAvailable, func(i, j int) bool {
+		a, b := routingAvailable[i], routingAvailable[j]
+		if a.account.Priority != b.account.Priority {
+			return a.account.Priority < b.account.Priority
+		}
+		if a.loadInfo.LoadRate != b.loadInfo.LoadRate {
+			return a.loadInfo.LoadRate < b.loadInfo.LoadRate
+		}
+		switch {
+		case a.account.LastUsedAt == nil && b.account.LastUsedAt != nil:
+			return true
+		case a.account.LastUsedAt != nil && b.account.LastUsedAt == nil:
+			return false
+		case a.account.LastUsedAt == nil && b.account.LastUsedAt == nil:
+			return false
+		default:
+			return a.account.LastUsedAt.Before(*b.account.LastUsedAt)
+		}
+	})
+	shuffleWithinSortGroups(routingAvailable)
+
+	for _, item := range routingAvailable {
+		result, err := s.tryAcquireAccountSlot(ctx, item.account.ID, item.account.Concurrency)
+		if err == nil && result.Acquired {
+			if !s.checkAndRegisterSession(ctx, item.account, sessionHash) {
+				result.ReleaseFunc()
+				continue
+			}
+			if sessionHash != "" && s.cache != nil {
+				_ = s.cache.SetSessionAccountID(ctx, derefGroupID(groupID), sessionHash, item.account.ID, stickySessionTTL)
+			}
+			if s.debugModelRoutingEnabled() {
+				logger.LegacyPrintf("service.gateway", "[ModelRoutingDebug] routed select: group_id=%v route=%s model=%s session=%s account=%d", derefGroupID(groupID), requestedModel, routingModelForSelection, shortSessionHash(sessionHash), item.account.ID)
+			}
+			selection, err := s.newSelectionResult(ctx, item.account, true, result.ReleaseFunc, nil)
+			return withSelectionModelIdentity(selection, requestedModel, routingModelForSelection), true, err
+		}
+	}
+
+	for _, item := range routingAvailable {
+		if !s.checkAndRegisterSession(ctx, item.account, sessionHash) {
+			continue
+		}
+		if s.debugModelRoutingEnabled() {
+			logger.LegacyPrintf("service.gateway", "[ModelRoutingDebug] routed wait: group_id=%v route=%s model=%s session=%s account=%d", derefGroupID(groupID), requestedModel, routingModelForSelection, shortSessionHash(sessionHash), item.account.ID)
+		}
+		selection, err := s.newSelectionResult(ctx, item.account, false, nil, &AccountWaitPlan{
+			AccountID:      item.account.ID,
+			MaxConcurrency: item.account.Concurrency,
+			Timeout:        cfg.StickySessionWaitTimeout,
+			MaxWaiting:     cfg.StickySessionMaxWaiting,
+		})
+		return withSelectionModelIdentity(selection, requestedModel, routingModelForSelection), true, err
+	}
+	return nil, false, nil
+}
+
+func (s *GatewayService) selectQuotaAllowedRouteCandidate(ctx context.Context, groupID int64, routeAlias string, userID int64, candidates []domain.ModelRouteCandidate) (domain.ModelRouteCandidate, string, bool, error) {
+	for _, candidate := range candidates {
+		candidateModel := candidate.Model
+		if candidateModel == "" {
+			candidateModel = routeAlias
+		}
+		exhausted, err := s.quotaAwareRouteCandidateExhausted(ctx, groupID, routeAlias, candidateModel, userID)
+		if err != nil {
+			return domain.ModelRouteCandidate{}, "", false, err
+		}
+		if exhausted {
+			if s != nil && s.debugModelRoutingEnabled() {
+				logger.LegacyPrintf("service.gateway", "[ModelRoutingDebug] quota exhausted skip: group_id=%v route=%s model=%s user_id=%d",
+					groupID, routeAlias, candidateModel, userID)
+			}
+			continue
+		}
+		return candidate, candidateModel, true, nil
+	}
+	return domain.ModelRouteCandidate{}, "", false, nil
+}
+
+func (s *GatewayService) quotaAwareRouteCandidateExhausted(ctx context.Context, groupID int64, routeAlias, upstreamModel string, userID int64) (bool, error) {
+	if s == nil || s.dailyTokenQuotaRepo == nil || groupID <= 0 || routeAlias == "" || upstreamModel == "" {
+		return false, nil
+	}
+	at := time.Now()
+	groupKey := GroupCandidateDailyTokenQuotaKey{GroupID: groupID, RouteAlias: routeAlias, UpstreamModel: upstreamModel, At: at}
+	groupSnapshot, err := s.dailyTokenQuotaRepo.GetGroupCandidateDailyTokenQuota(ctx, groupKey)
+	if err != nil {
+		return false, err
+	}
+	if err := CheckGroupCandidateDailyTokenQuota(groupKey, groupSnapshot); err != nil {
+		if isDailyTokenQuotaExhausted(err) {
+			return true, nil
+		}
+		return false, err
+	}
+
+	modelKey := ModelDailyTokenQuotaKey{Model: upstreamModel, At: at}
+	modelSnapshot, err := s.dailyTokenQuotaRepo.GetModelDailyTokenQuota(ctx, modelKey)
+	if err != nil {
+		return false, err
+	}
+	if err := CheckModelDailyTokenQuota(modelKey, modelSnapshot); err != nil {
+		if isDailyTokenQuotaExhausted(err) {
+			return true, nil
+		}
+		return false, err
+	}
+
+	if userID <= 0 {
+		return false, nil
+	}
+	userKey := UserModelDailyTokenQuotaKey{UserID: userID, Model: upstreamModel, At: at}
+	userSnapshot, err := s.dailyTokenQuotaRepo.GetUserModelDailyTokenQuota(ctx, userKey)
+	if err != nil {
+		return false, err
+	}
+	if err := CheckUserModelDailyTokenQuota(userKey, userSnapshot); err != nil {
+		if isDailyTokenQuotaExhausted(err) {
+			return true, nil
+		}
+		return false, err
+	}
+	return false, nil
+}
+
+func isDailyTokenQuotaExhausted(err error) bool {
+	return errors.Is(err, ErrGroupCandidateDailyTokenQuotaExhausted) ||
+		errors.Is(err, ErrModelDailyTokenQuotaExhausted) ||
+		errors.Is(err, ErrUserModelDailyTokenQuotaExhausted)
 }
 
 func (s *GatewayService) tryAcquireByLegacyOrder(ctx context.Context, candidates []*Account, groupID *int64, sessionHash string, preferOAuth bool) (*AccountSelectionResult, bool, error) {
@@ -4799,6 +5156,11 @@ func (s *GatewayService) Forward(ctx context.Context, c *gin.Context, account *A
 	if account != nil && account.IsAnthropicAPIKeyPassthroughEnabled() {
 		passthroughBody := parsed.Body.Bytes()
 		passthroughModel := parsed.Model
+		if upstreamModel := strings.TrimSpace(parsed.UpstreamModel); upstreamModel != "" && upstreamModel != passthroughModel {
+			passthroughBody = s.replaceModelInBody(passthroughBody, upstreamModel)
+			passthroughModel = upstreamModel
+			logger.LegacyPrintf("service.gateway", "Passthrough selection model identity applied: %s -> %s (account: %s)", parsed.Model, upstreamModel, account.Name)
+		}
 		if passthroughModel != "" {
 			if mappedModel := account.GetMappedModel(passthroughModel); mappedModel != passthroughModel {
 				passthroughBody = s.replaceModelInBody(passthroughBody, mappedModel)
@@ -4845,6 +5207,14 @@ func (s *GatewayService) Forward(ctx context.Context, c *gin.Context, account *A
 	reqModel := parsed.Model
 	reqStream := parsed.Stream
 	originalModel := reqModel
+
+	if upstreamModel := strings.TrimSpace(parsed.UpstreamModel); upstreamModel != "" && upstreamModel != reqModel {
+		if err := replaceBody(s.replaceModelInBody(body, upstreamModel)); err != nil {
+			return nil, err
+		}
+		reqModel = upstreamModel
+		logger.LegacyPrintf("service.gateway", "Selection model identity applied: %s -> %s (account: %s)", originalModel, upstreamModel, account.Name)
+	}
 
 	// === DEBUG: 打印客户端原始请求（headers + body 摘要）===
 	if c != nil {

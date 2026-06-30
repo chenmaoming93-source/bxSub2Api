@@ -1,39 +1,41 @@
-# MVP-013: 在候选选择前检查三类 Token 配额
+# MVP-013: Quota-Aware Candidate Routing
 
 - Protocol: `mvp-list/v1`
-- State: `PLANNED`
+- State: `VERIFIED`
 - Estimate: `20min`
-- Estimate rationale: 在既有候选循环增加统一 preflight，错误分支数量有限且可用 stub 测试。
+- Estimate rationale: Add a unified preflight check to the existing candidate loop with focused stub tests.
 - Dependencies: `MVP-007`, `MVP-009`, `MVP-012`
 
 ## Outcome
 
-任一候选、全局模型或当前用户模型额度耗尽时，路由自动跳到下一个候选。
+When a group candidate, global model, or current user's model daily token quota is exhausted, routing skips the current candidate and tries the next candidate. Infrastructure errors from the quota repository are returned as real errors and are not disguised as quota exhaustion.
 
 ## Context
 
-耗尽错误仅用于内部降级，不能在仍有候选时直接返回客户端。
+Quota exhaustion is used for internal downgrade decisions. It must not directly return to the client while another candidate remains available.
 
 ## In Scope
 
-- 注入 quota checker 到 GatewayService/Wire。
-- 按候选→全局模型→用户模型顺序执行 preflight。
-- 用 stub 覆盖三种耗尽与其他 repository 错误。
+- Inject the daily token quota repository into `GatewayService` and Wire.
+- Run preflight in candidate, global model, and user model order before routed account selection.
+- Cover the three exhaustion types and non-exhaustion repository errors with stub tests.
 
 ## Out of Scope
 
-- 账号请求失败后的跨模型 failover、用量累加。
+- Cross-model failover after an upstream account request fails.
+- Usage accumulation after a completed request.
 
 ## Implementation Notes
 
-- 优先复用上述现有路径与模式；若执行时发现接口名漂移，记录实际路径但不得扩大本 MVP 的结果边界。
-- 本 MVP 的实现、测试和证据记录必须在估时内完成；超出时拆出后续 MVP，不以跳过验证换取完成。
+- Added `GatewayService.dailyTokenQuotaRepo` and wired it from `repository.NewDailyTokenQuotaRepository`.
+- Added `selectQuotaAllowedRouteCandidate` and `quotaAwareRouteCandidateExhausted` to keep candidate selection and quota classification testable.
+- If all route candidates are quota-exhausted, the selection path returns `ErrNoAvailableAccounts` instead of falling back to ordinary account selection and bypassing quotas.
 
 ## Acceptance Criteria
 
-- [ ] 三类耗尽均跳过当前候选。
-- [ ] 用户 A 耗尽不影响用户 B。
-- [ ] 非耗尽基础设施错误不会被伪装成配额耗尽。
+- [x] All three exhaustion types skip the current candidate.
+- [x] User A exhaustion does not affect user B.
+- [x] Non-exhaustion infrastructure errors are not disguised as quota exhaustion.
 
 ## Verification Plan
 
@@ -41,11 +43,15 @@
 
 ## Completion Evidence
 
-> Leave this section empty until work has actually been performed.
-
 | Type | Command or path | Result |
 |---|---|---|
+| Implementation | `backend/internal/service/gateway_service.go`; `backend/cmd/server/wire_gen.go` | Added daily token quota preflight to routed candidate selection and wired the repository into `GatewayService`. |
+| Tests | `cd backend; go test .\internal\service -run QuotaAwareRouting -v` | PASS: group candidate, global model, and user model exhaustion skip current candidate; user-specific exhaustion is scoped; infrastructure errors remain ordinary errors. |
+| Tests | `cd backend; go test .\internal\service -run "QuotaAwareRouting|ModelRouting|GroupedModelCandidate" -v` | PASS: quota-aware routing plus existing model routing compatibility. |
+| Tests | `cd backend; go test -tags unit .\internal\service -run "QuotaAwareRouting|GroupedModelCandidate" -v` | PASS: unit-tag gateway candidate routing and quota-aware tests. |
+| Tests | `cd backend; go test .\internal\handler -run GatewayModels -v` | PASS: constructor signature changes did not break gateway models handler tests. |
+| Compile | `cd backend; go test -c -o .\.gotmp\cmd_server_quotaaware_test.exe .\cmd\server` | PASS: manual Wire graph update compiles. |
 
 ## Execution Notes
 
-
+- `go generate ./cmd/server` remains impractical in this environment because prior runs of `wire.exe` were blocked by Windows Application Control, so `wire_gen.go` was updated manually and compile-checked.

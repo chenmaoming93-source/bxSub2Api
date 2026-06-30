@@ -39,7 +39,7 @@ func newDailyTokenQuotaRepoTestClient(t *testing.T) *dbent.Client {
 
 func TestDailyTokenQuotaRepositoryUsesStartOfDayAndMissingIsUnlimited(t *testing.T) {
 	client := newDailyTokenQuotaRepoTestClient(t)
-	repo := NewDailyTokenQuotaRepository(client)
+	repo := &dailyTokenQuotaRepository{client: client}
 	ctx := context.Background()
 	at := time.Date(2026, 6, 30, 18, 45, 0, 0, time.FixedZone("request", -7*60*60))
 	day := timezone.StartOfDay(at)
@@ -88,6 +88,44 @@ func TestDailyTokenQuotaRepositoryKeepsUsersIsolated(t *testing.T) {
 	second, err := repo.GetUserModelDailyTokenQuota(ctx, service.UserModelDailyTokenQuotaKey{UserID: user.ID + 1, Model: "claude-sonnet", At: at})
 	if err != nil || second.Exists {
 		t.Fatalf("second user snapshot=%+v err=%v", second, err)
+	}
+}
+
+func TestDailyTokenQuotaRepositoryUpsertUserModelQuotasKeepsUsersIsolated(t *testing.T) {
+	client := newDailyTokenQuotaRepoTestClient(t)
+	repo := &dailyTokenQuotaRepository{client: client}
+	ctx := context.Background()
+	at := time.Date(2026, 6, 30, 12, 0, 0, 0, time.UTC)
+	day := timezone.StartOfDay(at)
+	userA, err := client.User.Create().SetEmail("quota-upsert-a@example.com").SetPasswordHash("hash").Save(ctx)
+	if err != nil {
+		t.Fatalf("create user a: %v", err)
+	}
+	userB, err := client.User.Create().SetEmail("quota-upsert-b@example.com").SetPasswordHash("hash").Save(ctx)
+	if err != nil {
+		t.Fatalf("create user b: %v", err)
+	}
+	limitB := int64(75)
+	if _, err := client.UserModelTokenDailyUsage.Create().
+		SetUserID(userB.ID).SetModel("gpt-5").SetUsageDate(day).SetUsedTokens(44).SetDailyLimitTokens(limitB).Save(ctx); err != nil {
+		t.Fatalf("create user b quota: %v", err)
+	}
+
+	limitA := int64(20)
+	records, err := repo.UpsertUserModelDailyTokenQuotas(ctx, userA.ID, at, []service.UserModelDailyTokenQuotaInput{
+		{Model: "gpt-5", DailyLimitTokens: &limitA},
+	})
+	if err != nil {
+		t.Fatalf("UpsertUserModelDailyTokenQuotas: %v", err)
+	}
+	if len(records) != 1 || records[0].UserID != userA.ID || records[0].Model != "gpt-5" || records[0].DailyLimitTokens == nil || *records[0].DailyLimitTokens != limitA {
+		t.Fatalf("records = %+v", records)
+	}
+	other := client.UserModelTokenDailyUsage.Query().
+		Where(usermodeltokendailyusage.UserIDEQ(userB.ID), usermodeltokendailyusage.ModelEQ("gpt-5"), usermodeltokendailyusage.UsageDateEQ(day)).
+		OnlyX(ctx)
+	if other.UsedTokens != 44 || other.DailyLimitTokens == nil || *other.DailyLimitTokens != limitB {
+		t.Fatalf("other user row = %+v, want used=44 limit=%d", other, limitB)
 	}
 }
 

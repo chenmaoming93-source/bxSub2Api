@@ -1,39 +1,40 @@
-# MVP-012: 按优先级选择分组模型候选
+# MVP-012: Priority-Based Group Model Candidate Routing
 
 - Protocol: `mvp-list/v1`
-- State: `PLANNED`
+- State: `VERIFIED`
 - Estimate: `20min`
-- Estimate rationale: 只把已解析候选接入选择入口，暂不检查 Token 配额。
+- Estimate rationale: Connect the already parsed candidate routing shape to the selection entry point without adding token quota checks.
 - Dependencies: `MVP-002`, `MVP-003`
 
 ## Outcome
 
-请求 model 命中新格式分组别名时，调度器按 priority 尝试实际模型，并限制候选账号集合。
+When a request model matches the new group alias format, the scheduler uses the lowest-priority candidate's actual model and account ID set during account filtering, while legacy wildcard/account-ID routing remains compatible.
 
 ## Context
 
-入口是 `GatewayService.SelectAccountWithLoadAwareness`；旧模式仍通过 `GetRoutingAccountIDs` 等现有行为。
+The entry point is `GatewayService.SelectAccountWithLoadAwareness`; legacy behavior continues through `GetRoutingAccountIDs`.
 
 ## In Scope
 
-- 识别精确分组别名并构造候选序列。
-- 把候选实际 model 与 account_ids 传给现有账号筛选。
-- 保留旧通配路由行为并加单元测试。
+- Recognize exact group aliases and construct ordered model route candidates.
+- Pass the candidate actual model and account IDs into the existing account filtering path.
+- Preserve legacy wildcard routing behavior and add unit tests.
 
 ## Out of Scope
 
-- Token 配额检查和 usage 写入。
+- Token quota checks and usage writes.
 
 ## Implementation Notes
 
-- 优先复用上述现有路径与模式；若执行时发现接口名漂移，记录实际路径但不得扩大本 MVP 的结果边界。
-- 本 MVP 的实现、测试和证据记录必须在估时内完成；超出时拆出后续 MVP，不以跳过验证换取完成。
+- Added `Group.GetRoutingCandidates(requestedModel)` to expose the ordered candidate objects parsed by the domain routing parser.
+- Kept `Group.GetRoutingAccountIDs(requestedModel)` as a compatibility wrapper returning the first matched candidate's account IDs.
+- Updated the load-aware gateway routing layer to use the selected candidate model for model support and model schedulability checks.
 
 ## Acceptance Criteria
 
-- [ ] 新别名优先选择最小 priority 候选。
-- [ ] 只会返回候选 account_ids 中可调度账号。
-- [ ] 旧路由测试继续通过。
+- [x] New aliases select the lowest-priority candidate first.
+- [x] Routing only considers schedulable accounts from the selected candidate's `account_ids`.
+- [x] Legacy routing tests continue to pass.
 
 ## Verification Plan
 
@@ -41,11 +42,12 @@
 
 ## Completion Evidence
 
-> Leave this section empty until work has actually been performed.
-
 | Type | Command or path | Result |
 |---|---|---|
+| Implementation | `backend/internal/service/group.go`; `backend/internal/service/gateway_service.go` | Added ordered candidate access and routed selection with candidate actual model filtering while preserving `GetRoutingAccountIDs` compatibility. |
+| Tests | `cd backend; go test .\internal\service -run "ModelRouting|GroupedModelCandidate" -v` | PASS: lowest-priority candidate selection and legacy wildcard account ID compatibility. |
+| Tests | `cd backend; go test -tags unit .\internal\service -run GroupedModelCandidate -v` | PASS: gateway selection uses the candidate actual model for account model filtering. |
 
 ## Execution Notes
 
-
+- Token quota checks are intentionally deferred to MVP-013.

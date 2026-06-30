@@ -126,3 +126,11 @@ func TestBillingErrorDetails_T10_QuotaExhaustedReturns429WithRetryAfter(t *testi
 		})
 	}
 }
+
+func TestBillingErrorDetails_RoutedTokenQuotaExhaustedReturns429(t *testing.T) {
+	status, code, msg, retryAfter := billingErrorDetails(service.ErrRoutedTokenQuotaExhausted)
+	require.Equal(t, http.StatusTooManyRequests, status)
+	require.Equal(t, "rate_limit_exceeded", code)
+	require.NotEmpty(t, msg)
+	require.Equal(t, 0, retryAfter)
+}

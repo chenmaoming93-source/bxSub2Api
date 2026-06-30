@@ -1,39 +1,41 @@
-# MVP-014: 完成候选账号与跨模型 failover 及最终错误映射
+# MVP-014: Candidate Account And Cross-Model Failover
 
 - Protocol: `mvp-list/v1`
-- State: `PLANNED`
+- State: `VERIFIED`
 - Estimate: `20min`
-- Estimate rationale: 聚焦选择循环的退出条件和错误优先级，不改转发/usage。
+- Estimate rationale: Focus on selection loop exit conditions and error priority without changing upstream forwarding or usage accounting.
 - Dependencies: `MVP-013`
 
 ## Outcome
 
-候选账号失败或被排除后先尝试同候选其他账号，再降级下一模型；全部失败返回确定的 429/503。
+Candidate account failure or exclusion is handled inside the routed candidate boundary first. When one routed model candidate has no selectable accounts, routing tries the next candidate by priority. If every routed candidate is blocked only by daily token quota, the selection error maps to HTTP 429; account schedulability exhaustion remains the existing no-available-account 503 path.
 
 ## Context
 
-需保留现有并发、RPM、window cost、模型映射、平台与账号健康检查。
+The implementation preserves existing concurrency, RPM, window cost, model mapping, platform, account health, sticky session, and wait-plan checks.
 
 ## In Scope
 
-- 让 excludedIDs 与候选边界正确协作。
-- 区分全部配额耗尽和全部账号不可调度。
-- 补混合失败原因与多候选测试。
+- Make `excludedIDs` cooperate with routed candidate boundaries.
+- Distinguish all quota exhausted from all accounts unschedulable.
+- Add mixed failure reason and multi-candidate tests.
 
 ## Out of Scope
 
-- 实际发起上游请求后的重试策略改造。
+- Refactoring the retry strategy after an upstream request has already been sent.
 
 ## Implementation Notes
 
-- 优先复用上述现有路径与模式；若执行时发现接口名漂移，记录实际路径但不得扩大本 MVP 的结果边界。
-- 本 MVP 的实现、测试和证据记录必须在估时内完成；超出时拆出后续 MVP，不以跳过验证换取完成。
+- Added `ErrRoutedTokenQuotaExhausted` for all routed candidates skipped by daily token quota.
+- Changed Anthropic routed selection to iterate priority-ordered `ModelRouteCandidate` entries and attempt account selection per candidate.
+- Extracted routed account filtering, sticky selection, load-aware acquisition, and wait-plan selection into `trySelectRouteCandidateAccounts`.
+- Mapped `ErrRoutedTokenQuotaExhausted` to HTTP 429/rate-limit responses in Anthropic Messages and Chat Completions selection failures.
 
 ## Acceptance Criteria
 
-- [ ] 同候选仍有可用账号时不提前跨模型。
-- [ ] 候选耗尽后按 priority 尝试下一模型。
-- [ ] 全部配额耗尽为 429，不可调度为项目既有 503。
+- [x] While the same candidate still has an available account, selection does not cross to the next model prematurely.
+- [x] After a candidate is exhausted, selection tries the next model by priority.
+- [x] All quota exhausted maps to 429, while unschedulable accounts keep the existing 503 no-available path.
 
 ## Verification Plan
 
@@ -41,11 +43,15 @@
 
 ## Completion Evidence
 
-> Leave this section empty until work has actually been performed.
-
 | Type | Command or path | Result |
 |---|---|---|
+| Test | `cd backend; go test .\internal\service -run 'GroupedModel.*Failover|QuotaExhausted' -v` | PASS; covered same-candidate account failover, next-candidate failover, and unschedulable no-selection behavior. |
+| Test | `cd backend; go test .\internal\service -run 'QuotaAwareRouting|GroupedModel.*Failover|QuotaExhausted' -v` | PASS; verified quota-aware routing regressions plus MVP-014 failover tests. |
+| Test | `cd backend; go test .\internal\handler -run 'BillingErrorDetails_RoutedTokenQuotaExhausted|BillingErrorDetails_T10|BillingErrorDetails_Maps' -v` | PASS; verified routed token quota exhaustion maps to HTTP 429 and existing quota/RPM mappings still pass. |
+| Compile | `cd backend; go test -c -o .\.gotmp\cmd_server_mvp014_test.exe .\cmd\server` | PASS; server package compiled successfully. |
+| Static check | `git diff --check` | PASS; only existing CRLF conversion warnings for MVP markdown/progress files were reported. |
 
 ## Execution Notes
 
-
+- `go generate ./cmd/server` was not needed for this MVP; generated wiring was unchanged by these edits.
+- The selection implementation intentionally returns no-available-account when routed candidates exist but none has schedulable accounts, preserving the existing 503 semantics for capacity/schedulability exhaustion.

@@ -4,8 +4,8 @@
 - Source plan: `../PLAN.md`
 - Target effort per MVP: `20min以内`
 - Update batch size: `1 completed MVP`
-- Last updated: `2026-06-30T14:31:06+08:00`
-- Overall: `10/23 (43%)`
+- Last updated: `2026-06-30T16:08:31+08:00`
+- Overall: `15/23 (65%)`
 
 ## Status Rules
 
@@ -28,11 +28,11 @@
 | MVP-008 | [MVP-008-quota-atomic-increment.md](./MVP-008-quota-atomic-increment.md) | DONE | MVP-007 | 20min | 2026-06-30T13:57:58+08:00 | [原子累加、跨日与回滚测试](./MVP-008-quota-atomic-increment.md#completion-evidence) |
 | MVP-009 | [MVP-009-quota-cache.md](./MVP-009-quota-cache.md) | DONE | MVP-007, MVP-008 | 20min | 2026-06-30T14:11:44+08:00 | [Redis 快速判断、TTL 与隔离测试](./MVP-009-quota-cache.md#completion-evidence) |
 | MVP-010 | [MVP-010-global-quota-admin-api.md](./MVP-010-global-quota-admin-api.md) | DONE | MVP-004, MVP-007, MVP-009 | 20min | 2026-06-30T14:31:06+08:00 | [全局模型配额管理 API、缓存失效与测试](./MVP-010-global-quota-admin-api.md#completion-evidence) |
-| MVP-011 | [MVP-011-user-quota-admin-api.md](./MVP-011-user-quota-admin-api.md) | PENDING | MVP-005, MVP-007, MVP-009 | 20min |  |  |
-| MVP-012 | [MVP-012-candidate-routing.md](./MVP-012-candidate-routing.md) | PENDING | MVP-002, MVP-003 | 20min |  |  |
-| MVP-013 | [MVP-013-quota-aware-routing.md](./MVP-013-quota-aware-routing.md) | PENDING | MVP-007, MVP-009, MVP-012 | 20min |  |  |
-| MVP-014 | [MVP-014-candidate-failover.md](./MVP-014-candidate-failover.md) | PENDING | MVP-013 | 20min |  |  |
-| MVP-015 | [MVP-015-model-identity.md](./MVP-015-model-identity.md) | PENDING | MVP-012 | 20min |  |  |
+| MVP-011 | [MVP-011-user-quota-admin-api.md](./MVP-011-user-quota-admin-api.md) | DONE | MVP-005, MVP-007, MVP-009 | 20min | 2026-06-30T15:20:03+08:00 | [User model quota admin API, cache invalidation, and isolation tests](./MVP-011-user-quota-admin-api.md#completion-evidence) |
+| MVP-012 | [MVP-012-candidate-routing.md](./MVP-012-candidate-routing.md) | DONE | MVP-002, MVP-003 | 20min | 2026-06-30T15:27:46+08:00 | [Priority candidate routing and legacy compatibility tests](./MVP-012-candidate-routing.md#completion-evidence) |
+| MVP-013 | [MVP-013-quota-aware-routing.md](./MVP-013-quota-aware-routing.md) | DONE | MVP-007, MVP-009, MVP-012 | 20min | 2026-06-30T15:42:47+08:00 | [Quota-aware candidate routing preflight and stub tests](./MVP-013-quota-aware-routing.md#completion-evidence) |
+| MVP-014 | [MVP-014-candidate-failover.md](./MVP-014-candidate-failover.md) | DONE | MVP-013 | 20min | 2026-06-30T15:57:04+08:00 | [Candidate account and cross-model failover tests](./MVP-014-candidate-failover.md#completion-evidence) |
+| MVP-015 | [MVP-015-model-identity.md](./MVP-015-model-identity.md) | DONE | MVP-012 | 20min | 2026-06-30T16:08:31+08:00 | [Requested and upstream model identity tests](./MVP-015-model-identity.md#completion-evidence) |
 | MVP-016 | [MVP-016-usage-quota-accounting.md](./MVP-016-usage-quota-accounting.md) | PENDING | MVP-008, MVP-009, MVP-014, MVP-015 | 20min |  |  |
 | MVP-017 | [MVP-017-frontend-routing-normalizer.md](./MVP-017-frontend-routing-normalizer.md) | PENDING | MVP-002 | 15min |  |  |
 | MVP-018 | [MVP-018-group-routing-editor.md](./MVP-018-group-routing-editor.md) | PENDING | MVP-003, MVP-017 | 20min |  |  |

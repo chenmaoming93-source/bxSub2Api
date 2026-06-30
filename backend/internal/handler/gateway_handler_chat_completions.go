@@ -163,6 +163,14 @@ func (h *GatewayHandler) ChatCompletions(c *gin.Context) {
 		if err != nil {
 			if len(fs.FailedAccountIDs) == 0 {
 				markOpsRoutingCapacityLimitedIfNoAvailable(c, err)
+				if errors.Is(err, service.ErrRoutedTokenQuotaExhausted) {
+					status, code, message, retryAfter := billingErrorDetails(err)
+					if retryAfter > 0 {
+						c.Header("Retry-After", strconv.Itoa(retryAfter))
+					}
+					h.chatCompletionsErrorResponse(c, status, code, message)
+					return
+				}
 				h.chatCompletionsErrorResponse(c, http.StatusServiceUnavailable, "api_error", "No available accounts: "+err.Error())
 				return
 			}
@@ -220,7 +228,13 @@ func (h *GatewayHandler) ChatCompletions(c *gin.Context) {
 		writerSizeBeforeForward := c.Writer.Size()
 		forwardBody := body
 		if channelMapping.Mapped {
-			forwardBody = h.gatewayService.ReplaceModelInBody(body, channelMapping.MappedModel)
+			forwardBody = h.gatewayService.ReplaceModelInBody(forwardBody, channelMapping.MappedModel)
+		}
+		if selection.UpstreamModel != "" && selection.UpstreamModel != reqModel {
+			forwardBody = h.gatewayService.ReplaceModelInBody(forwardBody, selection.UpstreamModel)
+			parsedReq.UpstreamModel = selection.UpstreamModel
+		} else {
+			parsedReq.UpstreamModel = ""
 		}
 		var result *service.ForwardResult
 		if account.Platform == service.PlatformGemini {

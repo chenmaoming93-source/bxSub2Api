@@ -1,39 +1,42 @@
-# MVP-015: 贯通 requested model 与 upstream model 身份
+# MVP-015: Preserve Requested And Upstream Model Identity
 
 - Protocol: `mvp-list/v1`
-- State: `PLANNED`
+- State: `VERIFIED`
 - Estimate: `20min`
-- Estimate rationale: 现有 `ForwardResult.UpstreamModel` 和 usage 字段已存在，本任务仅校正分组别名流转。
+- Estimate rationale: Existing `ForwardResult.UpstreamModel` and usage fields already existed; this MVP only corrects grouped alias flow into upstream forwarding.
 - Dependencies: `MVP-012`
 
 ## Outcome
 
-客户端分组模型名保持为 requested/display model，实际候选模型进入 UpstreamModel 并用于上游请求。
+Client-facing group model aliases remain the requested/display model, while the selected routed candidate model is carried as the actual upstream model and used in the upstream request payload.
 
 ## Context
 
-重点检查 `ForwardResult`、ParsedRequest、Claude/OpenAI 转发路径以及 `optionalNonEqualStringPtr`。
+The implementation checks `ForwardResult`, `ParsedRequest`, Anthropic/Chat Completions forwarding paths, and `optionalNonEqualStringPtr` usage persistence behavior.
 
 ## In Scope
 
-- 在选择结果中携带请求别名和实际模型。
-- 确保上游 payload 使用实际模型，响应兼容展示使用请求别名。
-- 补 Anthropic/OpenAI 定向测试。
+- Carry request alias and actual upstream model in the selection result.
+- Ensure upstream payloads use the actual model while response/usage display keeps the request alias.
+- Add Anthropic/OpenAI-oriented regression coverage.
 
 ## Out of Scope
 
-- 配额累加、价格规则重构。
+- Quota increment behavior and pricing-rule refactors.
 
 ## Implementation Notes
 
-- 优先复用上述现有路径与模式；若执行时发现接口名漂移，记录实际路径但不得扩大本 MVP 的结果边界。
-- 本 MVP 的实现、测试和证据记录必须在估时内完成；超出时拆出后续 MVP，不以跳过验证换取完成。
+- Added `RequestedModel` and `UpstreamModel` to `AccountSelectionResult`.
+- Added `ParsedRequest.UpstreamModel` as an optional upstream model override.
+- Routed candidate selection now stamps the selected route alias and candidate model into the selection result.
+- Anthropic `Forward` and API-key passthrough use `ParsedRequest.UpstreamModel` for the upstream wire body while preserving `ForwardResult.Model` as the requested alias.
+- Chat Completions forwarding now keeps `parsed.Model` as the requested/display model even if the forwarded body has already been rewritten to the upstream model.
 
 ## Acceptance Criteria
 
-- [ ] upstream 请求体中的 model 是实际候选。
-- [ ] usage requested_model 是分组别名。
-- [ ] usage upstream_model 是实际模型且相等时遵循现有归一规则。
+- [x] The upstream request body `model` is the actual selected candidate model.
+- [x] Usage `requested_model` remains the group alias/requested model.
+- [x] Usage `upstream_model` is the actual model and still follows existing normalization when it equals the requested model.
 
 ## Verification Plan
 
@@ -41,11 +44,15 @@
 
 ## Completion Evidence
 
-> Leave this section empty until work has actually been performed.
-
 | Type | Command or path | Result |
 |---|---|---|
+| Test | `cd backend; go test .\internal\service -run 'RequestedModel|UpstreamModel|GroupedModelIdentity' -v` | PASS; covered selected upstream model payload rewrite, existing requested/upstream usage tests, and OpenAI requested/upstream regressions. |
+| Test | `cd backend; go test .\internal\service -run 'QuotaAwareRouting|GroupedModel.*Failover|UpstreamModel|RequestedModel' -v` | PASS; verified model identity together with quota-aware grouped routing and candidate failover. |
+| Test | `cd backend; go test .\internal\handler -run 'GatewayModels|BillingErrorDetails_RoutedTokenQuotaExhausted' -v` | PASS; handler regressions still pass after selection identity changes. |
+| Compile | `cd backend; go test -c -o .\.gotmp\cmd_server_mvp015_test.exe .\cmd\server` | PASS; server package compiled successfully. |
+| Static check | `git diff --check` | PASS; only existing CRLF conversion warnings for MVP markdown/progress files were reported. |
 
 ## Execution Notes
 
-
+- No pricing or quota increment logic was changed.
+- The selected upstream model is kept as an override instead of mutating the requested model, so usage display and `optionalNonEqualStringPtr` normalization retain their existing semantics.

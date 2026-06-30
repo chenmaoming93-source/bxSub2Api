@@ -40,7 +40,11 @@ func (s *GatewayService) ForwardAsChatCompletions(
 	if err := json.Unmarshal(body, &ccReq); err != nil {
 		return nil, fmt.Errorf("parse chat completions request: %w", err)
 	}
-	originalModel := ccReq.Model
+	requestModel := ccReq.Model
+	originalModel := requestModel
+	if parsed != nil && strings.TrimSpace(parsed.Model) != "" {
+		originalModel = strings.TrimSpace(parsed.Model)
+	}
 	clientStream := ccReq.Stream
 	includeUsage := ccReq.StreamOptions != nil && ccReq.StreamOptions.IncludeUsage
 
@@ -60,18 +64,18 @@ func (s *GatewayService) ForwardAsChatCompletions(
 	reqStream := true
 
 	// 4. Model mapping
-	mappedModel := originalModel
+	mappedModel := requestModel
 	if account.Type == AccountTypeAPIKey || account.Type == AccountTypeServiceAccount {
-		mappedModel = account.GetMappedModel(originalModel)
+		mappedModel = account.GetMappedModel(requestModel)
 	}
-	if mappedModel == originalModel && account.Platform == PlatformAnthropic && account.Type == AccountTypeServiceAccount {
-		normalized := normalizeVertexAnthropicModelID(claude.NormalizeModelID(originalModel))
-		if normalized != originalModel {
+	if mappedModel == requestModel && account.Platform == PlatformAnthropic && account.Type == AccountTypeServiceAccount {
+		normalized := normalizeVertexAnthropicModelID(claude.NormalizeModelID(requestModel))
+		if normalized != requestModel {
 			mappedModel = normalized
 		}
-	} else if mappedModel == originalModel && account.Platform == PlatformAnthropic && account.Type != AccountTypeAPIKey {
-		normalized := claude.NormalizeModelID(originalModel)
-		if normalized != originalModel {
+	} else if mappedModel == requestModel && account.Platform == PlatformAnthropic && account.Type != AccountTypeAPIKey {
+		normalized := claude.NormalizeModelID(requestModel)
+		if normalized != requestModel {
 			mappedModel = normalized
 		}
 	}
@@ -80,6 +84,7 @@ func (s *GatewayService) ForwardAsChatCompletions(
 	logger.L().Debug("gateway forward_as_chat_completions: model mapping applied",
 		zap.Int64("account_id", account.ID),
 		zap.String("original_model", originalModel),
+		zap.String("request_model", requestModel),
 		zap.String("mapped_model", mappedModel),
 		zap.Bool("client_stream", clientStream),
 	)

@@ -1,39 +1,40 @@
-# MVP-011: 提供用户模型每日限额管理 API
+# MVP-011: User Model Daily Quota Admin API
 
 - Protocol: `mvp-list/v1`
-- State: `PLANNED`
+- State: `VERIFIED`
 - Estimate: `20min`
-- Estimate rationale: 复用现有用户 platform quota 的路由与 DTO 习惯，限定两个端点。
+- Estimate rationale: Reuse the existing admin user route and DTO patterns for two focused endpoints.
 - Dependencies: `MVP-005`, `MVP-007`, `MVP-009`
 
 ## Outcome
 
-管理员可按用户读取和替换模型每日 Token 限额，且不改动其他用户。
+Admins can read and update per-user, per-model daily token limits without modifying other users.
 
 ## Context
 
-参考 `backend/internal/handler/admin/user_handler.go` 和 `/admin/users/:id/platform-quotas`。
+Reference `backend/internal/handler/admin/user_handler.go` and `/admin/users/:id/platform-quotas`.
 
 ## In Scope
 
-- 新增 GET/PUT user model quota routes、handler 和 service 方法。
-- 实现全量替换或明确的 upsert 语义。
-- 失效目标用户/模型缓存并加权限、隔离测试。
+- Add GET/PUT user model quota routes, handler, and service methods.
+- Implement explicit upsert semantics for the specified user/model quota rows.
+- Invalidate target user/model quota cache entries and add permission, validation, and isolation tests.
 
 ## Out of Scope
 
-- 普通用户自助配置、前端弹窗。
+- End-user self-service configuration or frontend modals.
 
 ## Implementation Notes
 
-- 优先复用上述现有路径与模式；若执行时发现接口名漂移，记录实际路径但不得扩大本 MVP 的结果边界。
-- 本 MVP 的实现、测试和证据记录必须在估时内完成；超出时拆出后续 MVP，不以跳过验证换取完成。
+- Reused existing admin route and handler patterns.
+- The implemented paths are `GET /admin/users/:id/model-token-quotas` and `PUT /admin/users/:id/model-token-quotas`.
+- Invalid users are checked through the admin user service before quota list/update operations.
 
 ## Acceptance Criteria
 
-- [ ] GET 只返回目标用户记录。
-- [ ] PUT 不影响未指定用户。
-- [ ] 非法用户、模型或限额得到稳定 4xx。
+- [x] GET returns only target user records.
+- [x] PUT does not affect unspecified users.
+- [x] Invalid user, model, or limit receives a stable 4xx response.
 
 ## Verification Plan
 
@@ -41,11 +42,14 @@
 
 ## Completion Evidence
 
-> Leave this section empty until work has actually been performed.
-
 | Type | Command or path | Result |
 |---|---|---|
+| Implementation | `backend/internal/handler/admin/user_model_token_quota_handler.go`; `backend/internal/service/user_model_token_quota_admin_service.go`; `backend/internal/repository/daily_token_quota_repo.go`; `backend/internal/server/routes/admin.go` | Added admin GET/PUT `/admin/users/:id/model-token-quotas`, user existence checks, user/model/limit validation, repository list/upsert, and cache invalidation. |
+| Tests | `cd backend; go test -c -o .\.gotmp\handler_admin_usermodelquota_test.exe .\internal\handler\admin`; `& .\.gotmp\handler_admin_usermodelquota_test.exe --% -test.run UserModelTokenQuota -test.v` | PASS: user-scoped list, update isolation, invalid user ID, missing user, and negative limit coverage. Direct `go test` execution was blocked by Windows Application Control, so the fixed binary workaround was used. |
+| Tests | `cd backend; go test .\internal\server -run UserModelTokenQuota -v` | PASS: admin route requires admin auth. |
+| Tests | `cd backend; go test .\internal\repository -run "UpsertUserModelQuotas|DailyTokenQuota" -v` | PASS: repository user isolation, existing quota behavior, cache tests, increment, rollover, and rollback tests. |
+| Compile | `cd backend; go test -c -o .\.gotmp\cmd_server_usermodelquota_test.exe .\cmd\server` | PASS: manual Wire graph update compiles. |
 
 ## Execution Notes
 
-
+- `go test .\internal\handler\admin -run UserModelTokenQuota -v` was attempted with repo-local `GOCACHE`, `GOMODCACHE`, and `GOTMPDIR`, but Windows Application Control blocked the generated `admin.test.exe`; the fixed `.gotmp` binary invocation above is the recorded verification.

@@ -134,6 +134,15 @@ func IsGroupContextValid(group *Group) bool {
 // GetRoutingAccountIDs 根据请求模型获取路由账号 ID 列表
 // 返回匹配的优先账号 ID 列表，如果没有匹配规则则返回 nil
 func (g *Group) GetRoutingAccountIDs(requestedModel string) []int64 {
+	candidates := g.GetRoutingCandidates(requestedModel)
+	if len(candidates) == 0 {
+		return nil
+	}
+	return candidates[0].AccountIDs
+}
+
+// GetRoutingCandidates returns ordered route candidates for the requested model.
+func (g *Group) GetRoutingCandidates(requestedModel string) []domain.ModelRouteCandidate {
 	if !g.ModelRoutingEnabled || g.ModelRouting == nil || requestedModel == "" {
 		return nil
 	}
@@ -149,7 +158,7 @@ func (g *Group) GetRoutingAccountIDs(requestedModel string) []int64 {
 	if len(candidates) == 0 {
 		return nil
 	}
-	return candidates[0].AccountIDs
+	return candidates
 }
 
 // ModelRoutingRuleNames returns deterministic route names for diagnostics.
