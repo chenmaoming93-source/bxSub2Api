@@ -4,8 +4,8 @@
 - Source plan: `../PLAN.md`
 - Target effort per MVP: `20min以内`
 - Update batch size: `1 completed MVP`
-- Last updated: `2026-06-30T17:03:43+08:00`
-- Overall: `22/23 (96%)`
+- Last updated: `2026-06-30T17:44:00+08:00`
+- Overall: `23/23 (100%)`
 
 ## Status Rules
 
@@ -40,7 +40,7 @@
 | MVP-020 | [MVP-020-user-quota-modal.md](./MVP-020-user-quota-modal.md) | DONE | MVP-019 | 20min | 2026-06-30T16:54:58+08:00 | [Target-user model token quota modal and tests](./MVP-020-user-quota-modal.md#completion-evidence) |
 | MVP-021 | [MVP-021-global-quota-modal.md](./MVP-021-global-quota-modal.md) | DONE | MVP-019 | 20min | 2026-06-30T16:59:34+08:00 | [Global model token quota modal and response-refresh tests](./MVP-021-global-quota-modal.md#completion-evidence) |
 | MVP-022 | [MVP-022-i18n-ui-regression.md](./MVP-022-i18n-ui-regression.md) | DONE | MVP-018, MVP-020, MVP-021 | 15min | 2026-06-30T17:03:43+08:00 | [Symmetric locale keys and management UI regressions](./MVP-022-i18n-ui-regression.md#completion-evidence) |
-| MVP-023 | [MVP-023-backend-integration-regression.md](./MVP-023-backend-integration-regression.md) | PENDING | MVP-016 | 20min |  |  |
+| MVP-023 | [MVP-023-backend-integration-regression.md](./MVP-023-backend-integration-regression.md) | DONE | MVP-016 | 20min | 2026-06-30T17:44:00+08:00 | [回归测试通过、测试修复与跨组件证据](./MVP-023-backend-integration-regression.md#completion-evidence) |
 
 ## Dependency Notes
 

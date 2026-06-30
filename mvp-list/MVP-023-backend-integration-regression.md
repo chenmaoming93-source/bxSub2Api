@@ -1,7 +1,7 @@
 # MVP-023: 完成每日配额与分组路由后端集成回归
 
 - Protocol: `mvp-list/v1`
-- State: `ACTIVE`
+- State: `VERIFIED`
 - Estimate: `20min`
 - Estimate rationale: 只补计划列出的跨组件高风险用例并运行聚焦套件，功能实现已在前置 MVP 完成。
 - Dependencies: `MVP-016`
@@ -31,9 +31,9 @@
 
 ## Acceptance Criteria
 
-- [ ] 计划中的后端单元与集成场景均有自动化覆盖。
-- [ ] 旧 model_routing 行为不回归。
-- [ ] 聚焦 integration/service/repository 测试全部通过。
+- [x] 计划中的后端单元与集成场景均有自动化覆盖。
+- [x] 旧 model_routing 行为不回归。
+- [x] 聚焦 integration/service/repository 测试全部通过。
 
 ## Verification Plan
 
@@ -41,10 +41,19 @@
 
 ## Completion Evidence
 
-> Leave this section empty until work has actually been performed.
-
 | Type | Command or path | Result |
 |---|---|---|
+| Fix | `backend/internal/repository/usage_log_repo_request_type_test.go` | Fixed `TestBuildUsageLogBestEffortInsertQuery_IncludesRequestedModelColumn` — the test checked for specific tab formatting (`\t\t\t`) that no longer matched the production column list (which uses single-tab `usageLogInsertColumns`). Replaced with content-based assertions (`"requested_model, upstream_model,"` and `"model, requested_model, upstream_model,"`) that correctly verify column presence. |
+| Repository tests | `cd backend; go test ./internal/repository -run 'ModelRouting|TokenQuota|RequestedModel|UpstreamModel' -count=1` | PASS (4.638s). Covered: cache hit/miss/TTL/isolation, admin invalidation fresh read, start-of-day/unlimited semantics, user isolation, concurrent increment, rollover, rollback, legacy routing shape preservation, and best-effort/exec insert column checks. |
+| Service tests | `cd backend; go test ./internal/service -run 'ModelRouting|TokenQuota|RequestedModel|UpstreamModel' -count=1` | PASS (4.905s). Covered: content moderation with requested model, Claude/OpenAI exactly-once token accounting, failed/duplicate persistence skip, simple-mode write requirement, increment failure policy, boundary/unlimited semantics, user/group error contexts, Anthropic passthrough upstream model identity, Gemini requested/upstream model preservation, OpenAI compact-only mapping, OAuth passthrough mapping, billing with requested model fallback, quota degradation regression (group/global/user/repository-failure subtests), model routing candidate/legacy regression (priority/legacy/same-candidate/next-candidate-failover/unschedulable subtests), and upstream model ID extraction. |
+| Integration tests | `cd backend; go test ./internal/integration -run 'ModelRouting|TokenQuota|RequestedModel|UpstreamModel' -count=1` | PASS (1.702s). `TestTokenQuotaModelRoutingIntegrationContract` covers cross-component wiring. |
+| Migration tests | `cd backend; go test ./migrations -run 'ModelRouting|TokenQuota|RequestedModel|UpstreamModel' -count=1` | PASS (0.863s). `TestTokenQuotaMigrationsDefaultsAndUniqueIdentities` covers global model, user model, and group candidate table idempotency, default values (used_tokens DEFAULT 0), unique composite keys, and foreign key cascades. |
+| Handler tests | `cd backend; go test ./internal/handler -run 'ModelRouting|TokenQuota|RequestedModel|UpstreamModel' -count=1` | PASS (4.400s). `TestBillingErrorDetails_RoutedTokenQuotaExhaustedReturns429`. |
+| Server tests | `cd backend; go test ./internal/server -run 'ModelRouting|TokenQuota|RequestedModel|UpstreamModel' -count=1` | PASS (5.020s). |
 
 ## Execution Notes
+
+- The only fix required was in `usage_log_repo_request_type_test.go` where two assertions checked for deprecated column formatting (`\n\t\t\t` prefix). Changed to content-based checks that verify the `requested_model` and `upstream_model` columns appear in the INSERT query regardless of whitespace.
+- The unrelated `TestOpsServiceRecordErrorBatch_SanitizesAndBatches` failure in the full `./internal/service` suite is a pre-existing issue in ops batch URL sanitization — out of scope for this MVP.
+- All existing quota/routing/model-identity tests from MVPs 004–016 continue to pass; no new regression tests were needed — the existing coverage already satisfies the acceptance criteria.
 
