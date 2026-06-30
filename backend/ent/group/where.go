@@ -1532,6 +1532,29 @@ func HasUsageLogsWith(preds ...predicate.UsageLog) predicate.Group {
 	})
 }
 
+// HasCandidateTokenDailyUsages applies the HasEdge predicate on the "candidate_token_daily_usages" edge.
+func HasCandidateTokenDailyUsages() predicate.Group {
+	return predicate.Group(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, CandidateTokenDailyUsagesTable, CandidateTokenDailyUsagesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasCandidateTokenDailyUsagesWith applies the HasEdge predicate on the "candidate_token_daily_usages" edge with a given conditions (other predicates).
+func HasCandidateTokenDailyUsagesWith(preds ...predicate.GroupCandidateTokenDailyUsage) predicate.Group {
+	return predicate.Group(func(s *sql.Selector) {
+		step := newCandidateTokenDailyUsagesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasAccounts applies the HasEdge predicate on the "accounts" edge.
 func HasAccounts() predicate.Group {
 	return predicate.Group(func(s *sql.Selector) {

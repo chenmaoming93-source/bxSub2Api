@@ -712,6 +712,44 @@ var (
 			},
 		},
 	}
+	// GroupCandidateTokenDailyUsagesColumns holds the columns for the "group_candidate_token_daily_usages" table.
+	GroupCandidateTokenDailyUsagesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "route_alias", Type: field.TypeString, Size: 255},
+		{Name: "upstream_model", Type: field.TypeString, Size: 255},
+		{Name: "usage_date", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "date"}},
+		{Name: "used_tokens", Type: field.TypeInt64, Default: 0},
+		{Name: "daily_limit_tokens", Type: field.TypeInt64, Nullable: true},
+		{Name: "group_id", Type: field.TypeInt64},
+	}
+	// GroupCandidateTokenDailyUsagesTable holds the schema information for the "group_candidate_token_daily_usages" table.
+	GroupCandidateTokenDailyUsagesTable = &schema.Table{
+		Name:       "group_candidate_token_daily_usages",
+		Columns:    GroupCandidateTokenDailyUsagesColumns,
+		PrimaryKey: []*schema.Column{GroupCandidateTokenDailyUsagesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "group_candidate_token_daily_usages_groups_candidate_token_daily_usages",
+				Columns:    []*schema.Column{GroupCandidateTokenDailyUsagesColumns[8]},
+				RefColumns: []*schema.Column{GroupsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "groupcandidatetokendailyusage_group_id_route_alias_upstream_model_usage_date",
+				Unique:  true,
+				Columns: []*schema.Column{GroupCandidateTokenDailyUsagesColumns[8], GroupCandidateTokenDailyUsagesColumns[3], GroupCandidateTokenDailyUsagesColumns[4], GroupCandidateTokenDailyUsagesColumns[5]},
+			},
+			{
+				Name:    "groupcandidatetokendailyusage_group_id",
+				Unique:  false,
+				Columns: []*schema.Column{GroupCandidateTokenDailyUsagesColumns[8]},
+			},
+		},
+	}
 	// IdempotencyRecordsColumns holds the columns for the "idempotency_records" table.
 	IdempotencyRecordsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt64, Increment: true},
@@ -790,6 +828,29 @@ var (
 				Name:    "identityadoptiondecision_identity_id",
 				Unique:  false,
 				Columns: []*schema.Column{IdentityAdoptionDecisionsColumns[6]},
+			},
+		},
+	}
+	// ModelTokenDailyUsagesColumns holds the columns for the "model_token_daily_usages" table.
+	ModelTokenDailyUsagesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "model", Type: field.TypeString, Size: 255},
+		{Name: "usage_date", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "date"}},
+		{Name: "used_tokens", Type: field.TypeInt64, Default: 0},
+		{Name: "daily_limit_tokens", Type: field.TypeInt64, Nullable: true},
+	}
+	// ModelTokenDailyUsagesTable holds the schema information for the "model_token_daily_usages" table.
+	ModelTokenDailyUsagesTable = &schema.Table{
+		Name:       "model_token_daily_usages",
+		Columns:    ModelTokenDailyUsagesColumns,
+		PrimaryKey: []*schema.Column{ModelTokenDailyUsagesColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "modeltokendailyusage_model_usage_date",
+				Unique:  true,
+				Columns: []*schema.Column{ModelTokenDailyUsagesColumns[3], ModelTokenDailyUsagesColumns[4]},
 			},
 		},
 	}
@@ -1637,6 +1698,43 @@ var (
 			},
 		},
 	}
+	// UserModelTokenDailyUsagesColumns holds the columns for the "user_model_token_daily_usages" table.
+	UserModelTokenDailyUsagesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "model", Type: field.TypeString, Size: 255},
+		{Name: "usage_date", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "date"}},
+		{Name: "used_tokens", Type: field.TypeInt64, Default: 0},
+		{Name: "daily_limit_tokens", Type: field.TypeInt64, Nullable: true},
+		{Name: "user_id", Type: field.TypeInt64},
+	}
+	// UserModelTokenDailyUsagesTable holds the schema information for the "user_model_token_daily_usages" table.
+	UserModelTokenDailyUsagesTable = &schema.Table{
+		Name:       "user_model_token_daily_usages",
+		Columns:    UserModelTokenDailyUsagesColumns,
+		PrimaryKey: []*schema.Column{UserModelTokenDailyUsagesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "user_model_token_daily_usages_users_model_token_daily_usages",
+				Columns:    []*schema.Column{UserModelTokenDailyUsagesColumns[7]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "usermodeltokendailyusage_user_id_model_usage_date",
+				Unique:  true,
+				Columns: []*schema.Column{UserModelTokenDailyUsagesColumns[7], UserModelTokenDailyUsagesColumns[3], UserModelTokenDailyUsagesColumns[4]},
+			},
+			{
+				Name:    "usermodeltokendailyusage_user_id",
+				Unique:  false,
+				Columns: []*schema.Column{UserModelTokenDailyUsagesColumns[7]},
+			},
+		},
+	}
 	// UserPlatformQuotasColumns holds the columns for the "user_platform_quotas" table.
 	UserPlatformQuotasColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt64, Increment: true},
@@ -1788,8 +1886,10 @@ var (
 		ChannelMonitorRequestTemplatesTable,
 		ErrorPassthroughRulesTable,
 		GroupsTable,
+		GroupCandidateTokenDailyUsagesTable,
 		IdempotencyRecordsTable,
 		IdentityAdoptionDecisionsTable,
+		ModelTokenDailyUsagesTable,
 		PaymentAuditLogsTable,
 		PaymentOrdersTable,
 		PaymentProviderInstancesTable,
@@ -1808,6 +1908,7 @@ var (
 		UserAllowedGroupsTable,
 		UserAttributeDefinitionsTable,
 		UserAttributeValuesTable,
+		UserModelTokenDailyUsagesTable,
 		UserPlatformQuotasTable,
 		UserSubscriptionsTable,
 	}
@@ -1865,6 +1966,10 @@ func init() {
 	GroupsTable.Annotation = &entsql.Annotation{
 		Table: "groups",
 	}
+	GroupCandidateTokenDailyUsagesTable.ForeignKeys[0].RefTable = GroupsTable
+	GroupCandidateTokenDailyUsagesTable.Annotation = &entsql.Annotation{
+		Table: "group_candidate_token_daily_usages",
+	}
 	IdempotencyRecordsTable.Annotation = &entsql.Annotation{
 		Table: "idempotency_records",
 	}
@@ -1872,6 +1977,9 @@ func init() {
 	IdentityAdoptionDecisionsTable.ForeignKeys[1].RefTable = PendingAuthSessionsTable
 	IdentityAdoptionDecisionsTable.Annotation = &entsql.Annotation{
 		Table: "identity_adoption_decisions",
+	}
+	ModelTokenDailyUsagesTable.Annotation = &entsql.Annotation{
+		Table: "model_token_daily_usages",
 	}
 	PaymentAuditLogsTable.Annotation = &entsql.Annotation{
 		Table: "payment_audit_logs",
@@ -1942,6 +2050,10 @@ func init() {
 	UserAttributeValuesTable.ForeignKeys[1].RefTable = UserAttributeDefinitionsTable
 	UserAttributeValuesTable.Annotation = &entsql.Annotation{
 		Table: "user_attribute_values",
+	}
+	UserModelTokenDailyUsagesTable.ForeignKeys[0].RefTable = UsersTable
+	UserModelTokenDailyUsagesTable.Annotation = &entsql.Annotation{
+		Table: "user_model_token_daily_usages",
 	}
 	UserPlatformQuotasTable.ForeignKeys[0].RefTable = UsersTable
 	UserPlatformQuotasTable.Annotation = &entsql.Annotation{

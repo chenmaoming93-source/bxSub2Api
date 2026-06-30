@@ -111,10 +111,10 @@ func (Group) Fields() []ent.Field {
 			Comment("无效请求兜底使用的分组 ID"),
 
 		// 模型路由配置 (added by migration 040)
-		field.JSON("model_routing", map[string][]int64{}).
+		field.JSON("model_routing", domain.ModelRoutingJSON{}).
 			Optional().
 			SchemaType(map[string]string{dialect.MySQL: "json"}).
-			Comment("模型路由配置：模型模式 -> 优先账号ID列表"),
+			Comment("模型路由配置：兼容旧账号 ID 数组与新候选对象数组"),
 
 		// 模型路由开关 (added by migration 041)
 		field.Bool("model_routing_enabled").
@@ -173,6 +173,8 @@ func (Group) Edges() []ent.Edge {
 		edge.To("redeem_codes", RedeemCode.Type),
 		edge.To("subscriptions", UserSubscription.Type),
 		edge.To("usage_logs", UsageLog.Type),
+		edge.To("candidate_token_daily_usages", GroupCandidateTokenDailyUsage.Type).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
 		edge.From("accounts", Account.Type).
 			Ref("groups").
 			Through("account_groups", AccountGroup.Type),

@@ -1768,14 +1768,10 @@ func (s *GatewayService) SelectAccountWithLoadAwareness(ctx context.Context, gro
 	if group != nil && requestedModel != "" && group.Platform == PlatformAnthropic {
 		routingAccountIDs = group.GetRoutingAccountIDs(requestedModel)
 		if s.debugModelRoutingEnabled() {
+			keys := group.ModelRoutingRuleNames()
 			logger.LegacyPrintf("service.gateway", "[ModelRoutingDebug] context group routing: group_id=%d model=%s enabled=%v rules=%d matched_ids=%v session=%s sticky_account=%d",
-				group.ID, requestedModel, group.ModelRoutingEnabled, len(group.ModelRouting), routingAccountIDs, shortSessionHash(sessionHash), stickyAccountID)
-			if len(routingAccountIDs) == 0 && group.ModelRoutingEnabled && len(group.ModelRouting) > 0 {
-				keys := make([]string, 0, len(group.ModelRouting))
-				for k := range group.ModelRouting {
-					keys = append(keys, k)
-				}
-				sort.Strings(keys)
+				group.ID, requestedModel, group.ModelRoutingEnabled, len(keys), routingAccountIDs, shortSessionHash(sessionHash), stickyAccountID)
+			if len(routingAccountIDs) == 0 && group.ModelRoutingEnabled && len(keys) > 0 {
 				const maxKeys = 20
 				if len(keys) > maxKeys {
 					keys = keys[:maxKeys]
@@ -2369,7 +2365,7 @@ func (s *GatewayService) routingAccountIDsForRequest(ctx context.Context, groupI
 	ids := group.GetRoutingAccountIDs(requestedModel)
 	if s.debugModelRoutingEnabled() {
 		logger.LegacyPrintf("service.gateway", "[ModelRoutingDebug] routing lookup: group_id=%d model=%s enabled=%v rules=%d matched_ids=%v",
-			group.ID, requestedModel, group.ModelRoutingEnabled, len(group.ModelRouting), ids)
+			group.ID, requestedModel, group.ModelRoutingEnabled, len(group.ModelRoutingRuleNames()), ids)
 	}
 	return ids
 }

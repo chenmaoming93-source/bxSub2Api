@@ -14,6 +14,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/account"
 	"github.com/Wei-Shaw/sub2api/ent/apikey"
 	"github.com/Wei-Shaw/sub2api/ent/group"
+	"github.com/Wei-Shaw/sub2api/ent/groupcandidatetokendailyusage"
 	"github.com/Wei-Shaw/sub2api/ent/redeemcode"
 	"github.com/Wei-Shaw/sub2api/ent/usagelog"
 	"github.com/Wei-Shaw/sub2api/ent/user"
@@ -344,8 +345,16 @@ func (_c *GroupCreate) SetNillableFallbackGroupIDOnInvalidRequest(v *int64) *Gro
 }
 
 // SetModelRouting sets the "model_routing" field.
-func (_c *GroupCreate) SetModelRouting(v map[string][]int64) *GroupCreate {
+func (_c *GroupCreate) SetModelRouting(v domain.ModelRoutingJSON) *GroupCreate {
 	_c.mutation.SetModelRouting(v)
+	return _c
+}
+
+// SetNillableModelRouting sets the "model_routing" field if the given value is not nil.
+func (_c *GroupCreate) SetNillableModelRouting(v *domain.ModelRoutingJSON) *GroupCreate {
+	if v != nil {
+		_c.SetModelRouting(*v)
+	}
 	return _c
 }
 
@@ -553,6 +562,21 @@ func (_c *GroupCreate) AddUsageLogs(v ...*UsageLog) *GroupCreate {
 		ids[i] = v[i].ID
 	}
 	return _c.AddUsageLogIDs(ids...)
+}
+
+// AddCandidateTokenDailyUsageIDs adds the "candidate_token_daily_usages" edge to the GroupCandidateTokenDailyUsage entity by IDs.
+func (_c *GroupCreate) AddCandidateTokenDailyUsageIDs(ids ...int64) *GroupCreate {
+	_c.mutation.AddCandidateTokenDailyUsageIDs(ids...)
+	return _c
+}
+
+// AddCandidateTokenDailyUsages adds the "candidate_token_daily_usages" edges to the GroupCandidateTokenDailyUsage entity.
+func (_c *GroupCreate) AddCandidateTokenDailyUsages(v ...*GroupCandidateTokenDailyUsage) *GroupCreate {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddCandidateTokenDailyUsageIDs(ids...)
 }
 
 // AddAccountIDs adds the "accounts" edge to the Account entity by IDs.
@@ -1053,6 +1077,22 @@ func (_c *GroupCreate) createSpec() (*Group, *sqlgraph.CreateSpec) {
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
+	if nodes := _c.mutation.CandidateTokenDailyUsagesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   group.CandidateTokenDailyUsagesTable,
+			Columns: []string{group.CandidateTokenDailyUsagesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(groupcandidatetokendailyusage.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
 	if nodes := _c.mutation.AccountsIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2M,
@@ -1536,7 +1576,7 @@ func (u *GroupUpsert) ClearFallbackGroupIDOnInvalidRequest() *GroupUpsert {
 }
 
 // SetModelRouting sets the "model_routing" field.
-func (u *GroupUpsert) SetModelRouting(v map[string][]int64) *GroupUpsert {
+func (u *GroupUpsert) SetModelRouting(v domain.ModelRoutingJSON) *GroupUpsert {
 	u.Set(group.FieldModelRouting, v)
 	return u
 }
@@ -2198,7 +2238,7 @@ func (u *GroupUpsertOne) ClearFallbackGroupIDOnInvalidRequest() *GroupUpsertOne 
 }
 
 // SetModelRouting sets the "model_routing" field.
-func (u *GroupUpsertOne) SetModelRouting(v map[string][]int64) *GroupUpsertOne {
+func (u *GroupUpsertOne) SetModelRouting(v domain.ModelRoutingJSON) *GroupUpsertOne {
 	return u.Update(func(s *GroupUpsert) {
 		s.SetModelRouting(v)
 	})
@@ -3053,7 +3093,7 @@ func (u *GroupUpsertBulk) ClearFallbackGroupIDOnInvalidRequest() *GroupUpsertBul
 }
 
 // SetModelRouting sets the "model_routing" field.
-func (u *GroupUpsertBulk) SetModelRouting(v map[string][]int64) *GroupUpsertBulk {
+func (u *GroupUpsertBulk) SetModelRouting(v domain.ModelRoutingJSON) *GroupUpsertBulk {
 	return u.Update(func(s *GroupUpsert) {
 		s.SetModelRouting(v)
 	})

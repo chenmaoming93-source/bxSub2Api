@@ -25,8 +25,10 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/channelmonitorrequesttemplate"
 	"github.com/Wei-Shaw/sub2api/ent/errorpassthroughrule"
 	"github.com/Wei-Shaw/sub2api/ent/group"
+	"github.com/Wei-Shaw/sub2api/ent/groupcandidatetokendailyusage"
 	"github.com/Wei-Shaw/sub2api/ent/idempotencyrecord"
 	"github.com/Wei-Shaw/sub2api/ent/identityadoptiondecision"
+	"github.com/Wei-Shaw/sub2api/ent/modeltokendailyusage"
 	"github.com/Wei-Shaw/sub2api/ent/paymentauditlog"
 	"github.com/Wei-Shaw/sub2api/ent/paymentorder"
 	"github.com/Wei-Shaw/sub2api/ent/paymentproviderinstance"
@@ -46,6 +48,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/userallowedgroup"
 	"github.com/Wei-Shaw/sub2api/ent/userattributedefinition"
 	"github.com/Wei-Shaw/sub2api/ent/userattributevalue"
+	"github.com/Wei-Shaw/sub2api/ent/usermodeltokendailyusage"
 	"github.com/Wei-Shaw/sub2api/ent/userplatformquota"
 	"github.com/Wei-Shaw/sub2api/ent/usersubscription"
 	"github.com/Wei-Shaw/sub2api/internal/domain"
@@ -73,8 +76,10 @@ const (
 	TypeChannelMonitorRequestTemplate = "ChannelMonitorRequestTemplate"
 	TypeErrorPassthroughRule          = "ErrorPassthroughRule"
 	TypeGroup                         = "Group"
+	TypeGroupCandidateTokenDailyUsage = "GroupCandidateTokenDailyUsage"
 	TypeIdempotencyRecord             = "IdempotencyRecord"
 	TypeIdentityAdoptionDecision      = "IdentityAdoptionDecision"
+	TypeModelTokenDailyUsage          = "ModelTokenDailyUsage"
 	TypePaymentAuditLog               = "PaymentAuditLog"
 	TypePaymentOrder                  = "PaymentOrder"
 	TypePaymentProviderInstance       = "PaymentProviderInstance"
@@ -93,6 +98,7 @@ const (
 	TypeUserAllowedGroup              = "UserAllowedGroup"
 	TypeUserAttributeDefinition       = "UserAttributeDefinition"
 	TypeUserAttributeValue            = "UserAttributeValue"
+	TypeUserModelTokenDailyUsage      = "UserModelTokenDailyUsage"
 	TypeUserPlatformQuota             = "UserPlatformQuota"
 	TypeUserSubscription              = "UserSubscription"
 )
@@ -15083,7 +15089,7 @@ type GroupMutation struct {
 	addfallback_group_id                    *int64
 	fallback_group_id_on_invalid_request    *int64
 	addfallback_group_id_on_invalid_request *int64
-	model_routing                           *map[string][]int64
+	model_routing                           *domain.ModelRoutingJSON
 	model_routing_enabled                   *bool
 	mcp_xml_inject                          *bool
 	supported_model_scopes                  *[]string
@@ -15111,6 +15117,9 @@ type GroupMutation struct {
 	usage_logs                              map[int64]struct{}
 	removedusage_logs                       map[int64]struct{}
 	clearedusage_logs                       bool
+	candidate_token_daily_usages            map[int64]struct{}
+	removedcandidate_token_daily_usages     map[int64]struct{}
+	clearedcandidate_token_daily_usages     bool
 	accounts                                map[int64]struct{}
 	removedaccounts                         map[int64]struct{}
 	clearedaccounts                         bool
@@ -16407,12 +16416,12 @@ func (m *GroupMutation) ResetFallbackGroupIDOnInvalidRequest() {
 }
 
 // SetModelRouting sets the "model_routing" field.
-func (m *GroupMutation) SetModelRouting(value map[string][]int64) {
-	m.model_routing = &value
+func (m *GroupMutation) SetModelRouting(drj domain.ModelRoutingJSON) {
+	m.model_routing = &drj
 }
 
 // ModelRouting returns the value of the "model_routing" field in the mutation.
-func (m *GroupMutation) ModelRouting() (r map[string][]int64, exists bool) {
+func (m *GroupMutation) ModelRouting() (r domain.ModelRoutingJSON, exists bool) {
 	v := m.model_routing
 	if v == nil {
 		return
@@ -16423,7 +16432,7 @@ func (m *GroupMutation) ModelRouting() (r map[string][]int64, exists bool) {
 // OldModelRouting returns the old "model_routing" field's value of the Group entity.
 // If the Group object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *GroupMutation) OldModelRouting(ctx context.Context) (v map[string][]int64, err error) {
+func (m *GroupMutation) OldModelRouting(ctx context.Context) (v domain.ModelRoutingJSON, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldModelRouting is only allowed on UpdateOne operations")
 	}
@@ -17122,6 +17131,60 @@ func (m *GroupMutation) ResetUsageLogs() {
 	m.removedusage_logs = nil
 }
 
+// AddCandidateTokenDailyUsageIDs adds the "candidate_token_daily_usages" edge to the GroupCandidateTokenDailyUsage entity by ids.
+func (m *GroupMutation) AddCandidateTokenDailyUsageIDs(ids ...int64) {
+	if m.candidate_token_daily_usages == nil {
+		m.candidate_token_daily_usages = make(map[int64]struct{})
+	}
+	for i := range ids {
+		m.candidate_token_daily_usages[ids[i]] = struct{}{}
+	}
+}
+
+// ClearCandidateTokenDailyUsages clears the "candidate_token_daily_usages" edge to the GroupCandidateTokenDailyUsage entity.
+func (m *GroupMutation) ClearCandidateTokenDailyUsages() {
+	m.clearedcandidate_token_daily_usages = true
+}
+
+// CandidateTokenDailyUsagesCleared reports if the "candidate_token_daily_usages" edge to the GroupCandidateTokenDailyUsage entity was cleared.
+func (m *GroupMutation) CandidateTokenDailyUsagesCleared() bool {
+	return m.clearedcandidate_token_daily_usages
+}
+
+// RemoveCandidateTokenDailyUsageIDs removes the "candidate_token_daily_usages" edge to the GroupCandidateTokenDailyUsage entity by IDs.
+func (m *GroupMutation) RemoveCandidateTokenDailyUsageIDs(ids ...int64) {
+	if m.removedcandidate_token_daily_usages == nil {
+		m.removedcandidate_token_daily_usages = make(map[int64]struct{})
+	}
+	for i := range ids {
+		delete(m.candidate_token_daily_usages, ids[i])
+		m.removedcandidate_token_daily_usages[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedCandidateTokenDailyUsages returns the removed IDs of the "candidate_token_daily_usages" edge to the GroupCandidateTokenDailyUsage entity.
+func (m *GroupMutation) RemovedCandidateTokenDailyUsagesIDs() (ids []int64) {
+	for id := range m.removedcandidate_token_daily_usages {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// CandidateTokenDailyUsagesIDs returns the "candidate_token_daily_usages" edge IDs in the mutation.
+func (m *GroupMutation) CandidateTokenDailyUsagesIDs() (ids []int64) {
+	for id := range m.candidate_token_daily_usages {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetCandidateTokenDailyUsages resets all changes to the "candidate_token_daily_usages" edge.
+func (m *GroupMutation) ResetCandidateTokenDailyUsages() {
+	m.candidate_token_daily_usages = nil
+	m.clearedcandidate_token_daily_usages = false
+	m.removedcandidate_token_daily_usages = nil
+}
+
 // AddAccountIDs adds the "accounts" edge to the Account entity by ids.
 func (m *GroupMutation) AddAccountIDs(ids ...int64) {
 	if m.accounts == nil {
@@ -17698,7 +17761,7 @@ func (m *GroupMutation) SetField(name string, value ent.Value) error {
 		m.SetFallbackGroupIDOnInvalidRequest(v)
 		return nil
 	case group.FieldModelRouting:
-		v, ok := value.(map[string][]int64)
+		v, ok := value.(domain.ModelRoutingJSON)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
@@ -18169,7 +18232,7 @@ func (m *GroupMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *GroupMutation) AddedEdges() []string {
-	edges := make([]string, 0, 6)
+	edges := make([]string, 0, 7)
 	if m.api_keys != nil {
 		edges = append(edges, group.EdgeAPIKeys)
 	}
@@ -18181,6 +18244,9 @@ func (m *GroupMutation) AddedEdges() []string {
 	}
 	if m.usage_logs != nil {
 		edges = append(edges, group.EdgeUsageLogs)
+	}
+	if m.candidate_token_daily_usages != nil {
+		edges = append(edges, group.EdgeCandidateTokenDailyUsages)
 	}
 	if m.accounts != nil {
 		edges = append(edges, group.EdgeAccounts)
@@ -18219,6 +18285,12 @@ func (m *GroupMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case group.EdgeCandidateTokenDailyUsages:
+		ids := make([]ent.Value, 0, len(m.candidate_token_daily_usages))
+		for id := range m.candidate_token_daily_usages {
+			ids = append(ids, id)
+		}
+		return ids
 	case group.EdgeAccounts:
 		ids := make([]ent.Value, 0, len(m.accounts))
 		for id := range m.accounts {
@@ -18237,7 +18309,7 @@ func (m *GroupMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *GroupMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 6)
+	edges := make([]string, 0, 7)
 	if m.removedapi_keys != nil {
 		edges = append(edges, group.EdgeAPIKeys)
 	}
@@ -18249,6 +18321,9 @@ func (m *GroupMutation) RemovedEdges() []string {
 	}
 	if m.removedusage_logs != nil {
 		edges = append(edges, group.EdgeUsageLogs)
+	}
+	if m.removedcandidate_token_daily_usages != nil {
+		edges = append(edges, group.EdgeCandidateTokenDailyUsages)
 	}
 	if m.removedaccounts != nil {
 		edges = append(edges, group.EdgeAccounts)
@@ -18287,6 +18362,12 @@ func (m *GroupMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case group.EdgeCandidateTokenDailyUsages:
+		ids := make([]ent.Value, 0, len(m.removedcandidate_token_daily_usages))
+		for id := range m.removedcandidate_token_daily_usages {
+			ids = append(ids, id)
+		}
+		return ids
 	case group.EdgeAccounts:
 		ids := make([]ent.Value, 0, len(m.removedaccounts))
 		for id := range m.removedaccounts {
@@ -18305,7 +18386,7 @@ func (m *GroupMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *GroupMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 6)
+	edges := make([]string, 0, 7)
 	if m.clearedapi_keys {
 		edges = append(edges, group.EdgeAPIKeys)
 	}
@@ -18317,6 +18398,9 @@ func (m *GroupMutation) ClearedEdges() []string {
 	}
 	if m.clearedusage_logs {
 		edges = append(edges, group.EdgeUsageLogs)
+	}
+	if m.clearedcandidate_token_daily_usages {
+		edges = append(edges, group.EdgeCandidateTokenDailyUsages)
 	}
 	if m.clearedaccounts {
 		edges = append(edges, group.EdgeAccounts)
@@ -18339,6 +18423,8 @@ func (m *GroupMutation) EdgeCleared(name string) bool {
 		return m.clearedsubscriptions
 	case group.EdgeUsageLogs:
 		return m.clearedusage_logs
+	case group.EdgeCandidateTokenDailyUsages:
+		return m.clearedcandidate_token_daily_usages
 	case group.EdgeAccounts:
 		return m.clearedaccounts
 	case group.EdgeAllowedUsers:
@@ -18371,6 +18457,9 @@ func (m *GroupMutation) ResetEdge(name string) error {
 	case group.EdgeUsageLogs:
 		m.ResetUsageLogs()
 		return nil
+	case group.EdgeCandidateTokenDailyUsages:
+		m.ResetCandidateTokenDailyUsages()
+		return nil
 	case group.EdgeAccounts:
 		m.ResetAccounts()
 		return nil
@@ -18379,6 +18468,856 @@ func (m *GroupMutation) ResetEdge(name string) error {
 		return nil
 	}
 	return fmt.Errorf("unknown Group edge %s", name)
+}
+
+// GroupCandidateTokenDailyUsageMutation represents an operation that mutates the GroupCandidateTokenDailyUsage nodes in the graph.
+type GroupCandidateTokenDailyUsageMutation struct {
+	config
+	op                    Op
+	typ                   string
+	id                    *int64
+	created_at            *time.Time
+	updated_at            *time.Time
+	route_alias           *string
+	upstream_model        *string
+	usage_date            *time.Time
+	used_tokens           *int64
+	addused_tokens        *int64
+	daily_limit_tokens    *int64
+	adddaily_limit_tokens *int64
+	clearedFields         map[string]struct{}
+	group                 *int64
+	clearedgroup          bool
+	done                  bool
+	oldValue              func(context.Context) (*GroupCandidateTokenDailyUsage, error)
+	predicates            []predicate.GroupCandidateTokenDailyUsage
+}
+
+var _ ent.Mutation = (*GroupCandidateTokenDailyUsageMutation)(nil)
+
+// groupcandidatetokendailyusageOption allows management of the mutation configuration using functional options.
+type groupcandidatetokendailyusageOption func(*GroupCandidateTokenDailyUsageMutation)
+
+// newGroupCandidateTokenDailyUsageMutation creates new mutation for the GroupCandidateTokenDailyUsage entity.
+func newGroupCandidateTokenDailyUsageMutation(c config, op Op, opts ...groupcandidatetokendailyusageOption) *GroupCandidateTokenDailyUsageMutation {
+	m := &GroupCandidateTokenDailyUsageMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeGroupCandidateTokenDailyUsage,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withGroupCandidateTokenDailyUsageID sets the ID field of the mutation.
+func withGroupCandidateTokenDailyUsageID(id int64) groupcandidatetokendailyusageOption {
+	return func(m *GroupCandidateTokenDailyUsageMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *GroupCandidateTokenDailyUsage
+		)
+		m.oldValue = func(ctx context.Context) (*GroupCandidateTokenDailyUsage, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().GroupCandidateTokenDailyUsage.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withGroupCandidateTokenDailyUsage sets the old GroupCandidateTokenDailyUsage of the mutation.
+func withGroupCandidateTokenDailyUsage(node *GroupCandidateTokenDailyUsage) groupcandidatetokendailyusageOption {
+	return func(m *GroupCandidateTokenDailyUsageMutation) {
+		m.oldValue = func(context.Context) (*GroupCandidateTokenDailyUsage, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m GroupCandidateTokenDailyUsageMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m GroupCandidateTokenDailyUsageMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *GroupCandidateTokenDailyUsageMutation) ID() (id int64, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *GroupCandidateTokenDailyUsageMutation) IDs(ctx context.Context) ([]int64, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int64{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().GroupCandidateTokenDailyUsage.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *GroupCandidateTokenDailyUsageMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *GroupCandidateTokenDailyUsageMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the GroupCandidateTokenDailyUsage entity.
+// If the GroupCandidateTokenDailyUsage object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GroupCandidateTokenDailyUsageMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *GroupCandidateTokenDailyUsageMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *GroupCandidateTokenDailyUsageMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *GroupCandidateTokenDailyUsageMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the GroupCandidateTokenDailyUsage entity.
+// If the GroupCandidateTokenDailyUsage object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GroupCandidateTokenDailyUsageMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *GroupCandidateTokenDailyUsageMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetGroupID sets the "group_id" field.
+func (m *GroupCandidateTokenDailyUsageMutation) SetGroupID(i int64) {
+	m.group = &i
+}
+
+// GroupID returns the value of the "group_id" field in the mutation.
+func (m *GroupCandidateTokenDailyUsageMutation) GroupID() (r int64, exists bool) {
+	v := m.group
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldGroupID returns the old "group_id" field's value of the GroupCandidateTokenDailyUsage entity.
+// If the GroupCandidateTokenDailyUsage object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GroupCandidateTokenDailyUsageMutation) OldGroupID(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldGroupID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldGroupID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldGroupID: %w", err)
+	}
+	return oldValue.GroupID, nil
+}
+
+// ResetGroupID resets all changes to the "group_id" field.
+func (m *GroupCandidateTokenDailyUsageMutation) ResetGroupID() {
+	m.group = nil
+}
+
+// SetRouteAlias sets the "route_alias" field.
+func (m *GroupCandidateTokenDailyUsageMutation) SetRouteAlias(s string) {
+	m.route_alias = &s
+}
+
+// RouteAlias returns the value of the "route_alias" field in the mutation.
+func (m *GroupCandidateTokenDailyUsageMutation) RouteAlias() (r string, exists bool) {
+	v := m.route_alias
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRouteAlias returns the old "route_alias" field's value of the GroupCandidateTokenDailyUsage entity.
+// If the GroupCandidateTokenDailyUsage object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GroupCandidateTokenDailyUsageMutation) OldRouteAlias(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRouteAlias is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRouteAlias requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRouteAlias: %w", err)
+	}
+	return oldValue.RouteAlias, nil
+}
+
+// ResetRouteAlias resets all changes to the "route_alias" field.
+func (m *GroupCandidateTokenDailyUsageMutation) ResetRouteAlias() {
+	m.route_alias = nil
+}
+
+// SetUpstreamModel sets the "upstream_model" field.
+func (m *GroupCandidateTokenDailyUsageMutation) SetUpstreamModel(s string) {
+	m.upstream_model = &s
+}
+
+// UpstreamModel returns the value of the "upstream_model" field in the mutation.
+func (m *GroupCandidateTokenDailyUsageMutation) UpstreamModel() (r string, exists bool) {
+	v := m.upstream_model
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpstreamModel returns the old "upstream_model" field's value of the GroupCandidateTokenDailyUsage entity.
+// If the GroupCandidateTokenDailyUsage object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GroupCandidateTokenDailyUsageMutation) OldUpstreamModel(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpstreamModel is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpstreamModel requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpstreamModel: %w", err)
+	}
+	return oldValue.UpstreamModel, nil
+}
+
+// ResetUpstreamModel resets all changes to the "upstream_model" field.
+func (m *GroupCandidateTokenDailyUsageMutation) ResetUpstreamModel() {
+	m.upstream_model = nil
+}
+
+// SetUsageDate sets the "usage_date" field.
+func (m *GroupCandidateTokenDailyUsageMutation) SetUsageDate(t time.Time) {
+	m.usage_date = &t
+}
+
+// UsageDate returns the value of the "usage_date" field in the mutation.
+func (m *GroupCandidateTokenDailyUsageMutation) UsageDate() (r time.Time, exists bool) {
+	v := m.usage_date
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUsageDate returns the old "usage_date" field's value of the GroupCandidateTokenDailyUsage entity.
+// If the GroupCandidateTokenDailyUsage object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GroupCandidateTokenDailyUsageMutation) OldUsageDate(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUsageDate is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUsageDate requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUsageDate: %w", err)
+	}
+	return oldValue.UsageDate, nil
+}
+
+// ResetUsageDate resets all changes to the "usage_date" field.
+func (m *GroupCandidateTokenDailyUsageMutation) ResetUsageDate() {
+	m.usage_date = nil
+}
+
+// SetUsedTokens sets the "used_tokens" field.
+func (m *GroupCandidateTokenDailyUsageMutation) SetUsedTokens(i int64) {
+	m.used_tokens = &i
+	m.addused_tokens = nil
+}
+
+// UsedTokens returns the value of the "used_tokens" field in the mutation.
+func (m *GroupCandidateTokenDailyUsageMutation) UsedTokens() (r int64, exists bool) {
+	v := m.used_tokens
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUsedTokens returns the old "used_tokens" field's value of the GroupCandidateTokenDailyUsage entity.
+// If the GroupCandidateTokenDailyUsage object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GroupCandidateTokenDailyUsageMutation) OldUsedTokens(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUsedTokens is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUsedTokens requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUsedTokens: %w", err)
+	}
+	return oldValue.UsedTokens, nil
+}
+
+// AddUsedTokens adds i to the "used_tokens" field.
+func (m *GroupCandidateTokenDailyUsageMutation) AddUsedTokens(i int64) {
+	if m.addused_tokens != nil {
+		*m.addused_tokens += i
+	} else {
+		m.addused_tokens = &i
+	}
+}
+
+// AddedUsedTokens returns the value that was added to the "used_tokens" field in this mutation.
+func (m *GroupCandidateTokenDailyUsageMutation) AddedUsedTokens() (r int64, exists bool) {
+	v := m.addused_tokens
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetUsedTokens resets all changes to the "used_tokens" field.
+func (m *GroupCandidateTokenDailyUsageMutation) ResetUsedTokens() {
+	m.used_tokens = nil
+	m.addused_tokens = nil
+}
+
+// SetDailyLimitTokens sets the "daily_limit_tokens" field.
+func (m *GroupCandidateTokenDailyUsageMutation) SetDailyLimitTokens(i int64) {
+	m.daily_limit_tokens = &i
+	m.adddaily_limit_tokens = nil
+}
+
+// DailyLimitTokens returns the value of the "daily_limit_tokens" field in the mutation.
+func (m *GroupCandidateTokenDailyUsageMutation) DailyLimitTokens() (r int64, exists bool) {
+	v := m.daily_limit_tokens
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDailyLimitTokens returns the old "daily_limit_tokens" field's value of the GroupCandidateTokenDailyUsage entity.
+// If the GroupCandidateTokenDailyUsage object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GroupCandidateTokenDailyUsageMutation) OldDailyLimitTokens(ctx context.Context) (v *int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDailyLimitTokens is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDailyLimitTokens requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDailyLimitTokens: %w", err)
+	}
+	return oldValue.DailyLimitTokens, nil
+}
+
+// AddDailyLimitTokens adds i to the "daily_limit_tokens" field.
+func (m *GroupCandidateTokenDailyUsageMutation) AddDailyLimitTokens(i int64) {
+	if m.adddaily_limit_tokens != nil {
+		*m.adddaily_limit_tokens += i
+	} else {
+		m.adddaily_limit_tokens = &i
+	}
+}
+
+// AddedDailyLimitTokens returns the value that was added to the "daily_limit_tokens" field in this mutation.
+func (m *GroupCandidateTokenDailyUsageMutation) AddedDailyLimitTokens() (r int64, exists bool) {
+	v := m.adddaily_limit_tokens
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearDailyLimitTokens clears the value of the "daily_limit_tokens" field.
+func (m *GroupCandidateTokenDailyUsageMutation) ClearDailyLimitTokens() {
+	m.daily_limit_tokens = nil
+	m.adddaily_limit_tokens = nil
+	m.clearedFields[groupcandidatetokendailyusage.FieldDailyLimitTokens] = struct{}{}
+}
+
+// DailyLimitTokensCleared returns if the "daily_limit_tokens" field was cleared in this mutation.
+func (m *GroupCandidateTokenDailyUsageMutation) DailyLimitTokensCleared() bool {
+	_, ok := m.clearedFields[groupcandidatetokendailyusage.FieldDailyLimitTokens]
+	return ok
+}
+
+// ResetDailyLimitTokens resets all changes to the "daily_limit_tokens" field.
+func (m *GroupCandidateTokenDailyUsageMutation) ResetDailyLimitTokens() {
+	m.daily_limit_tokens = nil
+	m.adddaily_limit_tokens = nil
+	delete(m.clearedFields, groupcandidatetokendailyusage.FieldDailyLimitTokens)
+}
+
+// ClearGroup clears the "group" edge to the Group entity.
+func (m *GroupCandidateTokenDailyUsageMutation) ClearGroup() {
+	m.clearedgroup = true
+	m.clearedFields[groupcandidatetokendailyusage.FieldGroupID] = struct{}{}
+}
+
+// GroupCleared reports if the "group" edge to the Group entity was cleared.
+func (m *GroupCandidateTokenDailyUsageMutation) GroupCleared() bool {
+	return m.clearedgroup
+}
+
+// GroupIDs returns the "group" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// GroupID instead. It exists only for internal usage by the builders.
+func (m *GroupCandidateTokenDailyUsageMutation) GroupIDs() (ids []int64) {
+	if id := m.group; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetGroup resets all changes to the "group" edge.
+func (m *GroupCandidateTokenDailyUsageMutation) ResetGroup() {
+	m.group = nil
+	m.clearedgroup = false
+}
+
+// Where appends a list predicates to the GroupCandidateTokenDailyUsageMutation builder.
+func (m *GroupCandidateTokenDailyUsageMutation) Where(ps ...predicate.GroupCandidateTokenDailyUsage) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the GroupCandidateTokenDailyUsageMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *GroupCandidateTokenDailyUsageMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.GroupCandidateTokenDailyUsage, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *GroupCandidateTokenDailyUsageMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *GroupCandidateTokenDailyUsageMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (GroupCandidateTokenDailyUsage).
+func (m *GroupCandidateTokenDailyUsageMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *GroupCandidateTokenDailyUsageMutation) Fields() []string {
+	fields := make([]string, 0, 8)
+	if m.created_at != nil {
+		fields = append(fields, groupcandidatetokendailyusage.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, groupcandidatetokendailyusage.FieldUpdatedAt)
+	}
+	if m.group != nil {
+		fields = append(fields, groupcandidatetokendailyusage.FieldGroupID)
+	}
+	if m.route_alias != nil {
+		fields = append(fields, groupcandidatetokendailyusage.FieldRouteAlias)
+	}
+	if m.upstream_model != nil {
+		fields = append(fields, groupcandidatetokendailyusage.FieldUpstreamModel)
+	}
+	if m.usage_date != nil {
+		fields = append(fields, groupcandidatetokendailyusage.FieldUsageDate)
+	}
+	if m.used_tokens != nil {
+		fields = append(fields, groupcandidatetokendailyusage.FieldUsedTokens)
+	}
+	if m.daily_limit_tokens != nil {
+		fields = append(fields, groupcandidatetokendailyusage.FieldDailyLimitTokens)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *GroupCandidateTokenDailyUsageMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case groupcandidatetokendailyusage.FieldCreatedAt:
+		return m.CreatedAt()
+	case groupcandidatetokendailyusage.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case groupcandidatetokendailyusage.FieldGroupID:
+		return m.GroupID()
+	case groupcandidatetokendailyusage.FieldRouteAlias:
+		return m.RouteAlias()
+	case groupcandidatetokendailyusage.FieldUpstreamModel:
+		return m.UpstreamModel()
+	case groupcandidatetokendailyusage.FieldUsageDate:
+		return m.UsageDate()
+	case groupcandidatetokendailyusage.FieldUsedTokens:
+		return m.UsedTokens()
+	case groupcandidatetokendailyusage.FieldDailyLimitTokens:
+		return m.DailyLimitTokens()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *GroupCandidateTokenDailyUsageMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case groupcandidatetokendailyusage.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case groupcandidatetokendailyusage.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case groupcandidatetokendailyusage.FieldGroupID:
+		return m.OldGroupID(ctx)
+	case groupcandidatetokendailyusage.FieldRouteAlias:
+		return m.OldRouteAlias(ctx)
+	case groupcandidatetokendailyusage.FieldUpstreamModel:
+		return m.OldUpstreamModel(ctx)
+	case groupcandidatetokendailyusage.FieldUsageDate:
+		return m.OldUsageDate(ctx)
+	case groupcandidatetokendailyusage.FieldUsedTokens:
+		return m.OldUsedTokens(ctx)
+	case groupcandidatetokendailyusage.FieldDailyLimitTokens:
+		return m.OldDailyLimitTokens(ctx)
+	}
+	return nil, fmt.Errorf("unknown GroupCandidateTokenDailyUsage field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *GroupCandidateTokenDailyUsageMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case groupcandidatetokendailyusage.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case groupcandidatetokendailyusage.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case groupcandidatetokendailyusage.FieldGroupID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetGroupID(v)
+		return nil
+	case groupcandidatetokendailyusage.FieldRouteAlias:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRouteAlias(v)
+		return nil
+	case groupcandidatetokendailyusage.FieldUpstreamModel:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpstreamModel(v)
+		return nil
+	case groupcandidatetokendailyusage.FieldUsageDate:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUsageDate(v)
+		return nil
+	case groupcandidatetokendailyusage.FieldUsedTokens:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUsedTokens(v)
+		return nil
+	case groupcandidatetokendailyusage.FieldDailyLimitTokens:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDailyLimitTokens(v)
+		return nil
+	}
+	return fmt.Errorf("unknown GroupCandidateTokenDailyUsage field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *GroupCandidateTokenDailyUsageMutation) AddedFields() []string {
+	var fields []string
+	if m.addused_tokens != nil {
+		fields = append(fields, groupcandidatetokendailyusage.FieldUsedTokens)
+	}
+	if m.adddaily_limit_tokens != nil {
+		fields = append(fields, groupcandidatetokendailyusage.FieldDailyLimitTokens)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *GroupCandidateTokenDailyUsageMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case groupcandidatetokendailyusage.FieldUsedTokens:
+		return m.AddedUsedTokens()
+	case groupcandidatetokendailyusage.FieldDailyLimitTokens:
+		return m.AddedDailyLimitTokens()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *GroupCandidateTokenDailyUsageMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case groupcandidatetokendailyusage.FieldUsedTokens:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddUsedTokens(v)
+		return nil
+	case groupcandidatetokendailyusage.FieldDailyLimitTokens:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddDailyLimitTokens(v)
+		return nil
+	}
+	return fmt.Errorf("unknown GroupCandidateTokenDailyUsage numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *GroupCandidateTokenDailyUsageMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(groupcandidatetokendailyusage.FieldDailyLimitTokens) {
+		fields = append(fields, groupcandidatetokendailyusage.FieldDailyLimitTokens)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *GroupCandidateTokenDailyUsageMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *GroupCandidateTokenDailyUsageMutation) ClearField(name string) error {
+	switch name {
+	case groupcandidatetokendailyusage.FieldDailyLimitTokens:
+		m.ClearDailyLimitTokens()
+		return nil
+	}
+	return fmt.Errorf("unknown GroupCandidateTokenDailyUsage nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *GroupCandidateTokenDailyUsageMutation) ResetField(name string) error {
+	switch name {
+	case groupcandidatetokendailyusage.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case groupcandidatetokendailyusage.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case groupcandidatetokendailyusage.FieldGroupID:
+		m.ResetGroupID()
+		return nil
+	case groupcandidatetokendailyusage.FieldRouteAlias:
+		m.ResetRouteAlias()
+		return nil
+	case groupcandidatetokendailyusage.FieldUpstreamModel:
+		m.ResetUpstreamModel()
+		return nil
+	case groupcandidatetokendailyusage.FieldUsageDate:
+		m.ResetUsageDate()
+		return nil
+	case groupcandidatetokendailyusage.FieldUsedTokens:
+		m.ResetUsedTokens()
+		return nil
+	case groupcandidatetokendailyusage.FieldDailyLimitTokens:
+		m.ResetDailyLimitTokens()
+		return nil
+	}
+	return fmt.Errorf("unknown GroupCandidateTokenDailyUsage field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *GroupCandidateTokenDailyUsageMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.group != nil {
+		edges = append(edges, groupcandidatetokendailyusage.EdgeGroup)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *GroupCandidateTokenDailyUsageMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case groupcandidatetokendailyusage.EdgeGroup:
+		if id := m.group; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *GroupCandidateTokenDailyUsageMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *GroupCandidateTokenDailyUsageMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *GroupCandidateTokenDailyUsageMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.clearedgroup {
+		edges = append(edges, groupcandidatetokendailyusage.EdgeGroup)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *GroupCandidateTokenDailyUsageMutation) EdgeCleared(name string) bool {
+	switch name {
+	case groupcandidatetokendailyusage.EdgeGroup:
+		return m.clearedgroup
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *GroupCandidateTokenDailyUsageMutation) ClearEdge(name string) error {
+	switch name {
+	case groupcandidatetokendailyusage.EdgeGroup:
+		m.ClearGroup()
+		return nil
+	}
+	return fmt.Errorf("unknown GroupCandidateTokenDailyUsage unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *GroupCandidateTokenDailyUsageMutation) ResetEdge(name string) error {
+	switch name {
+	case groupcandidatetokendailyusage.EdgeGroup:
+		m.ResetGroup()
+		return nil
+	}
+	return fmt.Errorf("unknown GroupCandidateTokenDailyUsage edge %s", name)
 }
 
 // IdempotencyRecordMutation represents an operation that mutates the IdempotencyRecord nodes in the graph.
@@ -20136,6 +21075,694 @@ func (m *IdentityAdoptionDecisionMutation) ResetEdge(name string) error {
 		return nil
 	}
 	return fmt.Errorf("unknown IdentityAdoptionDecision edge %s", name)
+}
+
+// ModelTokenDailyUsageMutation represents an operation that mutates the ModelTokenDailyUsage nodes in the graph.
+type ModelTokenDailyUsageMutation struct {
+	config
+	op                    Op
+	typ                   string
+	id                    *int64
+	created_at            *time.Time
+	updated_at            *time.Time
+	model                 *string
+	usage_date            *time.Time
+	used_tokens           *int64
+	addused_tokens        *int64
+	daily_limit_tokens    *int64
+	adddaily_limit_tokens *int64
+	clearedFields         map[string]struct{}
+	done                  bool
+	oldValue              func(context.Context) (*ModelTokenDailyUsage, error)
+	predicates            []predicate.ModelTokenDailyUsage
+}
+
+var _ ent.Mutation = (*ModelTokenDailyUsageMutation)(nil)
+
+// modeltokendailyusageOption allows management of the mutation configuration using functional options.
+type modeltokendailyusageOption func(*ModelTokenDailyUsageMutation)
+
+// newModelTokenDailyUsageMutation creates new mutation for the ModelTokenDailyUsage entity.
+func newModelTokenDailyUsageMutation(c config, op Op, opts ...modeltokendailyusageOption) *ModelTokenDailyUsageMutation {
+	m := &ModelTokenDailyUsageMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeModelTokenDailyUsage,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withModelTokenDailyUsageID sets the ID field of the mutation.
+func withModelTokenDailyUsageID(id int64) modeltokendailyusageOption {
+	return func(m *ModelTokenDailyUsageMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *ModelTokenDailyUsage
+		)
+		m.oldValue = func(ctx context.Context) (*ModelTokenDailyUsage, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().ModelTokenDailyUsage.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withModelTokenDailyUsage sets the old ModelTokenDailyUsage of the mutation.
+func withModelTokenDailyUsage(node *ModelTokenDailyUsage) modeltokendailyusageOption {
+	return func(m *ModelTokenDailyUsageMutation) {
+		m.oldValue = func(context.Context) (*ModelTokenDailyUsage, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m ModelTokenDailyUsageMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m ModelTokenDailyUsageMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *ModelTokenDailyUsageMutation) ID() (id int64, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *ModelTokenDailyUsageMutation) IDs(ctx context.Context) ([]int64, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int64{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().ModelTokenDailyUsage.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *ModelTokenDailyUsageMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *ModelTokenDailyUsageMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the ModelTokenDailyUsage entity.
+// If the ModelTokenDailyUsage object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ModelTokenDailyUsageMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *ModelTokenDailyUsageMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *ModelTokenDailyUsageMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *ModelTokenDailyUsageMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the ModelTokenDailyUsage entity.
+// If the ModelTokenDailyUsage object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ModelTokenDailyUsageMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *ModelTokenDailyUsageMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetModel sets the "model" field.
+func (m *ModelTokenDailyUsageMutation) SetModel(s string) {
+	m.model = &s
+}
+
+// Model returns the value of the "model" field in the mutation.
+func (m *ModelTokenDailyUsageMutation) Model() (r string, exists bool) {
+	v := m.model
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldModel returns the old "model" field's value of the ModelTokenDailyUsage entity.
+// If the ModelTokenDailyUsage object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ModelTokenDailyUsageMutation) OldModel(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldModel is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldModel requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldModel: %w", err)
+	}
+	return oldValue.Model, nil
+}
+
+// ResetModel resets all changes to the "model" field.
+func (m *ModelTokenDailyUsageMutation) ResetModel() {
+	m.model = nil
+}
+
+// SetUsageDate sets the "usage_date" field.
+func (m *ModelTokenDailyUsageMutation) SetUsageDate(t time.Time) {
+	m.usage_date = &t
+}
+
+// UsageDate returns the value of the "usage_date" field in the mutation.
+func (m *ModelTokenDailyUsageMutation) UsageDate() (r time.Time, exists bool) {
+	v := m.usage_date
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUsageDate returns the old "usage_date" field's value of the ModelTokenDailyUsage entity.
+// If the ModelTokenDailyUsage object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ModelTokenDailyUsageMutation) OldUsageDate(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUsageDate is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUsageDate requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUsageDate: %w", err)
+	}
+	return oldValue.UsageDate, nil
+}
+
+// ResetUsageDate resets all changes to the "usage_date" field.
+func (m *ModelTokenDailyUsageMutation) ResetUsageDate() {
+	m.usage_date = nil
+}
+
+// SetUsedTokens sets the "used_tokens" field.
+func (m *ModelTokenDailyUsageMutation) SetUsedTokens(i int64) {
+	m.used_tokens = &i
+	m.addused_tokens = nil
+}
+
+// UsedTokens returns the value of the "used_tokens" field in the mutation.
+func (m *ModelTokenDailyUsageMutation) UsedTokens() (r int64, exists bool) {
+	v := m.used_tokens
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUsedTokens returns the old "used_tokens" field's value of the ModelTokenDailyUsage entity.
+// If the ModelTokenDailyUsage object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ModelTokenDailyUsageMutation) OldUsedTokens(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUsedTokens is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUsedTokens requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUsedTokens: %w", err)
+	}
+	return oldValue.UsedTokens, nil
+}
+
+// AddUsedTokens adds i to the "used_tokens" field.
+func (m *ModelTokenDailyUsageMutation) AddUsedTokens(i int64) {
+	if m.addused_tokens != nil {
+		*m.addused_tokens += i
+	} else {
+		m.addused_tokens = &i
+	}
+}
+
+// AddedUsedTokens returns the value that was added to the "used_tokens" field in this mutation.
+func (m *ModelTokenDailyUsageMutation) AddedUsedTokens() (r int64, exists bool) {
+	v := m.addused_tokens
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetUsedTokens resets all changes to the "used_tokens" field.
+func (m *ModelTokenDailyUsageMutation) ResetUsedTokens() {
+	m.used_tokens = nil
+	m.addused_tokens = nil
+}
+
+// SetDailyLimitTokens sets the "daily_limit_tokens" field.
+func (m *ModelTokenDailyUsageMutation) SetDailyLimitTokens(i int64) {
+	m.daily_limit_tokens = &i
+	m.adddaily_limit_tokens = nil
+}
+
+// DailyLimitTokens returns the value of the "daily_limit_tokens" field in the mutation.
+func (m *ModelTokenDailyUsageMutation) DailyLimitTokens() (r int64, exists bool) {
+	v := m.daily_limit_tokens
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDailyLimitTokens returns the old "daily_limit_tokens" field's value of the ModelTokenDailyUsage entity.
+// If the ModelTokenDailyUsage object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ModelTokenDailyUsageMutation) OldDailyLimitTokens(ctx context.Context) (v *int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDailyLimitTokens is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDailyLimitTokens requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDailyLimitTokens: %w", err)
+	}
+	return oldValue.DailyLimitTokens, nil
+}
+
+// AddDailyLimitTokens adds i to the "daily_limit_tokens" field.
+func (m *ModelTokenDailyUsageMutation) AddDailyLimitTokens(i int64) {
+	if m.adddaily_limit_tokens != nil {
+		*m.adddaily_limit_tokens += i
+	} else {
+		m.adddaily_limit_tokens = &i
+	}
+}
+
+// AddedDailyLimitTokens returns the value that was added to the "daily_limit_tokens" field in this mutation.
+func (m *ModelTokenDailyUsageMutation) AddedDailyLimitTokens() (r int64, exists bool) {
+	v := m.adddaily_limit_tokens
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearDailyLimitTokens clears the value of the "daily_limit_tokens" field.
+func (m *ModelTokenDailyUsageMutation) ClearDailyLimitTokens() {
+	m.daily_limit_tokens = nil
+	m.adddaily_limit_tokens = nil
+	m.clearedFields[modeltokendailyusage.FieldDailyLimitTokens] = struct{}{}
+}
+
+// DailyLimitTokensCleared returns if the "daily_limit_tokens" field was cleared in this mutation.
+func (m *ModelTokenDailyUsageMutation) DailyLimitTokensCleared() bool {
+	_, ok := m.clearedFields[modeltokendailyusage.FieldDailyLimitTokens]
+	return ok
+}
+
+// ResetDailyLimitTokens resets all changes to the "daily_limit_tokens" field.
+func (m *ModelTokenDailyUsageMutation) ResetDailyLimitTokens() {
+	m.daily_limit_tokens = nil
+	m.adddaily_limit_tokens = nil
+	delete(m.clearedFields, modeltokendailyusage.FieldDailyLimitTokens)
+}
+
+// Where appends a list predicates to the ModelTokenDailyUsageMutation builder.
+func (m *ModelTokenDailyUsageMutation) Where(ps ...predicate.ModelTokenDailyUsage) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the ModelTokenDailyUsageMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *ModelTokenDailyUsageMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.ModelTokenDailyUsage, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *ModelTokenDailyUsageMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *ModelTokenDailyUsageMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (ModelTokenDailyUsage).
+func (m *ModelTokenDailyUsageMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *ModelTokenDailyUsageMutation) Fields() []string {
+	fields := make([]string, 0, 6)
+	if m.created_at != nil {
+		fields = append(fields, modeltokendailyusage.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, modeltokendailyusage.FieldUpdatedAt)
+	}
+	if m.model != nil {
+		fields = append(fields, modeltokendailyusage.FieldModel)
+	}
+	if m.usage_date != nil {
+		fields = append(fields, modeltokendailyusage.FieldUsageDate)
+	}
+	if m.used_tokens != nil {
+		fields = append(fields, modeltokendailyusage.FieldUsedTokens)
+	}
+	if m.daily_limit_tokens != nil {
+		fields = append(fields, modeltokendailyusage.FieldDailyLimitTokens)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *ModelTokenDailyUsageMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case modeltokendailyusage.FieldCreatedAt:
+		return m.CreatedAt()
+	case modeltokendailyusage.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case modeltokendailyusage.FieldModel:
+		return m.Model()
+	case modeltokendailyusage.FieldUsageDate:
+		return m.UsageDate()
+	case modeltokendailyusage.FieldUsedTokens:
+		return m.UsedTokens()
+	case modeltokendailyusage.FieldDailyLimitTokens:
+		return m.DailyLimitTokens()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *ModelTokenDailyUsageMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case modeltokendailyusage.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case modeltokendailyusage.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case modeltokendailyusage.FieldModel:
+		return m.OldModel(ctx)
+	case modeltokendailyusage.FieldUsageDate:
+		return m.OldUsageDate(ctx)
+	case modeltokendailyusage.FieldUsedTokens:
+		return m.OldUsedTokens(ctx)
+	case modeltokendailyusage.FieldDailyLimitTokens:
+		return m.OldDailyLimitTokens(ctx)
+	}
+	return nil, fmt.Errorf("unknown ModelTokenDailyUsage field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ModelTokenDailyUsageMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case modeltokendailyusage.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case modeltokendailyusage.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case modeltokendailyusage.FieldModel:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetModel(v)
+		return nil
+	case modeltokendailyusage.FieldUsageDate:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUsageDate(v)
+		return nil
+	case modeltokendailyusage.FieldUsedTokens:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUsedTokens(v)
+		return nil
+	case modeltokendailyusage.FieldDailyLimitTokens:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDailyLimitTokens(v)
+		return nil
+	}
+	return fmt.Errorf("unknown ModelTokenDailyUsage field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *ModelTokenDailyUsageMutation) AddedFields() []string {
+	var fields []string
+	if m.addused_tokens != nil {
+		fields = append(fields, modeltokendailyusage.FieldUsedTokens)
+	}
+	if m.adddaily_limit_tokens != nil {
+		fields = append(fields, modeltokendailyusage.FieldDailyLimitTokens)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *ModelTokenDailyUsageMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case modeltokendailyusage.FieldUsedTokens:
+		return m.AddedUsedTokens()
+	case modeltokendailyusage.FieldDailyLimitTokens:
+		return m.AddedDailyLimitTokens()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ModelTokenDailyUsageMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case modeltokendailyusage.FieldUsedTokens:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddUsedTokens(v)
+		return nil
+	case modeltokendailyusage.FieldDailyLimitTokens:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddDailyLimitTokens(v)
+		return nil
+	}
+	return fmt.Errorf("unknown ModelTokenDailyUsage numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *ModelTokenDailyUsageMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(modeltokendailyusage.FieldDailyLimitTokens) {
+		fields = append(fields, modeltokendailyusage.FieldDailyLimitTokens)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *ModelTokenDailyUsageMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *ModelTokenDailyUsageMutation) ClearField(name string) error {
+	switch name {
+	case modeltokendailyusage.FieldDailyLimitTokens:
+		m.ClearDailyLimitTokens()
+		return nil
+	}
+	return fmt.Errorf("unknown ModelTokenDailyUsage nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *ModelTokenDailyUsageMutation) ResetField(name string) error {
+	switch name {
+	case modeltokendailyusage.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case modeltokendailyusage.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case modeltokendailyusage.FieldModel:
+		m.ResetModel()
+		return nil
+	case modeltokendailyusage.FieldUsageDate:
+		m.ResetUsageDate()
+		return nil
+	case modeltokendailyusage.FieldUsedTokens:
+		m.ResetUsedTokens()
+		return nil
+	case modeltokendailyusage.FieldDailyLimitTokens:
+		m.ResetDailyLimitTokens()
+		return nil
+	}
+	return fmt.Errorf("unknown ModelTokenDailyUsage field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *ModelTokenDailyUsageMutation) AddedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *ModelTokenDailyUsageMutation) AddedIDs(name string) []ent.Value {
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *ModelTokenDailyUsageMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *ModelTokenDailyUsageMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *ModelTokenDailyUsageMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *ModelTokenDailyUsageMutation) EdgeCleared(name string) bool {
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *ModelTokenDailyUsageMutation) ClearEdge(name string) error {
+	return fmt.Errorf("unknown ModelTokenDailyUsage unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *ModelTokenDailyUsageMutation) ResetEdge(name string) error {
+	return fmt.Errorf("unknown ModelTokenDailyUsage edge %s", name)
 }
 
 // PaymentAuditLogMutation represents an operation that mutates the PaymentAuditLog nodes in the graph.
@@ -38675,80 +40302,83 @@ func (m *UsageLogMutation) ResetEdge(name string) error {
 // UserMutation represents an operation that mutates the User nodes in the graph.
 type UserMutation struct {
 	config
-	op                            Op
-	typ                           string
-	id                            *int64
-	created_at                    *time.Time
-	updated_at                    *time.Time
-	deleted_at                    *time.Time
-	email                         *string
-	password_hash                 *string
-	role                          *string
-	balance                       *float64
-	addbalance                    *float64
-	concurrency                   *int
-	addconcurrency                *int
-	status                        *string
-	username                      *string
-	notes                         *string
-	totp_secret_encrypted         *string
-	totp_enabled                  *bool
-	totp_enabled_at               *time.Time
-	signup_source                 *string
-	last_login_at                 *time.Time
-	last_active_at                *time.Time
-	balance_notify_enabled        *bool
-	balance_notify_threshold_type *string
-	balance_notify_threshold      *float64
-	addbalance_notify_threshold   *float64
-	balance_notify_extra_emails   *string
-	total_recharged               *float64
-	addtotal_recharged            *float64
-	rpm_limit                     *int
-	addrpm_limit                  *int
-	clearedFields                 map[string]struct{}
-	api_keys                      map[int64]struct{}
-	removedapi_keys               map[int64]struct{}
-	clearedapi_keys               bool
-	redeem_codes                  map[int64]struct{}
-	removedredeem_codes           map[int64]struct{}
-	clearedredeem_codes           bool
-	subscriptions                 map[int64]struct{}
-	removedsubscriptions          map[int64]struct{}
-	clearedsubscriptions          bool
-	assigned_subscriptions        map[int64]struct{}
-	removedassigned_subscriptions map[int64]struct{}
-	clearedassigned_subscriptions bool
-	announcement_reads            map[int64]struct{}
-	removedannouncement_reads     map[int64]struct{}
-	clearedannouncement_reads     bool
-	allowed_groups                map[int64]struct{}
-	removedallowed_groups         map[int64]struct{}
-	clearedallowed_groups         bool
-	usage_logs                    map[int64]struct{}
-	removedusage_logs             map[int64]struct{}
-	clearedusage_logs             bool
-	attribute_values              map[int64]struct{}
-	removedattribute_values       map[int64]struct{}
-	clearedattribute_values       bool
-	promo_code_usages             map[int64]struct{}
-	removedpromo_code_usages      map[int64]struct{}
-	clearedpromo_code_usages      bool
-	payment_orders                map[int64]struct{}
-	removedpayment_orders         map[int64]struct{}
-	clearedpayment_orders         bool
-	auth_identities               map[int64]struct{}
-	removedauth_identities        map[int64]struct{}
-	clearedauth_identities        bool
-	pending_auth_sessions         map[int64]struct{}
-	removedpending_auth_sessions  map[int64]struct{}
-	clearedpending_auth_sessions  bool
-	platform_quotas               map[int64]struct{}
-	removedplatform_quotas        map[int64]struct{}
-	clearedplatform_quotas        bool
-	done                          bool
-	oldValue                      func(context.Context) (*User, error)
-	predicates                    []predicate.User
+	op                              Op
+	typ                             string
+	id                              *int64
+	created_at                      *time.Time
+	updated_at                      *time.Time
+	deleted_at                      *time.Time
+	email                           *string
+	password_hash                   *string
+	role                            *string
+	balance                         *float64
+	addbalance                      *float64
+	concurrency                     *int
+	addconcurrency                  *int
+	status                          *string
+	username                        *string
+	notes                           *string
+	totp_secret_encrypted           *string
+	totp_enabled                    *bool
+	totp_enabled_at                 *time.Time
+	signup_source                   *string
+	last_login_at                   *time.Time
+	last_active_at                  *time.Time
+	balance_notify_enabled          *bool
+	balance_notify_threshold_type   *string
+	balance_notify_threshold        *float64
+	addbalance_notify_threshold     *float64
+	balance_notify_extra_emails     *string
+	total_recharged                 *float64
+	addtotal_recharged              *float64
+	rpm_limit                       *int
+	addrpm_limit                    *int
+	clearedFields                   map[string]struct{}
+	api_keys                        map[int64]struct{}
+	removedapi_keys                 map[int64]struct{}
+	clearedapi_keys                 bool
+	redeem_codes                    map[int64]struct{}
+	removedredeem_codes             map[int64]struct{}
+	clearedredeem_codes             bool
+	subscriptions                   map[int64]struct{}
+	removedsubscriptions            map[int64]struct{}
+	clearedsubscriptions            bool
+	assigned_subscriptions          map[int64]struct{}
+	removedassigned_subscriptions   map[int64]struct{}
+	clearedassigned_subscriptions   bool
+	announcement_reads              map[int64]struct{}
+	removedannouncement_reads       map[int64]struct{}
+	clearedannouncement_reads       bool
+	allowed_groups                  map[int64]struct{}
+	removedallowed_groups           map[int64]struct{}
+	clearedallowed_groups           bool
+	usage_logs                      map[int64]struct{}
+	removedusage_logs               map[int64]struct{}
+	clearedusage_logs               bool
+	attribute_values                map[int64]struct{}
+	removedattribute_values         map[int64]struct{}
+	clearedattribute_values         bool
+	promo_code_usages               map[int64]struct{}
+	removedpromo_code_usages        map[int64]struct{}
+	clearedpromo_code_usages        bool
+	payment_orders                  map[int64]struct{}
+	removedpayment_orders           map[int64]struct{}
+	clearedpayment_orders           bool
+	auth_identities                 map[int64]struct{}
+	removedauth_identities          map[int64]struct{}
+	clearedauth_identities          bool
+	pending_auth_sessions           map[int64]struct{}
+	removedpending_auth_sessions    map[int64]struct{}
+	clearedpending_auth_sessions    bool
+	platform_quotas                 map[int64]struct{}
+	removedplatform_quotas          map[int64]struct{}
+	clearedplatform_quotas          bool
+	model_token_daily_usages        map[int64]struct{}
+	removedmodel_token_daily_usages map[int64]struct{}
+	clearedmodel_token_daily_usages bool
+	done                            bool
+	oldValue                        func(context.Context) (*User, error)
+	predicates                      []predicate.User
 }
 
 var _ ent.Mutation = (*UserMutation)(nil)
@@ -40558,6 +42188,60 @@ func (m *UserMutation) ResetPlatformQuotas() {
 	m.removedplatform_quotas = nil
 }
 
+// AddModelTokenDailyUsageIDs adds the "model_token_daily_usages" edge to the UserModelTokenDailyUsage entity by ids.
+func (m *UserMutation) AddModelTokenDailyUsageIDs(ids ...int64) {
+	if m.model_token_daily_usages == nil {
+		m.model_token_daily_usages = make(map[int64]struct{})
+	}
+	for i := range ids {
+		m.model_token_daily_usages[ids[i]] = struct{}{}
+	}
+}
+
+// ClearModelTokenDailyUsages clears the "model_token_daily_usages" edge to the UserModelTokenDailyUsage entity.
+func (m *UserMutation) ClearModelTokenDailyUsages() {
+	m.clearedmodel_token_daily_usages = true
+}
+
+// ModelTokenDailyUsagesCleared reports if the "model_token_daily_usages" edge to the UserModelTokenDailyUsage entity was cleared.
+func (m *UserMutation) ModelTokenDailyUsagesCleared() bool {
+	return m.clearedmodel_token_daily_usages
+}
+
+// RemoveModelTokenDailyUsageIDs removes the "model_token_daily_usages" edge to the UserModelTokenDailyUsage entity by IDs.
+func (m *UserMutation) RemoveModelTokenDailyUsageIDs(ids ...int64) {
+	if m.removedmodel_token_daily_usages == nil {
+		m.removedmodel_token_daily_usages = make(map[int64]struct{})
+	}
+	for i := range ids {
+		delete(m.model_token_daily_usages, ids[i])
+		m.removedmodel_token_daily_usages[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedModelTokenDailyUsages returns the removed IDs of the "model_token_daily_usages" edge to the UserModelTokenDailyUsage entity.
+func (m *UserMutation) RemovedModelTokenDailyUsagesIDs() (ids []int64) {
+	for id := range m.removedmodel_token_daily_usages {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ModelTokenDailyUsagesIDs returns the "model_token_daily_usages" edge IDs in the mutation.
+func (m *UserMutation) ModelTokenDailyUsagesIDs() (ids []int64) {
+	for id := range m.model_token_daily_usages {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetModelTokenDailyUsages resets all changes to the "model_token_daily_usages" edge.
+func (m *UserMutation) ResetModelTokenDailyUsages() {
+	m.model_token_daily_usages = nil
+	m.clearedmodel_token_daily_usages = false
+	m.removedmodel_token_daily_usages = nil
+}
+
 // Where appends a list predicates to the UserMutation builder.
 func (m *UserMutation) Where(ps ...predicate.User) {
 	m.predicates = append(m.predicates, ps...)
@@ -41167,7 +42851,7 @@ func (m *UserMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *UserMutation) AddedEdges() []string {
-	edges := make([]string, 0, 13)
+	edges := make([]string, 0, 14)
 	if m.api_keys != nil {
 		edges = append(edges, user.EdgeAPIKeys)
 	}
@@ -41206,6 +42890,9 @@ func (m *UserMutation) AddedEdges() []string {
 	}
 	if m.platform_quotas != nil {
 		edges = append(edges, user.EdgePlatformQuotas)
+	}
+	if m.model_token_daily_usages != nil {
+		edges = append(edges, user.EdgeModelTokenDailyUsages)
 	}
 	return edges
 }
@@ -41292,13 +42979,19 @@ func (m *UserMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeModelTokenDailyUsages:
+		ids := make([]ent.Value, 0, len(m.model_token_daily_usages))
+		for id := range m.model_token_daily_usages {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *UserMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 13)
+	edges := make([]string, 0, 14)
 	if m.removedapi_keys != nil {
 		edges = append(edges, user.EdgeAPIKeys)
 	}
@@ -41337,6 +43030,9 @@ func (m *UserMutation) RemovedEdges() []string {
 	}
 	if m.removedplatform_quotas != nil {
 		edges = append(edges, user.EdgePlatformQuotas)
+	}
+	if m.removedmodel_token_daily_usages != nil {
+		edges = append(edges, user.EdgeModelTokenDailyUsages)
 	}
 	return edges
 }
@@ -41423,13 +43119,19 @@ func (m *UserMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeModelTokenDailyUsages:
+		ids := make([]ent.Value, 0, len(m.removedmodel_token_daily_usages))
+		for id := range m.removedmodel_token_daily_usages {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *UserMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 13)
+	edges := make([]string, 0, 14)
 	if m.clearedapi_keys {
 		edges = append(edges, user.EdgeAPIKeys)
 	}
@@ -41469,6 +43171,9 @@ func (m *UserMutation) ClearedEdges() []string {
 	if m.clearedplatform_quotas {
 		edges = append(edges, user.EdgePlatformQuotas)
 	}
+	if m.clearedmodel_token_daily_usages {
+		edges = append(edges, user.EdgeModelTokenDailyUsages)
+	}
 	return edges
 }
 
@@ -41502,6 +43207,8 @@ func (m *UserMutation) EdgeCleared(name string) bool {
 		return m.clearedpending_auth_sessions
 	case user.EdgePlatformQuotas:
 		return m.clearedplatform_quotas
+	case user.EdgeModelTokenDailyUsages:
+		return m.clearedmodel_token_daily_usages
 	}
 	return false
 }
@@ -41556,6 +43263,9 @@ func (m *UserMutation) ResetEdge(name string) error {
 		return nil
 	case user.EdgePlatformQuotas:
 		m.ResetPlatformQuotas()
+		return nil
+	case user.EdgeModelTokenDailyUsages:
+		m.ResetModelTokenDailyUsages()
 		return nil
 	}
 	return fmt.Errorf("unknown User edge %s", name)
@@ -43775,6 +45485,802 @@ func (m *UserAttributeValueMutation) ResetEdge(name string) error {
 		return nil
 	}
 	return fmt.Errorf("unknown UserAttributeValue edge %s", name)
+}
+
+// UserModelTokenDailyUsageMutation represents an operation that mutates the UserModelTokenDailyUsage nodes in the graph.
+type UserModelTokenDailyUsageMutation struct {
+	config
+	op                    Op
+	typ                   string
+	id                    *int64
+	created_at            *time.Time
+	updated_at            *time.Time
+	model                 *string
+	usage_date            *time.Time
+	used_tokens           *int64
+	addused_tokens        *int64
+	daily_limit_tokens    *int64
+	adddaily_limit_tokens *int64
+	clearedFields         map[string]struct{}
+	user                  *int64
+	cleareduser           bool
+	done                  bool
+	oldValue              func(context.Context) (*UserModelTokenDailyUsage, error)
+	predicates            []predicate.UserModelTokenDailyUsage
+}
+
+var _ ent.Mutation = (*UserModelTokenDailyUsageMutation)(nil)
+
+// usermodeltokendailyusageOption allows management of the mutation configuration using functional options.
+type usermodeltokendailyusageOption func(*UserModelTokenDailyUsageMutation)
+
+// newUserModelTokenDailyUsageMutation creates new mutation for the UserModelTokenDailyUsage entity.
+func newUserModelTokenDailyUsageMutation(c config, op Op, opts ...usermodeltokendailyusageOption) *UserModelTokenDailyUsageMutation {
+	m := &UserModelTokenDailyUsageMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeUserModelTokenDailyUsage,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withUserModelTokenDailyUsageID sets the ID field of the mutation.
+func withUserModelTokenDailyUsageID(id int64) usermodeltokendailyusageOption {
+	return func(m *UserModelTokenDailyUsageMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *UserModelTokenDailyUsage
+		)
+		m.oldValue = func(ctx context.Context) (*UserModelTokenDailyUsage, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().UserModelTokenDailyUsage.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withUserModelTokenDailyUsage sets the old UserModelTokenDailyUsage of the mutation.
+func withUserModelTokenDailyUsage(node *UserModelTokenDailyUsage) usermodeltokendailyusageOption {
+	return func(m *UserModelTokenDailyUsageMutation) {
+		m.oldValue = func(context.Context) (*UserModelTokenDailyUsage, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m UserModelTokenDailyUsageMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m UserModelTokenDailyUsageMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *UserModelTokenDailyUsageMutation) ID() (id int64, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *UserModelTokenDailyUsageMutation) IDs(ctx context.Context) ([]int64, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int64{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().UserModelTokenDailyUsage.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *UserModelTokenDailyUsageMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *UserModelTokenDailyUsageMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the UserModelTokenDailyUsage entity.
+// If the UserModelTokenDailyUsage object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserModelTokenDailyUsageMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *UserModelTokenDailyUsageMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *UserModelTokenDailyUsageMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *UserModelTokenDailyUsageMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the UserModelTokenDailyUsage entity.
+// If the UserModelTokenDailyUsage object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserModelTokenDailyUsageMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *UserModelTokenDailyUsageMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// SetUserID sets the "user_id" field.
+func (m *UserModelTokenDailyUsageMutation) SetUserID(i int64) {
+	m.user = &i
+}
+
+// UserID returns the value of the "user_id" field in the mutation.
+func (m *UserModelTokenDailyUsageMutation) UserID() (r int64, exists bool) {
+	v := m.user
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUserID returns the old "user_id" field's value of the UserModelTokenDailyUsage entity.
+// If the UserModelTokenDailyUsage object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserModelTokenDailyUsageMutation) OldUserID(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUserID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUserID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUserID: %w", err)
+	}
+	return oldValue.UserID, nil
+}
+
+// ResetUserID resets all changes to the "user_id" field.
+func (m *UserModelTokenDailyUsageMutation) ResetUserID() {
+	m.user = nil
+}
+
+// SetModel sets the "model" field.
+func (m *UserModelTokenDailyUsageMutation) SetModel(s string) {
+	m.model = &s
+}
+
+// Model returns the value of the "model" field in the mutation.
+func (m *UserModelTokenDailyUsageMutation) Model() (r string, exists bool) {
+	v := m.model
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldModel returns the old "model" field's value of the UserModelTokenDailyUsage entity.
+// If the UserModelTokenDailyUsage object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserModelTokenDailyUsageMutation) OldModel(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldModel is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldModel requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldModel: %w", err)
+	}
+	return oldValue.Model, nil
+}
+
+// ResetModel resets all changes to the "model" field.
+func (m *UserModelTokenDailyUsageMutation) ResetModel() {
+	m.model = nil
+}
+
+// SetUsageDate sets the "usage_date" field.
+func (m *UserModelTokenDailyUsageMutation) SetUsageDate(t time.Time) {
+	m.usage_date = &t
+}
+
+// UsageDate returns the value of the "usage_date" field in the mutation.
+func (m *UserModelTokenDailyUsageMutation) UsageDate() (r time.Time, exists bool) {
+	v := m.usage_date
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUsageDate returns the old "usage_date" field's value of the UserModelTokenDailyUsage entity.
+// If the UserModelTokenDailyUsage object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserModelTokenDailyUsageMutation) OldUsageDate(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUsageDate is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUsageDate requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUsageDate: %w", err)
+	}
+	return oldValue.UsageDate, nil
+}
+
+// ResetUsageDate resets all changes to the "usage_date" field.
+func (m *UserModelTokenDailyUsageMutation) ResetUsageDate() {
+	m.usage_date = nil
+}
+
+// SetUsedTokens sets the "used_tokens" field.
+func (m *UserModelTokenDailyUsageMutation) SetUsedTokens(i int64) {
+	m.used_tokens = &i
+	m.addused_tokens = nil
+}
+
+// UsedTokens returns the value of the "used_tokens" field in the mutation.
+func (m *UserModelTokenDailyUsageMutation) UsedTokens() (r int64, exists bool) {
+	v := m.used_tokens
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUsedTokens returns the old "used_tokens" field's value of the UserModelTokenDailyUsage entity.
+// If the UserModelTokenDailyUsage object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserModelTokenDailyUsageMutation) OldUsedTokens(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUsedTokens is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUsedTokens requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUsedTokens: %w", err)
+	}
+	return oldValue.UsedTokens, nil
+}
+
+// AddUsedTokens adds i to the "used_tokens" field.
+func (m *UserModelTokenDailyUsageMutation) AddUsedTokens(i int64) {
+	if m.addused_tokens != nil {
+		*m.addused_tokens += i
+	} else {
+		m.addused_tokens = &i
+	}
+}
+
+// AddedUsedTokens returns the value that was added to the "used_tokens" field in this mutation.
+func (m *UserModelTokenDailyUsageMutation) AddedUsedTokens() (r int64, exists bool) {
+	v := m.addused_tokens
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetUsedTokens resets all changes to the "used_tokens" field.
+func (m *UserModelTokenDailyUsageMutation) ResetUsedTokens() {
+	m.used_tokens = nil
+	m.addused_tokens = nil
+}
+
+// SetDailyLimitTokens sets the "daily_limit_tokens" field.
+func (m *UserModelTokenDailyUsageMutation) SetDailyLimitTokens(i int64) {
+	m.daily_limit_tokens = &i
+	m.adddaily_limit_tokens = nil
+}
+
+// DailyLimitTokens returns the value of the "daily_limit_tokens" field in the mutation.
+func (m *UserModelTokenDailyUsageMutation) DailyLimitTokens() (r int64, exists bool) {
+	v := m.daily_limit_tokens
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDailyLimitTokens returns the old "daily_limit_tokens" field's value of the UserModelTokenDailyUsage entity.
+// If the UserModelTokenDailyUsage object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserModelTokenDailyUsageMutation) OldDailyLimitTokens(ctx context.Context) (v *int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDailyLimitTokens is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDailyLimitTokens requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDailyLimitTokens: %w", err)
+	}
+	return oldValue.DailyLimitTokens, nil
+}
+
+// AddDailyLimitTokens adds i to the "daily_limit_tokens" field.
+func (m *UserModelTokenDailyUsageMutation) AddDailyLimitTokens(i int64) {
+	if m.adddaily_limit_tokens != nil {
+		*m.adddaily_limit_tokens += i
+	} else {
+		m.adddaily_limit_tokens = &i
+	}
+}
+
+// AddedDailyLimitTokens returns the value that was added to the "daily_limit_tokens" field in this mutation.
+func (m *UserModelTokenDailyUsageMutation) AddedDailyLimitTokens() (r int64, exists bool) {
+	v := m.adddaily_limit_tokens
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearDailyLimitTokens clears the value of the "daily_limit_tokens" field.
+func (m *UserModelTokenDailyUsageMutation) ClearDailyLimitTokens() {
+	m.daily_limit_tokens = nil
+	m.adddaily_limit_tokens = nil
+	m.clearedFields[usermodeltokendailyusage.FieldDailyLimitTokens] = struct{}{}
+}
+
+// DailyLimitTokensCleared returns if the "daily_limit_tokens" field was cleared in this mutation.
+func (m *UserModelTokenDailyUsageMutation) DailyLimitTokensCleared() bool {
+	_, ok := m.clearedFields[usermodeltokendailyusage.FieldDailyLimitTokens]
+	return ok
+}
+
+// ResetDailyLimitTokens resets all changes to the "daily_limit_tokens" field.
+func (m *UserModelTokenDailyUsageMutation) ResetDailyLimitTokens() {
+	m.daily_limit_tokens = nil
+	m.adddaily_limit_tokens = nil
+	delete(m.clearedFields, usermodeltokendailyusage.FieldDailyLimitTokens)
+}
+
+// ClearUser clears the "user" edge to the User entity.
+func (m *UserModelTokenDailyUsageMutation) ClearUser() {
+	m.cleareduser = true
+	m.clearedFields[usermodeltokendailyusage.FieldUserID] = struct{}{}
+}
+
+// UserCleared reports if the "user" edge to the User entity was cleared.
+func (m *UserModelTokenDailyUsageMutation) UserCleared() bool {
+	return m.cleareduser
+}
+
+// UserIDs returns the "user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// UserID instead. It exists only for internal usage by the builders.
+func (m *UserModelTokenDailyUsageMutation) UserIDs() (ids []int64) {
+	if id := m.user; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetUser resets all changes to the "user" edge.
+func (m *UserModelTokenDailyUsageMutation) ResetUser() {
+	m.user = nil
+	m.cleareduser = false
+}
+
+// Where appends a list predicates to the UserModelTokenDailyUsageMutation builder.
+func (m *UserModelTokenDailyUsageMutation) Where(ps ...predicate.UserModelTokenDailyUsage) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the UserModelTokenDailyUsageMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *UserModelTokenDailyUsageMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.UserModelTokenDailyUsage, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *UserModelTokenDailyUsageMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *UserModelTokenDailyUsageMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (UserModelTokenDailyUsage).
+func (m *UserModelTokenDailyUsageMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *UserModelTokenDailyUsageMutation) Fields() []string {
+	fields := make([]string, 0, 7)
+	if m.created_at != nil {
+		fields = append(fields, usermodeltokendailyusage.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, usermodeltokendailyusage.FieldUpdatedAt)
+	}
+	if m.user != nil {
+		fields = append(fields, usermodeltokendailyusage.FieldUserID)
+	}
+	if m.model != nil {
+		fields = append(fields, usermodeltokendailyusage.FieldModel)
+	}
+	if m.usage_date != nil {
+		fields = append(fields, usermodeltokendailyusage.FieldUsageDate)
+	}
+	if m.used_tokens != nil {
+		fields = append(fields, usermodeltokendailyusage.FieldUsedTokens)
+	}
+	if m.daily_limit_tokens != nil {
+		fields = append(fields, usermodeltokendailyusage.FieldDailyLimitTokens)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *UserModelTokenDailyUsageMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case usermodeltokendailyusage.FieldCreatedAt:
+		return m.CreatedAt()
+	case usermodeltokendailyusage.FieldUpdatedAt:
+		return m.UpdatedAt()
+	case usermodeltokendailyusage.FieldUserID:
+		return m.UserID()
+	case usermodeltokendailyusage.FieldModel:
+		return m.Model()
+	case usermodeltokendailyusage.FieldUsageDate:
+		return m.UsageDate()
+	case usermodeltokendailyusage.FieldUsedTokens:
+		return m.UsedTokens()
+	case usermodeltokendailyusage.FieldDailyLimitTokens:
+		return m.DailyLimitTokens()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *UserModelTokenDailyUsageMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case usermodeltokendailyusage.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case usermodeltokendailyusage.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	case usermodeltokendailyusage.FieldUserID:
+		return m.OldUserID(ctx)
+	case usermodeltokendailyusage.FieldModel:
+		return m.OldModel(ctx)
+	case usermodeltokendailyusage.FieldUsageDate:
+		return m.OldUsageDate(ctx)
+	case usermodeltokendailyusage.FieldUsedTokens:
+		return m.OldUsedTokens(ctx)
+	case usermodeltokendailyusage.FieldDailyLimitTokens:
+		return m.OldDailyLimitTokens(ctx)
+	}
+	return nil, fmt.Errorf("unknown UserModelTokenDailyUsage field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *UserModelTokenDailyUsageMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case usermodeltokendailyusage.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case usermodeltokendailyusage.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	case usermodeltokendailyusage.FieldUserID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUserID(v)
+		return nil
+	case usermodeltokendailyusage.FieldModel:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetModel(v)
+		return nil
+	case usermodeltokendailyusage.FieldUsageDate:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUsageDate(v)
+		return nil
+	case usermodeltokendailyusage.FieldUsedTokens:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUsedTokens(v)
+		return nil
+	case usermodeltokendailyusage.FieldDailyLimitTokens:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDailyLimitTokens(v)
+		return nil
+	}
+	return fmt.Errorf("unknown UserModelTokenDailyUsage field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *UserModelTokenDailyUsageMutation) AddedFields() []string {
+	var fields []string
+	if m.addused_tokens != nil {
+		fields = append(fields, usermodeltokendailyusage.FieldUsedTokens)
+	}
+	if m.adddaily_limit_tokens != nil {
+		fields = append(fields, usermodeltokendailyusage.FieldDailyLimitTokens)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *UserModelTokenDailyUsageMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case usermodeltokendailyusage.FieldUsedTokens:
+		return m.AddedUsedTokens()
+	case usermodeltokendailyusage.FieldDailyLimitTokens:
+		return m.AddedDailyLimitTokens()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *UserModelTokenDailyUsageMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case usermodeltokendailyusage.FieldUsedTokens:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddUsedTokens(v)
+		return nil
+	case usermodeltokendailyusage.FieldDailyLimitTokens:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddDailyLimitTokens(v)
+		return nil
+	}
+	return fmt.Errorf("unknown UserModelTokenDailyUsage numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *UserModelTokenDailyUsageMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(usermodeltokendailyusage.FieldDailyLimitTokens) {
+		fields = append(fields, usermodeltokendailyusage.FieldDailyLimitTokens)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *UserModelTokenDailyUsageMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *UserModelTokenDailyUsageMutation) ClearField(name string) error {
+	switch name {
+	case usermodeltokendailyusage.FieldDailyLimitTokens:
+		m.ClearDailyLimitTokens()
+		return nil
+	}
+	return fmt.Errorf("unknown UserModelTokenDailyUsage nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *UserModelTokenDailyUsageMutation) ResetField(name string) error {
+	switch name {
+	case usermodeltokendailyusage.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case usermodeltokendailyusage.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	case usermodeltokendailyusage.FieldUserID:
+		m.ResetUserID()
+		return nil
+	case usermodeltokendailyusage.FieldModel:
+		m.ResetModel()
+		return nil
+	case usermodeltokendailyusage.FieldUsageDate:
+		m.ResetUsageDate()
+		return nil
+	case usermodeltokendailyusage.FieldUsedTokens:
+		m.ResetUsedTokens()
+		return nil
+	case usermodeltokendailyusage.FieldDailyLimitTokens:
+		m.ResetDailyLimitTokens()
+		return nil
+	}
+	return fmt.Errorf("unknown UserModelTokenDailyUsage field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *UserModelTokenDailyUsageMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.user != nil {
+		edges = append(edges, usermodeltokendailyusage.EdgeUser)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *UserModelTokenDailyUsageMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case usermodeltokendailyusage.EdgeUser:
+		if id := m.user; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *UserModelTokenDailyUsageMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *UserModelTokenDailyUsageMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *UserModelTokenDailyUsageMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.cleareduser {
+		edges = append(edges, usermodeltokendailyusage.EdgeUser)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *UserModelTokenDailyUsageMutation) EdgeCleared(name string) bool {
+	switch name {
+	case usermodeltokendailyusage.EdgeUser:
+		return m.cleareduser
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *UserModelTokenDailyUsageMutation) ClearEdge(name string) error {
+	switch name {
+	case usermodeltokendailyusage.EdgeUser:
+		m.ClearUser()
+		return nil
+	}
+	return fmt.Errorf("unknown UserModelTokenDailyUsage unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *UserModelTokenDailyUsageMutation) ResetEdge(name string) error {
+	switch name {
+	case usermodeltokendailyusage.EdgeUser:
+		m.ResetUser()
+		return nil
+	}
+	return fmt.Errorf("unknown UserModelTokenDailyUsage edge %s", name)
 }
 
 // UserPlatformQuotaMutation represents an operation that mutates the UserPlatformQuota nodes in the graph.

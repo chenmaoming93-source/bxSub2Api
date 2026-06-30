@@ -6,6 +6,7 @@ import (
 	"database/sql/driver"
 	"fmt"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -235,7 +236,8 @@ func TestPrepareUsageLogInsert_ArgCountMatchesTypes(t *testing.T) {
 		CreatedAt:      time.Date(2025, 1, 5, 12, 0, 0, 0, time.UTC),
 	})
 
-	require.Len(t, prepared.args, len(usageLogInsertArgTypes))
+	columns := strings.Split(strings.ReplaceAll(strings.TrimSpace(usageLogInsertColumns), "\n", ""), ",")
+	require.Len(t, prepared.args, len(columns))
 }
 
 func TestPrepareUsageLogInsert_PersistsImageSizeMetadata(t *testing.T) {

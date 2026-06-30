@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"sort"
@@ -10,6 +11,7 @@ import (
 
 	dbent "github.com/Wei-Shaw/sub2api/ent"
 	"github.com/Wei-Shaw/sub2api/ent/group"
+	"github.com/Wei-Shaw/sub2api/internal/domain"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/logger"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
 	"github.com/Wei-Shaw/sub2api/internal/service"
@@ -36,6 +38,10 @@ func newGroupRepositoryWithSQL(client *dbent.Client, sqlq sqlExecutor) *groupRep
 }
 
 func (r *groupRepository) Create(ctx context.Context, groupIn *service.Group) error {
+	routing, err := modelRoutingRaw(groupIn.ModelRouting)
+	if err != nil {
+		return err
+	}
 	builder := r.client.Group.Create().
 		SetName(groupIn.Name).
 		SetDescription(groupIn.Description).
@@ -70,7 +76,7 @@ func (r *groupRepository) Create(ctx context.Context, groupIn *service.Group) er
 
 	// 设置模型路由配置
 	if groupIn.ModelRouting != nil {
-		builder = builder.SetModelRouting(groupIn.ModelRouting)
+		builder = builder.SetModelRouting(routing)
 	}
 
 	// 设置支持的模型系列（始终设置，空数组表示不限制）
@@ -115,6 +121,10 @@ func (r *groupRepository) GetByIDLite(ctx context.Context, id int64) (*service.G
 }
 
 func (r *groupRepository) Update(ctx context.Context, groupIn *service.Group) error {
+	routing, err := modelRoutingRaw(groupIn.ModelRouting)
+	if err != nil {
+		return err
+	}
 	builder := r.client.Group.UpdateOneID(groupIn.ID).
 		SetName(groupIn.Name).
 		SetDescription(groupIn.Description).
@@ -191,7 +201,7 @@ func (r *groupRepository) Update(ctx context.Context, groupIn *service.Group) er
 
 	// 处理 ModelRouting：nil 时清除，否则设置
 	if groupIn.ModelRouting != nil {
-		builder = builder.SetModelRouting(groupIn.ModelRouting)
+		builder = builder.SetModelRouting(routing)
 	} else {
 		builder = builder.ClearModelRouting()
 	}
@@ -208,6 +218,23 @@ func (r *groupRepository) Update(ctx context.Context, groupIn *service.Group) er
 		logger.LegacyPrintf("repository.group", "[SchedulerOutbox] enqueue group update failed: group=%d err=%v", groupIn.ID, err)
 	}
 	return nil
+}
+
+func modelRoutingRaw(value any) (domain.ModelRoutingJSON, error) {
+	if value == nil {
+		return domain.ModelRoutingJSON{}, nil
+	}
+	if routing, ok := value.(domain.ModelRoutingJSON); ok {
+		return routing, nil
+	}
+	if raw, ok := value.(json.RawMessage); ok {
+		return domain.NewModelRoutingJSON(raw), nil
+	}
+	data, err := json.Marshal(value)
+	if err != nil {
+		return domain.ModelRoutingJSON{}, fmt.Errorf("marshal model routing: %w", err)
+	}
+	return domain.NewModelRoutingJSON(data), nil
 }
 
 func (r *groupRepository) Delete(ctx context.Context, id int64) error {
