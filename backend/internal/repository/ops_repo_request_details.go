@@ -105,7 +105,7 @@ WITH combined AS (
     ul.group_id AS group_id,
     ul.stream AS stream
   FROM usage_logs ul
-  LEFT JOIN groups g ON g.id = ul.group_id
+  LEFT JOIN ` + "`groups`" + ` g ON g.id = ul.group_id
   LEFT JOIN accounts a ON a.id = ul.account_id
   WHERE ul.created_at >= ? AND ul.created_at < ?
 
@@ -129,7 +129,7 @@ WITH combined AS (
     o.group_id AS group_id,
     o.stream AS stream
   FROM ops_error_logs o
-  LEFT JOIN groups g ON g.id = o.group_id
+  LEFT JOIN ` + "`groups`" + ` g ON g.id = o.group_id
   LEFT JOIN accounts a ON a.id = o.account_id
   WHERE o.created_at >= ? AND o.created_at < ?
     AND COALESCE(o.status_code, 0) >= 400

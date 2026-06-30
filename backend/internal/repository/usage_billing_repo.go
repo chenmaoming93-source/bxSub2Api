@@ -149,18 +149,16 @@ func (r *usageBillingRepository) applyUsageBillingEffects(ctx context.Context, t
 func incrementUsageBillingSubscription(ctx context.Context, tx *sql.Tx, subscriptionID int64, costUSD float64) error {
 	const updateSQL = `
 		UPDATE user_subscriptions us
+		JOIN ` + "`groups`" + ` g ON us.group_id = g.id AND g.deleted_at IS NULL
 		SET
 			daily_usage_usd = us.daily_usage_usd + ?,
 			weekly_usage_usd = us.weekly_usage_usd + ?,
 			monthly_usage_usd = us.monthly_usage_usd + ?,
 			updated_at = NOW()
-		FROM groups g
 		WHERE us.id = ?
 			AND us.deleted_at IS NULL
-			AND us.group_id = g.id
-			AND g.deleted_at IS NULL
 	`
-	res, err := tx.ExecContext(ctx, updateSQL, costUSD, subscriptionID)
+	res, err := tx.ExecContext(ctx, updateSQL, costUSD, costUSD, costUSD, subscriptionID)
 	if err != nil {
 		return err
 	}

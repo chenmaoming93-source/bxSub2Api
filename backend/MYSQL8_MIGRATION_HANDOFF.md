@@ -23,6 +23,8 @@
 
 > 2026-06-29 续作复核发现 `544d6b1` 将乱码换行损坏和未解决冲突标记提交进多个生产文件；已恢复 `account_repo.go` 代码边界，并将 `affiliate_repo.go`、`channel_monitor_repo.go`、`content_moderation_repo.go`、`user_repo.go`、`user_group_rate_repo.go` 恢复到父提交 `b8b0dfa` 的可格式化 MySQL 版本。处理后 `go build ./...` 通过。
 
+> 2026-06-30 针对 MySQL 8 保留字/旧 PostgreSQL 语法完成追加扫描：生产 Go 代码中未再发现未转义的 `JOIN/FROM/UPDATE/INTO groups`、`AS range`、运行时 `ON CONFLICT/RETURNING/ILIKE/date_trunc/FILTER/FULL OUTER JOIN/IS NOT DISTINCT FROM/NULLS FIRST/LAST` 等语法残留；当前剩余命中为注释或科学计数法等误报。
+
 ## 3. 核心迁移清单
 
 ### 3.1 尚未完成的生产模块
@@ -30,25 +32,27 @@
 | 优先级 | 模块/文件 | PostgreSQL 残留 | MySQL 8 迁移方案 | 状态 | 估算进度 | 注意事项 |
 |---:|---|---|---|---|---:|---|
 | P0 | `internal/repository/account_repo.go` | 已完成：JSON、配额递增、时间周期和返回值逻辑均已迁移为 MySQL 8/Go 事务实现 | 静态复扫未发现 PostgreSQL 运行语法；已修复既有乱码注释吞掉字段、函数声明和 SQL 起始符造成的语法损坏 | 完成 | 100% | 2026-06-29 重新 `gofmt` 并复核；该文件已恢复 Go 语法可解析 |
-| P0 | `internal/repository/usage_billing_repo.go` | 已完成：幂等写入、余额/API Key/订阅/账户配额更新已迁移为 MySQL 8 | 拉取后静态复扫未发现 PostgreSQL 运行语法 | 完成 | 100% | 2026-06-29 于 `544d6b1` 复核 |
+| P0 | `internal/repository/usage_billing_repo.go` | 已完成：幂等写入、余额/API Key/订阅/账户配额更新已迁移为 MySQL 8；2026-06-30 修复订阅用量累加中的 PostgreSQL `UPDATE ... FROM groups` 残留和 cost 参数数量 | 订阅用量更新使用 MySQL `UPDATE ... JOIN \`groups\``，三个 usage 字段分别传入 cost 参数 | 完成 | 100% | 2026-06-30 已 `gofmt` 且 `go build ./...` 通过；后续仍需留意多字段累加时重复占位符必须重复传参 |
 | P0 | `internal/repository/usage_log_repo.go` | 已完成：移除 `ON CONFLICT ... RETURNING`、PostgreSQL 批量 CTE/JSON 返回、`FILTER` 与 `::timestamptz` | 单条写入使用 MySQL insert + `LastInsertId`/冲突后查询；创建批次在事务内逐条保持 inserted/ID/创建时间语义；best-effort 使用多值 `INSERT IGNORE`；聚合改为边界 CTE + `CASE WHEN` | 完成 | 100% | 2026-06-29 完成，已 `gofmt` 并静态复扫；基线修复后 `go build ./...` 通过 |
 | P1 | `internal/repository/ops_repo_alerts.go` | 已完成：移除 4 处 `RETURNING`、`$n`、JSON `->>`、`IS NOT DISTINCT FROM` | 创建/更新使用事务内 `ExecContext + LastInsertId + SELECT`；统一 `?` 并补齐游标重复参数；JSON 使用 `JSON_UNQUOTE(JSON_EXTRACT(...))`；NULL 比较使用 `<=>` | 完成 | 100% | 2026-06-29 完成并静态复扫；同时修正规则更新、事件状态和邮件状态写入的参数顺序 |
-| P1 | `internal/repository/ops_repo_dashboard.go` | 已完成：移除 `percentile_cont`、`FILTER`、`date_trunc` 和 `FULL OUTER JOIN` | 原始延迟样本在 Go 端排序并连续线性插值；条件聚合使用 `CASE WHEN`；分钟桶使用 `DATE_FORMAT`；双侧桶使用 `UNION ALL` 汇总 | 完成 | 100% | 2026-06-29 完成并静态复扫；百分位、平均值和最大值仍返回原有整数字段语义 |
+| P1 | `internal/repository/ops_repo_dashboard.go` | 已完成：移除 `percentile_cont`、`FILTER`、`date_trunc` 和 `FULL OUTER JOIN`；2026-06-30 修复动态 usage filter 中 `LEFT JOIN groups` 未转义导致 MySQL 1064 | 原始延迟样本在 Go 端排序并连续线性插值；条件聚合使用 `CASE WHEN`；分钟桶使用 `DATE_FORMAT`；双侧桶使用 `UNION ALL` 汇总；`groups` 表名统一用反引号 | 完成 | 100% | 2026-06-30 已修复当前生产报错链路；后续如新增 SQL 仍需检查 MySQL 保留字表名 |
 | P1 | `internal/repository/ops_repo_metrics.go` | 已完成：心跳 upsert 从 `ON CONFLICT/EXCLUDED` 迁移为 MySQL 8 `ON DUPLICATE KEY UPDATE/VALUES` | 保留成功时清错、失败时保留最近成功结果的 CASE 语义 | 完成 | 100% | 2026-06-29 完成并静态复扫 |
 | P1 | `internal/repository/ops_repo_openai_token_stats.go` | 已完成：移除 PostgreSQL `::bigint/::numeric/::float8`，保留原聚合与 ROUND 精度 | 使用 MySQL 8 原生 `COUNT/SUM/AVG/ROUND` | 完成 | 100% | 2026-06-29 完成并静态复扫 |
 | P1 | `internal/repository/ops_repo_preagg.go` | 已迁移：移除 `percentile_cont`、`FILTER`、`date_trunc`、类型转换、`FULL OUTER JOIN`、`ON CONFLICT/EXCLUDED` | 小时聚合改为 Go 端读取原始行、UTC 小时分桶、按 overall/platform/group 三维聚合并复用连续百分位算法；写入使用 MySQL `ON DUPLICATE KEY UPDATE`；日聚合改为 MySQL `DATE()`、`CASE WHEN` 条件聚合和 upsert | 基本完成 | 95% | 2026-06-29 已 `gofmt`、本文件静态残留扫描通过，且使用工作区 Go 缓存执行 `go build ./...` 通过；仍需人工核对 MySQL 唯一索引/RowsAffected 语义 |
 | P1 | `internal/repository/ops_repo_realtime_traffic.go` | 已完成：`date_trunc` 改为 MySQL `DATE_FORMAT + CAST`，不支持的 `FULL OUTER JOIN` 改为双向 `LEFT JOIN + UNION ALL` | 保持分钟桶合并、峰值 QPS/TPS 统计语义 | 完成 | 100% | 2026-06-29 完成并静态复扫 |
-| P1 | `internal/repository/ops_repo_trends.go` | 已完成：移除 `split_part`、JSONB lateral 展开、`date_trunc`、`FILTER` 和 `FULL OUTER JOIN` | 使用 `SUBSTRING_INDEX` + `JSON_TABLE` 保持 failover 分类；MySQL `DATE_FORMAT/TIMESTAMP` 分桶；`CASE WHEN` 条件聚合；`UNION ALL` 汇总双侧数据 | 完成 | 100% | 2026-06-29 完成并静态复扫；补齐 errorWhere 二次嵌入参数及平台/分组明细查询缺失参数 |
-| P1 | `internal/repository/ops_repo_request_details.go` | 已完成：移除 UNION 查询中的 PostgreSQL 类型转换和 `NULLS LAST` | 使用 MySQL 原生字面量/NULL 类型推断及 `duration_ms IS NULL` 排序；为两个 UNION 分支分别传入时间参数 | 完成 | 100% | 2026-06-29 全量复扫补录并完成；`go build ./...` 通过 |
+| P1 | `internal/repository/ops_repo_trends.go` | 已完成：移除 `split_part`、JSONB lateral 展开、`date_trunc`、`FILTER` 和 `FULL OUTER JOIN`；2026-06-30 修复 throughput breakdown 查询中的 `JOIN groups` 未转义问题 | 使用 `SUBSTRING_INDEX` + `JSON_TABLE` 保持 failover 分类；MySQL `DATE_FORMAT/TIMESTAMP` 分桶；`CASE WHEN` 条件聚合；`UNION ALL` 汇总双侧数据；`groups` 表名统一用反引号 | 完成 | 100% | 2026-06-30 已补齐 MySQL 保留字表名转义，`gofmt` 且 `go build ./...` 通过 |
+| P1 | `internal/repository/ops_repo_request_details.go` | 已完成：移除 UNION 查询中的 PostgreSQL 类型转换和 `NULLS LAST`；2026-06-30 修复 UNION 两个分支中的 `LEFT JOIN groups` 未转义问题 | 使用 MySQL 原生字面量/NULL 类型推断及 `duration_ms IS NULL` 排序；为两个 UNION 分支分别传入时间参数；`groups` 表名统一用反引号 | 完成 | 100% | 2026-06-30 已补齐 MySQL 保留字表名转义，`gofmt` 且 `go build ./...` 通过 |
 | P2 | `internal/service/backup_service.go` | 已完成：`BackupType` 元数据和注释由 `postgres` 改为 `mysql` | 全生产代码搜索未发现读取端依赖旧值 | 完成 | 100% | 2026-06-29 完成；`go build ./...` 通过 |
 
 ### 3.2 已经修改但尚未完成最终复核的模块
 
 | 模块/文件 | 已完成内容 | 状态 | 估算进度 | 接班注意事项 |
 |---|---|---|---:|---|
+| `internal/repository/ops_repo_histograms.go` | 2026-06-30 修复 MySQL 8 下 `/api/v1/admin/ops/dashboard/latency-histogram` 查询报错：`range` 作为 SELECT 别名触发 1064 语法错误，已改为反引号别名 `` `range` `` | 完成 | 100% | 已 `gofmt`，并使用工作区 Go 缓存执行 `go build ./...` 通过；接口 JSON 字段仍由 service model 的 `Range` 输出，未改 API 结构 |
 | `internal/repository/ops_repo.go` | 已替换 `pq.CopyIn`、`RETURNING`、`$n`、`ANY`、`ILIKE`、PostgreSQL 类型转换；已处理 MySQL 保留表名 | 基本完成 | 90% | 复核所有动态条件的参数数量和顺序；检查 `UpdateErrorResolved` 参数顺序 |
 | `internal/repository/affiliate_repo.go` | 已替换主要类型转换、冻结时间、配额解冻/转账 CTE、分页、批量数组和 upsert；2026-06-29 已移除合并提交误带入的嵌套冲突标记并恢复父提交可格式化版本 | 进行中 | 75% | 重点检查事务中的 `SELECT ... FOR UPDATE`、唯一邀请码冲突和批量参数数量 |
 | `internal/repository/channel_monitor_repo.go` | 已替换 `DISTINCT ON`、`pq.Array/unnest`、条件聚合、日期 interval、批删和 upsert；2026-06-29 已移除合并提交误带入的冲突标记并恢复父提交可格式化版本 | 进行中 | 80% | `UpsertDailyRollupsFor` 的参数数量、MySQL upsert RowsAffected 语义需要人工复核；运行 SQL 静态复扫无 PostgreSQL 残留 |
+| `internal/repository/channel_repo.go` | 2026-06-30 修复 `GetGroupPlatforms` 中 `FROM groups` 未转义导致 MySQL 1064 的隐患 | 完成 | 100% | 已改为反引号表名，`gofmt` 且 `go build ./...` 通过 |
 | `internal/repository/content_moderation_repo.go` | 已替换 JSONB、`RETURNING`、`ILIKE`、类型转换和分页占位符；2026-06-29 已移除合并提交误带入的冲突标记并恢复父提交可格式化版本 | 基本完成 | 90% | 复核插入列/参数数量以及 `CountFlaggedByUserSince` 参数顺序；静态复扫无 PostgreSQL 运行语法 |
 | `internal/repository/dashboard_aggregation_repo.go` | 已启用 MySQL 聚合；替换 PostgreSQL 驱动判断、`ctid`、条件 upsert、时间分桶和分区系统表 | 进行中 | 70% | 时区表依赖、MySQL 分区命名、批量归档与删除一致性是主要风险 |
 | `internal/repository/group_repo.go` | 已处理 MySQL `groups` 保留字和已有 JSON_TABLE 查询 | 基本完成 | 90% | 复核所有原生 SQL 是否都使用反引号包裹 `groups` |
@@ -56,6 +60,7 @@
 | `internal/repository/user_repo.go` | 已移除 `pq.Array`，改为 `JSON_TABLE`；替换 `ILIKE` 和 `NULLS FIRST/LAST`；2026-06-29 已移除合并提交误带入的冲突标记并恢复父提交可格式化版本 | 进行中 | 80% | 检查 Ent 自定义排序表达式生成的 MySQL SQL；静态复扫无 PostgreSQL 运行语法 |
 | `internal/repository/user_group_rate_repo.go` | 已将数组、`unnest`、`ANY/ALL`、`ON CONFLICT` 改为 `JSON_TABLE` 和 MySQL upsert；2026-06-29 已移除合并提交误带入的冲突标记并恢复父提交可格式化版本 | 进行中 | 75% | 核对数组按 ordinality 配对、空列表和 NULL 清理语义；静态复扫无 PostgreSQL 运行语法 |
 | `internal/repository/user_platform_quota_repo.go` | 已迁移主要 upsert，并修正部分历史参数数量问题；2026-06-29 已复核占位符数量、软删除复活和批量快照参数，并清理 PostgreSQL 术语注释 | 完成 | 100% | `gofmt` 后本文件 PostgreSQL 运行语法/旧术语静态扫描均无命中；当前 MySQL 唯一键为 `(user_id, platform)`，upsert 会复活软删除记录 |
+| `internal/repository/user_subscription_repo.go` | 2026-06-30 修复订阅用量累加中的 PostgreSQL `UPDATE ... FROM groups` 残留和 cost 参数数量 | 使用 MySQL `UPDATE ... JOIN \`groups\``，三个 usage 字段分别传入 cost 参数 | 完成 | 100% | 已 `gofmt` 且 `go build ./...` 通过；该文件此前未列入迁移清单，本次因 MySQL 1064 同类扫描补录 |
 | `internal/repository/user_profile_identity_repo.go` | provider grant 改为 `INSERT IGNORE`，avatar 改为 MySQL upsert | 基本完成 | 90% | 检查 RowsAffected 在 `INSERT IGNORE` 下是否仍满足业务判断 |
 | `internal/service/admin_service.go` | 已移除金额 PostgreSQL cast，修正 MySQL `LIMIT/OFFSET` 顺序 | 基本完成 | 95% | 静态复扫即可 |
 | `internal/service/auth_oauth_first_bind.go` | provider grant 改为 `INSERT IGNORE` | 基本完成 | 95% | 检查重复写入时 RowsAffected 语义 |

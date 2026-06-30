@@ -545,7 +545,7 @@ func (r *channelRepository) GetGroupPlatforms(ctx context.Context, groupIDs []in
 		return nil, fmt.Errorf("encode group ids: %w", err)
 	}
 	rows, err := r.db.QueryContext(ctx,
-		`SELECT id, platform FROM groups
+		`SELECT id, platform FROM `+"`groups`"+`
 		 WHERE id IN (SELECT id FROM JSON_TABLE(?, '$[*]' COLUMNS(id BIGINT PATH '$')) AS group_ids)`,
 		idsJSON,
 	)

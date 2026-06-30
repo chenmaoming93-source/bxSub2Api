@@ -197,7 +197,7 @@ WITH usage_totals AS (
          COUNT(*) AS success_count,
          COALESCE(SUM(input_tokens + output_tokens + cache_creation_tokens + cache_read_tokens), 0) AS token_consumed
   FROM usage_logs ul
-  LEFT JOIN groups g ON g.id = ul.group_id
+  LEFT JOIN ` + "`groups`" + ` g ON g.id = ul.group_id
   LEFT JOIN accounts a ON a.id = ul.account_id
   WHERE ul.created_at >= ? AND ul.created_at < ?
   GROUP BY 1
@@ -273,7 +273,7 @@ WITH usage_totals AS (
          COUNT(*) AS success_count,
          COALESCE(SUM(input_tokens + output_tokens + cache_creation_tokens + cache_read_tokens), 0) AS token_consumed
   FROM usage_logs ul
-  JOIN groups g ON g.id = ul.group_id
+  JOIN ` + "`groups`" + ` g ON g.id = ul.group_id
   WHERE ul.created_at >= ? AND ul.created_at < ?
     AND g.platform = ?
   GROUP BY 1, 2
@@ -283,7 +283,7 @@ error_totals AS (
          COALESCE(MAX(g.name), '') AS group_name,
          COUNT(*) AS error_count
   FROM ops_error_logs oel
-  LEFT JOIN groups g ON g.id = oel.group_id
+  LEFT JOIN ` + "`groups`" + ` g ON g.id = oel.group_id
   WHERE oel.created_at >= ? AND oel.created_at < ?
     AND oel.platform = ?
     AND oel.group_id IS NOT NULL
