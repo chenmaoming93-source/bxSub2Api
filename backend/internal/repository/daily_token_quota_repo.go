@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"fmt"
+	"sort"
 	"time"
 
 	dbent "github.com/Wei-Shaw/sub2api/ent"
@@ -68,6 +69,111 @@ func cloneInt64(value *int64) *int64 {
 	}
 	copy := *value
 	return &copy
+}
+
+func (r *dailyTokenQuotaRepository) ListModelDailyTokenQuotas(ctx context.Context, at time.Time) ([]service.ModelDailyTokenQuotaRecord, error) {
+	day := timezone.StartOfDay(at)
+	rows, err := r.client.ModelTokenDailyUsage.Query().
+		Where(modeltokendailyusage.UsageDateEQ(day)).
+		All(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list model daily token quotas: %w", err)
+	}
+	records := make([]service.ModelDailyTokenQuotaRecord, 0, len(rows))
+	for _, row := range rows {
+		records = append(records, service.ModelDailyTokenQuotaRecord{
+			Model:            row.Model,
+			UsageDate:        row.UsageDate,
+			UsedTokens:       row.UsedTokens,
+			DailyLimitTokens: cloneInt64(row.DailyLimitTokens),
+		})
+	}
+	sort.Slice(records, func(i, j int) bool { return records[i].Model < records[j].Model })
+	return records, nil
+}
+
+func (r *dailyTokenQuotaRepository) SetModelDailyTokenQuota(ctx context.Context, model string, at time.Time, limit *int64) (service.ModelDailyTokenQuotaRecord, error) {
+	day := timezone.StartOfDay(at)
+	row, err := r.client.ModelTokenDailyUsage.Query().
+		Where(modeltokendailyusage.ModelEQ(model), modeltokendailyusage.UsageDateEQ(day)).
+		Only(ctx)
+	if dbent.IsNotFound(err) {
+		create := r.client.ModelTokenDailyUsage.Create().
+			SetModel(model).
+			SetUsageDate(day).
+			SetUsedTokens(0).
+			SetNillableDailyLimitTokens(limit)
+		row, err = create.Save(ctx)
+	} else if err == nil {
+		update := row.Update()
+		if limit == nil {
+			update = update.ClearDailyLimitTokens()
+		} else {
+			update = update.SetDailyLimitTokens(*limit)
+		}
+		row, err = update.Save(ctx)
+	}
+	if err != nil {
+		return service.ModelDailyTokenQuotaRecord{}, fmt.Errorf("set model daily token quota: %w", err)
+	}
+	return service.ModelDailyTokenQuotaRecord{
+		Model:            row.Model,
+		UsageDate:        row.UsageDate,
+		UsedTokens:       row.UsedTokens,
+		DailyLimitTokens: cloneInt64(row.DailyLimitTokens),
+	}, nil
+}
+
+func (r *dailyTokenQuotaRepository) ListUserModelDailyTokenQuotas(ctx context.Context, userID int64, at time.Time) ([]service.UserModelDailyTokenQuotaRecord, error) {
+	day := timezone.StartOfDay(at)
+	rows, err := r.client.UserModelTokenDailyUsage.Query().
+		Where(usermodeltokendailyusage.UserIDEQ(userID), usermodeltokendailyusage.UsageDateEQ(day)).
+		All(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list user model daily token quotas: %w", err)
+	}
+	records := make([]service.UserModelDailyTokenQuotaRecord, 0, len(rows))
+	for _, row := range rows {
+		records = append(records, service.UserModelDailyTokenQuotaRecord{
+			UserID:           row.UserID,
+			Model:            row.Model,
+			UsageDate:        row.UsageDate,
+			UsedTokens:       row.UsedTokens,
+			DailyLimitTokens: cloneInt64(row.DailyLimitTokens),
+		})
+	}
+	sort.Slice(records, func(i, j int) bool { return records[i].Model < records[j].Model })
+	return records, nil
+}
+
+func (r *dailyTokenQuotaRepository) UpsertUserModelDailyTokenQuotas(ctx context.Context, userID int64, at time.Time, inputs []service.UserModelDailyTokenQuotaInput) ([]service.UserModelDailyTokenQuotaRecord, error) {
+	day := timezone.StartOfDay(at)
+	for _, input := range inputs {
+		row, err := r.client.UserModelTokenDailyUsage.Query().
+			Where(usermodeltokendailyusage.UserIDEQ(userID), usermodeltokendailyusage.ModelEQ(input.Model), usermodeltokendailyusage.UsageDateEQ(day)).
+			Only(ctx)
+		if dbent.IsNotFound(err) {
+			_, err = r.client.UserModelTokenDailyUsage.Create().
+				SetUserID(userID).
+				SetModel(input.Model).
+				SetUsageDate(day).
+				SetUsedTokens(0).
+				SetNillableDailyLimitTokens(input.DailyLimitTokens).
+				Save(ctx)
+		} else if err == nil {
+			update := row.Update()
+			if input.DailyLimitTokens == nil {
+				update = update.ClearDailyLimitTokens()
+			} else {
+				update = update.SetDailyLimitTokens(*input.DailyLimitTokens)
+			}
+			_, err = update.Save(ctx)
+		}
+		if err != nil {
+			return nil, fmt.Errorf("upsert user model daily token quota: %w", err)
+		}
+	}
+	return r.ListUserModelDailyTokenQuotas(ctx, userID, at)
 }
 
 func (r *dailyTokenQuotaRepository) IncrementDailyTokenQuotas(ctx context.Context, increment service.DailyTokenQuotaIncrement) error {

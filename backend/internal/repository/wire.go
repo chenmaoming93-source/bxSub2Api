@@ -62,6 +62,14 @@ func ProvideSchedulerCache(rdb *redis.Client, cfg *config.Config) service.Schedu
 	return newSchedulerCacheWithChunkSizes(rdb, mgetChunkSize, writeChunkSize)
 }
 
+func ProvideModelTokenQuotaAdminRepository(client *ent.Client) service.ModelTokenQuotaAdminRepository {
+	return &dailyTokenQuotaRepository{client: client}
+}
+
+func ProvideUserModelTokenQuotaAdminRepository(client *ent.Client) service.UserModelTokenQuotaAdminRepository {
+	return &dailyTokenQuotaRepository{client: client}
+}
+
 // ProviderSet is the Wire provider set for all repositories
 var ProviderSet = wire.NewSet(
 	NewUserRepository,
@@ -95,10 +103,14 @@ var ProviderSet = wire.NewSet(
 	NewAffiliateRepository,
 	NewUserPlatformQuotaRepository,     // T14: user × platform quota
 	NewUserPlatformQuotaServiceAdapter, // T14: adapter → service.UserPlatformQuotaRepository
+	NewDailyTokenQuotaRepository,
+	ProvideModelTokenQuotaAdminRepository,
+	ProvideUserModelTokenQuotaAdminRepository,
 
 	// Cache implementations
 	NewGatewayCache,
 	NewBillingCache,
+	NewDailyTokenQuotaCacheInvalidator,
 	NewAPIKeyCache,
 	NewTempUnschedCache,
 	NewTimeoutCounterCache,

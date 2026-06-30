@@ -4,8 +4,8 @@
 - Source plan: `../PLAN.md`
 - Target effort per MVP: `20min以内`
 - Update batch size: `1 completed MVP`
-- Last updated: `2026-06-30T12:17:36+08:00`
-- Overall: `7/23 (30%)`
+- Last updated: `2026-06-30T14:31:06+08:00`
+- Overall: `10/23 (43%)`
 
 ## Status Rules
 
@@ -25,9 +25,9 @@
 | MVP-005 | [MVP-005-user-model-quota-schema.md](./MVP-005-user-model-quota-schema.md) | DONE | MVP-001 | 20min | 2026-06-30T12:08:25+08:00 | [用户模型日配额 schema、外键与测试](./MVP-005-user-model-quota-schema.md#completion-evidence) |
 | MVP-006 | [MVP-006-group-candidate-quota-schema.md](./MVP-006-group-candidate-quota-schema.md) | DONE | MVP-001 | 20min | 2026-06-30T12:12:13+08:00 | [候选日用量身份、级联与测试](./MVP-006-group-candidate-quota-schema.md#completion-evidence) |
 | MVP-007 | [MVP-007-quota-read-port.md](./MVP-007-quota-read-port.md) | DONE | MVP-004, MVP-005, MVP-006 | 20min | 2026-06-30T12:17:36+08:00 | [统一读取端口、耗尽错误与边界测试](./MVP-007-quota-read-port.md#completion-evidence) |
-| MVP-008 | [MVP-008-quota-atomic-increment.md](./MVP-008-quota-atomic-increment.md) | PENDING | MVP-007 | 20min |  |  |
-| MVP-009 | [MVP-009-quota-cache.md](./MVP-009-quota-cache.md) | PENDING | MVP-007, MVP-008 | 20min |  |  |
-| MVP-010 | [MVP-010-global-quota-admin-api.md](./MVP-010-global-quota-admin-api.md) | PENDING | MVP-004, MVP-007, MVP-009 | 20min |  |  |
+| MVP-008 | [MVP-008-quota-atomic-increment.md](./MVP-008-quota-atomic-increment.md) | DONE | MVP-007 | 20min | 2026-06-30T13:57:58+08:00 | [原子累加、跨日与回滚测试](./MVP-008-quota-atomic-increment.md#completion-evidence) |
+| MVP-009 | [MVP-009-quota-cache.md](./MVP-009-quota-cache.md) | DONE | MVP-007, MVP-008 | 20min | 2026-06-30T14:11:44+08:00 | [Redis 快速判断、TTL 与隔离测试](./MVP-009-quota-cache.md#completion-evidence) |
+| MVP-010 | [MVP-010-global-quota-admin-api.md](./MVP-010-global-quota-admin-api.md) | DONE | MVP-004, MVP-007, MVP-009 | 20min | 2026-06-30T14:31:06+08:00 | [全局模型配额管理 API、缓存失效与测试](./MVP-010-global-quota-admin-api.md#completion-evidence) |
 | MVP-011 | [MVP-011-user-quota-admin-api.md](./MVP-011-user-quota-admin-api.md) | PENDING | MVP-005, MVP-007, MVP-009 | 20min |  |  |
 | MVP-012 | [MVP-012-candidate-routing.md](./MVP-012-candidate-routing.md) | PENDING | MVP-002, MVP-003 | 20min |  |  |
 | MVP-013 | [MVP-013-quota-aware-routing.md](./MVP-013-quota-aware-routing.md) | PENDING | MVP-007, MVP-009, MVP-012 | 20min |  |  |

@@ -55,6 +55,44 @@ type DailyTokenQuotaIncrement struct {
 	GroupCandidateDailyLimitTokens *int64
 }
 
+type ModelDailyTokenQuotaRecord struct {
+	Model            string
+	UsageDate        time.Time
+	UsedTokens       int64
+	DailyLimitTokens *int64
+}
+
+type UserModelDailyTokenQuotaRecord struct {
+	UserID           int64
+	Model            string
+	UsageDate        time.Time
+	UsedTokens       int64
+	DailyLimitTokens *int64
+}
+
+type UserModelDailyTokenQuotaInput struct {
+	Model            string
+	DailyLimitTokens *int64
+}
+
+type ModelTokenQuotaAdminRepository interface {
+	ListModelDailyTokenQuotas(context.Context, time.Time) ([]ModelDailyTokenQuotaRecord, error)
+	SetModelDailyTokenQuota(context.Context, string, time.Time, *int64) (ModelDailyTokenQuotaRecord, error)
+}
+
+type ModelDailyTokenQuotaCacheInvalidator interface {
+	InvalidateModelDailyTokenQuota(context.Context, ModelDailyTokenQuotaKey) error
+}
+
+type UserModelTokenQuotaAdminRepository interface {
+	ListUserModelDailyTokenQuotas(context.Context, int64, time.Time) ([]UserModelDailyTokenQuotaRecord, error)
+	UpsertUserModelDailyTokenQuotas(context.Context, int64, time.Time, []UserModelDailyTokenQuotaInput) ([]UserModelDailyTokenQuotaRecord, error)
+}
+
+type UserModelDailyTokenQuotaCacheInvalidator interface {
+	InvalidateUserModelDailyTokenQuota(context.Context, UserModelDailyTokenQuotaKey) error
+}
+
 type DailyTokenQuotaExhaustedError struct {
 	Scope       string
 	UserID      int64

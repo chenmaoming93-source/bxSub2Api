@@ -1,7 +1,7 @@
 # MVP-008: 实现三类用量的原子累加与跨日切换
 
 - Protocol: `mvp-list/v1`
-- State: `ACTIVE`
+- State: `VERIFIED`
 - Estimate: `20min`
 - Estimate rationale: 集中实现一条事务/UPSERT 写路径并用数据库测试验证，不接入业务调用点。
 - Dependencies: `MVP-007`
@@ -31,9 +31,9 @@
 
 ## Acceptance Criteria
 
-- [ ] 并发 N 次累加后的 used_tokens 等于输入总和。
-- [ ] 次日写入不污染前一日行。
-- [ ] 任一步失败时不会留下计划未允许的部分更新。
+- [x] 并发 N 次累加后的 used_tokens 等于输入总和。
+- [x] 次日写入不污染前一日行。
+- [x] 任一步失败时不会留下计划未允许的部分更新。
 
 ## Verification Plan
 
@@ -41,10 +41,15 @@
 
 ## Completion Evidence
 
-> Leave this section empty until work has actually been performed.
-
 | Type | Command or path | Result |
 |---|---|---|
+| Implementation | `backend/internal/repository/daily_token_quota_repo.go` | Existing `IncrementDailyTokenQuotas` transaction performs three UPSERT increments and commits only after all three quota writes succeed. |
+| Focused tests | `backend/internal/repository/daily_token_quota_repo_test.go` | Added concurrent increment, next-day rollover, and rollback-on-failure coverage. |
+| Verification | `cd backend; $env:GOCACHE='E:\code\vs\sub2api\sub2api\backend\.gocache'; $env:GOMODCACHE='E:\code\vs\sub2api\sub2api\backend\.gomodcache'; $env:GOTMPDIR='E:\code\vs\sub2api\sub2api\backend\.gotmp'; go test ./internal/repository -run 'TokenQuota.*(Concurrent|Rollover|Increment)'` | PASS: `ok github.com/Wei-Shaw/sub2api/internal/repository 6.520s`. |
+| Regression check | `cd backend; $env:GOCACHE='E:\code\vs\sub2api\sub2api\backend\.gocache'; $env:GOMODCACHE='E:\code\vs\sub2api\sub2api\backend\.gomodcache'; $env:GOTMPDIR='E:\code\vs\sub2api\sub2api\backend\.gotmp'; go test ./internal/repository -run 'DailyTokenQuotaRepository'` | PASS: `ok github.com/Wei-Shaw/sub2api/internal/repository 1.495s`. |
 
 ## Execution Notes
+
+- Set the repository test client's SQLite connection pool to one open connection to avoid shared in-memory SQLite writer lock noise while preserving concurrent caller coverage.
+- Default Go cache/temp locations were blocked in this environment; verification used project-local `.gocache`, `.gomodcache`, and `.gotmp`.
 
