@@ -49,7 +49,7 @@ type UserPlatformQuotaSnapshot struct {
 
 // UserPlatformQuotaRepository 定义用户平台配额的数据访问接口。
 type UserPlatformQuotaRepository interface {
-	// BulkInsertInitial 幂等批量插入初始配额记录（ON CONFLICT DO NOTHING）。
+	// BulkInsertInitial 幂等批量插入初始配额记录（MySQL upsert）。
 	BulkInsertInitial(ctx context.Context, records []UserPlatformQuotaRecord) error
 	// GetByUserPlatform 查询单条配额记录，未找到时返回 (nil, nil)。
 	GetByUserPlatform(ctx context.Context, userID int64, platform string) (*UserPlatformQuotaRecord, error)
@@ -62,7 +62,7 @@ type UserPlatformQuotaRepository interface {
 	// UpsertForUser 全量替换该用户所有平台限额配置（详见 service.UserPlatformQuotaRepository.UpsertForUser）。
 	UpsertForUser(ctx context.Context, userID int64, records []UserPlatformQuotaRecord) error
 	// BatchSnapshotUsage 用一条多行 UPSERT 把整批 usage 以绝对值覆盖写入(非累加)。
-	// usage/window_start 直接取 EXCLUDED(Redis 当前窗口快照),无 CASE。整批共用 now 作 created/updated_at。
+	// usage/window_start 直接取 VALUES(Redis 当前窗口快照),无 CASE。整批共用 now 作 created/updated_at。
 	// 要求 snapshots 内 (user,platform) 不重复。FK 违反返回 ErrUserPlatformQuotaFKViolation。
 	BatchSnapshotUsage(ctx context.Context, snapshots []UserPlatformQuotaSnapshot, now time.Time) error
 }
@@ -76,17 +76,17 @@ func NewUserPlatformQuotaRepository(client *dbent.Client) UserPlatformQuotaRepos
 	return &userPlatformQuotaRepository{client: client}
 }
 
-// BulkInsertInitial 用原生 SQL ON CONFLICT 实现幂等批量插入（带条件 limit 覆盖）。
+// BulkInsertInitial 用 MySQL ON DUPLICATE KEY UPDATE 实现幂等批量插入（带条件 limit 覆盖）。
 // 仅插入 limit_usd 与元数据，usage_usd 用 DB 默认 0，window_start 留 NULL。
 // FK 约束要求 user_id 在 users 表中存在，调用方负责保证。
 //
-// 冲突策略：CASE WHEN existing.*_limit_usd IS NULL THEN EXCLUDED.*_limit_usd ELSE existing ...
+// 冲突策略：CASE WHEN existing.*_limit_usd IS NULL THEN VALUES(*_limit_usd) ELSE existing ...
 //   - 若 IncrementUsageWithReset 因时序问题已先建行（limit 全 NULL），
 //     此处会把注册时的默认 limit 写入，避免该用户在该平台永久无限额。
 //   - 若管理员已通过 UpsertForUser 设置了非 NULL 个性化 limit，**保留不动**
-//     —— 旧实现无条件 EXCLUDED 覆盖会丢失个性化配置。
+//     —— 旧实现无条件使用插入值覆盖会丢失个性化配置。
 //   - 不会改 usage_usd / window_start，保留累计的用量。
-//   - 仅命中 deleted_at IS NULL 的活跃记录（partial unique index 作用域）。
+//   - MySQL 唯一键命中后会复活软删除记录。
 func (r *userPlatformQuotaRepository) BulkInsertInitial(ctx context.Context, records []UserPlatformQuotaRecord) error {
 	if len(records) == 0 {
 		return nil
@@ -113,8 +113,8 @@ func (r *userPlatformQuotaRepository) BulkInsertInitial(ctx context.Context, rec
 			now, now,
 		)
 	}
-	// 精确命中 partial unique index（deleted_at IS NULL），避免对软删记录的歧义冲突。
-	// 条件覆盖：仅在现有 limit 为 NULL 时才写入 EXCLUDED，否则保留现有非 NULL 值。
+	// MySQL 唯一键按 (user_id, platform) 命中，软删除记录通过 upsert 复活。
+	// 条件覆盖：仅在现有 limit 为 NULL 时才写入 VALUES，否则保留现有非 NULL 值。
 	// - 修复 IncrementUsageWithReset 已用 NULL limit 建行的场景（NULL → 注册默认）
 	// - 保护管理员通过 UpsertForUser 设置的个性化 limit 不被静默覆盖
 	_, _ = sb.WriteString(` ON DUPLICATE KEY UPDATE
@@ -187,10 +187,10 @@ func (r *userPlatformQuotaRepository) IncrementUsageWithReset(ctx context.Contex
 			Only(txCtx)
 		if dbent.IsNotFound(err) {
 			// fail-open 建行：limit_* 保留 NULL（无限额）。
-			// 用 ON CONFLICT DO UPDATE 累加，而非裸 INSERT：并发下另一请求可能在本事务
-			// SELECT FOR UPDATE 之后、INSERT 之前刚建行，裸 INSERT 会撞 partial unique index
+			// 用 ON DUPLICATE KEY UPDATE 累加，而非裸 INSERT：并发下另一请求可能在本事务
+			// SELECT FOR UPDATE 之后、INSERT 之前刚建行，裸 INSERT 会撞 MySQL unique key
 			// 致事务回滚、本次 cost 丢失；DO UPDATE 把 cost 累加到既有 usage 上。
-			// 写法与本文件 insertLimitsRow / BulkInsertInitial 的 ON CONFLICT 一致。
+			// 写法与本文件 insertLimitsRow / BulkInsertInitial 的 MySQL upsert 一致。
 			const insertSQL = `INSERT INTO user_platform_quotas
 				(user_id, platform, daily_usage_usd, weekly_usage_usd, monthly_usage_usd,
 				 daily_window_start, weekly_window_start, monthly_window_start, created_at, updated_at)
@@ -364,7 +364,7 @@ func (r *userPlatformQuotaRepository) UpsertForUser(ctx context.Context, userID 
 // softDeleteMissingPlatforms 软删除该用户所有不在 keepPlatforms 中的 active 行。
 // keepPlatforms 为空时 → 软删用户所有 active 行。
 // now 由调用方传入，与 updateLimitsRow / insertLimitsRow 共享同一个 Go time.Now()，
-// 保证事务内所有时间戳一致（避免 Postgres NOW() 与 Go time.Now() 的微小偏差）。
+// 保证事务内所有时间戳一致（避免 SQL NOW() 与 Go time.Now() 的微小偏差）。
 func softDeleteMissingPlatforms(ctx context.Context, client *dbent.Client, userID int64, keepPlatforms []string, now time.Time) error {
 	var (
 		query string
@@ -392,7 +392,7 @@ func softDeleteMissingPlatforms(ctx context.Context, client *dbent.Client, userI
 
 // updateLimitsRow 尝试 UPDATE active 行（deleted_at IS NULL），返回受影响行数。
 // 仅更新 active 行：若存在多条历史软删记录，加 deleted_at IS NULL 守卫可避免
-// 批量重激活导致的 partial unique index（userplatformquota_user_id_platform_uq）冲突。
+// 批量重激活导致的 unique key（userplatformquota_user_id_platform_uq）冲突。
 // affected=0 时由调用方 UpsertForUser 走 insertLimitsRow 路径创建新行。
 func updateLimitsRow(ctx context.Context, client *dbent.Client, userID int64, rec UserPlatformQuotaRecord, now time.Time) (int64, error) {
 	const query = `UPDATE user_platform_quotas
@@ -409,8 +409,8 @@ func updateLimitsRow(ctx context.Context, client *dbent.Client, userID int64, re
 }
 
 // insertLimitsRow 插入新限额行（usage 默认 0，window_start 默认 NULL）。
-// 带 ON CONFLICT ... DO NOTHING 守卫：防止两个并发请求同时为同一 user/platform 新建行时
-// 触发 unique constraint 违反（userplatformquota_user_id_platform_uq 部分唯一索引）。
+// 带 ON DUPLICATE KEY UPDATE 守卫：防止两个并发请求同时为同一 user/platform 新建行时
+// 触发 unique constraint 违反（userplatformquota_user_id_platform_uq 唯一索引）。
 // affected=0 时说明另一个并发请求刚完成 INSERT，fallback 到 updateLimitsRow 覆写 limits 值。
 func insertLimitsRow(ctx context.Context, client *dbent.Client, userID int64, rec UserPlatformQuotaRecord, now time.Time) error {
 	const query = `INSERT INTO user_platform_quotas
@@ -442,7 +442,7 @@ func insertLimitsRow(ctx context.Context, client *dbent.Client, userID int64, re
 	return nil
 }
 
-// batchRows 是 BatchSnapshotUsage 每批最大行数（9 参/行 × 6000 ≈ 54000 参,低于 Postgres 65535 上限）。
+// batchRows 是 BatchSnapshotUsage 每批最大行数（10 参/行 × 6000 = 60000 参,控制 MySQL prepared statement 参数压力）。
 const batchRows = 6000
 
 // BatchSnapshotUsage 用一条多行 UPSERT 把整批 usage 以绝对值覆盖写入（非累加）。

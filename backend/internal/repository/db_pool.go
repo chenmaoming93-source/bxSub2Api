@@ -1,10 +1,7 @@
 // Package repository contains persistence infrastructure helpers.
 //
-// DB pool lifetimes are clamped here because lib/pq starts watchCancel
-// goroutines for context-aware queries. If a cloud proxy silently drops idle
-// TCP without RST/FIN, those goroutines can block in Read until database/sql
-// retires the connection. This is a short-term mitigation; the long-term
-// follow-up is migrating PostgreSQL access to jackc/pgx/v5/stdlib.
+// DB pool lifetimes are clamped here so stale connections are retired before
+// cloud proxies or MySQL wait_timeout can silently drop idle TCP sessions.
 package repository
 
 import (

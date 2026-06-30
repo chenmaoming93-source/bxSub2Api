@@ -36,7 +36,7 @@
 | P1 | `internal/repository/ops_repo_dashboard.go` | 已完成：移除 `percentile_cont`、`FILTER`、`date_trunc` 和 `FULL OUTER JOIN` | 原始延迟样本在 Go 端排序并连续线性插值；条件聚合使用 `CASE WHEN`；分钟桶使用 `DATE_FORMAT`；双侧桶使用 `UNION ALL` 汇总 | 完成 | 100% | 2026-06-29 完成并静态复扫；百分位、平均值和最大值仍返回原有整数字段语义 |
 | P1 | `internal/repository/ops_repo_metrics.go` | 已完成：心跳 upsert 从 `ON CONFLICT/EXCLUDED` 迁移为 MySQL 8 `ON DUPLICATE KEY UPDATE/VALUES` | 保留成功时清错、失败时保留最近成功结果的 CASE 语义 | 完成 | 100% | 2026-06-29 完成并静态复扫 |
 | P1 | `internal/repository/ops_repo_openai_token_stats.go` | 已完成：移除 PostgreSQL `::bigint/::numeric/::float8`，保留原聚合与 ROUND 精度 | 使用 MySQL 8 原生 `COUNT/SUM/AVG/ROUND` | 完成 | 100% | 2026-06-29 完成并静态复扫 |
-| P1 | `internal/repository/ops_repo_preagg.go` | 大量 `percentile_cont`、`FILTER`、`date_trunc`、类型转换、`ON CONFLICT/EXCLUDED` | 拆分迁移：时间分桶、条件聚合、百分位、加权汇总、MySQL upsert | 未开始 | 0% | 这是剩余 Ops 模块中改动量和风险最高的文件 |
+| P1 | `internal/repository/ops_repo_preagg.go` | 已迁移：移除 `percentile_cont`、`FILTER`、`date_trunc`、类型转换、`FULL OUTER JOIN`、`ON CONFLICT/EXCLUDED` | 小时聚合改为 Go 端读取原始行、UTC 小时分桶、按 overall/platform/group 三维聚合并复用连续百分位算法；写入使用 MySQL `ON DUPLICATE KEY UPDATE`；日聚合改为 MySQL `DATE()`、`CASE WHEN` 条件聚合和 upsert | 基本完成 | 95% | 2026-06-29 已 `gofmt`、本文件静态残留扫描通过，且使用工作区 Go 缓存执行 `go build ./...` 通过；仍需人工核对 MySQL 唯一索引/RowsAffected 语义 |
 | P1 | `internal/repository/ops_repo_realtime_traffic.go` | 已完成：`date_trunc` 改为 MySQL `DATE_FORMAT + CAST`，不支持的 `FULL OUTER JOIN` 改为双向 `LEFT JOIN + UNION ALL` | 保持分钟桶合并、峰值 QPS/TPS 统计语义 | 完成 | 100% | 2026-06-29 完成并静态复扫 |
 | P1 | `internal/repository/ops_repo_trends.go` | 已完成：移除 `split_part`、JSONB lateral 展开、`date_trunc`、`FILTER` 和 `FULL OUTER JOIN` | 使用 `SUBSTRING_INDEX` + `JSON_TABLE` 保持 failover 分类；MySQL `DATE_FORMAT/TIMESTAMP` 分桶；`CASE WHEN` 条件聚合；`UNION ALL` 汇总双侧数据 | 完成 | 100% | 2026-06-29 完成并静态复扫；补齐 errorWhere 二次嵌入参数及平台/分组明细查询缺失参数 |
 | P1 | `internal/repository/ops_repo_request_details.go` | 已完成：移除 UNION 查询中的 PostgreSQL 类型转换和 `NULLS LAST` | 使用 MySQL 原生字面量/NULL 类型推断及 `duration_ms IS NULL` 排序；为两个 UNION 分支分别传入时间参数 | 完成 | 100% | 2026-06-29 全量复扫补录并完成；`go build ./...` 通过 |
@@ -55,7 +55,7 @@
 | `internal/repository/proxy_repo.go` | 已替换动态日期 interval，并补齐重复时间参数 | 基本完成 | 95% | 只需静态复扫 |
 | `internal/repository/user_repo.go` | 已移除 `pq.Array`，改为 `JSON_TABLE`；替换 `ILIKE` 和 `NULLS FIRST/LAST`；2026-06-29 已移除合并提交误带入的冲突标记并恢复父提交可格式化版本 | 进行中 | 80% | 检查 Ent 自定义排序表达式生成的 MySQL SQL；静态复扫无 PostgreSQL 运行语法 |
 | `internal/repository/user_group_rate_repo.go` | 已将数组、`unnest`、`ANY/ALL`、`ON CONFLICT` 改为 `JSON_TABLE` 和 MySQL upsert；2026-06-29 已移除合并提交误带入的冲突标记并恢复父提交可格式化版本 | 进行中 | 75% | 核对数组按 ordinality 配对、空列表和 NULL 清理语义；静态复扫无 PostgreSQL 运行语法 |
-| `internal/repository/user_platform_quota_repo.go` | 已迁移主要 upsert，并修正部分历史参数数量问题 | 进行中 | 65% | 当前风险最高的已修改文件；逐条核对占位符、软删除复活和批量快照参数 |
+| `internal/repository/user_platform_quota_repo.go` | 已迁移主要 upsert，并修正部分历史参数数量问题；2026-06-29 已复核占位符数量、软删除复活和批量快照参数，并清理 PostgreSQL 术语注释 | 完成 | 100% | `gofmt` 后本文件 PostgreSQL 运行语法/旧术语静态扫描均无命中；当前 MySQL 唯一键为 `(user_id, platform)`，upsert 会复活软删除记录 |
 | `internal/repository/user_profile_identity_repo.go` | provider grant 改为 `INSERT IGNORE`，avatar 改为 MySQL upsert | 基本完成 | 90% | 检查 RowsAffected 在 `INSERT IGNORE` 下是否仍满足业务判断 |
 | `internal/service/admin_service.go` | 已移除金额 PostgreSQL cast，修正 MySQL `LIMIT/OFFSET` 顺序 | 基本完成 | 95% | 静态复扫即可 |
 | `internal/service/auth_oauth_first_bind.go` | provider grant 改为 `INSERT IGNORE` | 基本完成 | 95% | 检查重复写入时 RowsAffected 语义 |
@@ -72,8 +72,6 @@
 | `internal/repository/channel_repo_pricing.go` | `LIKE/ILIKE` |
 | `internal/repository/group_repo.go` | `ON CONFLICT DO NOTHING` |
 | `internal/repository/user_attribute_repo.go` | `ON CONFLICT DO UPDATE` |
-| `internal/repository/user_platform_quota_repo.go` | `ON CONFLICT`、`EXCLUDED`、PostgreSQL 参数上限等旧描述 |
-| `internal/repository/db_pool.go` | `lib/pq/pgx` 旧说明 |
 | `internal/repository/migrations_runner.go` | PostgreSQL advisory lock 旧说明；实现已使用 MySQL `GET_LOCK` |
 | `internal/service/balance_notify_service.go` | `RETURNING` |
 | `internal/service/channel_monitor_service.go` | `ON CONFLICT` |
@@ -82,7 +80,6 @@
 | `internal/service/scheduler_outbox.go` | PostgreSQL advisory lock |
 | `internal/service/ops_models.go` | `ILIKE` |
 | `internal/service/ops_service.go` | `ILIKE` |
-| `internal/service/user_platform_quota_port.go` | `ON CONFLICT DO NOTHING` |
 
 ## 5. 执行计划（不包含测试）
 
@@ -123,7 +120,7 @@
 ## 7. 接班前必须知道的风险
 
 1. 当前修改尚未形成可确认完成的稳定版本，不能把“已修改”直接视为“已完成”。
-2. `user_platform_quota_repo.go` 曾存在 PostgreSQL 编号占位符改成 `?` 后参数没有同步复制的问题，应逐条计数。
+2. `user_platform_quota_repo.go` 曾存在 PostgreSQL 编号占位符改成 `?` 后参数没有同步复制的问题；2026-06-29 已逐条复核并清理旧注释，后续如修改该文件仍需重新计数。
 3. MySQL `ON DUPLICATE KEY UPDATE` 不支持指定冲突索引；替换 PostgreSQL 定向 `ON CONFLICT` 时要确认不会吞掉其他唯一键冲突。
 4. MySQL upsert 的 `RowsAffected` 可能返回 1、2 或 0，与 PostgreSQL 不完全一致，不能直接沿用所有业务判断。
 5. `CONVERT_TZ` 使用 IANA 时区名时依赖 MySQL 时区表；若部署环境未加载时区表，应改用可控偏移或 Go 端分桶。
