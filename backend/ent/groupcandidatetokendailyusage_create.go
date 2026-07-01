@@ -89,20 +89,6 @@ func (_c *GroupCandidateTokenDailyUsageCreate) SetNillableUsedTokens(v *int64) *
 	return _c
 }
 
-// SetDailyLimitTokens sets the "daily_limit_tokens" field.
-func (_c *GroupCandidateTokenDailyUsageCreate) SetDailyLimitTokens(v int64) *GroupCandidateTokenDailyUsageCreate {
-	_c.mutation.SetDailyLimitTokens(v)
-	return _c
-}
-
-// SetNillableDailyLimitTokens sets the "daily_limit_tokens" field if the given value is not nil.
-func (_c *GroupCandidateTokenDailyUsageCreate) SetNillableDailyLimitTokens(v *int64) *GroupCandidateTokenDailyUsageCreate {
-	if v != nil {
-		_c.SetDailyLimitTokens(*v)
-	}
-	return _c
-}
-
 // SetGroup sets the "group" edge to the Group entity.
 func (_c *GroupCandidateTokenDailyUsageCreate) SetGroup(v *Group) *GroupCandidateTokenDailyUsageCreate {
 	return _c.SetGroupID(v.ID)
@@ -195,11 +181,6 @@ func (_c *GroupCandidateTokenDailyUsageCreate) check() error {
 			return &ValidationError{Name: "used_tokens", err: fmt.Errorf(`ent: validator failed for field "GroupCandidateTokenDailyUsage.used_tokens": %w`, err)}
 		}
 	}
-	if v, ok := _c.mutation.DailyLimitTokens(); ok {
-		if err := groupcandidatetokendailyusage.DailyLimitTokensValidator(v); err != nil {
-			return &ValidationError{Name: "daily_limit_tokens", err: fmt.Errorf(`ent: validator failed for field "GroupCandidateTokenDailyUsage.daily_limit_tokens": %w`, err)}
-		}
-	}
 	if len(_c.mutation.GroupIDs()) == 0 {
 		return &ValidationError{Name: "group", err: errors.New(`ent: missing required edge "GroupCandidateTokenDailyUsage.group"`)}
 	}
@@ -253,10 +234,6 @@ func (_c *GroupCandidateTokenDailyUsageCreate) createSpec() (*GroupCandidateToke
 	if value, ok := _c.mutation.UsedTokens(); ok {
 		_spec.SetField(groupcandidatetokendailyusage.FieldUsedTokens, field.TypeInt64, value)
 		_node.UsedTokens = value
-	}
-	if value, ok := _c.mutation.DailyLimitTokens(); ok {
-		_spec.SetField(groupcandidatetokendailyusage.FieldDailyLimitTokens, field.TypeInt64, value)
-		_node.DailyLimitTokens = &value
 	}
 	if nodes := _c.mutation.GroupIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -405,30 +382,6 @@ func (u *GroupCandidateTokenDailyUsageUpsert) AddUsedTokens(v int64) *GroupCandi
 	return u
 }
 
-// SetDailyLimitTokens sets the "daily_limit_tokens" field.
-func (u *GroupCandidateTokenDailyUsageUpsert) SetDailyLimitTokens(v int64) *GroupCandidateTokenDailyUsageUpsert {
-	u.Set(groupcandidatetokendailyusage.FieldDailyLimitTokens, v)
-	return u
-}
-
-// UpdateDailyLimitTokens sets the "daily_limit_tokens" field to the value that was provided on create.
-func (u *GroupCandidateTokenDailyUsageUpsert) UpdateDailyLimitTokens() *GroupCandidateTokenDailyUsageUpsert {
-	u.SetExcluded(groupcandidatetokendailyusage.FieldDailyLimitTokens)
-	return u
-}
-
-// AddDailyLimitTokens adds v to the "daily_limit_tokens" field.
-func (u *GroupCandidateTokenDailyUsageUpsert) AddDailyLimitTokens(v int64) *GroupCandidateTokenDailyUsageUpsert {
-	u.Add(groupcandidatetokendailyusage.FieldDailyLimitTokens, v)
-	return u
-}
-
-// ClearDailyLimitTokens clears the value of the "daily_limit_tokens" field.
-func (u *GroupCandidateTokenDailyUsageUpsert) ClearDailyLimitTokens() *GroupCandidateTokenDailyUsageUpsert {
-	u.SetNull(groupcandidatetokendailyusage.FieldDailyLimitTokens)
-	return u
-}
-
 // UpdateNewValues updates the mutable fields using the new values that were set on create.
 // Using this option is equivalent to using:
 //
@@ -562,34 +515,6 @@ func (u *GroupCandidateTokenDailyUsageUpsertOne) AddUsedTokens(v int64) *GroupCa
 func (u *GroupCandidateTokenDailyUsageUpsertOne) UpdateUsedTokens() *GroupCandidateTokenDailyUsageUpsertOne {
 	return u.Update(func(s *GroupCandidateTokenDailyUsageUpsert) {
 		s.UpdateUsedTokens()
-	})
-}
-
-// SetDailyLimitTokens sets the "daily_limit_tokens" field.
-func (u *GroupCandidateTokenDailyUsageUpsertOne) SetDailyLimitTokens(v int64) *GroupCandidateTokenDailyUsageUpsertOne {
-	return u.Update(func(s *GroupCandidateTokenDailyUsageUpsert) {
-		s.SetDailyLimitTokens(v)
-	})
-}
-
-// AddDailyLimitTokens adds v to the "daily_limit_tokens" field.
-func (u *GroupCandidateTokenDailyUsageUpsertOne) AddDailyLimitTokens(v int64) *GroupCandidateTokenDailyUsageUpsertOne {
-	return u.Update(func(s *GroupCandidateTokenDailyUsageUpsert) {
-		s.AddDailyLimitTokens(v)
-	})
-}
-
-// UpdateDailyLimitTokens sets the "daily_limit_tokens" field to the value that was provided on create.
-func (u *GroupCandidateTokenDailyUsageUpsertOne) UpdateDailyLimitTokens() *GroupCandidateTokenDailyUsageUpsertOne {
-	return u.Update(func(s *GroupCandidateTokenDailyUsageUpsert) {
-		s.UpdateDailyLimitTokens()
-	})
-}
-
-// ClearDailyLimitTokens clears the value of the "daily_limit_tokens" field.
-func (u *GroupCandidateTokenDailyUsageUpsertOne) ClearDailyLimitTokens() *GroupCandidateTokenDailyUsageUpsertOne {
-	return u.Update(func(s *GroupCandidateTokenDailyUsageUpsert) {
-		s.ClearDailyLimitTokens()
 	})
 }
 
@@ -892,34 +817,6 @@ func (u *GroupCandidateTokenDailyUsageUpsertBulk) AddUsedTokens(v int64) *GroupC
 func (u *GroupCandidateTokenDailyUsageUpsertBulk) UpdateUsedTokens() *GroupCandidateTokenDailyUsageUpsertBulk {
 	return u.Update(func(s *GroupCandidateTokenDailyUsageUpsert) {
 		s.UpdateUsedTokens()
-	})
-}
-
-// SetDailyLimitTokens sets the "daily_limit_tokens" field.
-func (u *GroupCandidateTokenDailyUsageUpsertBulk) SetDailyLimitTokens(v int64) *GroupCandidateTokenDailyUsageUpsertBulk {
-	return u.Update(func(s *GroupCandidateTokenDailyUsageUpsert) {
-		s.SetDailyLimitTokens(v)
-	})
-}
-
-// AddDailyLimitTokens adds v to the "daily_limit_tokens" field.
-func (u *GroupCandidateTokenDailyUsageUpsertBulk) AddDailyLimitTokens(v int64) *GroupCandidateTokenDailyUsageUpsertBulk {
-	return u.Update(func(s *GroupCandidateTokenDailyUsageUpsert) {
-		s.AddDailyLimitTokens(v)
-	})
-}
-
-// UpdateDailyLimitTokens sets the "daily_limit_tokens" field to the value that was provided on create.
-func (u *GroupCandidateTokenDailyUsageUpsertBulk) UpdateDailyLimitTokens() *GroupCandidateTokenDailyUsageUpsertBulk {
-	return u.Update(func(s *GroupCandidateTokenDailyUsageUpsert) {
-		s.UpdateDailyLimitTokens()
-	})
-}
-
-// ClearDailyLimitTokens clears the value of the "daily_limit_tokens" field.
-func (u *GroupCandidateTokenDailyUsageUpsertBulk) ClearDailyLimitTokens() *GroupCandidateTokenDailyUsageUpsertBulk {
-	return u.Update(func(s *GroupCandidateTokenDailyUsageUpsert) {
-		s.ClearDailyLimitTokens()
 	})
 }
 

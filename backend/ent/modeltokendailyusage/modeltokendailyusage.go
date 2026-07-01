@@ -23,8 +23,6 @@ const (
 	FieldUsageDate = "usage_date"
 	// FieldUsedTokens holds the string denoting the used_tokens field in the database.
 	FieldUsedTokens = "used_tokens"
-	// FieldDailyLimitTokens holds the string denoting the daily_limit_tokens field in the database.
-	FieldDailyLimitTokens = "daily_limit_tokens"
 	// Table holds the table name of the modeltokendailyusage in the database.
 	Table = "model_token_daily_usages"
 )
@@ -37,7 +35,6 @@ var Columns = []string{
 	FieldModel,
 	FieldUsageDate,
 	FieldUsedTokens,
-	FieldDailyLimitTokens,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -63,8 +60,6 @@ var (
 	DefaultUsedTokens int64
 	// UsedTokensValidator is a validator for the "used_tokens" field. It is called by the builders before save.
 	UsedTokensValidator func(int64) error
-	// DailyLimitTokensValidator is a validator for the "daily_limit_tokens" field. It is called by the builders before save.
-	DailyLimitTokensValidator func(int64) error
 )
 
 // OrderOption defines the ordering options for the ModelTokenDailyUsage queries.
@@ -98,9 +93,4 @@ func ByUsageDate(opts ...sql.OrderTermOption) OrderOption {
 // ByUsedTokens orders the results by the used_tokens field.
 func ByUsedTokens(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldUsedTokens, opts...).ToFunc()
-}
-
-// ByDailyLimitTokens orders the results by the daily_limit_tokens field.
-func ByDailyLimitTokens(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldDailyLimitTokens, opts...).ToFunc()
 }

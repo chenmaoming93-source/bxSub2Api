@@ -345,8 +345,8 @@ var (
 		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
 		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
 		{Name: "provider_type", Type: field.TypeString, Size: 20},
-		{Name: "provider_key", Type: field.TypeString, SchemaType: map[string]string{"mysql": "text"}},
-		{Name: "provider_subject", Type: field.TypeString, SchemaType: map[string]string{"mysql": "text"}},
+		{Name: "provider_key", Type: field.TypeString, SchemaType: map[string]string{"mysql": "varchar(500)"}},
+		{Name: "provider_subject", Type: field.TypeString, SchemaType: map[string]string{"mysql": "varchar(500)"}},
 		{Name: "verified_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"mysql": "datetime(6)"}},
 		{Name: "issuer", Type: field.TypeString, Nullable: true, SchemaType: map[string]string{"mysql": "text"}},
 		{Name: "metadata", Type: field.TypeJSON, SchemaType: map[string]string{"mysql": "json"}},
@@ -389,10 +389,10 @@ var (
 		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
 		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
 		{Name: "provider_type", Type: field.TypeString, Size: 20},
-		{Name: "provider_key", Type: field.TypeString, SchemaType: map[string]string{"mysql": "text"}},
+		{Name: "provider_key", Type: field.TypeString, SchemaType: map[string]string{"mysql": "varchar(500)"}},
 		{Name: "channel", Type: field.TypeString, Size: 20},
-		{Name: "channel_app_id", Type: field.TypeString, SchemaType: map[string]string{"mysql": "text"}},
-		{Name: "channel_subject", Type: field.TypeString, SchemaType: map[string]string{"mysql": "text"}},
+		{Name: "channel_app_id", Type: field.TypeString, SchemaType: map[string]string{"mysql": "varchar(500)"}},
+		{Name: "channel_subject", Type: field.TypeString, SchemaType: map[string]string{"mysql": "varchar(500)"}},
 		{Name: "metadata", Type: field.TypeJSON, SchemaType: map[string]string{"mysql": "json"}},
 		{Name: "identity_id", Type: field.TypeInt64},
 	}
@@ -712,6 +712,42 @@ var (
 			},
 		},
 	}
+	// GroupCandidateTokenDailyLimitConfigsColumns holds the columns for the "group_candidate_token_daily_limit_configs" table.
+	GroupCandidateTokenDailyLimitConfigsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "route_alias", Type: field.TypeString, Size: 255},
+		{Name: "upstream_model", Type: field.TypeString, Size: 255},
+		{Name: "daily_limit_tokens", Type: field.TypeInt64, Nullable: true},
+		{Name: "group_id", Type: field.TypeInt64},
+	}
+	// GroupCandidateTokenDailyLimitConfigsTable holds the schema information for the "group_candidate_token_daily_limit_configs" table.
+	GroupCandidateTokenDailyLimitConfigsTable = &schema.Table{
+		Name:       "group_candidate_token_daily_limit_configs",
+		Columns:    GroupCandidateTokenDailyLimitConfigsColumns,
+		PrimaryKey: []*schema.Column{GroupCandidateTokenDailyLimitConfigsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "group_candidate_token_daily_limit_configs_groups_group_candidate_token_daily_limit_configs",
+				Columns:    []*schema.Column{GroupCandidateTokenDailyLimitConfigsColumns[6]},
+				RefColumns: []*schema.Column{GroupsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "groupcandidatetokendailylimitconfig_group_id_route_alias_upstream_model",
+				Unique:  true,
+				Columns: []*schema.Column{GroupCandidateTokenDailyLimitConfigsColumns[6], GroupCandidateTokenDailyLimitConfigsColumns[3], GroupCandidateTokenDailyLimitConfigsColumns[4]},
+			},
+			{
+				Name:    "groupcandidatetokendailylimitconfig_group_id",
+				Unique:  false,
+				Columns: []*schema.Column{GroupCandidateTokenDailyLimitConfigsColumns[6]},
+			},
+		},
+	}
 	// GroupCandidateTokenDailyUsagesColumns holds the columns for the "group_candidate_token_daily_usages" table.
 	GroupCandidateTokenDailyUsagesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt64, Increment: true},
@@ -721,7 +757,6 @@ var (
 		{Name: "upstream_model", Type: field.TypeString, Size: 255},
 		{Name: "usage_date", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "date"}},
 		{Name: "used_tokens", Type: field.TypeInt64, Default: 0},
-		{Name: "daily_limit_tokens", Type: field.TypeInt64, Nullable: true},
 		{Name: "group_id", Type: field.TypeInt64},
 	}
 	// GroupCandidateTokenDailyUsagesTable holds the schema information for the "group_candidate_token_daily_usages" table.
@@ -732,7 +767,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "group_candidate_token_daily_usages_groups_candidate_token_daily_usages",
-				Columns:    []*schema.Column{GroupCandidateTokenDailyUsagesColumns[8]},
+				Columns:    []*schema.Column{GroupCandidateTokenDailyUsagesColumns[7]},
 				RefColumns: []*schema.Column{GroupsColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -741,12 +776,12 @@ var (
 			{
 				Name:    "groupcandidatetokendailyusage_group_id_route_alias_upstream_model_usage_date",
 				Unique:  true,
-				Columns: []*schema.Column{GroupCandidateTokenDailyUsagesColumns[8], GroupCandidateTokenDailyUsagesColumns[3], GroupCandidateTokenDailyUsagesColumns[4], GroupCandidateTokenDailyUsagesColumns[5]},
+				Columns: []*schema.Column{GroupCandidateTokenDailyUsagesColumns[7], GroupCandidateTokenDailyUsagesColumns[3], GroupCandidateTokenDailyUsagesColumns[4], GroupCandidateTokenDailyUsagesColumns[5]},
 			},
 			{
 				Name:    "groupcandidatetokendailyusage_group_id",
 				Unique:  false,
-				Columns: []*schema.Column{GroupCandidateTokenDailyUsagesColumns[8]},
+				Columns: []*schema.Column{GroupCandidateTokenDailyUsagesColumns[7]},
 			},
 		},
 	}
@@ -831,6 +866,27 @@ var (
 			},
 		},
 	}
+	// ModelTokenDailyLimitConfigsColumns holds the columns for the "model_token_daily_limit_configs" table.
+	ModelTokenDailyLimitConfigsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "model", Type: field.TypeString, Size: 255},
+		{Name: "daily_limit_tokens", Type: field.TypeInt64, Nullable: true},
+	}
+	// ModelTokenDailyLimitConfigsTable holds the schema information for the "model_token_daily_limit_configs" table.
+	ModelTokenDailyLimitConfigsTable = &schema.Table{
+		Name:       "model_token_daily_limit_configs",
+		Columns:    ModelTokenDailyLimitConfigsColumns,
+		PrimaryKey: []*schema.Column{ModelTokenDailyLimitConfigsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "modeltokendailylimitconfig_model",
+				Unique:  true,
+				Columns: []*schema.Column{ModelTokenDailyLimitConfigsColumns[3]},
+			},
+		},
+	}
 	// ModelTokenDailyUsagesColumns holds the columns for the "model_token_daily_usages" table.
 	ModelTokenDailyUsagesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt64, Increment: true},
@@ -839,7 +895,6 @@ var (
 		{Name: "model", Type: field.TypeString, Size: 255},
 		{Name: "usage_date", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "date"}},
 		{Name: "used_tokens", Type: field.TypeInt64, Default: 0},
-		{Name: "daily_limit_tokens", Type: field.TypeInt64, Nullable: true},
 	}
 	// ModelTokenDailyUsagesTable holds the schema information for the "model_token_daily_usages" table.
 	ModelTokenDailyUsagesTable = &schema.Table{
@@ -1020,8 +1075,8 @@ var (
 		{Name: "session_token", Type: field.TypeString, Size: 255},
 		{Name: "intent", Type: field.TypeString, Size: 40},
 		{Name: "provider_type", Type: field.TypeString, Size: 20},
-		{Name: "provider_key", Type: field.TypeString, SchemaType: map[string]string{"mysql": "text"}},
-		{Name: "provider_subject", Type: field.TypeString, SchemaType: map[string]string{"mysql": "text"}},
+		{Name: "provider_key", Type: field.TypeString, SchemaType: map[string]string{"mysql": "varchar(500)"}},
+		{Name: "provider_subject", Type: field.TypeString, SchemaType: map[string]string{"mysql": "varchar(500)"}},
 		{Name: "redirect_to", Type: field.TypeString, Default: "", SchemaType: map[string]string{"mysql": "text"}},
 		{Name: "resolved_email", Type: field.TypeString, Default: "", SchemaType: map[string]string{"mysql": "text"}},
 		{Name: "registration_password_hash", Type: field.TypeString, Default: "", SchemaType: map[string]string{"mysql": "text"}},
@@ -1698,6 +1753,41 @@ var (
 			},
 		},
 	}
+	// UserModelTokenDailyLimitConfigsColumns holds the columns for the "user_model_token_daily_limit_configs" table.
+	UserModelTokenDailyLimitConfigsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "model", Type: field.TypeString, Size: 255},
+		{Name: "daily_limit_tokens", Type: field.TypeInt64, Nullable: true},
+		{Name: "user_id", Type: field.TypeInt64},
+	}
+	// UserModelTokenDailyLimitConfigsTable holds the schema information for the "user_model_token_daily_limit_configs" table.
+	UserModelTokenDailyLimitConfigsTable = &schema.Table{
+		Name:       "user_model_token_daily_limit_configs",
+		Columns:    UserModelTokenDailyLimitConfigsColumns,
+		PrimaryKey: []*schema.Column{UserModelTokenDailyLimitConfigsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "user_model_token_daily_limit_configs_users_user_model_token_daily_limit_configs",
+				Columns:    []*schema.Column{UserModelTokenDailyLimitConfigsColumns[5]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "usermodeltokendailylimitconfig_user_id_model",
+				Unique:  true,
+				Columns: []*schema.Column{UserModelTokenDailyLimitConfigsColumns[5], UserModelTokenDailyLimitConfigsColumns[3]},
+			},
+			{
+				Name:    "usermodeltokendailylimitconfig_user_id",
+				Unique:  false,
+				Columns: []*schema.Column{UserModelTokenDailyLimitConfigsColumns[5]},
+			},
+		},
+	}
 	// UserModelTokenDailyUsagesColumns holds the columns for the "user_model_token_daily_usages" table.
 	UserModelTokenDailyUsagesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt64, Increment: true},
@@ -1706,7 +1796,6 @@ var (
 		{Name: "model", Type: field.TypeString, Size: 255},
 		{Name: "usage_date", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "date"}},
 		{Name: "used_tokens", Type: field.TypeInt64, Default: 0},
-		{Name: "daily_limit_tokens", Type: field.TypeInt64, Nullable: true},
 		{Name: "user_id", Type: field.TypeInt64},
 	}
 	// UserModelTokenDailyUsagesTable holds the schema information for the "user_model_token_daily_usages" table.
@@ -1717,7 +1806,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "user_model_token_daily_usages_users_model_token_daily_usages",
-				Columns:    []*schema.Column{UserModelTokenDailyUsagesColumns[7]},
+				Columns:    []*schema.Column{UserModelTokenDailyUsagesColumns[6]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.Cascade,
 			},
@@ -1726,12 +1815,12 @@ var (
 			{
 				Name:    "usermodeltokendailyusage_user_id_model_usage_date",
 				Unique:  true,
-				Columns: []*schema.Column{UserModelTokenDailyUsagesColumns[7], UserModelTokenDailyUsagesColumns[3], UserModelTokenDailyUsagesColumns[4]},
+				Columns: []*schema.Column{UserModelTokenDailyUsagesColumns[6], UserModelTokenDailyUsagesColumns[3], UserModelTokenDailyUsagesColumns[4]},
 			},
 			{
 				Name:    "usermodeltokendailyusage_user_id",
 				Unique:  false,
-				Columns: []*schema.Column{UserModelTokenDailyUsagesColumns[7]},
+				Columns: []*schema.Column{UserModelTokenDailyUsagesColumns[6]},
 			},
 		},
 	}
@@ -1886,9 +1975,11 @@ var (
 		ChannelMonitorRequestTemplatesTable,
 		ErrorPassthroughRulesTable,
 		GroupsTable,
+		GroupCandidateTokenDailyLimitConfigsTable,
 		GroupCandidateTokenDailyUsagesTable,
 		IdempotencyRecordsTable,
 		IdentityAdoptionDecisionsTable,
+		ModelTokenDailyLimitConfigsTable,
 		ModelTokenDailyUsagesTable,
 		PaymentAuditLogsTable,
 		PaymentOrdersTable,
@@ -1908,6 +1999,7 @@ var (
 		UserAllowedGroupsTable,
 		UserAttributeDefinitionsTable,
 		UserAttributeValuesTable,
+		UserModelTokenDailyLimitConfigsTable,
 		UserModelTokenDailyUsagesTable,
 		UserPlatformQuotasTable,
 		UserSubscriptionsTable,
@@ -1966,6 +2058,10 @@ func init() {
 	GroupsTable.Annotation = &entsql.Annotation{
 		Table: "groups",
 	}
+	GroupCandidateTokenDailyLimitConfigsTable.ForeignKeys[0].RefTable = GroupsTable
+	GroupCandidateTokenDailyLimitConfigsTable.Annotation = &entsql.Annotation{
+		Table: "group_candidate_token_daily_limit_configs",
+	}
 	GroupCandidateTokenDailyUsagesTable.ForeignKeys[0].RefTable = GroupsTable
 	GroupCandidateTokenDailyUsagesTable.Annotation = &entsql.Annotation{
 		Table: "group_candidate_token_daily_usages",
@@ -1977,6 +2073,9 @@ func init() {
 	IdentityAdoptionDecisionsTable.ForeignKeys[1].RefTable = PendingAuthSessionsTable
 	IdentityAdoptionDecisionsTable.Annotation = &entsql.Annotation{
 		Table: "identity_adoption_decisions",
+	}
+	ModelTokenDailyLimitConfigsTable.Annotation = &entsql.Annotation{
+		Table: "model_token_daily_limit_configs",
 	}
 	ModelTokenDailyUsagesTable.Annotation = &entsql.Annotation{
 		Table: "model_token_daily_usages",
@@ -2050,6 +2149,10 @@ func init() {
 	UserAttributeValuesTable.ForeignKeys[1].RefTable = UserAttributeDefinitionsTable
 	UserAttributeValuesTable.Annotation = &entsql.Annotation{
 		Table: "user_attribute_values",
+	}
+	UserModelTokenDailyLimitConfigsTable.ForeignKeys[0].RefTable = UsersTable
+	UserModelTokenDailyLimitConfigsTable.Annotation = &entsql.Annotation{
+		Table: "user_model_token_daily_limit_configs",
 	}
 	UserModelTokenDailyUsagesTable.ForeignKeys[0].RefTable = UsersTable
 	UserModelTokenDailyUsagesTable.Annotation = &entsql.Annotation{

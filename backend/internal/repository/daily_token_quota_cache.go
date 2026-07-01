@@ -90,18 +90,10 @@ func (r *CachedDailyTokenQuotaRepository) GetUserModelDailyTokenQuota(ctx contex
 }
 
 func (r *CachedDailyTokenQuotaRepository) GetGroupCandidateDailyTokenQuota(ctx context.Context, key service.GroupCandidateDailyTokenQuotaKey) (service.DailyTokenQuotaSnapshot, error) {
-	cacheKey := groupCandidateDailyTokenQuotaCacheKey(key)
-	if snapshot, ok, err := r.cache.get(ctx, cacheKey); err != nil {
-		return service.DailyTokenQuotaSnapshot{}, err
-	} else if ok {
-		snapshot.UsageDate = timezone.StartOfDay(key.At)
-		return snapshot, nil
-	}
-	snapshot, err := r.base.GetGroupCandidateDailyTokenQuota(ctx, key)
-	if err != nil {
-		return service.DailyTokenQuotaSnapshot{}, err
-	}
-	return snapshot, r.cache.set(ctx, cacheKey, snapshot, dailyTokenQuotaCacheTTL(key.At, time.Now()))
+	// Candidate limits are edited together with model routing. Until that admin
+	// path owns a cache invalidator, read the authoritative config table to avoid
+	// serving a stale limit for the rest of the day.
+	return r.base.GetGroupCandidateDailyTokenQuota(ctx, key)
 }
 
 func (r *CachedDailyTokenQuotaRepository) IncrementDailyTokenQuotas(ctx context.Context, increment service.DailyTokenQuotaIncrement) error {

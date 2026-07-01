@@ -26,10 +26,8 @@ type ModelTokenDailyUsage struct {
 	// UsageDate holds the value of the "usage_date" field.
 	UsageDate time.Time `json:"usage_date,omitempty"`
 	// UsedTokens holds the value of the "used_tokens" field.
-	UsedTokens int64 `json:"used_tokens,omitempty"`
-	// DailyLimitTokens holds the value of the "daily_limit_tokens" field.
-	DailyLimitTokens *int64 `json:"daily_limit_tokens,omitempty"`
-	selectValues     sql.SelectValues
+	UsedTokens   int64 `json:"used_tokens,omitempty"`
+	selectValues sql.SelectValues
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -37,7 +35,7 @@ func (*ModelTokenDailyUsage) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case modeltokendailyusage.FieldID, modeltokendailyusage.FieldUsedTokens, modeltokendailyusage.FieldDailyLimitTokens:
+		case modeltokendailyusage.FieldID, modeltokendailyusage.FieldUsedTokens:
 			values[i] = new(sql.NullInt64)
 		case modeltokendailyusage.FieldModel:
 			values[i] = new(sql.NullString)
@@ -94,13 +92,6 @@ func (_m *ModelTokenDailyUsage) assignValues(columns []string, values []any) err
 			} else if value.Valid {
 				_m.UsedTokens = value.Int64
 			}
-		case modeltokendailyusage.FieldDailyLimitTokens:
-			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for field daily_limit_tokens", values[i])
-			} else if value.Valid {
-				_m.DailyLimitTokens = new(int64)
-				*_m.DailyLimitTokens = value.Int64
-			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
 		}
@@ -151,11 +142,6 @@ func (_m *ModelTokenDailyUsage) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("used_tokens=")
 	builder.WriteString(fmt.Sprintf("%v", _m.UsedTokens))
-	builder.WriteString(", ")
-	if v := _m.DailyLimitTokens; v != nil {
-		builder.WriteString("daily_limit_tokens=")
-		builder.WriteString(fmt.Sprintf("%v", *v))
-	}
 	builder.WriteByte(')')
 	return builder.String()
 }

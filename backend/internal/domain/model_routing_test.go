@@ -26,7 +26,7 @@ func TestParseModelRoutingConfigLegacyPreservesAccountOrderAndWildcard(t *testin
 	}
 }
 
-func TestParseModelRoutingConfigCandidatesStableSortAndUnlimitedNormalization(t *testing.T) {
+func TestParseModelRoutingConfigCandidatesStableSort(t *testing.T) {
 	config, err := ParseModelRoutingConfig([]byte(`{
 		"fast-code":[
 			{"model":"third","account_ids":[3],"priority":20,"daily_token_limit":null},
@@ -42,12 +42,6 @@ func TestParseModelRoutingConfigCandidatesStableSortAndUnlimitedNormalization(t 
 	if got := []string{candidates[0].Model, candidates[1].Model, candidates[2].Model}; got[0] != "first" || got[1] != "second" || got[2] != "third" {
 		t.Fatalf("stable priority order = %v", got)
 	}
-	if candidates[0].DailyTokenLimit != nil || candidates[2].DailyTokenLimit != nil {
-		t.Fatalf("zero/null limits were not normalized: %+v", candidates)
-	}
-	if candidates[1].DailyTokenLimit == nil || *candidates[1].DailyTokenLimit != 500 {
-		t.Fatalf("positive limit = %v, want 500", candidates[1].DailyTokenLimit)
-	}
 }
 
 func TestParseModelRoutingConfigRejectsInvalidCandidates(t *testing.T) {
@@ -59,7 +53,6 @@ func TestParseModelRoutingConfigRejectsInvalidCandidates(t *testing.T) {
 		`{"route":[{"model":"","account_ids":[1],"priority":1}]}`,
 		`{"route":[{"model":"model","account_ids":[],"priority":1}]}`,
 		`{"route":[{"model":"model","account_ids":[1],"priority":-1}]}`,
-		`{"route":[{"model":"model","account_ids":[1],"priority":1,"daily_token_limit":-1}]}`,
 	}
 	for _, input := range tests {
 		_, err := ParseModelRoutingConfig([]byte(input))

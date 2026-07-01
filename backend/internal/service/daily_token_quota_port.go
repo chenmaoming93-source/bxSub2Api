@@ -46,13 +46,10 @@ type DailyTokenQuotaRepository interface {
 }
 
 type DailyTokenQuotaIncrement struct {
-	ModelKey                       ModelDailyTokenQuotaKey
-	UserModelKey                   UserModelDailyTokenQuotaKey
-	GroupCandidateKey              GroupCandidateDailyTokenQuotaKey
-	Tokens                         int64
-	ModelDailyLimitTokens          *int64
-	UserModelDailyLimitTokens      *int64
-	GroupCandidateDailyLimitTokens *int64
+	ModelKey          ModelDailyTokenQuotaKey
+	UserModelKey      UserModelDailyTokenQuotaKey
+	GroupCandidateKey GroupCandidateDailyTokenQuotaKey
+	Tokens            int64
 }
 
 type ModelDailyTokenQuotaRecord struct {
@@ -130,6 +127,54 @@ func CheckUserModelDailyTokenQuota(key UserModelDailyTokenQuotaKey, snapshot Dai
 
 func CheckGroupCandidateDailyTokenQuota(key GroupCandidateDailyTokenQuotaKey, snapshot DailyTokenQuotaSnapshot) error {
 	return checkDailyTokenQuota("group_candidate", 0, key.GroupID, key.RouteAlias, key.UpstreamModel, snapshot)
+}
+
+// CheckRouteCandidateDailyTokenQuotas applies all platform-independent quota
+// gates for one concrete routing candidate.
+func CheckRouteCandidateDailyTokenQuotas(ctx context.Context, repo DailyTokenQuotaRepository, groupID int64, routeAlias, upstreamModel string, userID int64) (bool, error) {
+	if repo == nil || groupID <= 0 || routeAlias == "" || upstreamModel == "" {
+		return false, nil
+	}
+	at := time.Now()
+	groupKey := GroupCandidateDailyTokenQuotaKey{GroupID: groupID, RouteAlias: routeAlias, UpstreamModel: upstreamModel, At: at}
+	groupSnapshot, err := repo.GetGroupCandidateDailyTokenQuota(ctx, groupKey)
+	if err != nil {
+		return false, err
+	}
+	if err := CheckGroupCandidateDailyTokenQuota(groupKey, groupSnapshot); err != nil {
+		return dailyTokenQuotaCheckResult(err)
+	}
+
+	modelKey := ModelDailyTokenQuotaKey{Model: upstreamModel, At: at}
+	modelSnapshot, err := repo.GetModelDailyTokenQuota(ctx, modelKey)
+	if err != nil {
+		return false, err
+	}
+	if err := CheckModelDailyTokenQuota(modelKey, modelSnapshot); err != nil {
+		return dailyTokenQuotaCheckResult(err)
+	}
+
+	if userID <= 0 {
+		return false, nil
+	}
+	userKey := UserModelDailyTokenQuotaKey{UserID: userID, Model: upstreamModel, At: at}
+	userSnapshot, err := repo.GetUserModelDailyTokenQuota(ctx, userKey)
+	if err != nil {
+		return false, err
+	}
+	if err := CheckUserModelDailyTokenQuota(userKey, userSnapshot); err != nil {
+		return dailyTokenQuotaCheckResult(err)
+	}
+	return false, nil
+}
+
+func dailyTokenQuotaCheckResult(err error) (bool, error) {
+	if errors.Is(err, ErrGroupCandidateDailyTokenQuotaExhausted) ||
+		errors.Is(err, ErrModelDailyTokenQuotaExhausted) ||
+		errors.Is(err, ErrUserModelDailyTokenQuotaExhausted) {
+		return true, nil
+	}
+	return false, err
 }
 
 func checkDailyTokenQuota(scope string, userID, groupID int64, routeAlias, model string, snapshot DailyTokenQuotaSnapshot) error {

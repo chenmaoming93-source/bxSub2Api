@@ -13,14 +13,13 @@ import (
 var ErrInvalidModelRouting = errors.New("invalid model routing")
 
 // ModelRouteCandidate is one upstream model choice for a requested route alias.
-// A nil DailyTokenLimit means unlimited. Legacy entries keep Model empty so the
-// caller can pass the requested model through unchanged.
+// Legacy entries keep Model empty so the caller can pass the requested model
+// through unchanged. Candidate token limits are stored separately.
 type ModelRouteCandidate struct {
-	Model           string  `json:"model"`
-	AccountIDs      []int64 `json:"account_ids"`
-	Priority        int     `json:"priority"`
-	DailyTokenLimit *int64  `json:"daily_token_limit,omitempty"`
-	Legacy          bool    `json:"-"`
+	Model      string  `json:"model"`
+	AccountIDs []int64 `json:"account_ids"`
+	Priority   int     `json:"priority"`
+	Legacy     bool    `json:"-"`
 }
 
 // ModelRoutingConfig maps an exact model or a trailing-star prefix pattern to
@@ -145,14 +144,6 @@ func parseRouteCandidates(pattern string, value json.RawMessage) ([]ModelRouteCa
 		}
 		if err := validateAccountIDs(pattern, i, candidate.AccountIDs); err != nil {
 			return nil, err
-		}
-		if candidate.DailyTokenLimit != nil {
-			if *candidate.DailyTokenLimit < 0 {
-				return nil, fmt.Errorf("%w: route %q candidate %d has negative daily token limit", ErrInvalidModelRouting, pattern, i)
-			}
-			if *candidate.DailyTokenLimit == 0 {
-				candidate.DailyTokenLimit = nil
-			}
 		}
 		candidate.AccountIDs = append([]int64(nil), candidate.AccountIDs...)
 	}

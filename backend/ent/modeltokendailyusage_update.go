@@ -83,33 +83,6 @@ func (_u *ModelTokenDailyUsageUpdate) AddUsedTokens(v int64) *ModelTokenDailyUsa
 	return _u
 }
 
-// SetDailyLimitTokens sets the "daily_limit_tokens" field.
-func (_u *ModelTokenDailyUsageUpdate) SetDailyLimitTokens(v int64) *ModelTokenDailyUsageUpdate {
-	_u.mutation.ResetDailyLimitTokens()
-	_u.mutation.SetDailyLimitTokens(v)
-	return _u
-}
-
-// SetNillableDailyLimitTokens sets the "daily_limit_tokens" field if the given value is not nil.
-func (_u *ModelTokenDailyUsageUpdate) SetNillableDailyLimitTokens(v *int64) *ModelTokenDailyUsageUpdate {
-	if v != nil {
-		_u.SetDailyLimitTokens(*v)
-	}
-	return _u
-}
-
-// AddDailyLimitTokens adds value to the "daily_limit_tokens" field.
-func (_u *ModelTokenDailyUsageUpdate) AddDailyLimitTokens(v int64) *ModelTokenDailyUsageUpdate {
-	_u.mutation.AddDailyLimitTokens(v)
-	return _u
-}
-
-// ClearDailyLimitTokens clears the value of the "daily_limit_tokens" field.
-func (_u *ModelTokenDailyUsageUpdate) ClearDailyLimitTokens() *ModelTokenDailyUsageUpdate {
-	_u.mutation.ClearDailyLimitTokens()
-	return _u
-}
-
 // Mutation returns the ModelTokenDailyUsageMutation object of the builder.
 func (_u *ModelTokenDailyUsageUpdate) Mutation() *ModelTokenDailyUsageMutation {
 	return _u.mutation
@@ -163,11 +136,6 @@ func (_u *ModelTokenDailyUsageUpdate) check() error {
 			return &ValidationError{Name: "used_tokens", err: fmt.Errorf(`ent: validator failed for field "ModelTokenDailyUsage.used_tokens": %w`, err)}
 		}
 	}
-	if v, ok := _u.mutation.DailyLimitTokens(); ok {
-		if err := modeltokendailyusage.DailyLimitTokensValidator(v); err != nil {
-			return &ValidationError{Name: "daily_limit_tokens", err: fmt.Errorf(`ent: validator failed for field "ModelTokenDailyUsage.daily_limit_tokens": %w`, err)}
-		}
-	}
 	return nil
 }
 
@@ -197,15 +165,6 @@ func (_u *ModelTokenDailyUsageUpdate) sqlSave(ctx context.Context) (_node int, e
 	}
 	if value, ok := _u.mutation.AddedUsedTokens(); ok {
 		_spec.AddField(modeltokendailyusage.FieldUsedTokens, field.TypeInt64, value)
-	}
-	if value, ok := _u.mutation.DailyLimitTokens(); ok {
-		_spec.SetField(modeltokendailyusage.FieldDailyLimitTokens, field.TypeInt64, value)
-	}
-	if value, ok := _u.mutation.AddedDailyLimitTokens(); ok {
-		_spec.AddField(modeltokendailyusage.FieldDailyLimitTokens, field.TypeInt64, value)
-	}
-	if _u.mutation.DailyLimitTokensCleared() {
-		_spec.ClearField(modeltokendailyusage.FieldDailyLimitTokens, field.TypeInt64)
 	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -282,33 +241,6 @@ func (_u *ModelTokenDailyUsageUpdateOne) AddUsedTokens(v int64) *ModelTokenDaily
 	return _u
 }
 
-// SetDailyLimitTokens sets the "daily_limit_tokens" field.
-func (_u *ModelTokenDailyUsageUpdateOne) SetDailyLimitTokens(v int64) *ModelTokenDailyUsageUpdateOne {
-	_u.mutation.ResetDailyLimitTokens()
-	_u.mutation.SetDailyLimitTokens(v)
-	return _u
-}
-
-// SetNillableDailyLimitTokens sets the "daily_limit_tokens" field if the given value is not nil.
-func (_u *ModelTokenDailyUsageUpdateOne) SetNillableDailyLimitTokens(v *int64) *ModelTokenDailyUsageUpdateOne {
-	if v != nil {
-		_u.SetDailyLimitTokens(*v)
-	}
-	return _u
-}
-
-// AddDailyLimitTokens adds value to the "daily_limit_tokens" field.
-func (_u *ModelTokenDailyUsageUpdateOne) AddDailyLimitTokens(v int64) *ModelTokenDailyUsageUpdateOne {
-	_u.mutation.AddDailyLimitTokens(v)
-	return _u
-}
-
-// ClearDailyLimitTokens clears the value of the "daily_limit_tokens" field.
-func (_u *ModelTokenDailyUsageUpdateOne) ClearDailyLimitTokens() *ModelTokenDailyUsageUpdateOne {
-	_u.mutation.ClearDailyLimitTokens()
-	return _u
-}
-
 // Mutation returns the ModelTokenDailyUsageMutation object of the builder.
 func (_u *ModelTokenDailyUsageUpdateOne) Mutation() *ModelTokenDailyUsageMutation {
 	return _u.mutation
@@ -375,11 +307,6 @@ func (_u *ModelTokenDailyUsageUpdateOne) check() error {
 			return &ValidationError{Name: "used_tokens", err: fmt.Errorf(`ent: validator failed for field "ModelTokenDailyUsage.used_tokens": %w`, err)}
 		}
 	}
-	if v, ok := _u.mutation.DailyLimitTokens(); ok {
-		if err := modeltokendailyusage.DailyLimitTokensValidator(v); err != nil {
-			return &ValidationError{Name: "daily_limit_tokens", err: fmt.Errorf(`ent: validator failed for field "ModelTokenDailyUsage.daily_limit_tokens": %w`, err)}
-		}
-	}
 	return nil
 }
 
@@ -426,15 +353,6 @@ func (_u *ModelTokenDailyUsageUpdateOne) sqlSave(ctx context.Context) (_node *Mo
 	}
 	if value, ok := _u.mutation.AddedUsedTokens(); ok {
 		_spec.AddField(modeltokendailyusage.FieldUsedTokens, field.TypeInt64, value)
-	}
-	if value, ok := _u.mutation.DailyLimitTokens(); ok {
-		_spec.SetField(modeltokendailyusage.FieldDailyLimitTokens, field.TypeInt64, value)
-	}
-	if value, ok := _u.mutation.AddedDailyLimitTokens(); ok {
-		_spec.AddField(modeltokendailyusage.FieldDailyLimitTokens, field.TypeInt64, value)
-	}
-	if _u.mutation.DailyLimitTokensCleared() {
-		_spec.ClearField(modeltokendailyusage.FieldDailyLimitTokens, field.TypeInt64)
 	}
 	_node = &ModelTokenDailyUsage{config: _u.config}
 	_spec.Assign = _node.assignValues

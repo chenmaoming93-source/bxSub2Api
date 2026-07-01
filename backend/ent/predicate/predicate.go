@@ -45,6 +45,9 @@ type ErrorPassthroughRule func(*sql.Selector)
 // Group is the predicate function for group builders.
 type Group func(*sql.Selector)
 
+// GroupCandidateTokenDailyLimitConfig is the predicate function for groupcandidatetokendailylimitconfig builders.
+type GroupCandidateTokenDailyLimitConfig func(*sql.Selector)
+
 // GroupCandidateTokenDailyUsage is the predicate function for groupcandidatetokendailyusage builders.
 type GroupCandidateTokenDailyUsage func(*sql.Selector)
 
@@ -53,6 +56,9 @@ type IdempotencyRecord func(*sql.Selector)
 
 // IdentityAdoptionDecision is the predicate function for identityadoptiondecision builders.
 type IdentityAdoptionDecision func(*sql.Selector)
+
+// ModelTokenDailyLimitConfig is the predicate function for modeltokendailylimitconfig builders.
+type ModelTokenDailyLimitConfig func(*sql.Selector)
 
 // ModelTokenDailyUsage is the predicate function for modeltokendailyusage builders.
 type ModelTokenDailyUsage func(*sql.Selector)
@@ -110,6 +116,9 @@ type UserAttributeDefinition func(*sql.Selector)
 
 // UserAttributeValue is the predicate function for userattributevalue builders.
 type UserAttributeValue func(*sql.Selector)
+
+// UserModelTokenDailyLimitConfig is the predicate function for usermodeltokendailylimitconfig builders.
+type UserModelTokenDailyLimitConfig func(*sql.Selector)
 
 // UserModelTokenDailyUsage is the predicate function for usermodeltokendailyusage builders.
 type UserModelTokenDailyUsage func(*sql.Selector)

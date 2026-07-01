@@ -1,8 +1,13 @@
 package repository
 
 import (
+	"context"
 	"encoding/json"
+	"strings"
 	"testing"
+
+	groupcandidateconfig "github.com/Wei-Shaw/sub2api/ent/groupcandidatetokendailylimitconfig"
+	"github.com/Wei-Shaw/sub2api/internal/domain"
 )
 
 func TestModelRoutingRawPreservesLegacyAndCandidateShapes(t *testing.T) {
@@ -42,5 +47,70 @@ func TestModelRoutingRawPreservesLegacyAndCandidateShapes(t *testing.T) {
 	accounts, ok := got["account_ids"].([]any)
 	if !ok || len(accounts) != 2 || accounts[0] != float64(4) || accounts[1] != float64(5) {
 		t.Fatalf("candidate account_ids = %#v", got["account_ids"])
+	}
+}
+
+func TestReplaceGroupCandidateTokenLimitsWritesConfigTable(t *testing.T) {
+	ctx := context.Background()
+	client := newDailyTokenQuotaRepoTestClient(t)
+	group, err := client.Group.Create().SetName("route-group").Save(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	repo := &groupRepository{client: client}
+	routing := domain.NewModelRoutingJSON([]byte(`{"test":[{"model":"deepseek-v4-flash","account_ids":[2],"priority":0,"daily_token_limit":10},{"model":"deepseek-v4-pro","account_ids":[1],"priority":1,"daily_token_limit":20}]}`))
+	cleanRouting, err := stripDeprecatedRouteDailyTokenLimits(routing)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := client.Group.UpdateOneID(group.ID).SetModelRouting(cleanRouting).Save(ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := repo.replaceGroupCandidateTokenLimits(ctx, group.ID, routing); err != nil {
+		t.Fatal(err)
+	}
+	rows, err := client.GroupCandidateTokenDailyLimitConfig.Query().
+		Where(groupcandidateconfig.GroupIDEQ(group.ID)).All(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(rows) != 2 {
+		t.Fatalf("config row count = %d, want 2", len(rows))
+	}
+	limits := map[string]int64{}
+	for _, row := range rows {
+		if row.DailyLimitTokens != nil {
+			limits[row.UpstreamModel] = *row.DailyLimitTokens
+		}
+	}
+	if limits["deepseek-v4-flash"] != 10 || limits["deepseek-v4-pro"] != 20 {
+		t.Fatalf("stored limits = %v", limits)
+	}
+	hydrated, err := repo.GetByIDLite(ctx, group.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	hydratedRouting, err := modelRoutingRaw(hydrated.ModelRouting)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var response map[string][]map[string]any
+	if err := json.Unmarshal(hydratedRouting.RawMessage(), &response); err != nil {
+		t.Fatal(err)
+	}
+	if response["test"][0]["daily_token_limit"] != float64(10) || response["test"][1]["daily_token_limit"] != float64(20) {
+		t.Fatalf("hydrated routing = %s", hydratedRouting.RawMessage())
+	}
+}
+
+func TestStripDeprecatedRouteDailyTokenLimits(t *testing.T) {
+	routing := domain.NewModelRoutingJSON([]byte(`{"test":[{"model":"deepseek-v4-flash","account_ids":[2],"priority":0,"daily_token_limit":10}]}`))
+	clean, err := stripDeprecatedRouteDailyTokenLimits(routing)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(clean.RawMessage()), "daily_token_limit") {
+		t.Fatalf("deprecated limit persisted in model_routing: %s", clean.RawMessage())
 	}
 }

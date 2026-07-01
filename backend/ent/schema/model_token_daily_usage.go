@@ -36,7 +36,6 @@ func (ModelTokenDailyUsage) Fields() []ent.Field {
 		field.String("model").MaxLen(255).NotEmpty(),
 		field.Time("usage_date").SchemaType(map[string]string{dialect.MySQL: "date"}),
 		field.Int64("used_tokens").Default(0).Validate(nonNegative),
-		field.Int64("daily_limit_tokens").Optional().Nillable().Validate(nonNegative),
 	}
 }
 

@@ -76,20 +76,6 @@ func (_c *ModelTokenDailyUsageCreate) SetNillableUsedTokens(v *int64) *ModelToke
 	return _c
 }
 
-// SetDailyLimitTokens sets the "daily_limit_tokens" field.
-func (_c *ModelTokenDailyUsageCreate) SetDailyLimitTokens(v int64) *ModelTokenDailyUsageCreate {
-	_c.mutation.SetDailyLimitTokens(v)
-	return _c
-}
-
-// SetNillableDailyLimitTokens sets the "daily_limit_tokens" field if the given value is not nil.
-func (_c *ModelTokenDailyUsageCreate) SetNillableDailyLimitTokens(v *int64) *ModelTokenDailyUsageCreate {
-	if v != nil {
-		_c.SetDailyLimitTokens(*v)
-	}
-	return _c
-}
-
 // Mutation returns the ModelTokenDailyUsageMutation object of the builder.
 func (_c *ModelTokenDailyUsageCreate) Mutation() *ModelTokenDailyUsageMutation {
 	return _c.mutation
@@ -166,11 +152,6 @@ func (_c *ModelTokenDailyUsageCreate) check() error {
 			return &ValidationError{Name: "used_tokens", err: fmt.Errorf(`ent: validator failed for field "ModelTokenDailyUsage.used_tokens": %w`, err)}
 		}
 	}
-	if v, ok := _c.mutation.DailyLimitTokens(); ok {
-		if err := modeltokendailyusage.DailyLimitTokensValidator(v); err != nil {
-			return &ValidationError{Name: "daily_limit_tokens", err: fmt.Errorf(`ent: validator failed for field "ModelTokenDailyUsage.daily_limit_tokens": %w`, err)}
-		}
-	}
 	return nil
 }
 
@@ -217,10 +198,6 @@ func (_c *ModelTokenDailyUsageCreate) createSpec() (*ModelTokenDailyUsage, *sqlg
 	if value, ok := _c.mutation.UsedTokens(); ok {
 		_spec.SetField(modeltokendailyusage.FieldUsedTokens, field.TypeInt64, value)
 		_node.UsedTokens = value
-	}
-	if value, ok := _c.mutation.DailyLimitTokens(); ok {
-		_spec.SetField(modeltokendailyusage.FieldDailyLimitTokens, field.TypeInt64, value)
-		_node.DailyLimitTokens = &value
 	}
 	return _node, _spec
 }
@@ -325,30 +302,6 @@ func (u *ModelTokenDailyUsageUpsert) UpdateUsedTokens() *ModelTokenDailyUsageUps
 // AddUsedTokens adds v to the "used_tokens" field.
 func (u *ModelTokenDailyUsageUpsert) AddUsedTokens(v int64) *ModelTokenDailyUsageUpsert {
 	u.Add(modeltokendailyusage.FieldUsedTokens, v)
-	return u
-}
-
-// SetDailyLimitTokens sets the "daily_limit_tokens" field.
-func (u *ModelTokenDailyUsageUpsert) SetDailyLimitTokens(v int64) *ModelTokenDailyUsageUpsert {
-	u.Set(modeltokendailyusage.FieldDailyLimitTokens, v)
-	return u
-}
-
-// UpdateDailyLimitTokens sets the "daily_limit_tokens" field to the value that was provided on create.
-func (u *ModelTokenDailyUsageUpsert) UpdateDailyLimitTokens() *ModelTokenDailyUsageUpsert {
-	u.SetExcluded(modeltokendailyusage.FieldDailyLimitTokens)
-	return u
-}
-
-// AddDailyLimitTokens adds v to the "daily_limit_tokens" field.
-func (u *ModelTokenDailyUsageUpsert) AddDailyLimitTokens(v int64) *ModelTokenDailyUsageUpsert {
-	u.Add(modeltokendailyusage.FieldDailyLimitTokens, v)
-	return u
-}
-
-// ClearDailyLimitTokens clears the value of the "daily_limit_tokens" field.
-func (u *ModelTokenDailyUsageUpsert) ClearDailyLimitTokens() *ModelTokenDailyUsageUpsert {
-	u.SetNull(modeltokendailyusage.FieldDailyLimitTokens)
 	return u
 }
 
@@ -457,34 +410,6 @@ func (u *ModelTokenDailyUsageUpsertOne) AddUsedTokens(v int64) *ModelTokenDailyU
 func (u *ModelTokenDailyUsageUpsertOne) UpdateUsedTokens() *ModelTokenDailyUsageUpsertOne {
 	return u.Update(func(s *ModelTokenDailyUsageUpsert) {
 		s.UpdateUsedTokens()
-	})
-}
-
-// SetDailyLimitTokens sets the "daily_limit_tokens" field.
-func (u *ModelTokenDailyUsageUpsertOne) SetDailyLimitTokens(v int64) *ModelTokenDailyUsageUpsertOne {
-	return u.Update(func(s *ModelTokenDailyUsageUpsert) {
-		s.SetDailyLimitTokens(v)
-	})
-}
-
-// AddDailyLimitTokens adds v to the "daily_limit_tokens" field.
-func (u *ModelTokenDailyUsageUpsertOne) AddDailyLimitTokens(v int64) *ModelTokenDailyUsageUpsertOne {
-	return u.Update(func(s *ModelTokenDailyUsageUpsert) {
-		s.AddDailyLimitTokens(v)
-	})
-}
-
-// UpdateDailyLimitTokens sets the "daily_limit_tokens" field to the value that was provided on create.
-func (u *ModelTokenDailyUsageUpsertOne) UpdateDailyLimitTokens() *ModelTokenDailyUsageUpsertOne {
-	return u.Update(func(s *ModelTokenDailyUsageUpsert) {
-		s.UpdateDailyLimitTokens()
-	})
-}
-
-// ClearDailyLimitTokens clears the value of the "daily_limit_tokens" field.
-func (u *ModelTokenDailyUsageUpsertOne) ClearDailyLimitTokens() *ModelTokenDailyUsageUpsertOne {
-	return u.Update(func(s *ModelTokenDailyUsageUpsert) {
-		s.ClearDailyLimitTokens()
 	})
 }
 
@@ -759,34 +684,6 @@ func (u *ModelTokenDailyUsageUpsertBulk) AddUsedTokens(v int64) *ModelTokenDaily
 func (u *ModelTokenDailyUsageUpsertBulk) UpdateUsedTokens() *ModelTokenDailyUsageUpsertBulk {
 	return u.Update(func(s *ModelTokenDailyUsageUpsert) {
 		s.UpdateUsedTokens()
-	})
-}
-
-// SetDailyLimitTokens sets the "daily_limit_tokens" field.
-func (u *ModelTokenDailyUsageUpsertBulk) SetDailyLimitTokens(v int64) *ModelTokenDailyUsageUpsertBulk {
-	return u.Update(func(s *ModelTokenDailyUsageUpsert) {
-		s.SetDailyLimitTokens(v)
-	})
-}
-
-// AddDailyLimitTokens adds v to the "daily_limit_tokens" field.
-func (u *ModelTokenDailyUsageUpsertBulk) AddDailyLimitTokens(v int64) *ModelTokenDailyUsageUpsertBulk {
-	return u.Update(func(s *ModelTokenDailyUsageUpsert) {
-		s.AddDailyLimitTokens(v)
-	})
-}
-
-// UpdateDailyLimitTokens sets the "daily_limit_tokens" field to the value that was provided on create.
-func (u *ModelTokenDailyUsageUpsertBulk) UpdateDailyLimitTokens() *ModelTokenDailyUsageUpsertBulk {
-	return u.Update(func(s *ModelTokenDailyUsageUpsert) {
-		s.UpdateDailyLimitTokens()
-	})
-}
-
-// ClearDailyLimitTokens clears the value of the "daily_limit_tokens" field.
-func (u *ModelTokenDailyUsageUpsertBulk) ClearDailyLimitTokens() *ModelTokenDailyUsageUpsertBulk {
-	return u.Update(func(s *ModelTokenDailyUsageUpsert) {
-		s.ClearDailyLimitTokens()
 	})
 }
 

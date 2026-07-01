@@ -95,6 +95,15 @@ func (h *OpenAIGatewayHandler) ChatCompletions(c *gin.Context) {
 
 	// 解析渠道级模型映射
 	channelMapping, _ := h.gatewayService.ResolveChannelMappingAndRestrict(c.Request.Context(), apiKey.GroupID, reqModel)
+	routingModel, routingAccountIDs, routed, routeErr := h.gatewayService.ResolveQuotaAllowedGroupRoute(c.Request.Context(), apiKey.Group, reqModel, subject.UserID, nil)
+	if routeErr != nil {
+		status, code, message, retryAfter := billingErrorDetails(routeErr)
+		if retryAfter > 0 {
+			c.Header("Retry-After", strconv.Itoa(retryAfter))
+		}
+		h.handleStreamingAwareError(c, status, code, message, streamStarted)
+		return
+	}
 
 	if h.errorPassthroughService != nil {
 		service.BindErrorPassthroughService(c, h.errorPassthroughService)
@@ -133,13 +142,39 @@ func (h *OpenAIGatewayHandler) ChatCompletions(c *gin.Context) {
 	var lastFailoverErr *service.UpstreamFailoverError
 
 	for {
+		// If all routing accounts have been tried and failed upstream, re-resolve
+		// the route to advance to the next priority candidate.
+		if len(routingAccountIDs) > 0 {
+			allExcluded := true
+			for _, id := range routingAccountIDs {
+				if _, ok := failedAccountIDs[id]; !ok {
+					allExcluded = false
+					break
+				}
+			}
+			if allExcluded {
+				newModel, newIDs, _, reRouteErr := h.gatewayService.ResolveQuotaAllowedGroupRoute(
+					c.Request.Context(), apiKey.Group, reqModel, subject.UserID, failedAccountIDs)
+				if reRouteErr != nil {
+					if lastFailoverErr != nil {
+						h.handleFailoverExhausted(c, lastFailoverErr, streamStarted)
+					} else {
+						h.handleStreamingAwareError(c, http.StatusBadGateway, "api_error", "Upstream request failed", streamStarted)
+					}
+					return
+				}
+				routingModel = newModel
+				routingAccountIDs = newIDs
+			}
+		}
+
 		reqLog.Debug("openai_chat_completions.account_selecting", zap.Int("excluded_account_count", len(failedAccountIDs)))
 		selection, scheduleDecision, err := h.gatewayService.SelectAccountWithSchedulerForCapability(
 			c.Request.Context(),
 			apiKey.GroupID,
 			"",
 			sessionHash,
-			reqModel,
+			routingModel,
 			failedAccountIDs,
 			service.OpenAIUpstreamTransportAny,
 			service.OpenAIEndpointCapabilityChatCompletions,
@@ -169,6 +204,13 @@ func (h *OpenAIGatewayHandler) ChatCompletions(c *gin.Context) {
 			return
 		}
 		account := selection.Account
+		if len(routingAccountIDs) > 0 && !containsAccountID(routingAccountIDs, account.ID) {
+			if selection.ReleaseFunc != nil {
+				selection.ReleaseFunc()
+			}
+			failedAccountIDs[account.ID] = struct{}{}
+			continue
+		}
 		sessionHash = ensureOpenAIPoolModeSessionHash(sessionHash, account)
 		reqLog.Debug("openai_chat_completions.account_selected", zap.Int64("account_id", account.ID), zap.String("account_name", account.Name))
 		_ = scheduleDecision
@@ -183,8 +225,11 @@ func (h *OpenAIGatewayHandler) ChatCompletions(c *gin.Context) {
 		forwardStart := time.Now()
 
 		forwardBody := body
+		if routingModel != reqModel {
+			forwardBody = h.gatewayService.ReplaceModelInBody(forwardBody, routingModel)
+		}
 		if channelMapping.Mapped {
-			forwardBody = h.gatewayService.ReplaceModelInBody(body, channelMapping.MappedModel)
+			forwardBody = h.gatewayService.ReplaceModelInBody(forwardBody, channelMapping.MappedModel)
 		}
 		writerSizeBeforeForward := c.Writer.Size()
 		result, err := func() (*service.OpenAIForwardResult, error) {
@@ -292,6 +337,10 @@ func (h *OpenAIGatewayHandler) ChatCompletions(c *gin.Context) {
 		upstreamEndpoint := resolveOpenAIUpstreamEndpoint(c, account)
 
 		cyberBlocked := service.GetOpsCyberPolicy(c) != nil
+		quotaRouteAlias := ""
+		if routed {
+			quotaRouteAlias = reqModel
+		}
 		h.submitOpenAIUsageRecordTask(c.Request.Context(), result, func(ctx context.Context) {
 			if err := h.gatewayService.RecordUsage(ctx, &service.OpenAIRecordUsageInput{
 				Result:             result,
@@ -305,6 +354,7 @@ func (h *OpenAIGatewayHandler) ChatCompletions(c *gin.Context) {
 				IPAddress:          clientIP,
 				APIKeyService:      h.apiKeyService,
 				ChannelUsageFields: channelMapping.ToUsageFields(reqModel, result.UpstreamModel),
+				RouteAlias:         quotaRouteAlias,
 				CyberBlocked:       cyberBlocked,
 			}); err != nil {
 				logger.L().With(

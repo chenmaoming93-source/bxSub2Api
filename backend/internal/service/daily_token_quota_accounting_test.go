@@ -102,8 +102,6 @@ func TestRecordUsageTokenQuotaAccountingCountsAllClaudeTokensOnce(t *testing.T) 
 	require.Equal(t, int64(20), increment.GroupCandidateKey.GroupID)
 	require.Equal(t, "claude-route", increment.GroupCandidateKey.RouteAlias)
 	require.Equal(t, "claude-sonnet-4", increment.GroupCandidateKey.UpstreamModel)
-	require.NotNil(t, increment.GroupCandidateDailyLimitTokens)
-	require.Equal(t, int64(500), *increment.GroupCandidateDailyLimitTokens)
 }
 
 func TestRecordUsageTokenQuotaAccountingCountsAllOpenAITokensOnce(t *testing.T) {
@@ -118,7 +116,7 @@ func TestRecordUsageTokenQuotaAccountingCountsAllOpenAITokensOnce(t *testing.T) 
 	err := svc.RecordUsage(context.Background(), &OpenAIRecordUsageInput{
 		Result: &OpenAIForwardResult{
 			RequestID:     "openai-token-quota",
-			Model:         "gpt-route",
+			Model:         "gpt-5",
 			UpstreamModel: "gpt-5",
 			Usage: OpenAIUsage{
 				InputTokens:              30,
@@ -128,8 +126,9 @@ func TestRecordUsageTokenQuotaAccountingCountsAllOpenAITokensOnce(t *testing.T) 
 			},
 			Duration: time.Second,
 		},
-		APIKey: apiKey,
-		User:   &User{ID: 41},
+		APIKey:     apiKey,
+		RouteAlias: "gpt-route",
+		User:       &User{ID: 41},
 		Account: &Account{
 			ID:       31,
 			Platform: PlatformOpenAI,
@@ -140,6 +139,8 @@ func TestRecordUsageTokenQuotaAccountingCountsAllOpenAITokensOnce(t *testing.T) 
 	require.Len(t, quotaRepo.increments, 1)
 	require.Equal(t, int64(42), quotaRepo.increments[0].Tokens)
 	require.Equal(t, "gpt-5", quotaRepo.increments[0].ModelKey.Model)
+	require.Equal(t, "gpt-route", quotaRepo.increments[0].GroupCandidateKey.RouteAlias)
+	require.Equal(t, "gpt-5", quotaRepo.increments[0].GroupCandidateKey.UpstreamModel)
 }
 
 func TestTokenQuotaAccountingSkipsFailedOrDuplicateUsagePersistence(t *testing.T) {

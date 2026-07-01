@@ -134,6 +134,8 @@ func (User) Edges() []ent.Edge {
 		edge.To("platform_quotas", UserPlatformQuota.Type),
 		edge.To("model_token_daily_usages", UserModelTokenDailyUsage.Type).
 			Annotations(entsql.OnDelete(entsql.Cascade)),
+		edge.To("user_model_token_daily_limit_configs", UserModelTokenDailyLimitConfig.Type).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
 	}
 }
 

@@ -23,6 +23,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/usagelog"
 	"github.com/Wei-Shaw/sub2api/ent/user"
 	"github.com/Wei-Shaw/sub2api/ent/userattributevalue"
+	"github.com/Wei-Shaw/sub2api/ent/usermodeltokendailylimitconfig"
 	"github.com/Wei-Shaw/sub2api/ent/usermodeltokendailyusage"
 	"github.com/Wei-Shaw/sub2api/ent/userplatformquota"
 	"github.com/Wei-Shaw/sub2api/ent/usersubscription"
@@ -622,6 +623,21 @@ func (_u *UserUpdate) AddModelTokenDailyUsages(v ...*UserModelTokenDailyUsage) *
 	return _u.AddModelTokenDailyUsageIDs(ids...)
 }
 
+// AddUserModelTokenDailyLimitConfigIDs adds the "user_model_token_daily_limit_configs" edge to the UserModelTokenDailyLimitConfig entity by IDs.
+func (_u *UserUpdate) AddUserModelTokenDailyLimitConfigIDs(ids ...int64) *UserUpdate {
+	_u.mutation.AddUserModelTokenDailyLimitConfigIDs(ids...)
+	return _u
+}
+
+// AddUserModelTokenDailyLimitConfigs adds the "user_model_token_daily_limit_configs" edges to the UserModelTokenDailyLimitConfig entity.
+func (_u *UserUpdate) AddUserModelTokenDailyLimitConfigs(v ...*UserModelTokenDailyLimitConfig) *UserUpdate {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddUserModelTokenDailyLimitConfigIDs(ids...)
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (_u *UserUpdate) Mutation() *UserMutation {
 	return _u.mutation
@@ -919,6 +935,27 @@ func (_u *UserUpdate) RemoveModelTokenDailyUsages(v ...*UserModelTokenDailyUsage
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveModelTokenDailyUsageIDs(ids...)
+}
+
+// ClearUserModelTokenDailyLimitConfigs clears all "user_model_token_daily_limit_configs" edges to the UserModelTokenDailyLimitConfig entity.
+func (_u *UserUpdate) ClearUserModelTokenDailyLimitConfigs() *UserUpdate {
+	_u.mutation.ClearUserModelTokenDailyLimitConfigs()
+	return _u
+}
+
+// RemoveUserModelTokenDailyLimitConfigIDs removes the "user_model_token_daily_limit_configs" edge to UserModelTokenDailyLimitConfig entities by IDs.
+func (_u *UserUpdate) RemoveUserModelTokenDailyLimitConfigIDs(ids ...int64) *UserUpdate {
+	_u.mutation.RemoveUserModelTokenDailyLimitConfigIDs(ids...)
+	return _u
+}
+
+// RemoveUserModelTokenDailyLimitConfigs removes "user_model_token_daily_limit_configs" edges to UserModelTokenDailyLimitConfig entities.
+func (_u *UserUpdate) RemoveUserModelTokenDailyLimitConfigs(v ...*UserModelTokenDailyLimitConfig) *UserUpdate {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveUserModelTokenDailyLimitConfigIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -1751,6 +1788,51 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.UserModelTokenDailyLimitConfigsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.UserModelTokenDailyLimitConfigsTable,
+			Columns: []string{user.UserModelTokenDailyLimitConfigsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(usermodeltokendailylimitconfig.FieldID, field.TypeInt64),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedUserModelTokenDailyLimitConfigsIDs(); len(nodes) > 0 && !_u.mutation.UserModelTokenDailyLimitConfigsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.UserModelTokenDailyLimitConfigsTable,
+			Columns: []string{user.UserModelTokenDailyLimitConfigsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(usermodeltokendailylimitconfig.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.UserModelTokenDailyLimitConfigsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.UserModelTokenDailyLimitConfigsTable,
+			Columns: []string{user.UserModelTokenDailyLimitConfigsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(usermodeltokendailylimitconfig.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{user.Label}
@@ -2352,6 +2434,21 @@ func (_u *UserUpdateOne) AddModelTokenDailyUsages(v ...*UserModelTokenDailyUsage
 	return _u.AddModelTokenDailyUsageIDs(ids...)
 }
 
+// AddUserModelTokenDailyLimitConfigIDs adds the "user_model_token_daily_limit_configs" edge to the UserModelTokenDailyLimitConfig entity by IDs.
+func (_u *UserUpdateOne) AddUserModelTokenDailyLimitConfigIDs(ids ...int64) *UserUpdateOne {
+	_u.mutation.AddUserModelTokenDailyLimitConfigIDs(ids...)
+	return _u
+}
+
+// AddUserModelTokenDailyLimitConfigs adds the "user_model_token_daily_limit_configs" edges to the UserModelTokenDailyLimitConfig entity.
+func (_u *UserUpdateOne) AddUserModelTokenDailyLimitConfigs(v ...*UserModelTokenDailyLimitConfig) *UserUpdateOne {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddUserModelTokenDailyLimitConfigIDs(ids...)
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (_u *UserUpdateOne) Mutation() *UserMutation {
 	return _u.mutation
@@ -2649,6 +2746,27 @@ func (_u *UserUpdateOne) RemoveModelTokenDailyUsages(v ...*UserModelTokenDailyUs
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveModelTokenDailyUsageIDs(ids...)
+}
+
+// ClearUserModelTokenDailyLimitConfigs clears all "user_model_token_daily_limit_configs" edges to the UserModelTokenDailyLimitConfig entity.
+func (_u *UserUpdateOne) ClearUserModelTokenDailyLimitConfigs() *UserUpdateOne {
+	_u.mutation.ClearUserModelTokenDailyLimitConfigs()
+	return _u
+}
+
+// RemoveUserModelTokenDailyLimitConfigIDs removes the "user_model_token_daily_limit_configs" edge to UserModelTokenDailyLimitConfig entities by IDs.
+func (_u *UserUpdateOne) RemoveUserModelTokenDailyLimitConfigIDs(ids ...int64) *UserUpdateOne {
+	_u.mutation.RemoveUserModelTokenDailyLimitConfigIDs(ids...)
+	return _u
+}
+
+// RemoveUserModelTokenDailyLimitConfigs removes "user_model_token_daily_limit_configs" edges to UserModelTokenDailyLimitConfig entities.
+func (_u *UserUpdateOne) RemoveUserModelTokenDailyLimitConfigs(v ...*UserModelTokenDailyLimitConfig) *UserUpdateOne {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveUserModelTokenDailyLimitConfigIDs(ids...)
 }
 
 // Where appends a list predicates to the UserUpdate builder.
@@ -3504,6 +3622,51 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(usermodeltokendailyusage.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.UserModelTokenDailyLimitConfigsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.UserModelTokenDailyLimitConfigsTable,
+			Columns: []string{user.UserModelTokenDailyLimitConfigsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(usermodeltokendailylimitconfig.FieldID, field.TypeInt64),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedUserModelTokenDailyLimitConfigsIDs(); len(nodes) > 0 && !_u.mutation.UserModelTokenDailyLimitConfigsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.UserModelTokenDailyLimitConfigsTable,
+			Columns: []string{user.UserModelTokenDailyLimitConfigsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(usermodeltokendailylimitconfig.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.UserModelTokenDailyLimitConfigsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.UserModelTokenDailyLimitConfigsTable,
+			Columns: []string{user.UserModelTokenDailyLimitConfigsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(usermodeltokendailylimitconfig.FieldID, field.TypeInt64),
 			},
 		}
 		for _, k := range nodes {

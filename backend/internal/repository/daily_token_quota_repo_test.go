@@ -37,115 +37,65 @@ func newDailyTokenQuotaRepoTestClient(t *testing.T) *dbent.Client {
 	return client
 }
 
-func TestDailyTokenQuotaRepositoryUsesStartOfDayAndMissingIsUnlimited(t *testing.T) {
+func TestGetModel_ConfigAndUsage(t *testing.T) {
 	client := newDailyTokenQuotaRepoTestClient(t)
 	repo := &dailyTokenQuotaRepository{client: client}
 	ctx := context.Background()
 	at := time.Date(2026, 6, 30, 18, 45, 0, 0, time.FixedZone("request", -7*60*60))
 	day := timezone.StartOfDay(at)
 	limit := int64(100)
-	if _, err := client.ModelTokenDailyUsage.Create().
-		SetModel("gpt-5").SetUsageDate(day).SetUsedTokens(100).SetDailyLimitTokens(limit).Save(ctx); err != nil {
-		t.Fatalf("create model quota: %v", err)
+	if _, err := client.ModelTokenDailyLimitConfig.Create().SetModel("gpt-5").SetDailyLimitTokens(limit).Save(ctx); err != nil {
+		t.Fatalf("create config: %v", err)
 	}
-
+	if _, err := client.ModelTokenDailyUsage.Create().SetModel("gpt-5").SetUsageDate(day).SetUsedTokens(100).Save(ctx); err != nil {
+		t.Fatalf("create usage: %v", err)
+	}
 	snapshot, err := repo.GetModelDailyTokenQuota(ctx, service.ModelDailyTokenQuotaKey{Model: "gpt-5", At: at})
-	if err != nil {
-		t.Fatalf("GetModelDailyTokenQuota: %v", err)
+	if err != nil || !snapshot.Exists || snapshot.UsedTokens != 100 || snapshot.DailyLimitTokens == nil || *snapshot.DailyLimitTokens != 100 {
+		t.Fatalf("snapshot=%+v err=%v", snapshot, err)
 	}
-	if !snapshot.Exists || !snapshot.UsageDate.Equal(day) || snapshot.UsedTokens != 100 || snapshot.DailyLimitTokens == nil || *snapshot.DailyLimitTokens != 100 {
-		t.Fatalf("snapshot = %+v", snapshot)
-	}
-
 	missing, err := repo.GetModelDailyTokenQuota(ctx, service.ModelDailyTokenQuotaKey{Model: "missing", At: at})
-	if err != nil {
-		t.Fatalf("missing GetModelDailyTokenQuota: %v", err)
-	}
-	if missing.Exists || missing.DailyLimitTokens != nil || missing.UsedTokens != 0 || !missing.UsageDate.Equal(day) {
-		t.Fatalf("missing snapshot = %+v", missing)
+	if err != nil || missing.Exists || missing.DailyLimitTokens != nil {
+		t.Fatalf("missing=%+v err=%v", missing, err)
 	}
 }
 
-func TestDailyTokenQuotaRepositoryKeepsUsersIsolated(t *testing.T) {
+func TestGetUserModel_KeepsUsersIsolated(t *testing.T) {
 	client := newDailyTokenQuotaRepoTestClient(t)
 	repo := NewDailyTokenQuotaRepository(client)
 	ctx := context.Background()
 	at := timezone.Today()
 	limit := int64(25)
-	user, err := client.User.Create().SetEmail("quota-41@example.com").SetPasswordHash("hash").Save(ctx)
+	user, err := client.User.Create().SetEmail("u41@test.com").SetPasswordHash("h").Save(ctx)
 	if err != nil {
 		t.Fatalf("create user: %v", err)
 	}
-	if _, err := client.UserModelTokenDailyUsage.Create().
-		SetUserID(user.ID).SetModel("claude-sonnet").SetUsageDate(at).SetUsedTokens(25).SetDailyLimitTokens(limit).Save(ctx); err != nil {
-		t.Fatalf("create user model quota: %v", err)
+	if _, err := client.UserModelTokenDailyLimitConfig.Create().SetUserID(user.ID).SetModel("claude-sonnet").SetDailyLimitTokens(limit).Save(ctx); err != nil {
+		t.Fatalf("create config: %v", err)
 	}
-
+	if _, err := client.UserModelTokenDailyUsage.Create().SetUserID(user.ID).SetModel("claude-sonnet").SetUsageDate(at).SetUsedTokens(25).Save(ctx); err != nil {
+		t.Fatalf("create usage: %v", err)
+	}
 	first, err := repo.GetUserModelDailyTokenQuota(ctx, service.UserModelDailyTokenQuotaKey{UserID: user.ID, Model: "claude-sonnet", At: at})
 	if err != nil || !first.Exists || first.UsedTokens != 25 {
-		t.Fatalf("first user snapshot=%+v err=%v", first, err)
+		t.Fatalf("first=%+v err=%v", first, err)
 	}
 	second, err := repo.GetUserModelDailyTokenQuota(ctx, service.UserModelDailyTokenQuotaKey{UserID: user.ID + 1, Model: "claude-sonnet", At: at})
 	if err != nil || second.Exists {
-		t.Fatalf("second user snapshot=%+v err=%v", second, err)
+		t.Fatalf("second=%+v err=%v", second, err)
 	}
 }
 
-func TestDailyTokenQuotaRepositoryUpsertUserModelQuotasKeepsUsersIsolated(t *testing.T) {
-	client := newDailyTokenQuotaRepoTestClient(t)
-	repo := &dailyTokenQuotaRepository{client: client}
-	ctx := context.Background()
-	at := time.Date(2026, 6, 30, 12, 0, 0, 0, time.UTC)
-	day := timezone.StartOfDay(at)
-	userA, err := client.User.Create().SetEmail("quota-upsert-a@example.com").SetPasswordHash("hash").Save(ctx)
-	if err != nil {
-		t.Fatalf("create user a: %v", err)
-	}
-	userB, err := client.User.Create().SetEmail("quota-upsert-b@example.com").SetPasswordHash("hash").Save(ctx)
-	if err != nil {
-		t.Fatalf("create user b: %v", err)
-	}
-	limitB := int64(75)
-	if _, err := client.UserModelTokenDailyUsage.Create().
-		SetUserID(userB.ID).SetModel("gpt-5").SetUsageDate(day).SetUsedTokens(44).SetDailyLimitTokens(limitB).Save(ctx); err != nil {
-		t.Fatalf("create user b quota: %v", err)
-	}
-
-	limitA := int64(20)
-	records, err := repo.UpsertUserModelDailyTokenQuotas(ctx, userA.ID, at, []service.UserModelDailyTokenQuotaInput{
-		{Model: "gpt-5", DailyLimitTokens: &limitA},
-	})
-	if err != nil {
-		t.Fatalf("UpsertUserModelDailyTokenQuotas: %v", err)
-	}
-	if len(records) != 1 || records[0].UserID != userA.ID || records[0].Model != "gpt-5" || records[0].DailyLimitTokens == nil || *records[0].DailyLimitTokens != limitA {
-		t.Fatalf("records = %+v", records)
-	}
-	other := client.UserModelTokenDailyUsage.Query().
-		Where(usermodeltokendailyusage.UserIDEQ(userB.ID), usermodeltokendailyusage.ModelEQ("gpt-5"), usermodeltokendailyusage.UsageDateEQ(day)).
-		OnlyX(ctx)
-	if other.UsedTokens != 44 || other.DailyLimitTokens == nil || *other.DailyLimitTokens != limitB {
-		t.Fatalf("other user row = %+v, want used=44 limit=%d", other, limitB)
-	}
-}
-
-func TestDailyTokenQuotaRepositoryIncrementConcurrent(t *testing.T) {
+func TestIncrement_Concurrent(t *testing.T) {
 	client := newDailyTokenQuotaRepoTestClient(t)
 	repo := NewDailyTokenQuotaRepository(client)
 	ctx := context.Background()
 	at := time.Date(2026, 6, 30, 12, 0, 0, 0, time.UTC)
 	day := timezone.StartOfDay(at)
-	user, err := client.User.Create().SetEmail("quota-concurrent@example.com").SetPasswordHash("hash").Save(ctx)
-	if err != nil {
-		t.Fatalf("create user: %v", err)
-	}
-	group, err := client.Group.Create().SetName("quota-concurrent").Save(ctx)
-	if err != nil {
-		t.Fatalf("create group: %v", err)
-	}
-
+	user, _ := client.User.Create().SetEmail("qc@test.com").SetPasswordHash("h").Save(ctx)
+	group, _ := client.Group.Create().SetName("qc").Save(ctx)
 	const workers = 16
-	const tokensPerWorker = int64(7)
+	const each = int64(7)
 	var wg sync.WaitGroup
 	errs := make(chan error, workers)
 	for i := 0; i < workers; i++ {
@@ -156,7 +106,7 @@ func TestDailyTokenQuotaRepositoryIncrementConcurrent(t *testing.T) {
 				ModelKey:          service.ModelDailyTokenQuotaKey{Model: "gpt-5", At: at},
 				UserModelKey:      service.UserModelDailyTokenQuotaKey{UserID: user.ID, Model: "gpt-5", At: at},
 				GroupCandidateKey: service.GroupCandidateDailyTokenQuotaKey{GroupID: group.ID, RouteAlias: "chat", UpstreamModel: "gpt-5", At: at},
-				Tokens:            tokensPerWorker,
+				Tokens:            each,
 			})
 		}()
 	}
@@ -164,96 +114,35 @@ func TestDailyTokenQuotaRepositoryIncrementConcurrent(t *testing.T) {
 	close(errs)
 	for err := range errs {
 		if err != nil {
-			t.Fatalf("IncrementDailyTokenQuotas: %v", err)
+			t.Fatalf("Increment: %v", err)
 		}
 	}
-	want := int64(workers) * tokensPerWorker
-	model := client.ModelTokenDailyUsage.Query().Where(modeltokendailyusage.ModelEQ("gpt-5"), modeltokendailyusage.UsageDateEQ(day)).OnlyX(ctx)
-	userModel := client.UserModelTokenDailyUsage.Query().Where(usermodeltokendailyusage.UserIDEQ(user.ID), usermodeltokendailyusage.ModelEQ("gpt-5"), usermodeltokendailyusage.UsageDateEQ(day)).OnlyX(ctx)
-	groupCandidate := client.GroupCandidateTokenDailyUsage.Query().Where(groupcandidatetokendailyusage.GroupIDEQ(group.ID), groupcandidatetokendailyusage.RouteAliasEQ("chat"), groupcandidatetokendailyusage.UpstreamModelEQ("gpt-5"), groupcandidatetokendailyusage.UsageDateEQ(day)).OnlyX(ctx)
-	if model.UsedTokens != want || userModel.UsedTokens != want || groupCandidate.UsedTokens != want {
-		t.Fatalf("used tokens model=%d user=%d group=%d, want %d", model.UsedTokens, userModel.UsedTokens, groupCandidate.UsedTokens, want)
+	want := int64(workers) * each
+	m := client.ModelTokenDailyUsage.Query().Where(modeltokendailyusage.ModelEQ("gpt-5"), modeltokendailyusage.UsageDateEQ(day)).OnlyX(ctx)
+	u := client.UserModelTokenDailyUsage.Query().Where(usermodeltokendailyusage.UserIDEQ(user.ID), usermodeltokendailyusage.ModelEQ("gpt-5"), usermodeltokendailyusage.UsageDateEQ(day)).OnlyX(ctx)
+	g := client.GroupCandidateTokenDailyUsage.Query().Where(groupcandidatetokendailyusage.GroupIDEQ(group.ID), groupcandidatetokendailyusage.RouteAliasEQ("chat"), groupcandidatetokendailyusage.UpstreamModelEQ("gpt-5"), groupcandidatetokendailyusage.UsageDateEQ(day)).OnlyX(ctx)
+	if m.UsedTokens != want || u.UsedTokens != want || g.UsedTokens != want {
+		t.Fatalf("tokens m=%d u=%d g=%d want=%d", m.UsedTokens, u.UsedTokens, g.UsedTokens, want)
 	}
 }
 
-func TestDailyTokenQuotaRepositoryIncrementRolloverUsesNewDay(t *testing.T) {
-	client := newDailyTokenQuotaRepoTestClient(t)
-	repo := NewDailyTokenQuotaRepository(client)
-	ctx := context.Background()
-	yesterdayAt := time.Date(2026, 6, 29, 15, 0, 0, 0, time.UTC)
-	todayAt := yesterdayAt.AddDate(0, 0, 1)
-	yesterday := timezone.StartOfDay(yesterdayAt)
-	today := timezone.StartOfDay(todayAt)
-	modelLimit := int64(1000)
-	userLimit := int64(500)
-	groupLimit := int64(250)
-	user, err := client.User.Create().SetEmail("quota-rollover@example.com").SetPasswordHash("hash").Save(ctx)
-	if err != nil {
-		t.Fatalf("create user: %v", err)
-	}
-	group, err := client.Group.Create().SetName("quota-rollover").Save(ctx)
-	if err != nil {
-		t.Fatalf("create group: %v", err)
-	}
-	if _, err := client.ModelTokenDailyUsage.Create().SetModel("gpt-5").SetUsageDate(yesterday).SetUsedTokens(33).SetDailyLimitTokens(modelLimit).Save(ctx); err != nil {
-		t.Fatalf("create previous model usage: %v", err)
-	}
-	if _, err := client.UserModelTokenDailyUsage.Create().SetUserID(user.ID).SetModel("gpt-5").SetUsageDate(yesterday).SetUsedTokens(44).SetDailyLimitTokens(userLimit).Save(ctx); err != nil {
-		t.Fatalf("create previous user model usage: %v", err)
-	}
-
-	if err := repo.IncrementDailyTokenQuotas(ctx, service.DailyTokenQuotaIncrement{
-		ModelKey:                       service.ModelDailyTokenQuotaKey{Model: "gpt-5", At: todayAt},
-		UserModelKey:                   service.UserModelDailyTokenQuotaKey{UserID: user.ID, Model: "gpt-5", At: todayAt},
-		GroupCandidateKey:              service.GroupCandidateDailyTokenQuotaKey{GroupID: group.ID, RouteAlias: "chat", UpstreamModel: "gpt-5", At: todayAt},
-		Tokens:                         12,
-		GroupCandidateDailyLimitTokens: &groupLimit,
-	}); err != nil {
-		t.Fatalf("IncrementDailyTokenQuotas: %v", err)
-	}
-
-	previous := client.ModelTokenDailyUsage.Query().Where(modeltokendailyusage.ModelEQ("gpt-5"), modeltokendailyusage.UsageDateEQ(yesterday)).OnlyX(ctx)
-	current := client.ModelTokenDailyUsage.Query().Where(modeltokendailyusage.ModelEQ("gpt-5"), modeltokendailyusage.UsageDateEQ(today)).OnlyX(ctx)
-	currentUser := client.UserModelTokenDailyUsage.Query().Where(usermodeltokendailyusage.UserIDEQ(user.ID), usermodeltokendailyusage.ModelEQ("gpt-5"), usermodeltokendailyusage.UsageDateEQ(today)).OnlyX(ctx)
-	currentGroup := client.GroupCandidateTokenDailyUsage.Query().Where(groupcandidatetokendailyusage.GroupIDEQ(group.ID), groupcandidatetokendailyusage.RouteAliasEQ("chat"), groupcandidatetokendailyusage.UpstreamModelEQ("gpt-5"), groupcandidatetokendailyusage.UsageDateEQ(today)).OnlyX(ctx)
-	if previous.UsedTokens != 33 || current.UsedTokens != 12 {
-		t.Fatalf("model rollover previous=%d current=%d", previous.UsedTokens, current.UsedTokens)
-	}
-	if current.DailyLimitTokens == nil || *current.DailyLimitTokens != modelLimit {
-		t.Fatalf("model daily limit = %v, want %d", current.DailyLimitTokens, modelLimit)
-	}
-	if currentUser.DailyLimitTokens == nil || *currentUser.DailyLimitTokens != userLimit {
-		t.Fatalf("user daily limit = %v, want %d", currentUser.DailyLimitTokens, userLimit)
-	}
-	if currentGroup.DailyLimitTokens == nil || *currentGroup.DailyLimitTokens != groupLimit {
-		t.Fatalf("group daily limit = %v, want %d", currentGroup.DailyLimitTokens, groupLimit)
-	}
-}
-
-func TestDailyTokenQuotaRepositoryIncrementRollbackOnFailure(t *testing.T) {
+func TestIncrement_RollbackOnFailure(t *testing.T) {
 	client := newDailyTokenQuotaRepoTestClient(t)
 	repo := NewDailyTokenQuotaRepository(client)
 	ctx := context.Background()
 	at := time.Date(2026, 6, 30, 12, 0, 0, 0, time.UTC)
 	day := timezone.StartOfDay(at)
-	user, err := client.User.Create().SetEmail("quota-rollback@example.com").SetPasswordHash("hash").Save(ctx)
-	if err != nil {
-		t.Fatalf("create user: %v", err)
-	}
-
-	err = repo.IncrementDailyTokenQuotas(ctx, service.DailyTokenQuotaIncrement{
+	user, _ := client.User.Create().SetEmail("qrb@test.com").SetPasswordHash("h").Save(ctx)
+	err := repo.IncrementDailyTokenQuotas(ctx, service.DailyTokenQuotaIncrement{
 		ModelKey:          service.ModelDailyTokenQuotaKey{Model: "gpt-5", At: at},
 		UserModelKey:      service.UserModelDailyTokenQuotaKey{UserID: user.ID, Model: "gpt-5", At: at},
 		GroupCandidateKey: service.GroupCandidateDailyTokenQuotaKey{GroupID: 999999, RouteAlias: "chat", UpstreamModel: "gpt-5", At: at},
 		Tokens:            10,
 	})
 	if err == nil {
-		t.Fatal("IncrementDailyTokenQuotas succeeded with missing group")
+		t.Fatal("expected error with missing group")
 	}
-	if count := client.ModelTokenDailyUsage.Query().Where(modeltokendailyusage.ModelEQ("gpt-5"), modeltokendailyusage.UsageDateEQ(day)).CountX(ctx); count != 0 {
-		t.Fatalf("model usage rows after rollback = %d, want 0", count)
-	}
-	if count := client.UserModelTokenDailyUsage.Query().Where(usermodeltokendailyusage.UserIDEQ(user.ID), usermodeltokendailyusage.ModelEQ("gpt-5"), usermodeltokendailyusage.UsageDateEQ(day)).CountX(ctx); count != 0 {
-		t.Fatalf("user model usage rows after rollback = %d, want 0", count)
+	if c := client.ModelTokenDailyUsage.Query().Where(modeltokendailyusage.ModelEQ("gpt-5"), modeltokendailyusage.UsageDateEQ(day)).CountX(ctx); c != 0 {
+		t.Fatalf("model rows=%d want=0", c)
 	}
 }

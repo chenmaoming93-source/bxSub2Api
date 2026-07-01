@@ -28,9 +28,11 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/channelmonitorrequesttemplate"
 	"github.com/Wei-Shaw/sub2api/ent/errorpassthroughrule"
 	"github.com/Wei-Shaw/sub2api/ent/group"
+	"github.com/Wei-Shaw/sub2api/ent/groupcandidatetokendailylimitconfig"
 	"github.com/Wei-Shaw/sub2api/ent/groupcandidatetokendailyusage"
 	"github.com/Wei-Shaw/sub2api/ent/idempotencyrecord"
 	"github.com/Wei-Shaw/sub2api/ent/identityadoptiondecision"
+	"github.com/Wei-Shaw/sub2api/ent/modeltokendailylimitconfig"
 	"github.com/Wei-Shaw/sub2api/ent/modeltokendailyusage"
 	"github.com/Wei-Shaw/sub2api/ent/paymentauditlog"
 	"github.com/Wei-Shaw/sub2api/ent/paymentorder"
@@ -50,6 +52,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/userallowedgroup"
 	"github.com/Wei-Shaw/sub2api/ent/userattributedefinition"
 	"github.com/Wei-Shaw/sub2api/ent/userattributevalue"
+	"github.com/Wei-Shaw/sub2api/ent/usermodeltokendailylimitconfig"
 	"github.com/Wei-Shaw/sub2api/ent/usermodeltokendailyusage"
 	"github.com/Wei-Shaw/sub2api/ent/userplatformquota"
 	"github.com/Wei-Shaw/sub2api/ent/usersubscription"
@@ -88,12 +91,16 @@ type Client struct {
 	ErrorPassthroughRule *ErrorPassthroughRuleClient
 	// Group is the client for interacting with the Group builders.
 	Group *GroupClient
+	// GroupCandidateTokenDailyLimitConfig is the client for interacting with the GroupCandidateTokenDailyLimitConfig builders.
+	GroupCandidateTokenDailyLimitConfig *GroupCandidateTokenDailyLimitConfigClient
 	// GroupCandidateTokenDailyUsage is the client for interacting with the GroupCandidateTokenDailyUsage builders.
 	GroupCandidateTokenDailyUsage *GroupCandidateTokenDailyUsageClient
 	// IdempotencyRecord is the client for interacting with the IdempotencyRecord builders.
 	IdempotencyRecord *IdempotencyRecordClient
 	// IdentityAdoptionDecision is the client for interacting with the IdentityAdoptionDecision builders.
 	IdentityAdoptionDecision *IdentityAdoptionDecisionClient
+	// ModelTokenDailyLimitConfig is the client for interacting with the ModelTokenDailyLimitConfig builders.
+	ModelTokenDailyLimitConfig *ModelTokenDailyLimitConfigClient
 	// ModelTokenDailyUsage is the client for interacting with the ModelTokenDailyUsage builders.
 	ModelTokenDailyUsage *ModelTokenDailyUsageClient
 	// PaymentAuditLog is the client for interacting with the PaymentAuditLog builders.
@@ -132,6 +139,8 @@ type Client struct {
 	UserAttributeDefinition *UserAttributeDefinitionClient
 	// UserAttributeValue is the client for interacting with the UserAttributeValue builders.
 	UserAttributeValue *UserAttributeValueClient
+	// UserModelTokenDailyLimitConfig is the client for interacting with the UserModelTokenDailyLimitConfig builders.
+	UserModelTokenDailyLimitConfig *UserModelTokenDailyLimitConfigClient
 	// UserModelTokenDailyUsage is the client for interacting with the UserModelTokenDailyUsage builders.
 	UserModelTokenDailyUsage *UserModelTokenDailyUsageClient
 	// UserPlatformQuota is the client for interacting with the UserPlatformQuota builders.
@@ -162,9 +171,11 @@ func (c *Client) init() {
 	c.ChannelMonitorRequestTemplate = NewChannelMonitorRequestTemplateClient(c.config)
 	c.ErrorPassthroughRule = NewErrorPassthroughRuleClient(c.config)
 	c.Group = NewGroupClient(c.config)
+	c.GroupCandidateTokenDailyLimitConfig = NewGroupCandidateTokenDailyLimitConfigClient(c.config)
 	c.GroupCandidateTokenDailyUsage = NewGroupCandidateTokenDailyUsageClient(c.config)
 	c.IdempotencyRecord = NewIdempotencyRecordClient(c.config)
 	c.IdentityAdoptionDecision = NewIdentityAdoptionDecisionClient(c.config)
+	c.ModelTokenDailyLimitConfig = NewModelTokenDailyLimitConfigClient(c.config)
 	c.ModelTokenDailyUsage = NewModelTokenDailyUsageClient(c.config)
 	c.PaymentAuditLog = NewPaymentAuditLogClient(c.config)
 	c.PaymentOrder = NewPaymentOrderClient(c.config)
@@ -184,6 +195,7 @@ func (c *Client) init() {
 	c.UserAllowedGroup = NewUserAllowedGroupClient(c.config)
 	c.UserAttributeDefinition = NewUserAttributeDefinitionClient(c.config)
 	c.UserAttributeValue = NewUserAttributeValueClient(c.config)
+	c.UserModelTokenDailyLimitConfig = NewUserModelTokenDailyLimitConfigClient(c.config)
 	c.UserModelTokenDailyUsage = NewUserModelTokenDailyUsageClient(c.config)
 	c.UserPlatformQuota = NewUserPlatformQuotaClient(c.config)
 	c.UserSubscription = NewUserSubscriptionClient(c.config)
@@ -250,7 +262,7 @@ func Driver(driver dialect.Driver) Option {
 // Optional parameters can be added for configuring the client.
 func Open(driverName, dataSourceName string, options ...Option) (*Client, error) {
 	switch driverName {
-	case dialect.MySQL, dialect.SQLite:
+	case dialect.MySQL, dialect.Postgres, dialect.SQLite:
 		drv, err := sql.Open(driverName, dataSourceName)
 		if err != nil {
 			return nil, err
@@ -277,46 +289,49 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	cfg := c.config
 	cfg.driver = tx
 	return &Tx{
-		ctx:                           ctx,
-		config:                        cfg,
-		APIKey:                        NewAPIKeyClient(cfg),
-		Account:                       NewAccountClient(cfg),
-		AccountGroup:                  NewAccountGroupClient(cfg),
-		Announcement:                  NewAnnouncementClient(cfg),
-		AnnouncementRead:              NewAnnouncementReadClient(cfg),
-		AuthIdentity:                  NewAuthIdentityClient(cfg),
-		AuthIdentityChannel:           NewAuthIdentityChannelClient(cfg),
-		ChannelMonitor:                NewChannelMonitorClient(cfg),
-		ChannelMonitorDailyRollup:     NewChannelMonitorDailyRollupClient(cfg),
-		ChannelMonitorHistory:         NewChannelMonitorHistoryClient(cfg),
-		ChannelMonitorRequestTemplate: NewChannelMonitorRequestTemplateClient(cfg),
-		ErrorPassthroughRule:          NewErrorPassthroughRuleClient(cfg),
-		Group:                         NewGroupClient(cfg),
-		GroupCandidateTokenDailyUsage: NewGroupCandidateTokenDailyUsageClient(cfg),
-		IdempotencyRecord:             NewIdempotencyRecordClient(cfg),
-		IdentityAdoptionDecision:      NewIdentityAdoptionDecisionClient(cfg),
-		ModelTokenDailyUsage:          NewModelTokenDailyUsageClient(cfg),
-		PaymentAuditLog:               NewPaymentAuditLogClient(cfg),
-		PaymentOrder:                  NewPaymentOrderClient(cfg),
-		PaymentProviderInstance:       NewPaymentProviderInstanceClient(cfg),
-		PendingAuthSession:            NewPendingAuthSessionClient(cfg),
-		PromoCode:                     NewPromoCodeClient(cfg),
-		PromoCodeUsage:                NewPromoCodeUsageClient(cfg),
-		Proxy:                         NewProxyClient(cfg),
-		RedeemCode:                    NewRedeemCodeClient(cfg),
-		SecuritySecret:                NewSecuritySecretClient(cfg),
-		Setting:                       NewSettingClient(cfg),
-		SubscriptionPlan:              NewSubscriptionPlanClient(cfg),
-		TLSFingerprintProfile:         NewTLSFingerprintProfileClient(cfg),
-		UsageCleanupTask:              NewUsageCleanupTaskClient(cfg),
-		UsageLog:                      NewUsageLogClient(cfg),
-		User:                          NewUserClient(cfg),
-		UserAllowedGroup:              NewUserAllowedGroupClient(cfg),
-		UserAttributeDefinition:       NewUserAttributeDefinitionClient(cfg),
-		UserAttributeValue:            NewUserAttributeValueClient(cfg),
-		UserModelTokenDailyUsage:      NewUserModelTokenDailyUsageClient(cfg),
-		UserPlatformQuota:             NewUserPlatformQuotaClient(cfg),
-		UserSubscription:              NewUserSubscriptionClient(cfg),
+		ctx:                                 ctx,
+		config:                              cfg,
+		APIKey:                              NewAPIKeyClient(cfg),
+		Account:                             NewAccountClient(cfg),
+		AccountGroup:                        NewAccountGroupClient(cfg),
+		Announcement:                        NewAnnouncementClient(cfg),
+		AnnouncementRead:                    NewAnnouncementReadClient(cfg),
+		AuthIdentity:                        NewAuthIdentityClient(cfg),
+		AuthIdentityChannel:                 NewAuthIdentityChannelClient(cfg),
+		ChannelMonitor:                      NewChannelMonitorClient(cfg),
+		ChannelMonitorDailyRollup:           NewChannelMonitorDailyRollupClient(cfg),
+		ChannelMonitorHistory:               NewChannelMonitorHistoryClient(cfg),
+		ChannelMonitorRequestTemplate:       NewChannelMonitorRequestTemplateClient(cfg),
+		ErrorPassthroughRule:                NewErrorPassthroughRuleClient(cfg),
+		Group:                               NewGroupClient(cfg),
+		GroupCandidateTokenDailyLimitConfig: NewGroupCandidateTokenDailyLimitConfigClient(cfg),
+		GroupCandidateTokenDailyUsage:       NewGroupCandidateTokenDailyUsageClient(cfg),
+		IdempotencyRecord:                   NewIdempotencyRecordClient(cfg),
+		IdentityAdoptionDecision:            NewIdentityAdoptionDecisionClient(cfg),
+		ModelTokenDailyLimitConfig:          NewModelTokenDailyLimitConfigClient(cfg),
+		ModelTokenDailyUsage:                NewModelTokenDailyUsageClient(cfg),
+		PaymentAuditLog:                     NewPaymentAuditLogClient(cfg),
+		PaymentOrder:                        NewPaymentOrderClient(cfg),
+		PaymentProviderInstance:             NewPaymentProviderInstanceClient(cfg),
+		PendingAuthSession:                  NewPendingAuthSessionClient(cfg),
+		PromoCode:                           NewPromoCodeClient(cfg),
+		PromoCodeUsage:                      NewPromoCodeUsageClient(cfg),
+		Proxy:                               NewProxyClient(cfg),
+		RedeemCode:                          NewRedeemCodeClient(cfg),
+		SecuritySecret:                      NewSecuritySecretClient(cfg),
+		Setting:                             NewSettingClient(cfg),
+		SubscriptionPlan:                    NewSubscriptionPlanClient(cfg),
+		TLSFingerprintProfile:               NewTLSFingerprintProfileClient(cfg),
+		UsageCleanupTask:                    NewUsageCleanupTaskClient(cfg),
+		UsageLog:                            NewUsageLogClient(cfg),
+		User:                                NewUserClient(cfg),
+		UserAllowedGroup:                    NewUserAllowedGroupClient(cfg),
+		UserAttributeDefinition:             NewUserAttributeDefinitionClient(cfg),
+		UserAttributeValue:                  NewUserAttributeValueClient(cfg),
+		UserModelTokenDailyLimitConfig:      NewUserModelTokenDailyLimitConfigClient(cfg),
+		UserModelTokenDailyUsage:            NewUserModelTokenDailyUsageClient(cfg),
+		UserPlatformQuota:                   NewUserPlatformQuotaClient(cfg),
+		UserSubscription:                    NewUserSubscriptionClient(cfg),
 	}, nil
 }
 
@@ -334,46 +349,49 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	cfg := c.config
 	cfg.driver = &txDriver{tx: tx, drv: c.driver}
 	return &Tx{
-		ctx:                           ctx,
-		config:                        cfg,
-		APIKey:                        NewAPIKeyClient(cfg),
-		Account:                       NewAccountClient(cfg),
-		AccountGroup:                  NewAccountGroupClient(cfg),
-		Announcement:                  NewAnnouncementClient(cfg),
-		AnnouncementRead:              NewAnnouncementReadClient(cfg),
-		AuthIdentity:                  NewAuthIdentityClient(cfg),
-		AuthIdentityChannel:           NewAuthIdentityChannelClient(cfg),
-		ChannelMonitor:                NewChannelMonitorClient(cfg),
-		ChannelMonitorDailyRollup:     NewChannelMonitorDailyRollupClient(cfg),
-		ChannelMonitorHistory:         NewChannelMonitorHistoryClient(cfg),
-		ChannelMonitorRequestTemplate: NewChannelMonitorRequestTemplateClient(cfg),
-		ErrorPassthroughRule:          NewErrorPassthroughRuleClient(cfg),
-		Group:                         NewGroupClient(cfg),
-		GroupCandidateTokenDailyUsage: NewGroupCandidateTokenDailyUsageClient(cfg),
-		IdempotencyRecord:             NewIdempotencyRecordClient(cfg),
-		IdentityAdoptionDecision:      NewIdentityAdoptionDecisionClient(cfg),
-		ModelTokenDailyUsage:          NewModelTokenDailyUsageClient(cfg),
-		PaymentAuditLog:               NewPaymentAuditLogClient(cfg),
-		PaymentOrder:                  NewPaymentOrderClient(cfg),
-		PaymentProviderInstance:       NewPaymentProviderInstanceClient(cfg),
-		PendingAuthSession:            NewPendingAuthSessionClient(cfg),
-		PromoCode:                     NewPromoCodeClient(cfg),
-		PromoCodeUsage:                NewPromoCodeUsageClient(cfg),
-		Proxy:                         NewProxyClient(cfg),
-		RedeemCode:                    NewRedeemCodeClient(cfg),
-		SecuritySecret:                NewSecuritySecretClient(cfg),
-		Setting:                       NewSettingClient(cfg),
-		SubscriptionPlan:              NewSubscriptionPlanClient(cfg),
-		TLSFingerprintProfile:         NewTLSFingerprintProfileClient(cfg),
-		UsageCleanupTask:              NewUsageCleanupTaskClient(cfg),
-		UsageLog:                      NewUsageLogClient(cfg),
-		User:                          NewUserClient(cfg),
-		UserAllowedGroup:              NewUserAllowedGroupClient(cfg),
-		UserAttributeDefinition:       NewUserAttributeDefinitionClient(cfg),
-		UserAttributeValue:            NewUserAttributeValueClient(cfg),
-		UserModelTokenDailyUsage:      NewUserModelTokenDailyUsageClient(cfg),
-		UserPlatformQuota:             NewUserPlatformQuotaClient(cfg),
-		UserSubscription:              NewUserSubscriptionClient(cfg),
+		ctx:                                 ctx,
+		config:                              cfg,
+		APIKey:                              NewAPIKeyClient(cfg),
+		Account:                             NewAccountClient(cfg),
+		AccountGroup:                        NewAccountGroupClient(cfg),
+		Announcement:                        NewAnnouncementClient(cfg),
+		AnnouncementRead:                    NewAnnouncementReadClient(cfg),
+		AuthIdentity:                        NewAuthIdentityClient(cfg),
+		AuthIdentityChannel:                 NewAuthIdentityChannelClient(cfg),
+		ChannelMonitor:                      NewChannelMonitorClient(cfg),
+		ChannelMonitorDailyRollup:           NewChannelMonitorDailyRollupClient(cfg),
+		ChannelMonitorHistory:               NewChannelMonitorHistoryClient(cfg),
+		ChannelMonitorRequestTemplate:       NewChannelMonitorRequestTemplateClient(cfg),
+		ErrorPassthroughRule:                NewErrorPassthroughRuleClient(cfg),
+		Group:                               NewGroupClient(cfg),
+		GroupCandidateTokenDailyLimitConfig: NewGroupCandidateTokenDailyLimitConfigClient(cfg),
+		GroupCandidateTokenDailyUsage:       NewGroupCandidateTokenDailyUsageClient(cfg),
+		IdempotencyRecord:                   NewIdempotencyRecordClient(cfg),
+		IdentityAdoptionDecision:            NewIdentityAdoptionDecisionClient(cfg),
+		ModelTokenDailyLimitConfig:          NewModelTokenDailyLimitConfigClient(cfg),
+		ModelTokenDailyUsage:                NewModelTokenDailyUsageClient(cfg),
+		PaymentAuditLog:                     NewPaymentAuditLogClient(cfg),
+		PaymentOrder:                        NewPaymentOrderClient(cfg),
+		PaymentProviderInstance:             NewPaymentProviderInstanceClient(cfg),
+		PendingAuthSession:                  NewPendingAuthSessionClient(cfg),
+		PromoCode:                           NewPromoCodeClient(cfg),
+		PromoCodeUsage:                      NewPromoCodeUsageClient(cfg),
+		Proxy:                               NewProxyClient(cfg),
+		RedeemCode:                          NewRedeemCodeClient(cfg),
+		SecuritySecret:                      NewSecuritySecretClient(cfg),
+		Setting:                             NewSettingClient(cfg),
+		SubscriptionPlan:                    NewSubscriptionPlanClient(cfg),
+		TLSFingerprintProfile:               NewTLSFingerprintProfileClient(cfg),
+		UsageCleanupTask:                    NewUsageCleanupTaskClient(cfg),
+		UsageLog:                            NewUsageLogClient(cfg),
+		User:                                NewUserClient(cfg),
+		UserAllowedGroup:                    NewUserAllowedGroupClient(cfg),
+		UserAttributeDefinition:             NewUserAttributeDefinitionClient(cfg),
+		UserAttributeValue:                  NewUserAttributeValueClient(cfg),
+		UserModelTokenDailyLimitConfig:      NewUserModelTokenDailyLimitConfigClient(cfg),
+		UserModelTokenDailyUsage:            NewUserModelTokenDailyUsageClient(cfg),
+		UserPlatformQuota:                   NewUserPlatformQuotaClient(cfg),
+		UserSubscription:                    NewUserSubscriptionClient(cfg),
 	}, nil
 }
 
@@ -407,13 +425,15 @@ func (c *Client) Use(hooks ...Hook) {
 		c.AuthIdentity, c.AuthIdentityChannel, c.ChannelMonitor,
 		c.ChannelMonitorDailyRollup, c.ChannelMonitorHistory,
 		c.ChannelMonitorRequestTemplate, c.ErrorPassthroughRule, c.Group,
-		c.GroupCandidateTokenDailyUsage, c.IdempotencyRecord,
-		c.IdentityAdoptionDecision, c.ModelTokenDailyUsage, c.PaymentAuditLog,
-		c.PaymentOrder, c.PaymentProviderInstance, c.PendingAuthSession, c.PromoCode,
-		c.PromoCodeUsage, c.Proxy, c.RedeemCode, c.SecuritySecret, c.Setting,
-		c.SubscriptionPlan, c.TLSFingerprintProfile, c.UsageCleanupTask, c.UsageLog,
-		c.User, c.UserAllowedGroup, c.UserAttributeDefinition, c.UserAttributeValue,
-		c.UserModelTokenDailyUsage, c.UserPlatformQuota, c.UserSubscription,
+		c.GroupCandidateTokenDailyLimitConfig, c.GroupCandidateTokenDailyUsage,
+		c.IdempotencyRecord, c.IdentityAdoptionDecision, c.ModelTokenDailyLimitConfig,
+		c.ModelTokenDailyUsage, c.PaymentAuditLog, c.PaymentOrder,
+		c.PaymentProviderInstance, c.PendingAuthSession, c.PromoCode, c.PromoCodeUsage,
+		c.Proxy, c.RedeemCode, c.SecuritySecret, c.Setting, c.SubscriptionPlan,
+		c.TLSFingerprintProfile, c.UsageCleanupTask, c.UsageLog, c.User,
+		c.UserAllowedGroup, c.UserAttributeDefinition, c.UserAttributeValue,
+		c.UserModelTokenDailyLimitConfig, c.UserModelTokenDailyUsage,
+		c.UserPlatformQuota, c.UserSubscription,
 	} {
 		n.Use(hooks...)
 	}
@@ -427,13 +447,15 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 		c.AuthIdentity, c.AuthIdentityChannel, c.ChannelMonitor,
 		c.ChannelMonitorDailyRollup, c.ChannelMonitorHistory,
 		c.ChannelMonitorRequestTemplate, c.ErrorPassthroughRule, c.Group,
-		c.GroupCandidateTokenDailyUsage, c.IdempotencyRecord,
-		c.IdentityAdoptionDecision, c.ModelTokenDailyUsage, c.PaymentAuditLog,
-		c.PaymentOrder, c.PaymentProviderInstance, c.PendingAuthSession, c.PromoCode,
-		c.PromoCodeUsage, c.Proxy, c.RedeemCode, c.SecuritySecret, c.Setting,
-		c.SubscriptionPlan, c.TLSFingerprintProfile, c.UsageCleanupTask, c.UsageLog,
-		c.User, c.UserAllowedGroup, c.UserAttributeDefinition, c.UserAttributeValue,
-		c.UserModelTokenDailyUsage, c.UserPlatformQuota, c.UserSubscription,
+		c.GroupCandidateTokenDailyLimitConfig, c.GroupCandidateTokenDailyUsage,
+		c.IdempotencyRecord, c.IdentityAdoptionDecision, c.ModelTokenDailyLimitConfig,
+		c.ModelTokenDailyUsage, c.PaymentAuditLog, c.PaymentOrder,
+		c.PaymentProviderInstance, c.PendingAuthSession, c.PromoCode, c.PromoCodeUsage,
+		c.Proxy, c.RedeemCode, c.SecuritySecret, c.Setting, c.SubscriptionPlan,
+		c.TLSFingerprintProfile, c.UsageCleanupTask, c.UsageLog, c.User,
+		c.UserAllowedGroup, c.UserAttributeDefinition, c.UserAttributeValue,
+		c.UserModelTokenDailyLimitConfig, c.UserModelTokenDailyUsage,
+		c.UserPlatformQuota, c.UserSubscription,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -468,12 +490,16 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.ErrorPassthroughRule.mutate(ctx, m)
 	case *GroupMutation:
 		return c.Group.mutate(ctx, m)
+	case *GroupCandidateTokenDailyLimitConfigMutation:
+		return c.GroupCandidateTokenDailyLimitConfig.mutate(ctx, m)
 	case *GroupCandidateTokenDailyUsageMutation:
 		return c.GroupCandidateTokenDailyUsage.mutate(ctx, m)
 	case *IdempotencyRecordMutation:
 		return c.IdempotencyRecord.mutate(ctx, m)
 	case *IdentityAdoptionDecisionMutation:
 		return c.IdentityAdoptionDecision.mutate(ctx, m)
+	case *ModelTokenDailyLimitConfigMutation:
+		return c.ModelTokenDailyLimitConfig.mutate(ctx, m)
 	case *ModelTokenDailyUsageMutation:
 		return c.ModelTokenDailyUsage.mutate(ctx, m)
 	case *PaymentAuditLogMutation:
@@ -512,6 +538,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.UserAttributeDefinition.mutate(ctx, m)
 	case *UserAttributeValueMutation:
 		return c.UserAttributeValue.mutate(ctx, m)
+	case *UserModelTokenDailyLimitConfigMutation:
+		return c.UserModelTokenDailyLimitConfig.mutate(ctx, m)
 	case *UserModelTokenDailyUsageMutation:
 		return c.UserModelTokenDailyUsage.mutate(ctx, m)
 	case *UserPlatformQuotaMutation:
@@ -2614,6 +2642,22 @@ func (c *GroupClient) QueryCandidateTokenDailyUsages(_m *Group) *GroupCandidateT
 	return query
 }
 
+// QueryGroupCandidateTokenDailyLimitConfigs queries the group_candidate_token_daily_limit_configs edge of a Group.
+func (c *GroupClient) QueryGroupCandidateTokenDailyLimitConfigs(_m *Group) *GroupCandidateTokenDailyLimitConfigQuery {
+	query := (&GroupCandidateTokenDailyLimitConfigClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(group.Table, group.FieldID, id),
+			sqlgraph.To(groupcandidatetokendailylimitconfig.Table, groupcandidatetokendailylimitconfig.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, group.GroupCandidateTokenDailyLimitConfigsTable, group.GroupCandidateTokenDailyLimitConfigsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryAccounts queries the accounts edge of a Group.
 func (c *GroupClient) QueryAccounts(_m *Group) *AccountQuery {
 	query := (&AccountClient{config: c.config}).Query()
@@ -2702,6 +2746,155 @@ func (c *GroupClient) mutate(ctx context.Context, m *GroupMutation) (Value, erro
 		return (&GroupDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown Group mutation op: %q", m.Op())
+	}
+}
+
+// GroupCandidateTokenDailyLimitConfigClient is a client for the GroupCandidateTokenDailyLimitConfig schema.
+type GroupCandidateTokenDailyLimitConfigClient struct {
+	config
+}
+
+// NewGroupCandidateTokenDailyLimitConfigClient returns a client for the GroupCandidateTokenDailyLimitConfig from the given config.
+func NewGroupCandidateTokenDailyLimitConfigClient(c config) *GroupCandidateTokenDailyLimitConfigClient {
+	return &GroupCandidateTokenDailyLimitConfigClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `groupcandidatetokendailylimitconfig.Hooks(f(g(h())))`.
+func (c *GroupCandidateTokenDailyLimitConfigClient) Use(hooks ...Hook) {
+	c.hooks.GroupCandidateTokenDailyLimitConfig = append(c.hooks.GroupCandidateTokenDailyLimitConfig, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `groupcandidatetokendailylimitconfig.Intercept(f(g(h())))`.
+func (c *GroupCandidateTokenDailyLimitConfigClient) Intercept(interceptors ...Interceptor) {
+	c.inters.GroupCandidateTokenDailyLimitConfig = append(c.inters.GroupCandidateTokenDailyLimitConfig, interceptors...)
+}
+
+// Create returns a builder for creating a GroupCandidateTokenDailyLimitConfig entity.
+func (c *GroupCandidateTokenDailyLimitConfigClient) Create() *GroupCandidateTokenDailyLimitConfigCreate {
+	mutation := newGroupCandidateTokenDailyLimitConfigMutation(c.config, OpCreate)
+	return &GroupCandidateTokenDailyLimitConfigCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of GroupCandidateTokenDailyLimitConfig entities.
+func (c *GroupCandidateTokenDailyLimitConfigClient) CreateBulk(builders ...*GroupCandidateTokenDailyLimitConfigCreate) *GroupCandidateTokenDailyLimitConfigCreateBulk {
+	return &GroupCandidateTokenDailyLimitConfigCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *GroupCandidateTokenDailyLimitConfigClient) MapCreateBulk(slice any, setFunc func(*GroupCandidateTokenDailyLimitConfigCreate, int)) *GroupCandidateTokenDailyLimitConfigCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &GroupCandidateTokenDailyLimitConfigCreateBulk{err: fmt.Errorf("calling to GroupCandidateTokenDailyLimitConfigClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*GroupCandidateTokenDailyLimitConfigCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &GroupCandidateTokenDailyLimitConfigCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for GroupCandidateTokenDailyLimitConfig.
+func (c *GroupCandidateTokenDailyLimitConfigClient) Update() *GroupCandidateTokenDailyLimitConfigUpdate {
+	mutation := newGroupCandidateTokenDailyLimitConfigMutation(c.config, OpUpdate)
+	return &GroupCandidateTokenDailyLimitConfigUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *GroupCandidateTokenDailyLimitConfigClient) UpdateOne(_m *GroupCandidateTokenDailyLimitConfig) *GroupCandidateTokenDailyLimitConfigUpdateOne {
+	mutation := newGroupCandidateTokenDailyLimitConfigMutation(c.config, OpUpdateOne, withGroupCandidateTokenDailyLimitConfig(_m))
+	return &GroupCandidateTokenDailyLimitConfigUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *GroupCandidateTokenDailyLimitConfigClient) UpdateOneID(id int64) *GroupCandidateTokenDailyLimitConfigUpdateOne {
+	mutation := newGroupCandidateTokenDailyLimitConfigMutation(c.config, OpUpdateOne, withGroupCandidateTokenDailyLimitConfigID(id))
+	return &GroupCandidateTokenDailyLimitConfigUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for GroupCandidateTokenDailyLimitConfig.
+func (c *GroupCandidateTokenDailyLimitConfigClient) Delete() *GroupCandidateTokenDailyLimitConfigDelete {
+	mutation := newGroupCandidateTokenDailyLimitConfigMutation(c.config, OpDelete)
+	return &GroupCandidateTokenDailyLimitConfigDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *GroupCandidateTokenDailyLimitConfigClient) DeleteOne(_m *GroupCandidateTokenDailyLimitConfig) *GroupCandidateTokenDailyLimitConfigDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *GroupCandidateTokenDailyLimitConfigClient) DeleteOneID(id int64) *GroupCandidateTokenDailyLimitConfigDeleteOne {
+	builder := c.Delete().Where(groupcandidatetokendailylimitconfig.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &GroupCandidateTokenDailyLimitConfigDeleteOne{builder}
+}
+
+// Query returns a query builder for GroupCandidateTokenDailyLimitConfig.
+func (c *GroupCandidateTokenDailyLimitConfigClient) Query() *GroupCandidateTokenDailyLimitConfigQuery {
+	return &GroupCandidateTokenDailyLimitConfigQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeGroupCandidateTokenDailyLimitConfig},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a GroupCandidateTokenDailyLimitConfig entity by its id.
+func (c *GroupCandidateTokenDailyLimitConfigClient) Get(ctx context.Context, id int64) (*GroupCandidateTokenDailyLimitConfig, error) {
+	return c.Query().Where(groupcandidatetokendailylimitconfig.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *GroupCandidateTokenDailyLimitConfigClient) GetX(ctx context.Context, id int64) *GroupCandidateTokenDailyLimitConfig {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryGroup queries the group edge of a GroupCandidateTokenDailyLimitConfig.
+func (c *GroupCandidateTokenDailyLimitConfigClient) QueryGroup(_m *GroupCandidateTokenDailyLimitConfig) *GroupQuery {
+	query := (&GroupClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(groupcandidatetokendailylimitconfig.Table, groupcandidatetokendailylimitconfig.FieldID, id),
+			sqlgraph.To(group.Table, group.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, groupcandidatetokendailylimitconfig.GroupTable, groupcandidatetokendailylimitconfig.GroupColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *GroupCandidateTokenDailyLimitConfigClient) Hooks() []Hook {
+	return c.hooks.GroupCandidateTokenDailyLimitConfig
+}
+
+// Interceptors returns the client interceptors.
+func (c *GroupCandidateTokenDailyLimitConfigClient) Interceptors() []Interceptor {
+	return c.inters.GroupCandidateTokenDailyLimitConfig
+}
+
+func (c *GroupCandidateTokenDailyLimitConfigClient) mutate(ctx context.Context, m *GroupCandidateTokenDailyLimitConfigMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&GroupCandidateTokenDailyLimitConfigCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&GroupCandidateTokenDailyLimitConfigUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&GroupCandidateTokenDailyLimitConfigUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&GroupCandidateTokenDailyLimitConfigDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown GroupCandidateTokenDailyLimitConfig mutation op: %q", m.Op())
 	}
 }
 
@@ -3149,6 +3342,139 @@ func (c *IdentityAdoptionDecisionClient) mutate(ctx context.Context, m *Identity
 		return (&IdentityAdoptionDecisionDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown IdentityAdoptionDecision mutation op: %q", m.Op())
+	}
+}
+
+// ModelTokenDailyLimitConfigClient is a client for the ModelTokenDailyLimitConfig schema.
+type ModelTokenDailyLimitConfigClient struct {
+	config
+}
+
+// NewModelTokenDailyLimitConfigClient returns a client for the ModelTokenDailyLimitConfig from the given config.
+func NewModelTokenDailyLimitConfigClient(c config) *ModelTokenDailyLimitConfigClient {
+	return &ModelTokenDailyLimitConfigClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `modeltokendailylimitconfig.Hooks(f(g(h())))`.
+func (c *ModelTokenDailyLimitConfigClient) Use(hooks ...Hook) {
+	c.hooks.ModelTokenDailyLimitConfig = append(c.hooks.ModelTokenDailyLimitConfig, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `modeltokendailylimitconfig.Intercept(f(g(h())))`.
+func (c *ModelTokenDailyLimitConfigClient) Intercept(interceptors ...Interceptor) {
+	c.inters.ModelTokenDailyLimitConfig = append(c.inters.ModelTokenDailyLimitConfig, interceptors...)
+}
+
+// Create returns a builder for creating a ModelTokenDailyLimitConfig entity.
+func (c *ModelTokenDailyLimitConfigClient) Create() *ModelTokenDailyLimitConfigCreate {
+	mutation := newModelTokenDailyLimitConfigMutation(c.config, OpCreate)
+	return &ModelTokenDailyLimitConfigCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of ModelTokenDailyLimitConfig entities.
+func (c *ModelTokenDailyLimitConfigClient) CreateBulk(builders ...*ModelTokenDailyLimitConfigCreate) *ModelTokenDailyLimitConfigCreateBulk {
+	return &ModelTokenDailyLimitConfigCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *ModelTokenDailyLimitConfigClient) MapCreateBulk(slice any, setFunc func(*ModelTokenDailyLimitConfigCreate, int)) *ModelTokenDailyLimitConfigCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &ModelTokenDailyLimitConfigCreateBulk{err: fmt.Errorf("calling to ModelTokenDailyLimitConfigClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*ModelTokenDailyLimitConfigCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &ModelTokenDailyLimitConfigCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for ModelTokenDailyLimitConfig.
+func (c *ModelTokenDailyLimitConfigClient) Update() *ModelTokenDailyLimitConfigUpdate {
+	mutation := newModelTokenDailyLimitConfigMutation(c.config, OpUpdate)
+	return &ModelTokenDailyLimitConfigUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *ModelTokenDailyLimitConfigClient) UpdateOne(_m *ModelTokenDailyLimitConfig) *ModelTokenDailyLimitConfigUpdateOne {
+	mutation := newModelTokenDailyLimitConfigMutation(c.config, OpUpdateOne, withModelTokenDailyLimitConfig(_m))
+	return &ModelTokenDailyLimitConfigUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *ModelTokenDailyLimitConfigClient) UpdateOneID(id int64) *ModelTokenDailyLimitConfigUpdateOne {
+	mutation := newModelTokenDailyLimitConfigMutation(c.config, OpUpdateOne, withModelTokenDailyLimitConfigID(id))
+	return &ModelTokenDailyLimitConfigUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for ModelTokenDailyLimitConfig.
+func (c *ModelTokenDailyLimitConfigClient) Delete() *ModelTokenDailyLimitConfigDelete {
+	mutation := newModelTokenDailyLimitConfigMutation(c.config, OpDelete)
+	return &ModelTokenDailyLimitConfigDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *ModelTokenDailyLimitConfigClient) DeleteOne(_m *ModelTokenDailyLimitConfig) *ModelTokenDailyLimitConfigDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *ModelTokenDailyLimitConfigClient) DeleteOneID(id int64) *ModelTokenDailyLimitConfigDeleteOne {
+	builder := c.Delete().Where(modeltokendailylimitconfig.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &ModelTokenDailyLimitConfigDeleteOne{builder}
+}
+
+// Query returns a query builder for ModelTokenDailyLimitConfig.
+func (c *ModelTokenDailyLimitConfigClient) Query() *ModelTokenDailyLimitConfigQuery {
+	return &ModelTokenDailyLimitConfigQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeModelTokenDailyLimitConfig},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a ModelTokenDailyLimitConfig entity by its id.
+func (c *ModelTokenDailyLimitConfigClient) Get(ctx context.Context, id int64) (*ModelTokenDailyLimitConfig, error) {
+	return c.Query().Where(modeltokendailylimitconfig.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *ModelTokenDailyLimitConfigClient) GetX(ctx context.Context, id int64) *ModelTokenDailyLimitConfig {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *ModelTokenDailyLimitConfigClient) Hooks() []Hook {
+	return c.hooks.ModelTokenDailyLimitConfig
+}
+
+// Interceptors returns the client interceptors.
+func (c *ModelTokenDailyLimitConfigClient) Interceptors() []Interceptor {
+	return c.inters.ModelTokenDailyLimitConfig
+}
+
+func (c *ModelTokenDailyLimitConfigClient) mutate(ctx context.Context, m *ModelTokenDailyLimitConfigMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&ModelTokenDailyLimitConfigCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&ModelTokenDailyLimitConfigUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&ModelTokenDailyLimitConfigUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&ModelTokenDailyLimitConfigDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown ModelTokenDailyLimitConfig mutation op: %q", m.Op())
 	}
 }
 
@@ -5721,6 +6047,22 @@ func (c *UserClient) QueryModelTokenDailyUsages(_m *User) *UserModelTokenDailyUs
 	return query
 }
 
+// QueryUserModelTokenDailyLimitConfigs queries the user_model_token_daily_limit_configs edge of a User.
+func (c *UserClient) QueryUserModelTokenDailyLimitConfigs(_m *User) *UserModelTokenDailyLimitConfigQuery {
+	query := (&UserModelTokenDailyLimitConfigClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(usermodeltokendailylimitconfig.Table, usermodeltokendailylimitconfig.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.UserModelTokenDailyLimitConfigsTable, user.UserModelTokenDailyLimitConfigsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryUserAllowedGroups queries the user_allowed_groups edge of a User.
 func (c *UserClient) QueryUserAllowedGroups(_m *User) *UserAllowedGroupQuery {
 	query := (&UserAllowedGroupClient{config: c.config}).Query()
@@ -6193,6 +6535,155 @@ func (c *UserAttributeValueClient) mutate(ctx context.Context, m *UserAttributeV
 		return (&UserAttributeValueDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown UserAttributeValue mutation op: %q", m.Op())
+	}
+}
+
+// UserModelTokenDailyLimitConfigClient is a client for the UserModelTokenDailyLimitConfig schema.
+type UserModelTokenDailyLimitConfigClient struct {
+	config
+}
+
+// NewUserModelTokenDailyLimitConfigClient returns a client for the UserModelTokenDailyLimitConfig from the given config.
+func NewUserModelTokenDailyLimitConfigClient(c config) *UserModelTokenDailyLimitConfigClient {
+	return &UserModelTokenDailyLimitConfigClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `usermodeltokendailylimitconfig.Hooks(f(g(h())))`.
+func (c *UserModelTokenDailyLimitConfigClient) Use(hooks ...Hook) {
+	c.hooks.UserModelTokenDailyLimitConfig = append(c.hooks.UserModelTokenDailyLimitConfig, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `usermodeltokendailylimitconfig.Intercept(f(g(h())))`.
+func (c *UserModelTokenDailyLimitConfigClient) Intercept(interceptors ...Interceptor) {
+	c.inters.UserModelTokenDailyLimitConfig = append(c.inters.UserModelTokenDailyLimitConfig, interceptors...)
+}
+
+// Create returns a builder for creating a UserModelTokenDailyLimitConfig entity.
+func (c *UserModelTokenDailyLimitConfigClient) Create() *UserModelTokenDailyLimitConfigCreate {
+	mutation := newUserModelTokenDailyLimitConfigMutation(c.config, OpCreate)
+	return &UserModelTokenDailyLimitConfigCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of UserModelTokenDailyLimitConfig entities.
+func (c *UserModelTokenDailyLimitConfigClient) CreateBulk(builders ...*UserModelTokenDailyLimitConfigCreate) *UserModelTokenDailyLimitConfigCreateBulk {
+	return &UserModelTokenDailyLimitConfigCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *UserModelTokenDailyLimitConfigClient) MapCreateBulk(slice any, setFunc func(*UserModelTokenDailyLimitConfigCreate, int)) *UserModelTokenDailyLimitConfigCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &UserModelTokenDailyLimitConfigCreateBulk{err: fmt.Errorf("calling to UserModelTokenDailyLimitConfigClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*UserModelTokenDailyLimitConfigCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &UserModelTokenDailyLimitConfigCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for UserModelTokenDailyLimitConfig.
+func (c *UserModelTokenDailyLimitConfigClient) Update() *UserModelTokenDailyLimitConfigUpdate {
+	mutation := newUserModelTokenDailyLimitConfigMutation(c.config, OpUpdate)
+	return &UserModelTokenDailyLimitConfigUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *UserModelTokenDailyLimitConfigClient) UpdateOne(_m *UserModelTokenDailyLimitConfig) *UserModelTokenDailyLimitConfigUpdateOne {
+	mutation := newUserModelTokenDailyLimitConfigMutation(c.config, OpUpdateOne, withUserModelTokenDailyLimitConfig(_m))
+	return &UserModelTokenDailyLimitConfigUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *UserModelTokenDailyLimitConfigClient) UpdateOneID(id int64) *UserModelTokenDailyLimitConfigUpdateOne {
+	mutation := newUserModelTokenDailyLimitConfigMutation(c.config, OpUpdateOne, withUserModelTokenDailyLimitConfigID(id))
+	return &UserModelTokenDailyLimitConfigUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for UserModelTokenDailyLimitConfig.
+func (c *UserModelTokenDailyLimitConfigClient) Delete() *UserModelTokenDailyLimitConfigDelete {
+	mutation := newUserModelTokenDailyLimitConfigMutation(c.config, OpDelete)
+	return &UserModelTokenDailyLimitConfigDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *UserModelTokenDailyLimitConfigClient) DeleteOne(_m *UserModelTokenDailyLimitConfig) *UserModelTokenDailyLimitConfigDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *UserModelTokenDailyLimitConfigClient) DeleteOneID(id int64) *UserModelTokenDailyLimitConfigDeleteOne {
+	builder := c.Delete().Where(usermodeltokendailylimitconfig.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &UserModelTokenDailyLimitConfigDeleteOne{builder}
+}
+
+// Query returns a query builder for UserModelTokenDailyLimitConfig.
+func (c *UserModelTokenDailyLimitConfigClient) Query() *UserModelTokenDailyLimitConfigQuery {
+	return &UserModelTokenDailyLimitConfigQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeUserModelTokenDailyLimitConfig},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a UserModelTokenDailyLimitConfig entity by its id.
+func (c *UserModelTokenDailyLimitConfigClient) Get(ctx context.Context, id int64) (*UserModelTokenDailyLimitConfig, error) {
+	return c.Query().Where(usermodeltokendailylimitconfig.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *UserModelTokenDailyLimitConfigClient) GetX(ctx context.Context, id int64) *UserModelTokenDailyLimitConfig {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryUser queries the user edge of a UserModelTokenDailyLimitConfig.
+func (c *UserModelTokenDailyLimitConfigClient) QueryUser(_m *UserModelTokenDailyLimitConfig) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(usermodeltokendailylimitconfig.Table, usermodeltokendailylimitconfig.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, usermodeltokendailylimitconfig.UserTable, usermodeltokendailylimitconfig.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *UserModelTokenDailyLimitConfigClient) Hooks() []Hook {
+	return c.hooks.UserModelTokenDailyLimitConfig
+}
+
+// Interceptors returns the client interceptors.
+func (c *UserModelTokenDailyLimitConfigClient) Interceptors() []Interceptor {
+	return c.inters.UserModelTokenDailyLimitConfig
+}
+
+func (c *UserModelTokenDailyLimitConfigClient) mutate(ctx context.Context, m *UserModelTokenDailyLimitConfigMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&UserModelTokenDailyLimitConfigCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&UserModelTokenDailyLimitConfigUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&UserModelTokenDailyLimitConfigUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&UserModelTokenDailyLimitConfigDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown UserModelTokenDailyLimitConfig mutation op: %q", m.Op())
 	}
 }
 
@@ -6701,25 +7192,27 @@ type (
 		APIKey, Account, AccountGroup, Announcement, AnnouncementRead, AuthIdentity,
 		AuthIdentityChannel, ChannelMonitor, ChannelMonitorDailyRollup,
 		ChannelMonitorHistory, ChannelMonitorRequestTemplate, ErrorPassthroughRule,
-		Group, GroupCandidateTokenDailyUsage, IdempotencyRecord,
-		IdentityAdoptionDecision, ModelTokenDailyUsage, PaymentAuditLog, PaymentOrder,
-		PaymentProviderInstance, PendingAuthSession, PromoCode, PromoCodeUsage, Proxy,
-		RedeemCode, SecuritySecret, Setting, SubscriptionPlan, TLSFingerprintProfile,
+		Group, GroupCandidateTokenDailyLimitConfig, GroupCandidateTokenDailyUsage,
+		IdempotencyRecord, IdentityAdoptionDecision, ModelTokenDailyLimitConfig,
+		ModelTokenDailyUsage, PaymentAuditLog, PaymentOrder, PaymentProviderInstance,
+		PendingAuthSession, PromoCode, PromoCodeUsage, Proxy, RedeemCode,
+		SecuritySecret, Setting, SubscriptionPlan, TLSFingerprintProfile,
 		UsageCleanupTask, UsageLog, User, UserAllowedGroup, UserAttributeDefinition,
-		UserAttributeValue, UserModelTokenDailyUsage, UserPlatformQuota,
-		UserSubscription []ent.Hook
+		UserAttributeValue, UserModelTokenDailyLimitConfig, UserModelTokenDailyUsage,
+		UserPlatformQuota, UserSubscription []ent.Hook
 	}
 	inters struct {
 		APIKey, Account, AccountGroup, Announcement, AnnouncementRead, AuthIdentity,
 		AuthIdentityChannel, ChannelMonitor, ChannelMonitorDailyRollup,
 		ChannelMonitorHistory, ChannelMonitorRequestTemplate, ErrorPassthroughRule,
-		Group, GroupCandidateTokenDailyUsage, IdempotencyRecord,
-		IdentityAdoptionDecision, ModelTokenDailyUsage, PaymentAuditLog, PaymentOrder,
-		PaymentProviderInstance, PendingAuthSession, PromoCode, PromoCodeUsage, Proxy,
-		RedeemCode, SecuritySecret, Setting, SubscriptionPlan, TLSFingerprintProfile,
+		Group, GroupCandidateTokenDailyLimitConfig, GroupCandidateTokenDailyUsage,
+		IdempotencyRecord, IdentityAdoptionDecision, ModelTokenDailyLimitConfig,
+		ModelTokenDailyUsage, PaymentAuditLog, PaymentOrder, PaymentProviderInstance,
+		PendingAuthSession, PromoCode, PromoCodeUsage, Proxy, RedeemCode,
+		SecuritySecret, Setting, SubscriptionPlan, TLSFingerprintProfile,
 		UsageCleanupTask, UsageLog, User, UserAllowedGroup, UserAttributeDefinition,
-		UserAttributeValue, UserModelTokenDailyUsage, UserPlatformQuota,
-		UserSubscription []ent.Interceptor
+		UserAttributeValue, UserModelTokenDailyLimitConfig, UserModelTokenDailyUsage,
+		UserPlatformQuota, UserSubscription []ent.Interceptor
 	}
 )
 

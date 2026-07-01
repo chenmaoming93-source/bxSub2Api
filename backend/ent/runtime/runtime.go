@@ -18,9 +18,11 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/channelmonitorrequesttemplate"
 	"github.com/Wei-Shaw/sub2api/ent/errorpassthroughrule"
 	"github.com/Wei-Shaw/sub2api/ent/group"
+	"github.com/Wei-Shaw/sub2api/ent/groupcandidatetokendailylimitconfig"
 	"github.com/Wei-Shaw/sub2api/ent/groupcandidatetokendailyusage"
 	"github.com/Wei-Shaw/sub2api/ent/idempotencyrecord"
 	"github.com/Wei-Shaw/sub2api/ent/identityadoptiondecision"
+	"github.com/Wei-Shaw/sub2api/ent/modeltokendailylimitconfig"
 	"github.com/Wei-Shaw/sub2api/ent/modeltokendailyusage"
 	"github.com/Wei-Shaw/sub2api/ent/paymentauditlog"
 	"github.com/Wei-Shaw/sub2api/ent/paymentorder"
@@ -41,6 +43,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/userallowedgroup"
 	"github.com/Wei-Shaw/sub2api/ent/userattributedefinition"
 	"github.com/Wei-Shaw/sub2api/ent/userattributevalue"
+	"github.com/Wei-Shaw/sub2api/ent/usermodeltokendailylimitconfig"
 	"github.com/Wei-Shaw/sub2api/ent/usermodeltokendailyusage"
 	"github.com/Wei-Shaw/sub2api/ent/userplatformquota"
 	"github.com/Wei-Shaw/sub2api/ent/usersubscription"
@@ -887,6 +890,61 @@ func init() {
 	groupDescRpmLimit := groupFields[31].Descriptor()
 	// group.DefaultRpmLimit holds the default value on creation for the rpm_limit field.
 	group.DefaultRpmLimit = groupDescRpmLimit.Default.(int)
+	groupcandidatetokendailylimitconfigMixin := schema.GroupCandidateTokenDailyLimitConfig{}.Mixin()
+	groupcandidatetokendailylimitconfigMixinFields0 := groupcandidatetokendailylimitconfigMixin[0].Fields()
+	_ = groupcandidatetokendailylimitconfigMixinFields0
+	groupcandidatetokendailylimitconfigFields := schema.GroupCandidateTokenDailyLimitConfig{}.Fields()
+	_ = groupcandidatetokendailylimitconfigFields
+	// groupcandidatetokendailylimitconfigDescCreatedAt is the schema descriptor for created_at field.
+	groupcandidatetokendailylimitconfigDescCreatedAt := groupcandidatetokendailylimitconfigMixinFields0[0].Descriptor()
+	// groupcandidatetokendailylimitconfig.DefaultCreatedAt holds the default value on creation for the created_at field.
+	groupcandidatetokendailylimitconfig.DefaultCreatedAt = groupcandidatetokendailylimitconfigDescCreatedAt.Default.(func() time.Time)
+	// groupcandidatetokendailylimitconfigDescUpdatedAt is the schema descriptor for updated_at field.
+	groupcandidatetokendailylimitconfigDescUpdatedAt := groupcandidatetokendailylimitconfigMixinFields0[1].Descriptor()
+	// groupcandidatetokendailylimitconfig.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	groupcandidatetokendailylimitconfig.DefaultUpdatedAt = groupcandidatetokendailylimitconfigDescUpdatedAt.Default.(func() time.Time)
+	// groupcandidatetokendailylimitconfig.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	groupcandidatetokendailylimitconfig.UpdateDefaultUpdatedAt = groupcandidatetokendailylimitconfigDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// groupcandidatetokendailylimitconfigDescRouteAlias is the schema descriptor for route_alias field.
+	groupcandidatetokendailylimitconfigDescRouteAlias := groupcandidatetokendailylimitconfigFields[1].Descriptor()
+	// groupcandidatetokendailylimitconfig.RouteAliasValidator is a validator for the "route_alias" field. It is called by the builders before save.
+	groupcandidatetokendailylimitconfig.RouteAliasValidator = func() func(string) error {
+		validators := groupcandidatetokendailylimitconfigDescRouteAlias.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(route_alias string) error {
+			for _, fn := range fns {
+				if err := fn(route_alias); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// groupcandidatetokendailylimitconfigDescUpstreamModel is the schema descriptor for upstream_model field.
+	groupcandidatetokendailylimitconfigDescUpstreamModel := groupcandidatetokendailylimitconfigFields[2].Descriptor()
+	// groupcandidatetokendailylimitconfig.UpstreamModelValidator is a validator for the "upstream_model" field. It is called by the builders before save.
+	groupcandidatetokendailylimitconfig.UpstreamModelValidator = func() func(string) error {
+		validators := groupcandidatetokendailylimitconfigDescUpstreamModel.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(upstream_model string) error {
+			for _, fn := range fns {
+				if err := fn(upstream_model); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// groupcandidatetokendailylimitconfigDescDailyLimitTokens is the schema descriptor for daily_limit_tokens field.
+	groupcandidatetokendailylimitconfigDescDailyLimitTokens := groupcandidatetokendailylimitconfigFields[3].Descriptor()
+	// groupcandidatetokendailylimitconfig.DailyLimitTokensValidator is a validator for the "daily_limit_tokens" field. It is called by the builders before save.
+	groupcandidatetokendailylimitconfig.DailyLimitTokensValidator = groupcandidatetokendailylimitconfigDescDailyLimitTokens.Validators[0].(func(int64) error)
 	groupcandidatetokendailyusageMixin := schema.GroupCandidateTokenDailyUsage{}.Mixin()
 	groupcandidatetokendailyusageMixinFields0 := groupcandidatetokendailyusageMixin[0].Fields()
 	_ = groupcandidatetokendailyusageMixinFields0
@@ -944,10 +1002,6 @@ func init() {
 	groupcandidatetokendailyusage.DefaultUsedTokens = groupcandidatetokendailyusageDescUsedTokens.Default.(int64)
 	// groupcandidatetokendailyusage.UsedTokensValidator is a validator for the "used_tokens" field. It is called by the builders before save.
 	groupcandidatetokendailyusage.UsedTokensValidator = groupcandidatetokendailyusageDescUsedTokens.Validators[0].(func(int64) error)
-	// groupcandidatetokendailyusageDescDailyLimitTokens is the schema descriptor for daily_limit_tokens field.
-	groupcandidatetokendailyusageDescDailyLimitTokens := groupcandidatetokendailyusageFields[5].Descriptor()
-	// groupcandidatetokendailyusage.DailyLimitTokensValidator is a validator for the "daily_limit_tokens" field. It is called by the builders before save.
-	groupcandidatetokendailyusage.DailyLimitTokensValidator = groupcandidatetokendailyusageDescDailyLimitTokens.Validators[0].(func(int64) error)
 	idempotencyrecordMixin := schema.IdempotencyRecord{}.Mixin()
 	idempotencyrecordMixinFields0 := idempotencyrecordMixin[0].Fields()
 	_ = idempotencyrecordMixinFields0
@@ -1010,6 +1064,43 @@ func init() {
 	identityadoptiondecisionDescDecidedAt := identityadoptiondecisionFields[4].Descriptor()
 	// identityadoptiondecision.DefaultDecidedAt holds the default value on creation for the decided_at field.
 	identityadoptiondecision.DefaultDecidedAt = identityadoptiondecisionDescDecidedAt.Default.(func() time.Time)
+	modeltokendailylimitconfigMixin := schema.ModelTokenDailyLimitConfig{}.Mixin()
+	modeltokendailylimitconfigMixinFields0 := modeltokendailylimitconfigMixin[0].Fields()
+	_ = modeltokendailylimitconfigMixinFields0
+	modeltokendailylimitconfigFields := schema.ModelTokenDailyLimitConfig{}.Fields()
+	_ = modeltokendailylimitconfigFields
+	// modeltokendailylimitconfigDescCreatedAt is the schema descriptor for created_at field.
+	modeltokendailylimitconfigDescCreatedAt := modeltokendailylimitconfigMixinFields0[0].Descriptor()
+	// modeltokendailylimitconfig.DefaultCreatedAt holds the default value on creation for the created_at field.
+	modeltokendailylimitconfig.DefaultCreatedAt = modeltokendailylimitconfigDescCreatedAt.Default.(func() time.Time)
+	// modeltokendailylimitconfigDescUpdatedAt is the schema descriptor for updated_at field.
+	modeltokendailylimitconfigDescUpdatedAt := modeltokendailylimitconfigMixinFields0[1].Descriptor()
+	// modeltokendailylimitconfig.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	modeltokendailylimitconfig.DefaultUpdatedAt = modeltokendailylimitconfigDescUpdatedAt.Default.(func() time.Time)
+	// modeltokendailylimitconfig.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	modeltokendailylimitconfig.UpdateDefaultUpdatedAt = modeltokendailylimitconfigDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// modeltokendailylimitconfigDescModel is the schema descriptor for model field.
+	modeltokendailylimitconfigDescModel := modeltokendailylimitconfigFields[0].Descriptor()
+	// modeltokendailylimitconfig.ModelValidator is a validator for the "model" field. It is called by the builders before save.
+	modeltokendailylimitconfig.ModelValidator = func() func(string) error {
+		validators := modeltokendailylimitconfigDescModel.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(model string) error {
+			for _, fn := range fns {
+				if err := fn(model); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// modeltokendailylimitconfigDescDailyLimitTokens is the schema descriptor for daily_limit_tokens field.
+	modeltokendailylimitconfigDescDailyLimitTokens := modeltokendailylimitconfigFields[1].Descriptor()
+	// modeltokendailylimitconfig.DailyLimitTokensValidator is a validator for the "daily_limit_tokens" field. It is called by the builders before save.
+	modeltokendailylimitconfig.DailyLimitTokensValidator = modeltokendailylimitconfigDescDailyLimitTokens.Validators[0].(func(int64) error)
 	modeltokendailyusageMixin := schema.ModelTokenDailyUsage{}.Mixin()
 	modeltokendailyusageMixinFields0 := modeltokendailyusageMixin[0].Fields()
 	_ = modeltokendailyusageMixinFields0
@@ -1049,10 +1140,6 @@ func init() {
 	modeltokendailyusage.DefaultUsedTokens = modeltokendailyusageDescUsedTokens.Default.(int64)
 	// modeltokendailyusage.UsedTokensValidator is a validator for the "used_tokens" field. It is called by the builders before save.
 	modeltokendailyusage.UsedTokensValidator = modeltokendailyusageDescUsedTokens.Validators[0].(func(int64) error)
-	// modeltokendailyusageDescDailyLimitTokens is the schema descriptor for daily_limit_tokens field.
-	modeltokendailyusageDescDailyLimitTokens := modeltokendailyusageFields[3].Descriptor()
-	// modeltokendailyusage.DailyLimitTokensValidator is a validator for the "daily_limit_tokens" field. It is called by the builders before save.
-	modeltokendailyusage.DailyLimitTokensValidator = modeltokendailyusageDescDailyLimitTokens.Validators[0].(func(int64) error)
 	paymentauditlogFields := schema.PaymentAuditLog{}.Fields()
 	_ = paymentauditlogFields
 	// paymentauditlogDescOrderID is the schema descriptor for order_id field.
@@ -2125,6 +2212,43 @@ func init() {
 	userattributevalueDescValue := userattributevalueFields[2].Descriptor()
 	// userattributevalue.DefaultValue holds the default value on creation for the value field.
 	userattributevalue.DefaultValue = userattributevalueDescValue.Default.(string)
+	usermodeltokendailylimitconfigMixin := schema.UserModelTokenDailyLimitConfig{}.Mixin()
+	usermodeltokendailylimitconfigMixinFields0 := usermodeltokendailylimitconfigMixin[0].Fields()
+	_ = usermodeltokendailylimitconfigMixinFields0
+	usermodeltokendailylimitconfigFields := schema.UserModelTokenDailyLimitConfig{}.Fields()
+	_ = usermodeltokendailylimitconfigFields
+	// usermodeltokendailylimitconfigDescCreatedAt is the schema descriptor for created_at field.
+	usermodeltokendailylimitconfigDescCreatedAt := usermodeltokendailylimitconfigMixinFields0[0].Descriptor()
+	// usermodeltokendailylimitconfig.DefaultCreatedAt holds the default value on creation for the created_at field.
+	usermodeltokendailylimitconfig.DefaultCreatedAt = usermodeltokendailylimitconfigDescCreatedAt.Default.(func() time.Time)
+	// usermodeltokendailylimitconfigDescUpdatedAt is the schema descriptor for updated_at field.
+	usermodeltokendailylimitconfigDescUpdatedAt := usermodeltokendailylimitconfigMixinFields0[1].Descriptor()
+	// usermodeltokendailylimitconfig.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	usermodeltokendailylimitconfig.DefaultUpdatedAt = usermodeltokendailylimitconfigDescUpdatedAt.Default.(func() time.Time)
+	// usermodeltokendailylimitconfig.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	usermodeltokendailylimitconfig.UpdateDefaultUpdatedAt = usermodeltokendailylimitconfigDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// usermodeltokendailylimitconfigDescModel is the schema descriptor for model field.
+	usermodeltokendailylimitconfigDescModel := usermodeltokendailylimitconfigFields[1].Descriptor()
+	// usermodeltokendailylimitconfig.ModelValidator is a validator for the "model" field. It is called by the builders before save.
+	usermodeltokendailylimitconfig.ModelValidator = func() func(string) error {
+		validators := usermodeltokendailylimitconfigDescModel.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(model string) error {
+			for _, fn := range fns {
+				if err := fn(model); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// usermodeltokendailylimitconfigDescDailyLimitTokens is the schema descriptor for daily_limit_tokens field.
+	usermodeltokendailylimitconfigDescDailyLimitTokens := usermodeltokendailylimitconfigFields[2].Descriptor()
+	// usermodeltokendailylimitconfig.DailyLimitTokensValidator is a validator for the "daily_limit_tokens" field. It is called by the builders before save.
+	usermodeltokendailylimitconfig.DailyLimitTokensValidator = usermodeltokendailylimitconfigDescDailyLimitTokens.Validators[0].(func(int64) error)
 	usermodeltokendailyusageMixin := schema.UserModelTokenDailyUsage{}.Mixin()
 	usermodeltokendailyusageMixinFields0 := usermodeltokendailyusageMixin[0].Fields()
 	_ = usermodeltokendailyusageMixinFields0
@@ -2164,10 +2288,6 @@ func init() {
 	usermodeltokendailyusage.DefaultUsedTokens = usermodeltokendailyusageDescUsedTokens.Default.(int64)
 	// usermodeltokendailyusage.UsedTokensValidator is a validator for the "used_tokens" field. It is called by the builders before save.
 	usermodeltokendailyusage.UsedTokensValidator = usermodeltokendailyusageDescUsedTokens.Validators[0].(func(int64) error)
-	// usermodeltokendailyusageDescDailyLimitTokens is the schema descriptor for daily_limit_tokens field.
-	usermodeltokendailyusageDescDailyLimitTokens := usermodeltokendailyusageFields[4].Descriptor()
-	// usermodeltokendailyusage.DailyLimitTokensValidator is a validator for the "daily_limit_tokens" field. It is called by the builders before save.
-	usermodeltokendailyusage.DailyLimitTokensValidator = usermodeltokendailyusageDescDailyLimitTokens.Validators[0].(func(int64) error)
 	userplatformquotaMixin := schema.UserPlatformQuota{}.Mixin()
 	userplatformquotaMixinHooks1 := userplatformquotaMixin[1].Hooks()
 	userplatformquota.Hooks[0] = userplatformquotaMixinHooks1[0]

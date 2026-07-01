@@ -98,33 +98,6 @@ func (_u *UserModelTokenDailyUsageUpdate) AddUsedTokens(v int64) *UserModelToken
 	return _u
 }
 
-// SetDailyLimitTokens sets the "daily_limit_tokens" field.
-func (_u *UserModelTokenDailyUsageUpdate) SetDailyLimitTokens(v int64) *UserModelTokenDailyUsageUpdate {
-	_u.mutation.ResetDailyLimitTokens()
-	_u.mutation.SetDailyLimitTokens(v)
-	return _u
-}
-
-// SetNillableDailyLimitTokens sets the "daily_limit_tokens" field if the given value is not nil.
-func (_u *UserModelTokenDailyUsageUpdate) SetNillableDailyLimitTokens(v *int64) *UserModelTokenDailyUsageUpdate {
-	if v != nil {
-		_u.SetDailyLimitTokens(*v)
-	}
-	return _u
-}
-
-// AddDailyLimitTokens adds value to the "daily_limit_tokens" field.
-func (_u *UserModelTokenDailyUsageUpdate) AddDailyLimitTokens(v int64) *UserModelTokenDailyUsageUpdate {
-	_u.mutation.AddDailyLimitTokens(v)
-	return _u
-}
-
-// ClearDailyLimitTokens clears the value of the "daily_limit_tokens" field.
-func (_u *UserModelTokenDailyUsageUpdate) ClearDailyLimitTokens() *UserModelTokenDailyUsageUpdate {
-	_u.mutation.ClearDailyLimitTokens()
-	return _u
-}
-
 // SetUser sets the "user" edge to the User entity.
 func (_u *UserModelTokenDailyUsageUpdate) SetUser(v *User) *UserModelTokenDailyUsageUpdate {
 	return _u.SetUserID(v.ID)
@@ -189,11 +162,6 @@ func (_u *UserModelTokenDailyUsageUpdate) check() error {
 			return &ValidationError{Name: "used_tokens", err: fmt.Errorf(`ent: validator failed for field "UserModelTokenDailyUsage.used_tokens": %w`, err)}
 		}
 	}
-	if v, ok := _u.mutation.DailyLimitTokens(); ok {
-		if err := usermodeltokendailyusage.DailyLimitTokensValidator(v); err != nil {
-			return &ValidationError{Name: "daily_limit_tokens", err: fmt.Errorf(`ent: validator failed for field "UserModelTokenDailyUsage.daily_limit_tokens": %w`, err)}
-		}
-	}
 	if _u.mutation.UserCleared() && len(_u.mutation.UserIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "UserModelTokenDailyUsage.user"`)
 	}
@@ -226,15 +194,6 @@ func (_u *UserModelTokenDailyUsageUpdate) sqlSave(ctx context.Context) (_node in
 	}
 	if value, ok := _u.mutation.AddedUsedTokens(); ok {
 		_spec.AddField(usermodeltokendailyusage.FieldUsedTokens, field.TypeInt64, value)
-	}
-	if value, ok := _u.mutation.DailyLimitTokens(); ok {
-		_spec.SetField(usermodeltokendailyusage.FieldDailyLimitTokens, field.TypeInt64, value)
-	}
-	if value, ok := _u.mutation.AddedDailyLimitTokens(); ok {
-		_spec.AddField(usermodeltokendailyusage.FieldDailyLimitTokens, field.TypeInt64, value)
-	}
-	if _u.mutation.DailyLimitTokensCleared() {
-		_spec.ClearField(usermodeltokendailyusage.FieldDailyLimitTokens, field.TypeInt64)
 	}
 	if _u.mutation.UserCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -354,33 +313,6 @@ func (_u *UserModelTokenDailyUsageUpdateOne) AddUsedTokens(v int64) *UserModelTo
 	return _u
 }
 
-// SetDailyLimitTokens sets the "daily_limit_tokens" field.
-func (_u *UserModelTokenDailyUsageUpdateOne) SetDailyLimitTokens(v int64) *UserModelTokenDailyUsageUpdateOne {
-	_u.mutation.ResetDailyLimitTokens()
-	_u.mutation.SetDailyLimitTokens(v)
-	return _u
-}
-
-// SetNillableDailyLimitTokens sets the "daily_limit_tokens" field if the given value is not nil.
-func (_u *UserModelTokenDailyUsageUpdateOne) SetNillableDailyLimitTokens(v *int64) *UserModelTokenDailyUsageUpdateOne {
-	if v != nil {
-		_u.SetDailyLimitTokens(*v)
-	}
-	return _u
-}
-
-// AddDailyLimitTokens adds value to the "daily_limit_tokens" field.
-func (_u *UserModelTokenDailyUsageUpdateOne) AddDailyLimitTokens(v int64) *UserModelTokenDailyUsageUpdateOne {
-	_u.mutation.AddDailyLimitTokens(v)
-	return _u
-}
-
-// ClearDailyLimitTokens clears the value of the "daily_limit_tokens" field.
-func (_u *UserModelTokenDailyUsageUpdateOne) ClearDailyLimitTokens() *UserModelTokenDailyUsageUpdateOne {
-	_u.mutation.ClearDailyLimitTokens()
-	return _u
-}
-
 // SetUser sets the "user" edge to the User entity.
 func (_u *UserModelTokenDailyUsageUpdateOne) SetUser(v *User) *UserModelTokenDailyUsageUpdateOne {
 	return _u.SetUserID(v.ID)
@@ -458,11 +390,6 @@ func (_u *UserModelTokenDailyUsageUpdateOne) check() error {
 			return &ValidationError{Name: "used_tokens", err: fmt.Errorf(`ent: validator failed for field "UserModelTokenDailyUsage.used_tokens": %w`, err)}
 		}
 	}
-	if v, ok := _u.mutation.DailyLimitTokens(); ok {
-		if err := usermodeltokendailyusage.DailyLimitTokensValidator(v); err != nil {
-			return &ValidationError{Name: "daily_limit_tokens", err: fmt.Errorf(`ent: validator failed for field "UserModelTokenDailyUsage.daily_limit_tokens": %w`, err)}
-		}
-	}
 	if _u.mutation.UserCleared() && len(_u.mutation.UserIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "UserModelTokenDailyUsage.user"`)
 	}
@@ -512,15 +439,6 @@ func (_u *UserModelTokenDailyUsageUpdateOne) sqlSave(ctx context.Context) (_node
 	}
 	if value, ok := _u.mutation.AddedUsedTokens(); ok {
 		_spec.AddField(usermodeltokendailyusage.FieldUsedTokens, field.TypeInt64, value)
-	}
-	if value, ok := _u.mutation.DailyLimitTokens(); ok {
-		_spec.SetField(usermodeltokendailyusage.FieldDailyLimitTokens, field.TypeInt64, value)
-	}
-	if value, ok := _u.mutation.AddedDailyLimitTokens(); ok {
-		_spec.AddField(usermodeltokendailyusage.FieldDailyLimitTokens, field.TypeInt64, value)
-	}
-	if _u.mutation.DailyLimitTokensCleared() {
-		_spec.ClearField(usermodeltokendailyusage.FieldDailyLimitTokens, field.TypeInt64)
 	}
 	if _u.mutation.UserCleared() {
 		edge := &sqlgraph.EdgeSpec{

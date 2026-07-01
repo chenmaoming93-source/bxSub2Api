@@ -175,6 +175,8 @@ func (Group) Edges() []ent.Edge {
 		edge.To("usage_logs", UsageLog.Type),
 		edge.To("candidate_token_daily_usages", GroupCandidateTokenDailyUsage.Type).
 			Annotations(entsql.OnDelete(entsql.Cascade)),
+		edge.To("group_candidate_token_daily_limit_configs", GroupCandidateTokenDailyLimitConfig.Type).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
 		edge.From("accounts", Account.Type).
 			Ref("groups").
 			Through("account_groups", AccountGroup.Type),

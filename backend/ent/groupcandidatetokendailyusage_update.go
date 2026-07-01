@@ -112,33 +112,6 @@ func (_u *GroupCandidateTokenDailyUsageUpdate) AddUsedTokens(v int64) *GroupCand
 	return _u
 }
 
-// SetDailyLimitTokens sets the "daily_limit_tokens" field.
-func (_u *GroupCandidateTokenDailyUsageUpdate) SetDailyLimitTokens(v int64) *GroupCandidateTokenDailyUsageUpdate {
-	_u.mutation.ResetDailyLimitTokens()
-	_u.mutation.SetDailyLimitTokens(v)
-	return _u
-}
-
-// SetNillableDailyLimitTokens sets the "daily_limit_tokens" field if the given value is not nil.
-func (_u *GroupCandidateTokenDailyUsageUpdate) SetNillableDailyLimitTokens(v *int64) *GroupCandidateTokenDailyUsageUpdate {
-	if v != nil {
-		_u.SetDailyLimitTokens(*v)
-	}
-	return _u
-}
-
-// AddDailyLimitTokens adds value to the "daily_limit_tokens" field.
-func (_u *GroupCandidateTokenDailyUsageUpdate) AddDailyLimitTokens(v int64) *GroupCandidateTokenDailyUsageUpdate {
-	_u.mutation.AddDailyLimitTokens(v)
-	return _u
-}
-
-// ClearDailyLimitTokens clears the value of the "daily_limit_tokens" field.
-func (_u *GroupCandidateTokenDailyUsageUpdate) ClearDailyLimitTokens() *GroupCandidateTokenDailyUsageUpdate {
-	_u.mutation.ClearDailyLimitTokens()
-	return _u
-}
-
 // SetGroup sets the "group" edge to the Group entity.
 func (_u *GroupCandidateTokenDailyUsageUpdate) SetGroup(v *Group) *GroupCandidateTokenDailyUsageUpdate {
 	return _u.SetGroupID(v.ID)
@@ -208,11 +181,6 @@ func (_u *GroupCandidateTokenDailyUsageUpdate) check() error {
 			return &ValidationError{Name: "used_tokens", err: fmt.Errorf(`ent: validator failed for field "GroupCandidateTokenDailyUsage.used_tokens": %w`, err)}
 		}
 	}
-	if v, ok := _u.mutation.DailyLimitTokens(); ok {
-		if err := groupcandidatetokendailyusage.DailyLimitTokensValidator(v); err != nil {
-			return &ValidationError{Name: "daily_limit_tokens", err: fmt.Errorf(`ent: validator failed for field "GroupCandidateTokenDailyUsage.daily_limit_tokens": %w`, err)}
-		}
-	}
 	if _u.mutation.GroupCleared() && len(_u.mutation.GroupIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "GroupCandidateTokenDailyUsage.group"`)
 	}
@@ -248,15 +216,6 @@ func (_u *GroupCandidateTokenDailyUsageUpdate) sqlSave(ctx context.Context) (_no
 	}
 	if value, ok := _u.mutation.AddedUsedTokens(); ok {
 		_spec.AddField(groupcandidatetokendailyusage.FieldUsedTokens, field.TypeInt64, value)
-	}
-	if value, ok := _u.mutation.DailyLimitTokens(); ok {
-		_spec.SetField(groupcandidatetokendailyusage.FieldDailyLimitTokens, field.TypeInt64, value)
-	}
-	if value, ok := _u.mutation.AddedDailyLimitTokens(); ok {
-		_spec.AddField(groupcandidatetokendailyusage.FieldDailyLimitTokens, field.TypeInt64, value)
-	}
-	if _u.mutation.DailyLimitTokensCleared() {
-		_spec.ClearField(groupcandidatetokendailyusage.FieldDailyLimitTokens, field.TypeInt64)
 	}
 	if _u.mutation.GroupCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -390,33 +349,6 @@ func (_u *GroupCandidateTokenDailyUsageUpdateOne) AddUsedTokens(v int64) *GroupC
 	return _u
 }
 
-// SetDailyLimitTokens sets the "daily_limit_tokens" field.
-func (_u *GroupCandidateTokenDailyUsageUpdateOne) SetDailyLimitTokens(v int64) *GroupCandidateTokenDailyUsageUpdateOne {
-	_u.mutation.ResetDailyLimitTokens()
-	_u.mutation.SetDailyLimitTokens(v)
-	return _u
-}
-
-// SetNillableDailyLimitTokens sets the "daily_limit_tokens" field if the given value is not nil.
-func (_u *GroupCandidateTokenDailyUsageUpdateOne) SetNillableDailyLimitTokens(v *int64) *GroupCandidateTokenDailyUsageUpdateOne {
-	if v != nil {
-		_u.SetDailyLimitTokens(*v)
-	}
-	return _u
-}
-
-// AddDailyLimitTokens adds value to the "daily_limit_tokens" field.
-func (_u *GroupCandidateTokenDailyUsageUpdateOne) AddDailyLimitTokens(v int64) *GroupCandidateTokenDailyUsageUpdateOne {
-	_u.mutation.AddDailyLimitTokens(v)
-	return _u
-}
-
-// ClearDailyLimitTokens clears the value of the "daily_limit_tokens" field.
-func (_u *GroupCandidateTokenDailyUsageUpdateOne) ClearDailyLimitTokens() *GroupCandidateTokenDailyUsageUpdateOne {
-	_u.mutation.ClearDailyLimitTokens()
-	return _u
-}
-
 // SetGroup sets the "group" edge to the Group entity.
 func (_u *GroupCandidateTokenDailyUsageUpdateOne) SetGroup(v *Group) *GroupCandidateTokenDailyUsageUpdateOne {
 	return _u.SetGroupID(v.ID)
@@ -499,11 +431,6 @@ func (_u *GroupCandidateTokenDailyUsageUpdateOne) check() error {
 			return &ValidationError{Name: "used_tokens", err: fmt.Errorf(`ent: validator failed for field "GroupCandidateTokenDailyUsage.used_tokens": %w`, err)}
 		}
 	}
-	if v, ok := _u.mutation.DailyLimitTokens(); ok {
-		if err := groupcandidatetokendailyusage.DailyLimitTokensValidator(v); err != nil {
-			return &ValidationError{Name: "daily_limit_tokens", err: fmt.Errorf(`ent: validator failed for field "GroupCandidateTokenDailyUsage.daily_limit_tokens": %w`, err)}
-		}
-	}
 	if _u.mutation.GroupCleared() && len(_u.mutation.GroupIDs()) > 0 {
 		return errors.New(`ent: clearing a required unique edge "GroupCandidateTokenDailyUsage.group"`)
 	}
@@ -556,15 +483,6 @@ func (_u *GroupCandidateTokenDailyUsageUpdateOne) sqlSave(ctx context.Context) (
 	}
 	if value, ok := _u.mutation.AddedUsedTokens(); ok {
 		_spec.AddField(groupcandidatetokendailyusage.FieldUsedTokens, field.TypeInt64, value)
-	}
-	if value, ok := _u.mutation.DailyLimitTokens(); ok {
-		_spec.SetField(groupcandidatetokendailyusage.FieldDailyLimitTokens, field.TypeInt64, value)
-	}
-	if value, ok := _u.mutation.AddedDailyLimitTokens(); ok {
-		_spec.AddField(groupcandidatetokendailyusage.FieldDailyLimitTokens, field.TypeInt64, value)
-	}
-	if _u.mutation.DailyLimitTokensCleared() {
-		_spec.ClearField(groupcandidatetokendailyusage.FieldDailyLimitTokens, field.TypeInt64)
 	}
 	if _u.mutation.GroupCleared() {
 		edge := &sqlgraph.EdgeSpec{

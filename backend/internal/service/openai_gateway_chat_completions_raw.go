@@ -181,8 +181,9 @@ func (s *OpenAIGatewayService) forwardAsRawChatCompletions(
 			Kind:               "request_error",
 			Message:            safeErr,
 		})
-		writeChatCompletionsError(c, http.StatusBadGateway, "upstream_error", "Upstream request failed")
-		return nil, fmt.Errorf("upstream request failed: %s", safeErr)
+		// Keep the downstream response untouched so the outer handler can exclude
+		// this account and advance to the next model_routing candidate.
+		return nil, &UpstreamFailoverError{StatusCode: 0}
 	}
 	defer func() { _ = resp.Body.Close() }()
 

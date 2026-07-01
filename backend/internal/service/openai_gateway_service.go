@@ -22,6 +22,7 @@ import (
 
 	"github.com/Wei-Shaw/sub2api/internal/config"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/apicompat"
+	"github.com/Wei-Shaw/sub2api/internal/pkg/ctxkey"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/ip"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/logger"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/openai"
@@ -2145,13 +2146,11 @@ func (s *OpenAIGatewayService) selectAccountWithLoadAwareness(ctx context.Contex
 }
 
 func (s *OpenAIGatewayService) listSchedulableAccounts(ctx context.Context, groupID *int64) ([]Account, error) {
-	if s.schedulerSnapshot != nil {
-		accounts, _, err := s.schedulerSnapshot.ListSchedulableAccounts(ctx, groupID, PlatformOpenAI, false)
-		return accounts, err
-	}
 	var accounts []Account
 	var err error
-	if s.cfg != nil && s.cfg.RunMode == config.RunModeSimple {
+	if s.schedulerSnapshot != nil {
+		accounts, _, err = s.schedulerSnapshot.ListSchedulableAccounts(ctx, groupID, PlatformOpenAI, false)
+	} else if s.cfg != nil && s.cfg.RunMode == config.RunModeSimple {
 		accounts, err = s.accountRepo.ListSchedulableByPlatform(ctx, PlatformOpenAI)
 	} else if groupID != nil {
 		accounts, err = s.accountRepo.ListSchedulableByGroupIDAndPlatform(ctx, *groupID, PlatformOpenAI)
@@ -2160,6 +2159,48 @@ func (s *OpenAIGatewayService) listSchedulableAccounts(ctx context.Context, grou
 	}
 	if err != nil {
 		return nil, fmt.Errorf("query accounts failed: %w", err)
+	}
+
+	// Model-routing candidates are explicit account assignments. They must be
+	// schedulable even when the account is not also present in account_groups;
+	// otherwise a valid route configured in the group UI is silently reduced to
+	// an empty group before its candidate account IDs are considered.
+	group, _ := ctx.Value(ctxkey.Group).(*Group)
+	if group == nil || groupID == nil || group.ID != *groupID || !group.ModelRoutingEnabled {
+		return accounts, nil
+	}
+	routeIDs := make([]int64, 0)
+	seenRouteIDs := make(map[int64]struct{})
+	for _, routeAlias := range group.ModelRoutingRuleNames() {
+		for _, candidate := range group.GetRoutingCandidates(routeAlias) {
+			for _, accountID := range candidate.AccountIDs {
+				if _, seen := seenRouteIDs[accountID]; !seen {
+					seenRouteIDs[accountID] = struct{}{}
+					routeIDs = append(routeIDs, accountID)
+				}
+			}
+		}
+	}
+	if len(routeIDs) == 0 {
+		return accounts, nil
+	}
+	routedAccounts, routeErr := s.accountRepo.GetByIDs(ctx, routeIDs)
+	if routeErr != nil {
+		return nil, fmt.Errorf("query routed accounts failed: %w", routeErr)
+	}
+	seenAccounts := make(map[int64]struct{}, len(accounts)+len(routedAccounts))
+	for i := range accounts {
+		seenAccounts[accounts[i].ID] = struct{}{}
+	}
+	for _, account := range routedAccounts {
+		if account == nil || !account.IsOpenAI() || !account.IsSchedulable() {
+			continue
+		}
+		if _, seen := seenAccounts[account.ID]; seen {
+			continue
+		}
+		accounts = append(accounts, *account)
+		seenAccounts[account.ID] = struct{}{}
 	}
 	return accounts, nil
 }
@@ -5825,6 +5866,7 @@ type OpenAIRecordUsageInput struct {
 	UserAgent          string // 请求的 User-Agent
 	IPAddress          string // 请求的客户端 IP 地址
 	RequestPayloadHash string
+	RouteAlias         string
 	APIKeyService      APIKeyQuotaUpdater
 	// CyberBlocked 为 true 时把该用量行标记为 cyber（request_type=cyber），计费逻辑不变。
 	CyberBlocked bool
@@ -6012,6 +6054,7 @@ func (s *OpenAIGatewayService) RecordUsage(ctx context.Context, input *OpenAIRec
 		AccountID:           account.ID,
 		RequestID:           requestID,
 		Model:               result.Model,
+		RouteAlias:          input.RouteAlias,
 		RequestedModel:      requestedModel,
 		UpstreamModel:       optionalNonEqualStringPtr(result.UpstreamModel, result.Model),
 		ServiceTier:         result.ServiceTier,

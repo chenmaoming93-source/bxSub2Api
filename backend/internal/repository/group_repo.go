@@ -11,6 +11,7 @@ import (
 
 	dbent "github.com/Wei-Shaw/sub2api/ent"
 	"github.com/Wei-Shaw/sub2api/ent/group"
+	groupcandidateconfig "github.com/Wei-Shaw/sub2api/ent/groupcandidatetokendailylimitconfig"
 	"github.com/Wei-Shaw/sub2api/internal/domain"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/logger"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
@@ -39,6 +40,11 @@ func newGroupRepositoryWithSQL(client *dbent.Client, sqlq sqlExecutor) *groupRep
 
 func (r *groupRepository) Create(ctx context.Context, groupIn *service.Group) error {
 	routing, err := modelRoutingRaw(groupIn.ModelRouting)
+	if err != nil {
+		return err
+	}
+	routingWithLimits := routing
+	routing, err = stripDeprecatedRouteDailyTokenLimits(routing)
 	if err != nil {
 		return err
 	}
@@ -87,6 +93,9 @@ func (r *groupRepository) Create(ctx context.Context, groupIn *service.Group) er
 		groupIn.ID = created.ID
 		groupIn.CreatedAt = created.CreatedAt
 		groupIn.UpdatedAt = created.UpdatedAt
+		if err := r.replaceGroupCandidateTokenLimits(ctx, groupIn.ID, routingWithLimits); err != nil {
+			return err
+		}
 		if err := enqueueSchedulerOutbox(ctx, r.sql, service.SchedulerOutboxEventGroupChanged, nil, &groupIn.ID, nil); err != nil {
 			logger.LegacyPrintf("repository.group", "[SchedulerOutbox] enqueue group create failed: group=%d err=%v", groupIn.ID, err)
 		}
@@ -117,11 +126,21 @@ func (r *groupRepository) GetByIDLite(ctx context.Context, id int64) (*service.G
 	if err != nil {
 		return nil, translatePersistenceError(err, service.ErrGroupNotFound, nil)
 	}
-	return groupEntityToService(m), nil
+	out := groupEntityToService(m)
+	groups := []service.Group{*out}
+	if err := r.hydrateGroupCandidateTokenLimits(ctx, groups); err != nil {
+		return nil, err
+	}
+	return &groups[0], nil
 }
 
 func (r *groupRepository) Update(ctx context.Context, groupIn *service.Group) error {
 	routing, err := modelRoutingRaw(groupIn.ModelRouting)
+	if err != nil {
+		return err
+	}
+	routingWithLimits := routing
+	routing, err = stripDeprecatedRouteDailyTokenLimits(routing)
 	if err != nil {
 		return err
 	}
@@ -214,10 +233,169 @@ func (r *groupRepository) Update(ctx context.Context, groupIn *service.Group) er
 		return translatePersistenceError(err, service.ErrGroupNotFound, service.ErrGroupExists)
 	}
 	groupIn.UpdatedAt = updated.UpdatedAt
+	if hasRouteDailyTokenLimitField(routingWithLimits) {
+		if err := r.replaceGroupCandidateTokenLimits(ctx, groupIn.ID, routingWithLimits); err != nil {
+			return err
+		}
+	}
 	if err := enqueueSchedulerOutbox(ctx, r.sql, service.SchedulerOutboxEventGroupChanged, nil, &groupIn.ID, nil); err != nil {
 		logger.LegacyPrintf("repository.group", "[SchedulerOutbox] enqueue group update failed: group=%d err=%v", groupIn.ID, err)
 	}
 	return nil
+}
+
+type groupCandidateLimitInput struct {
+	Model            string `json:"model"`
+	DailyLimitTokens *int64 `json:"daily_token_limit"`
+}
+
+// replaceGroupCandidateTokenLimits splits candidate limits out of the group
+// save payload. groups.model_routing stores routing only; this config table is
+// the sole persistence and runtime source for candidate token limits.
+func (r *groupRepository) replaceGroupCandidateTokenLimits(ctx context.Context, groupID int64, routing domain.ModelRoutingJSON) error {
+	if r == nil || r.client == nil || groupID <= 0 {
+		return nil
+	}
+	var routes map[string][]groupCandidateLimitInput
+	if err := json.Unmarshal(routing.RawMessage(), &routes); err != nil {
+		return fmt.Errorf("parse group candidate token limits: %w", err)
+	}
+	if _, err := r.client.GroupCandidateTokenDailyLimitConfig.Delete().
+		Where(groupcandidateconfig.GroupIDEQ(groupID)).Exec(ctx); err != nil {
+		return fmt.Errorf("clear group candidate token limits: %w", err)
+	}
+	for routeAlias, candidates := range routes {
+		for _, candidate := range candidates {
+			if candidate.DailyLimitTokens == nil {
+				continue
+			}
+			model := strings.TrimSpace(candidate.Model)
+			if model == "" {
+				model = routeAlias
+			}
+			if err := r.client.GroupCandidateTokenDailyLimitConfig.Create().
+				SetGroupID(groupID).
+				SetRouteAlias(routeAlias).
+				SetUpstreamModel(model).
+				SetDailyLimitTokens(*candidate.DailyLimitTokens).
+				OnConflictColumns(
+					groupcandidateconfig.FieldGroupID,
+					groupcandidateconfig.FieldRouteAlias,
+					groupcandidateconfig.FieldUpstreamModel,
+				).
+				UpdateDailyLimitTokens().
+				Exec(ctx); err != nil {
+				return fmt.Errorf("store group candidate token limit: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+// hydrateGroupCandidateTokenLimits projects the authoritative config-table
+// values into the admin-facing model_routing JSON. This is a read projection
+// only; groups.model_routing remains free of quota data.
+func (r *groupRepository) hydrateGroupCandidateTokenLimits(ctx context.Context, groups []service.Group) error {
+	if r == nil || r.client == nil || len(groups) == 0 {
+		return nil
+	}
+	ids := make([]int64, 0, len(groups))
+	index := make(map[int64]int, len(groups))
+	for i := range groups {
+		ids = append(ids, groups[i].ID)
+		index[groups[i].ID] = i
+	}
+	rows, err := r.client.GroupCandidateTokenDailyLimitConfig.Query().
+		Where(groupcandidateconfig.GroupIDIn(ids...)).All(ctx)
+	if err != nil {
+		return fmt.Errorf("load group candidate token limits: %w", err)
+	}
+	byGroup := make(map[int64]map[string]int64)
+	for _, row := range rows {
+		if row.DailyLimitTokens == nil {
+			continue
+		}
+		if byGroup[row.GroupID] == nil {
+			byGroup[row.GroupID] = make(map[string]int64)
+		}
+		byGroup[row.GroupID][row.RouteAlias+"\x00"+row.UpstreamModel] = *row.DailyLimitTokens
+	}
+	for groupID, limits := range byGroup {
+		i, ok := index[groupID]
+		if !ok {
+			continue
+		}
+		routing, err := modelRoutingRaw(groups[i].ModelRouting)
+		if err != nil {
+			return err
+		}
+		var routes map[string][]map[string]any
+		if err := json.Unmarshal(routing.RawMessage(), &routes); err != nil {
+			return fmt.Errorf("hydrate group candidate token limits: %w", err)
+		}
+		for routeAlias, candidates := range routes {
+			for _, candidate := range candidates {
+				model, _ := candidate["model"].(string)
+				model = strings.TrimSpace(model)
+				if model == "" {
+					model = routeAlias
+				}
+				if limit, exists := limits[routeAlias+"\x00"+model]; exists {
+					candidate["daily_token_limit"] = limit
+				} else {
+					candidate["daily_token_limit"] = nil
+				}
+			}
+		}
+		data, err := json.Marshal(routes)
+		if err != nil {
+			return fmt.Errorf("marshal hydrated group candidate token limits: %w", err)
+		}
+		groups[i].ModelRouting = domain.NewModelRoutingJSON(data)
+	}
+	return nil
+}
+
+func hasRouteDailyTokenLimitField(routing domain.ModelRoutingJSON) bool {
+	var routes map[string][]map[string]json.RawMessage
+	if err := json.Unmarshal(routing.RawMessage(), &routes); err != nil {
+		return false
+	}
+	for _, candidates := range routes {
+		for _, candidate := range candidates {
+			if _, ok := candidate["daily_token_limit"]; ok {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func stripDeprecatedRouteDailyTokenLimits(routing domain.ModelRoutingJSON) (domain.ModelRoutingJSON, error) {
+	raw := routing.RawMessage()
+	if len(strings.TrimSpace(string(raw))) == 0 {
+		return domain.NewModelRoutingJSON([]byte("{}")), nil
+	}
+	var routes map[string]any
+	if err := json.Unmarshal(raw, &routes); err != nil {
+		return domain.ModelRoutingJSON{}, fmt.Errorf("strip deprecated route daily token limits: %w", err)
+	}
+	for _, value := range routes {
+		candidates, ok := value.([]any)
+		if !ok {
+			continue
+		}
+		for _, candidate := range candidates {
+			if object, ok := candidate.(map[string]any); ok {
+				delete(object, "daily_token_limit")
+			}
+		}
+	}
+	clean, err := json.Marshal(routes)
+	if err != nil {
+		return domain.ModelRoutingJSON{}, fmt.Errorf("strip deprecated route daily token limits: %w", err)
+	}
+	return domain.NewModelRoutingJSON(clean), nil
 }
 
 func modelRoutingRaw(value any) (domain.ModelRoutingJSON, error) {
@@ -309,6 +487,9 @@ func (r *groupRepository) ListWithFilters(ctx context.Context, params pagination
 			outGroups[i].RateLimitedAccountCount = c.RateLimited
 		}
 	}
+	if err := r.hydrateGroupCandidateTokenLimits(ctx, outGroups); err != nil {
+		return nil, nil, err
+	}
 
 	return outGroups, paginationResultFromTotal(int64(total), params), nil
 }
@@ -395,6 +576,9 @@ func (r *groupRepository) listWithAccountCountSort(ctx context.Context, q *dbent
 		if idx, ok := pageIdx[g.ID]; ok {
 			outGroups[idx] = *g
 		}
+	}
+	if err := r.hydrateGroupCandidateTokenLimits(ctx, outGroups); err != nil {
+		return nil, nil, err
 	}
 
 	return outGroups, paginationResultFromTotal(int64(total), params), nil

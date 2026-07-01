@@ -109,10 +109,11 @@ func APIKeyAuthWithSubscriptionGoogle(apiKeyService *service.APIKeyService, subs
 				subscriptionService.DoWindowMaintenance(&maintenanceCopy)
 			}
 		} else {
-			if apiKey.User.Balance <= 0 {
-				abortWithGoogleError(c, 403, "Insufficient account balance")
-				return
-			}
+			// [账户余额相关] 因特殊需要，不再校验账户余额
+			// if apiKey.User.Balance <= 0 {
+			// 	abortWithGoogleError(c, 403, "Insufficient account balance")
+			// 	return
+			// }
 		}
 
 		c.Set(string(ContextKeyAPIKey), apiKey)

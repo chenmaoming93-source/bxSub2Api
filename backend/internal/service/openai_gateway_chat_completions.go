@@ -251,8 +251,11 @@ func (s *OpenAIGatewayService) ForwardAsChatCompletions(
 			Kind:               "request_error",
 			Message:            safeErr,
 		})
-		writeChatCompletionsError(c, http.StatusBadGateway, "upstream_error", "Upstream request failed")
-		return nil, fmt.Errorf("upstream request failed: %s", safeErr)
+		// No response has been written yet, so let the handler exclude this
+		// account and continue model-routing failover. A transport failure has no
+		// upstream HTTP status; status 0 maps to the generic 502 only after every
+		// candidate has been exhausted.
+		return nil, &UpstreamFailoverError{StatusCode: 0}
 	}
 	defer func() { _ = resp.Body.Close() }()
 

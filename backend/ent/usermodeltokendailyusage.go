@@ -30,8 +30,6 @@ type UserModelTokenDailyUsage struct {
 	UsageDate time.Time `json:"usage_date,omitempty"`
 	// UsedTokens holds the value of the "used_tokens" field.
 	UsedTokens int64 `json:"used_tokens,omitempty"`
-	// DailyLimitTokens holds the value of the "daily_limit_tokens" field.
-	DailyLimitTokens *int64 `json:"daily_limit_tokens,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the UserModelTokenDailyUsageQuery when eager-loading is set.
 	Edges        UserModelTokenDailyUsageEdges `json:"edges"`
@@ -63,7 +61,7 @@ func (*UserModelTokenDailyUsage) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case usermodeltokendailyusage.FieldID, usermodeltokendailyusage.FieldUserID, usermodeltokendailyusage.FieldUsedTokens, usermodeltokendailyusage.FieldDailyLimitTokens:
+		case usermodeltokendailyusage.FieldID, usermodeltokendailyusage.FieldUserID, usermodeltokendailyusage.FieldUsedTokens:
 			values[i] = new(sql.NullInt64)
 		case usermodeltokendailyusage.FieldModel:
 			values[i] = new(sql.NullString)
@@ -126,13 +124,6 @@ func (_m *UserModelTokenDailyUsage) assignValues(columns []string, values []any)
 			} else if value.Valid {
 				_m.UsedTokens = value.Int64
 			}
-		case usermodeltokendailyusage.FieldDailyLimitTokens:
-			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for field daily_limit_tokens", values[i])
-			} else if value.Valid {
-				_m.DailyLimitTokens = new(int64)
-				*_m.DailyLimitTokens = value.Int64
-			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
 		}
@@ -191,11 +182,6 @@ func (_m *UserModelTokenDailyUsage) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("used_tokens=")
 	builder.WriteString(fmt.Sprintf("%v", _m.UsedTokens))
-	builder.WriteString(", ")
-	if v := _m.DailyLimitTokens; v != nil {
-		builder.WriteString("daily_limit_tokens=")
-		builder.WriteString(fmt.Sprintf("%v", *v))
-	}
 	builder.WriteByte(')')
 	return builder.String()
 }

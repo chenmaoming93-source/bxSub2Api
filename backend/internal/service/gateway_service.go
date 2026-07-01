@@ -1758,7 +1758,23 @@ func (s *GatewayService) SelectAccountWithLoadAwareness(ctx context.Context, gro
 		logger.LegacyPrintf("service.gateway", "[ModelRoutingDebug] load-aware enabled: group_id=%v model=%s session=%s platform=%s", derefGroupID(groupID), requestedModel, shortSessionHash(sessionHash), platform)
 	}
 
+	// Resolve the matched route before listing group accounts. Explicit
+	// model_routing account_ids are an independent assignment source and do not
+	// require a duplicate account_groups row.
+	var routingAccountIDs []int64
+	var routeCandidates []domain.ModelRouteCandidate
+	if group != nil && requestedModel != "" {
+		routeCandidates = group.GetRoutingCandidates(requestedModel)
+		if len(routeCandidates) > 0 {
+			routingAccountIDs = routeCandidates[0].AccountIDs
+		}
+	}
+
 	accounts, useMixed, err := s.listSchedulableAccounts(ctx, groupID, platform, hasForcePlatform)
+	if err != nil {
+		return nil, err
+	}
+	accounts, err = s.mergeExplicitRouteAccounts(ctx, accounts, routeCandidates)
 	if err != nil {
 		return nil, err
 	}
@@ -1782,13 +1798,7 @@ func (s *GatewayService) SelectAccountWithLoadAwareness(ctx context.Context, gro
 	}
 
 	// 获取模型路由配置
-	var routingAccountIDs []int64
-	var routeCandidates []domain.ModelRouteCandidate
 	if group != nil && requestedModel != "" {
-		routeCandidates = group.GetRoutingCandidates(requestedModel)
-		if len(routeCandidates) > 0 {
-			routingAccountIDs = routeCandidates[0].AccountIDs
-		}
 		if s.debugModelRoutingEnabled() {
 			keys := group.ModelRoutingRuleNames()
 			logger.LegacyPrintf("service.gateway", "[ModelRoutingDebug] context group routing: group_id=%d model=%s enabled=%v rules=%d matched_ids=%v session=%s sticky_account=%d",
@@ -2578,49 +2588,10 @@ func (s *GatewayService) selectQuotaAllowedRouteCandidate(ctx context.Context, g
 }
 
 func (s *GatewayService) quotaAwareRouteCandidateExhausted(ctx context.Context, groupID int64, routeAlias, upstreamModel string, userID int64) (bool, error) {
-	if s == nil || s.dailyTokenQuotaRepo == nil || groupID <= 0 || routeAlias == "" || upstreamModel == "" {
+	if s == nil {
 		return false, nil
 	}
-	at := time.Now()
-	groupKey := GroupCandidateDailyTokenQuotaKey{GroupID: groupID, RouteAlias: routeAlias, UpstreamModel: upstreamModel, At: at}
-	groupSnapshot, err := s.dailyTokenQuotaRepo.GetGroupCandidateDailyTokenQuota(ctx, groupKey)
-	if err != nil {
-		return false, err
-	}
-	if err := CheckGroupCandidateDailyTokenQuota(groupKey, groupSnapshot); err != nil {
-		if isDailyTokenQuotaExhausted(err) {
-			return true, nil
-		}
-		return false, err
-	}
-
-	modelKey := ModelDailyTokenQuotaKey{Model: upstreamModel, At: at}
-	modelSnapshot, err := s.dailyTokenQuotaRepo.GetModelDailyTokenQuota(ctx, modelKey)
-	if err != nil {
-		return false, err
-	}
-	if err := CheckModelDailyTokenQuota(modelKey, modelSnapshot); err != nil {
-		if isDailyTokenQuotaExhausted(err) {
-			return true, nil
-		}
-		return false, err
-	}
-
-	if userID <= 0 {
-		return false, nil
-	}
-	userKey := UserModelDailyTokenQuotaKey{UserID: userID, Model: upstreamModel, At: at}
-	userSnapshot, err := s.dailyTokenQuotaRepo.GetUserModelDailyTokenQuota(ctx, userKey)
-	if err != nil {
-		return false, err
-	}
-	if err := CheckUserModelDailyTokenQuota(userKey, userSnapshot); err != nil {
-		if isDailyTokenQuotaExhausted(err) {
-			return true, nil
-		}
-		return false, err
-	}
-	return false, nil
+	return CheckRouteCandidateDailyTokenQuotas(ctx, s.dailyTokenQuotaRepo, groupID, routeAlias, upstreamModel, userID)
 }
 
 func isDailyTokenQuotaExhausted(err error) bool {

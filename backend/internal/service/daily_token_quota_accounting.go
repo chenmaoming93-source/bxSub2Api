@@ -22,13 +22,19 @@ func incrementDailyTokenQuotasForUsage(ctx context.Context, repo DailyTokenQuota
 	} else if apiKey != nil && apiKey.GroupID != nil {
 		groupID = *apiKey.GroupID
 	}
-	routeAlias := strings.TrimSpace(usageLog.Model)
+	routeAlias := strings.TrimSpace(usageLog.RouteAlias)
+	if routeAlias == "" {
+		routeAlias = strings.TrimSpace(usageLog.Model)
+	}
 	if routeAlias == "" {
 		routeAlias = strings.TrimSpace(usageLog.RequestedModel)
 	}
-	upstreamModel := routeAlias
+	upstreamModel := strings.TrimSpace(usageLog.Model)
 	if usageLog.UpstreamModel != nil && strings.TrimSpace(*usageLog.UpstreamModel) != "" {
 		upstreamModel = strings.TrimSpace(*usageLog.UpstreamModel)
+	}
+	if upstreamModel == "" {
+		upstreamModel = routeAlias
 	}
 	if usageLog.UserID <= 0 || groupID <= 0 || routeAlias == "" || upstreamModel == "" {
 		return fmt.Errorf("increment daily token quotas after usage: incomplete identity")
@@ -43,18 +49,6 @@ func incrementDailyTokenQuotasForUsage(ctx context.Context, repo DailyTokenQuota
 		UserModelKey:      UserModelDailyTokenQuotaKey{UserID: usageLog.UserID, Model: upstreamModel, At: at},
 		GroupCandidateKey: GroupCandidateDailyTokenQuotaKey{GroupID: groupID, RouteAlias: routeAlias, UpstreamModel: upstreamModel, At: at},
 		Tokens:            int64(tokens),
-	}
-	if apiKey != nil && apiKey.Group != nil {
-		for _, candidate := range apiKey.Group.GetRoutingCandidates(routeAlias) {
-			candidateModel := strings.TrimSpace(candidate.Model)
-			if candidateModel == "" {
-				candidateModel = routeAlias
-			}
-			if candidateModel == upstreamModel {
-				increment.GroupCandidateDailyLimitTokens = candidate.DailyTokenLimit
-				break
-			}
-		}
 	}
 
 	quotaCtx, cancel := detachedBillingContext(ctx)

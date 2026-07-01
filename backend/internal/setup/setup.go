@@ -99,9 +99,8 @@ type JWTConfig struct {
 }
 
 const (
-	adminBootstrapReasonEmptyDatabase          = "empty_database"
-	adminBootstrapReasonAdminExists            = "admin_exists"
-	adminBootstrapReasonUsersExistWithoutAdmin = "users_exist_without_admin"
+	adminBootstrapReasonAdminMissing = "admin_missing"
+	adminBootstrapReasonAdminExists  = "admin_exists"
 )
 
 type adminBootstrapDecision struct {
@@ -109,39 +108,30 @@ type adminBootstrapDecision struct {
 	reason       string
 }
 
-func decideAdminBootstrap(totalUsers, adminUsers int64) adminBootstrapDecision {
+func decideAdminBootstrap(adminUsers int64) adminBootstrapDecision {
 	if adminUsers > 0 {
 		return adminBootstrapDecision{
 			shouldCreate: false,
 			reason:       adminBootstrapReasonAdminExists,
 		}
 	}
-	if totalUsers > 0 {
-		return adminBootstrapDecision{
-			shouldCreate: false,
-			reason:       adminBootstrapReasonUsersExistWithoutAdmin,
-		}
-	}
 	return adminBootstrapDecision{
 		shouldCreate: true,
-		reason:       adminBootstrapReasonEmptyDatabase,
+		reason:       adminBootstrapReasonAdminMissing,
 	}
 }
 
-// NeedsSetup checks if the system needs initial setup
-// Uses multiple checks to prevent attackers from forcing re-setup by deleting config
+// NeedsSetup checks whether the authoritative installation marker is missing.
 func NeedsSetup() bool {
-	// Check 1: Config file must not exist
-	if _, err := os.Stat(GetConfigFilePath()); !os.IsNotExist(err) {
-		return false // Config exists, no setup needed
-	}
+	// The installation lock is the commit marker for a completed installation.
+	// A config file alone is not sufficient: it may be shipped by the operator
+	// before migrations and the initial administrator have been created.
+	return needsSetupAt(GetInstallLockPath())
+}
 
-	// Check 2: Installation lock file (harder to bypass)
-	if _, err := os.Stat(GetInstallLockPath()); !os.IsNotExist(err) {
-		return false // Lock file exists, already installed
-	}
-
-	return true
+func needsSetupAt(lockPath string) bool {
+	_, err := os.Stat(lockPath)
+	return os.IsNotExist(err)
 }
 
 func buildGoldenDBDSN(cfg *DatabaseConfig, dbName string) string {
@@ -291,6 +281,9 @@ func Install(cfg *SetupConfig) error {
 		cfg.JWT.Secret = secret
 		logger.LegacyPrintf("setup", "%s", "Warning: JWT secret auto-generated. Consider setting a fixed secret for production.")
 	}
+	if err := applyAdminBootstrapCredentials(cfg); err != nil {
+		return fmt.Errorf("load admin bootstrap configuration: %w", err)
+	}
 
 	// Test connections
 	if err := TestDatabaseConnection(&cfg.Database); err != nil {
@@ -311,9 +304,16 @@ func Install(cfg *SetupConfig) error {
 		return fmt.Errorf("admin user creation failed: %w", err)
 	}
 
-	// Write config file
-	if err := writeConfigFile(cfg); err != nil {
-		return fmt.Errorf("config file creation failed: %w", err)
+	// Preserve an operator-provided config file. It may contain many settings
+	// that are intentionally outside the setup form.
+	_, configExists, err := existingBootstrapConfigFile()
+	if err != nil {
+		return fmt.Errorf("check config file: %w", err)
+	}
+	if !configExists {
+		if err := writeConfigFile(cfg); err != nil {
+			return fmt.Errorf("config file creation failed: %w", err)
+		}
 	}
 
 	// Create installation lock file to prevent re-setup attacks
@@ -328,6 +328,116 @@ func Install(cfg *SetupConfig) error {
 func createInstallLock() error {
 	content := fmt.Sprintf("installed_at=%s\n", time.Now().UTC().Format(time.RFC3339))
 	return os.WriteFile(GetInstallLockPath(), []byte(content), 0400) // Read-only for owner
+}
+
+func applyAdminBootstrapCredentials(cfg *SetupConfig) error {
+	if cfg == nil {
+		return fmt.Errorf("nil setup config")
+	}
+
+	// Configuration file values have the highest priority during bootstrap.
+	var fileConfig struct {
+		Default struct {
+			AdminEmail    string `yaml:"admin_email"`
+			AdminPassword string `yaml:"admin_password"`
+		} `yaml:"default"`
+	}
+	configPath, exists, err := existingBootstrapConfigFile()
+	if err != nil {
+		return err
+	}
+	if exists {
+		content, err := os.ReadFile(configPath)
+		if err != nil {
+			return fmt.Errorf("read %s: %w", configPath, err)
+		}
+		if err := yaml.Unmarshal(content, &fileConfig); err != nil {
+			return fmt.Errorf("parse %s: %w", configPath, err)
+		}
+		if value := strings.TrimSpace(fileConfig.Default.AdminEmail); value != "" {
+			cfg.Admin.Email = value
+		}
+		if value := strings.TrimSpace(fileConfig.Default.AdminPassword); value != "" {
+			cfg.Admin.Password = value
+		}
+	}
+
+	if strings.TrimSpace(cfg.Admin.Email) == "" {
+		cfg.Admin.Email = "admin@example.com"
+	}
+	if strings.TrimSpace(cfg.Admin.Password) == "" {
+		cfg.Admin.Password = "admin123"
+	}
+	return nil
+}
+
+func existingBootstrapConfigFile() (string, bool, error) {
+	candidates := []string{
+		GetConfigFilePath(),
+		"config.yaml",
+		"config/config.yaml",
+		"/etc/sub2api/config.yaml",
+	}
+	seen := make(map[string]struct{}, len(candidates))
+	for _, candidate := range candidates {
+		if _, ok := seen[candidate]; ok {
+			continue
+		}
+		seen[candidate] = struct{}{}
+		if _, err := os.Stat(candidate); err == nil {
+			return candidate, true, nil
+		} else if !os.IsNotExist(err) {
+			return "", false, fmt.Errorf("stat %s: %w", candidate, err)
+		}
+	}
+	return "", false, nil
+}
+
+// HasBootstrapConfig reports whether startup can perform a non-interactive
+// installation from an existing config.yaml.
+func HasBootstrapConfig() (bool, error) {
+	_, exists, err := existingBootstrapConfigFile()
+	return exists, err
+}
+
+// AutoSetupFromConfig initializes a first-run installation from config.yaml.
+// This is the local/source-run counterpart of AutoSetupFromEnv.
+func AutoSetupFromConfig() error {
+	appCfg, err := config.LoadForBootstrap()
+	if err != nil {
+		return fmt.Errorf("load config: %w", err)
+	}
+	cfg := setupConfigFromAppConfig(appCfg)
+	logger.LegacyPrintf("setup", "Auto setup enabled by existing config: %s", GetConfigFilePath())
+	return Install(cfg)
+}
+
+func setupConfigFromAppConfig(appCfg *config.Config) *SetupConfig {
+	if appCfg == nil {
+		return &SetupConfig{}
+	}
+	return &SetupConfig{
+		Database: DatabaseConfig{
+			Host: appCfg.Database.Host, Port: appCfg.Database.Port,
+			User: appCfg.Database.User, Password: appCfg.Database.Password,
+			DBName: appCfg.Database.DBName, SSLMode: appCfg.Database.SSLMode,
+		},
+		Redis: RedisConfig{
+			Host: appCfg.Redis.Host, Port: appCfg.Redis.Port,
+			Password: appCfg.Redis.Password, DB: appCfg.Redis.DB,
+			EnableTLS: appCfg.Redis.EnableTLS,
+		},
+		Admin: AdminConfig{
+			Email: appCfg.Default.AdminEmail, Password: appCfg.Default.AdminPassword,
+		},
+		Server: ServerConfig{
+			Host: appCfg.Server.Host, Port: appCfg.Server.Port, Mode: appCfg.Server.Mode,
+		},
+		JWT: JWTConfig{
+			Secret: appCfg.JWT.Secret, ExpireHour: appCfg.JWT.ExpireHour,
+		},
+		Timezone: appCfg.Timezone,
+	}
 }
 
 func initializeDatabase(cfg *SetupConfig) error {
@@ -367,15 +477,11 @@ func createAdminUser(cfg *SetupConfig) (bool, string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	var totalUsers int64
-	if err := db.QueryRowContext(ctx, "SELECT COUNT(1) FROM users").Scan(&totalUsers); err != nil {
-		return false, "", err
-	}
 	var adminUsers int64
 	if err := db.QueryRowContext(ctx, "SELECT COUNT(1) FROM users WHERE role = ?", service.RoleAdmin).Scan(&adminUsers); err != nil {
 		return false, "", err
 	}
-	decision := decideAdminBootstrap(totalUsers, adminUsers)
+	decision := decideAdminBootstrap(adminUsers)
 	if !decision.shouldCreate {
 		return false, decision.reason, nil
 	}
@@ -556,7 +662,7 @@ func AutoSetupFromEnv() error {
 			EnableTLS: getEnvOrDefault("REDIS_ENABLE_TLS", "false") == "true",
 		},
 		Admin: AdminConfig{
-			Email:    getEnvOrDefault("ADMIN_EMAIL", "admin@sub2api.local"),
+			Email:    getEnvOrDefault("ADMIN_EMAIL", ""),
 			Password: getEnvOrDefault("ADMIN_PASSWORD", ""),
 		},
 		Server: ServerConfig{
@@ -579,6 +685,9 @@ func AutoSetupFromEnv() error {
 		}
 		cfg.JWT.Secret = secret
 		logger.LegacyPrintf("setup", "%s", "Warning: JWT secret auto-generated. Consider setting a fixed secret for production.")
+	}
+	if err := applyAdminBootstrapCredentials(cfg); err != nil {
+		return fmt.Errorf("load admin bootstrap configuration: %w", err)
 	}
 
 	// Test database connection
@@ -614,19 +723,25 @@ func AutoSetupFromEnv() error {
 		switch reason {
 		case adminBootstrapReasonAdminExists:
 			logger.LegacyPrintf("setup", "%s", "Admin user already exists, skipping admin bootstrap")
-		case adminBootstrapReasonUsersExistWithoutAdmin:
-			logger.LegacyPrintf("setup", "%s", "Database already has user data; skipping auto admin bootstrap to avoid password overwrite")
 		default:
 			logger.LegacyPrintf("setup", "%s", "Admin bootstrap skipped")
 		}
 	}
 
-	// Write config file
-	logger.LegacyPrintf("setup", "%s", "Writing configuration file...")
-	if err := writeConfigFile(cfg); err != nil {
-		return fmt.Errorf("config file creation failed: %w", err)
+	// Preserve an existing operator-provided configuration.
+	_, configExists, err := existingBootstrapConfigFile()
+	if err != nil {
+		return fmt.Errorf("check config file: %w", err)
 	}
-	logger.LegacyPrintf("setup", "%s", "Configuration file created")
+	if !configExists {
+		logger.LegacyPrintf("setup", "%s", "Writing configuration file...")
+		if err := writeConfigFile(cfg); err != nil {
+			return fmt.Errorf("config file creation failed: %w", err)
+		}
+		logger.LegacyPrintf("setup", "%s", "Configuration file created")
+	} else {
+		logger.LegacyPrintf("setup", "%s", "Existing configuration file preserved")
+	}
 
 	// Create installation lock file
 	if err := createInstallLock(); err != nil {

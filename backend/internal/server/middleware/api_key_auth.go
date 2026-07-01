@@ -213,10 +213,11 @@ func apiKeyAuthWithSubscription(apiKeyService *service.APIKeyService, subscripti
 				}
 			} else {
 				// 非订阅模式 或 订阅模式但 subscriptionService 未注入：回退到余额检查
-				if apiKey.User.Balance <= 0 {
-					AbortWithError(c, 403, "INSUFFICIENT_BALANCE", "Insufficient account balance")
-					return
-				}
+				// [账户余额相关] 因特殊需要，不再校验账户余额
+				// if apiKey.User.Balance <= 0 {
+				// 	AbortWithError(c, 403, "INSUFFICIENT_BALANCE", "Insufficient account balance")
+				// 	return
+				// }
 			}
 		}
 

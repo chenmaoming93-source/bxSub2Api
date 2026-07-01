@@ -90,11 +90,6 @@ func UsedTokens(v int64) predicate.GroupCandidateTokenDailyUsage {
 	return predicate.GroupCandidateTokenDailyUsage(sql.FieldEQ(FieldUsedTokens, v))
 }
 
-// DailyLimitTokens applies equality check predicate on the "daily_limit_tokens" field. It's identical to DailyLimitTokensEQ.
-func DailyLimitTokens(v int64) predicate.GroupCandidateTokenDailyUsage {
-	return predicate.GroupCandidateTokenDailyUsage(sql.FieldEQ(FieldDailyLimitTokens, v))
-}
-
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.
 func CreatedAtEQ(v time.Time) predicate.GroupCandidateTokenDailyUsage {
 	return predicate.GroupCandidateTokenDailyUsage(sql.FieldEQ(FieldCreatedAt, v))
@@ -403,56 +398,6 @@ func UsedTokensLT(v int64) predicate.GroupCandidateTokenDailyUsage {
 // UsedTokensLTE applies the LTE predicate on the "used_tokens" field.
 func UsedTokensLTE(v int64) predicate.GroupCandidateTokenDailyUsage {
 	return predicate.GroupCandidateTokenDailyUsage(sql.FieldLTE(FieldUsedTokens, v))
-}
-
-// DailyLimitTokensEQ applies the EQ predicate on the "daily_limit_tokens" field.
-func DailyLimitTokensEQ(v int64) predicate.GroupCandidateTokenDailyUsage {
-	return predicate.GroupCandidateTokenDailyUsage(sql.FieldEQ(FieldDailyLimitTokens, v))
-}
-
-// DailyLimitTokensNEQ applies the NEQ predicate on the "daily_limit_tokens" field.
-func DailyLimitTokensNEQ(v int64) predicate.GroupCandidateTokenDailyUsage {
-	return predicate.GroupCandidateTokenDailyUsage(sql.FieldNEQ(FieldDailyLimitTokens, v))
-}
-
-// DailyLimitTokensIn applies the In predicate on the "daily_limit_tokens" field.
-func DailyLimitTokensIn(vs ...int64) predicate.GroupCandidateTokenDailyUsage {
-	return predicate.GroupCandidateTokenDailyUsage(sql.FieldIn(FieldDailyLimitTokens, vs...))
-}
-
-// DailyLimitTokensNotIn applies the NotIn predicate on the "daily_limit_tokens" field.
-func DailyLimitTokensNotIn(vs ...int64) predicate.GroupCandidateTokenDailyUsage {
-	return predicate.GroupCandidateTokenDailyUsage(sql.FieldNotIn(FieldDailyLimitTokens, vs...))
-}
-
-// DailyLimitTokensGT applies the GT predicate on the "daily_limit_tokens" field.
-func DailyLimitTokensGT(v int64) predicate.GroupCandidateTokenDailyUsage {
-	return predicate.GroupCandidateTokenDailyUsage(sql.FieldGT(FieldDailyLimitTokens, v))
-}
-
-// DailyLimitTokensGTE applies the GTE predicate on the "daily_limit_tokens" field.
-func DailyLimitTokensGTE(v int64) predicate.GroupCandidateTokenDailyUsage {
-	return predicate.GroupCandidateTokenDailyUsage(sql.FieldGTE(FieldDailyLimitTokens, v))
-}
-
-// DailyLimitTokensLT applies the LT predicate on the "daily_limit_tokens" field.
-func DailyLimitTokensLT(v int64) predicate.GroupCandidateTokenDailyUsage {
-	return predicate.GroupCandidateTokenDailyUsage(sql.FieldLT(FieldDailyLimitTokens, v))
-}
-
-// DailyLimitTokensLTE applies the LTE predicate on the "daily_limit_tokens" field.
-func DailyLimitTokensLTE(v int64) predicate.GroupCandidateTokenDailyUsage {
-	return predicate.GroupCandidateTokenDailyUsage(sql.FieldLTE(FieldDailyLimitTokens, v))
-}
-
-// DailyLimitTokensIsNil applies the IsNil predicate on the "daily_limit_tokens" field.
-func DailyLimitTokensIsNil() predicate.GroupCandidateTokenDailyUsage {
-	return predicate.GroupCandidateTokenDailyUsage(sql.FieldIsNull(FieldDailyLimitTokens))
-}
-
-// DailyLimitTokensNotNil applies the NotNil predicate on the "daily_limit_tokens" field.
-func DailyLimitTokensNotNil() predicate.GroupCandidateTokenDailyUsage {
-	return predicate.GroupCandidateTokenDailyUsage(sql.FieldNotNull(FieldDailyLimitTokens))
 }
 
 // HasGroup applies the HasEdge predicate on the "group" edge.

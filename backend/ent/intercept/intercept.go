@@ -21,9 +21,11 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/channelmonitorrequesttemplate"
 	"github.com/Wei-Shaw/sub2api/ent/errorpassthroughrule"
 	"github.com/Wei-Shaw/sub2api/ent/group"
+	"github.com/Wei-Shaw/sub2api/ent/groupcandidatetokendailylimitconfig"
 	"github.com/Wei-Shaw/sub2api/ent/groupcandidatetokendailyusage"
 	"github.com/Wei-Shaw/sub2api/ent/idempotencyrecord"
 	"github.com/Wei-Shaw/sub2api/ent/identityadoptiondecision"
+	"github.com/Wei-Shaw/sub2api/ent/modeltokendailylimitconfig"
 	"github.com/Wei-Shaw/sub2api/ent/modeltokendailyusage"
 	"github.com/Wei-Shaw/sub2api/ent/paymentauditlog"
 	"github.com/Wei-Shaw/sub2api/ent/paymentorder"
@@ -44,6 +46,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/userallowedgroup"
 	"github.com/Wei-Shaw/sub2api/ent/userattributedefinition"
 	"github.com/Wei-Shaw/sub2api/ent/userattributevalue"
+	"github.com/Wei-Shaw/sub2api/ent/usermodeltokendailylimitconfig"
 	"github.com/Wei-Shaw/sub2api/ent/usermodeltokendailyusage"
 	"github.com/Wei-Shaw/sub2api/ent/userplatformquota"
 	"github.com/Wei-Shaw/sub2api/ent/usersubscription"
@@ -456,6 +459,33 @@ func (f TraverseGroup) Traverse(ctx context.Context, q ent.Query) error {
 	return fmt.Errorf("unexpected query type %T. expect *ent.GroupQuery", q)
 }
 
+// The GroupCandidateTokenDailyLimitConfigFunc type is an adapter to allow the use of ordinary function as a Querier.
+type GroupCandidateTokenDailyLimitConfigFunc func(context.Context, *ent.GroupCandidateTokenDailyLimitConfigQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f GroupCandidateTokenDailyLimitConfigFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.GroupCandidateTokenDailyLimitConfigQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.GroupCandidateTokenDailyLimitConfigQuery", q)
+}
+
+// The TraverseGroupCandidateTokenDailyLimitConfig type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseGroupCandidateTokenDailyLimitConfig func(context.Context, *ent.GroupCandidateTokenDailyLimitConfigQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseGroupCandidateTokenDailyLimitConfig) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseGroupCandidateTokenDailyLimitConfig) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.GroupCandidateTokenDailyLimitConfigQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.GroupCandidateTokenDailyLimitConfigQuery", q)
+}
+
 // The GroupCandidateTokenDailyUsageFunc type is an adapter to allow the use of ordinary function as a Querier.
 type GroupCandidateTokenDailyUsageFunc func(context.Context, *ent.GroupCandidateTokenDailyUsageQuery) (ent.Value, error)
 
@@ -535,6 +565,33 @@ func (f TraverseIdentityAdoptionDecision) Traverse(ctx context.Context, q ent.Qu
 		return f(ctx, q)
 	}
 	return fmt.Errorf("unexpected query type %T. expect *ent.IdentityAdoptionDecisionQuery", q)
+}
+
+// The ModelTokenDailyLimitConfigFunc type is an adapter to allow the use of ordinary function as a Querier.
+type ModelTokenDailyLimitConfigFunc func(context.Context, *ent.ModelTokenDailyLimitConfigQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f ModelTokenDailyLimitConfigFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.ModelTokenDailyLimitConfigQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.ModelTokenDailyLimitConfigQuery", q)
+}
+
+// The TraverseModelTokenDailyLimitConfig type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseModelTokenDailyLimitConfig func(context.Context, *ent.ModelTokenDailyLimitConfigQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseModelTokenDailyLimitConfig) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseModelTokenDailyLimitConfig) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.ModelTokenDailyLimitConfigQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.ModelTokenDailyLimitConfigQuery", q)
 }
 
 // The ModelTokenDailyUsageFunc type is an adapter to allow the use of ordinary function as a Querier.
@@ -1050,6 +1107,33 @@ func (f TraverseUserAttributeValue) Traverse(ctx context.Context, q ent.Query) e
 	return fmt.Errorf("unexpected query type %T. expect *ent.UserAttributeValueQuery", q)
 }
 
+// The UserModelTokenDailyLimitConfigFunc type is an adapter to allow the use of ordinary function as a Querier.
+type UserModelTokenDailyLimitConfigFunc func(context.Context, *ent.UserModelTokenDailyLimitConfigQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f UserModelTokenDailyLimitConfigFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.UserModelTokenDailyLimitConfigQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.UserModelTokenDailyLimitConfigQuery", q)
+}
+
+// The TraverseUserModelTokenDailyLimitConfig type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseUserModelTokenDailyLimitConfig func(context.Context, *ent.UserModelTokenDailyLimitConfigQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseUserModelTokenDailyLimitConfig) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseUserModelTokenDailyLimitConfig) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.UserModelTokenDailyLimitConfigQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.UserModelTokenDailyLimitConfigQuery", q)
+}
+
 // The UserModelTokenDailyUsageFunc type is an adapter to allow the use of ordinary function as a Querier.
 type UserModelTokenDailyUsageFunc func(context.Context, *ent.UserModelTokenDailyUsageQuery) (ent.Value, error)
 
@@ -1160,12 +1244,16 @@ func NewQuery(q ent.Query) (Query, error) {
 		return &query[*ent.ErrorPassthroughRuleQuery, predicate.ErrorPassthroughRule, errorpassthroughrule.OrderOption]{typ: ent.TypeErrorPassthroughRule, tq: q}, nil
 	case *ent.GroupQuery:
 		return &query[*ent.GroupQuery, predicate.Group, group.OrderOption]{typ: ent.TypeGroup, tq: q}, nil
+	case *ent.GroupCandidateTokenDailyLimitConfigQuery:
+		return &query[*ent.GroupCandidateTokenDailyLimitConfigQuery, predicate.GroupCandidateTokenDailyLimitConfig, groupcandidatetokendailylimitconfig.OrderOption]{typ: ent.TypeGroupCandidateTokenDailyLimitConfig, tq: q}, nil
 	case *ent.GroupCandidateTokenDailyUsageQuery:
 		return &query[*ent.GroupCandidateTokenDailyUsageQuery, predicate.GroupCandidateTokenDailyUsage, groupcandidatetokendailyusage.OrderOption]{typ: ent.TypeGroupCandidateTokenDailyUsage, tq: q}, nil
 	case *ent.IdempotencyRecordQuery:
 		return &query[*ent.IdempotencyRecordQuery, predicate.IdempotencyRecord, idempotencyrecord.OrderOption]{typ: ent.TypeIdempotencyRecord, tq: q}, nil
 	case *ent.IdentityAdoptionDecisionQuery:
 		return &query[*ent.IdentityAdoptionDecisionQuery, predicate.IdentityAdoptionDecision, identityadoptiondecision.OrderOption]{typ: ent.TypeIdentityAdoptionDecision, tq: q}, nil
+	case *ent.ModelTokenDailyLimitConfigQuery:
+		return &query[*ent.ModelTokenDailyLimitConfigQuery, predicate.ModelTokenDailyLimitConfig, modeltokendailylimitconfig.OrderOption]{typ: ent.TypeModelTokenDailyLimitConfig, tq: q}, nil
 	case *ent.ModelTokenDailyUsageQuery:
 		return &query[*ent.ModelTokenDailyUsageQuery, predicate.ModelTokenDailyUsage, modeltokendailyusage.OrderOption]{typ: ent.TypeModelTokenDailyUsage, tq: q}, nil
 	case *ent.PaymentAuditLogQuery:
@@ -1204,6 +1292,8 @@ func NewQuery(q ent.Query) (Query, error) {
 		return &query[*ent.UserAttributeDefinitionQuery, predicate.UserAttributeDefinition, userattributedefinition.OrderOption]{typ: ent.TypeUserAttributeDefinition, tq: q}, nil
 	case *ent.UserAttributeValueQuery:
 		return &query[*ent.UserAttributeValueQuery, predicate.UserAttributeValue, userattributevalue.OrderOption]{typ: ent.TypeUserAttributeValue, tq: q}, nil
+	case *ent.UserModelTokenDailyLimitConfigQuery:
+		return &query[*ent.UserModelTokenDailyLimitConfigQuery, predicate.UserModelTokenDailyLimitConfig, usermodeltokendailylimitconfig.OrderOption]{typ: ent.TypeUserModelTokenDailyLimitConfig, tq: q}, nil
 	case *ent.UserModelTokenDailyUsageQuery:
 		return &query[*ent.UserModelTokenDailyUsageQuery, predicate.UserModelTokenDailyUsage, usermodeltokendailyusage.OrderOption]{typ: ent.TypeUserModelTokenDailyUsage, tq: q}, nil
 	case *ent.UserPlatformQuotaQuery:

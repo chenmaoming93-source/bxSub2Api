@@ -604,7 +604,7 @@ func (_q *PendingAuthSessionQuery) sqlQuery(ctx context.Context) *sql.Selector {
 // updated, deleted or "selected ... for update" by other sessions, until the transaction is
 // either committed or rolled-back.
 func (_q *PendingAuthSessionQuery) ForUpdate(opts ...sql.LockOption) *PendingAuthSessionQuery {
-	if _q.driver.Dialect() == dialect.MySQL {
+	if _q.driver.Dialect() == dialect.Postgres {
 		_q.Unique(false)
 	}
 	_q.modifiers = append(_q.modifiers, func(s *sql.Selector) {
@@ -617,7 +617,7 @@ func (_q *PendingAuthSessionQuery) ForUpdate(opts ...sql.LockOption) *PendingAut
 // on any rows that are read. Other sessions can read the rows, but cannot modify them
 // until your transaction commits.
 func (_q *PendingAuthSessionQuery) ForShare(opts ...sql.LockOption) *PendingAuthSessionQuery {
-	if _q.driver.Dialect() == dialect.MySQL {
+	if _q.driver.Dialect() == dialect.Postgres {
 		_q.Unique(false)
 	}
 	_q.modifiers = append(_q.modifiers, func(s *sql.Selector) {

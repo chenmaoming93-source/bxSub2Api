@@ -107,6 +107,8 @@ type GroupEdges struct {
 	UsageLogs []*UsageLog `json:"usage_logs,omitempty"`
 	// CandidateTokenDailyUsages holds the value of the candidate_token_daily_usages edge.
 	CandidateTokenDailyUsages []*GroupCandidateTokenDailyUsage `json:"candidate_token_daily_usages,omitempty"`
+	// GroupCandidateTokenDailyLimitConfigs holds the value of the group_candidate_token_daily_limit_configs edge.
+	GroupCandidateTokenDailyLimitConfigs []*GroupCandidateTokenDailyLimitConfig `json:"group_candidate_token_daily_limit_configs,omitempty"`
 	// Accounts holds the value of the accounts edge.
 	Accounts []*Account `json:"accounts,omitempty"`
 	// AllowedUsers holds the value of the allowed_users edge.
@@ -117,7 +119,7 @@ type GroupEdges struct {
 	UserAllowedGroups []*UserAllowedGroup `json:"user_allowed_groups,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [9]bool
+	loadedTypes [10]bool
 }
 
 // APIKeysOrErr returns the APIKeys value or an error if the edge
@@ -165,10 +167,19 @@ func (e GroupEdges) CandidateTokenDailyUsagesOrErr() ([]*GroupCandidateTokenDail
 	return nil, &NotLoadedError{edge: "candidate_token_daily_usages"}
 }
 
+// GroupCandidateTokenDailyLimitConfigsOrErr returns the GroupCandidateTokenDailyLimitConfigs value or an error if the edge
+// was not loaded in eager-loading.
+func (e GroupEdges) GroupCandidateTokenDailyLimitConfigsOrErr() ([]*GroupCandidateTokenDailyLimitConfig, error) {
+	if e.loadedTypes[5] {
+		return e.GroupCandidateTokenDailyLimitConfigs, nil
+	}
+	return nil, &NotLoadedError{edge: "group_candidate_token_daily_limit_configs"}
+}
+
 // AccountsOrErr returns the Accounts value or an error if the edge
 // was not loaded in eager-loading.
 func (e GroupEdges) AccountsOrErr() ([]*Account, error) {
-	if e.loadedTypes[5] {
+	if e.loadedTypes[6] {
 		return e.Accounts, nil
 	}
 	return nil, &NotLoadedError{edge: "accounts"}
@@ -177,7 +188,7 @@ func (e GroupEdges) AccountsOrErr() ([]*Account, error) {
 // AllowedUsersOrErr returns the AllowedUsers value or an error if the edge
 // was not loaded in eager-loading.
 func (e GroupEdges) AllowedUsersOrErr() ([]*User, error) {
-	if e.loadedTypes[6] {
+	if e.loadedTypes[7] {
 		return e.AllowedUsers, nil
 	}
 	return nil, &NotLoadedError{edge: "allowed_users"}
@@ -186,7 +197,7 @@ func (e GroupEdges) AllowedUsersOrErr() ([]*User, error) {
 // AccountGroupsOrErr returns the AccountGroups value or an error if the edge
 // was not loaded in eager-loading.
 func (e GroupEdges) AccountGroupsOrErr() ([]*AccountGroup, error) {
-	if e.loadedTypes[7] {
+	if e.loadedTypes[8] {
 		return e.AccountGroups, nil
 	}
 	return nil, &NotLoadedError{edge: "account_groups"}
@@ -195,7 +206,7 @@ func (e GroupEdges) AccountGroupsOrErr() ([]*AccountGroup, error) {
 // UserAllowedGroupsOrErr returns the UserAllowedGroups value or an error if the edge
 // was not loaded in eager-loading.
 func (e GroupEdges) UserAllowedGroupsOrErr() ([]*UserAllowedGroup, error) {
-	if e.loadedTypes[8] {
+	if e.loadedTypes[9] {
 		return e.UserAllowedGroups, nil
 	}
 	return nil, &NotLoadedError{edge: "user_allowed_groups"}
@@ -503,6 +514,11 @@ func (_m *Group) QueryUsageLogs() *UsageLogQuery {
 // QueryCandidateTokenDailyUsages queries the "candidate_token_daily_usages" edge of the Group entity.
 func (_m *Group) QueryCandidateTokenDailyUsages() *GroupCandidateTokenDailyUsageQuery {
 	return NewGroupClient(_m.config).QueryCandidateTokenDailyUsages(_m)
+}
+
+// QueryGroupCandidateTokenDailyLimitConfigs queries the "group_candidate_token_daily_limit_configs" edge of the Group entity.
+func (_m *Group) QueryGroupCandidateTokenDailyLimitConfigs() *GroupCandidateTokenDailyLimitConfigQuery {
+	return NewGroupClient(_m.config).QueryGroupCandidateTokenDailyLimitConfigs(_m)
 }
 
 // QueryAccounts queries the "accounts" edge of the Group entity.

@@ -1555,6 +1555,29 @@ func HasCandidateTokenDailyUsagesWith(preds ...predicate.GroupCandidateTokenDail
 	})
 }
 
+// HasGroupCandidateTokenDailyLimitConfigs applies the HasEdge predicate on the "group_candidate_token_daily_limit_configs" edge.
+func HasGroupCandidateTokenDailyLimitConfigs() predicate.Group {
+	return predicate.Group(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, GroupCandidateTokenDailyLimitConfigsTable, GroupCandidateTokenDailyLimitConfigsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasGroupCandidateTokenDailyLimitConfigsWith applies the HasEdge predicate on the "group_candidate_token_daily_limit_configs" edge with a given conditions (other predicates).
+func HasGroupCandidateTokenDailyLimitConfigsWith(preds ...predicate.GroupCandidateTokenDailyLimitConfig) predicate.Group {
+	return predicate.Group(func(s *sql.Selector) {
+		step := newGroupCandidateTokenDailyLimitConfigsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasAccounts applies the HasEdge predicate on the "accounts" edge.
 func HasAccounts() predicate.Group {
 	return predicate.Group(func(s *sql.Selector) {

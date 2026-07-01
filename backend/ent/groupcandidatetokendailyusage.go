@@ -32,8 +32,6 @@ type GroupCandidateTokenDailyUsage struct {
 	UsageDate time.Time `json:"usage_date,omitempty"`
 	// UsedTokens holds the value of the "used_tokens" field.
 	UsedTokens int64 `json:"used_tokens,omitempty"`
-	// DailyLimitTokens holds the value of the "daily_limit_tokens" field.
-	DailyLimitTokens *int64 `json:"daily_limit_tokens,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the GroupCandidateTokenDailyUsageQuery when eager-loading is set.
 	Edges        GroupCandidateTokenDailyUsageEdges `json:"edges"`
@@ -65,7 +63,7 @@ func (*GroupCandidateTokenDailyUsage) scanValues(columns []string) ([]any, error
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case groupcandidatetokendailyusage.FieldID, groupcandidatetokendailyusage.FieldGroupID, groupcandidatetokendailyusage.FieldUsedTokens, groupcandidatetokendailyusage.FieldDailyLimitTokens:
+		case groupcandidatetokendailyusage.FieldID, groupcandidatetokendailyusage.FieldGroupID, groupcandidatetokendailyusage.FieldUsedTokens:
 			values[i] = new(sql.NullInt64)
 		case groupcandidatetokendailyusage.FieldRouteAlias, groupcandidatetokendailyusage.FieldUpstreamModel:
 			values[i] = new(sql.NullString)
@@ -134,13 +132,6 @@ func (_m *GroupCandidateTokenDailyUsage) assignValues(columns []string, values [
 			} else if value.Valid {
 				_m.UsedTokens = value.Int64
 			}
-		case groupcandidatetokendailyusage.FieldDailyLimitTokens:
-			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for field daily_limit_tokens", values[i])
-			} else if value.Valid {
-				_m.DailyLimitTokens = new(int64)
-				*_m.DailyLimitTokens = value.Int64
-			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
 		}
@@ -202,11 +193,6 @@ func (_m *GroupCandidateTokenDailyUsage) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("used_tokens=")
 	builder.WriteString(fmt.Sprintf("%v", _m.UsedTokens))
-	builder.WriteString(", ")
-	if v := _m.DailyLimitTokens; v != nil {
-		builder.WriteString("daily_limit_tokens=")
-		builder.WriteString(fmt.Sprintf("%v", *v))
-	}
 	builder.WriteByte(')')
 	return builder.String()
 }

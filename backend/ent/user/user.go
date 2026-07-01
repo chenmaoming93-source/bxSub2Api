@@ -89,6 +89,8 @@ const (
 	EdgePlatformQuotas = "platform_quotas"
 	// EdgeModelTokenDailyUsages holds the string denoting the model_token_daily_usages edge name in mutations.
 	EdgeModelTokenDailyUsages = "model_token_daily_usages"
+	// EdgeUserModelTokenDailyLimitConfigs holds the string denoting the user_model_token_daily_limit_configs edge name in mutations.
+	EdgeUserModelTokenDailyLimitConfigs = "user_model_token_daily_limit_configs"
 	// EdgeUserAllowedGroups holds the string denoting the user_allowed_groups edge name in mutations.
 	EdgeUserAllowedGroups = "user_allowed_groups"
 	// Table holds the table name of the user in the database.
@@ -189,6 +191,13 @@ const (
 	ModelTokenDailyUsagesInverseTable = "user_model_token_daily_usages"
 	// ModelTokenDailyUsagesColumn is the table column denoting the model_token_daily_usages relation/edge.
 	ModelTokenDailyUsagesColumn = "user_id"
+	// UserModelTokenDailyLimitConfigsTable is the table that holds the user_model_token_daily_limit_configs relation/edge.
+	UserModelTokenDailyLimitConfigsTable = "user_model_token_daily_limit_configs"
+	// UserModelTokenDailyLimitConfigsInverseTable is the table name for the UserModelTokenDailyLimitConfig entity.
+	// It exists in this package in order to avoid circular dependency with the "usermodeltokendailylimitconfig" package.
+	UserModelTokenDailyLimitConfigsInverseTable = "user_model_token_daily_limit_configs"
+	// UserModelTokenDailyLimitConfigsColumn is the table column denoting the user_model_token_daily_limit_configs relation/edge.
+	UserModelTokenDailyLimitConfigsColumn = "user_id"
 	// UserAllowedGroupsTable is the table that holds the user_allowed_groups relation/edge.
 	UserAllowedGroupsTable = "user_allowed_groups"
 	// UserAllowedGroupsInverseTable is the table name for the UserAllowedGroup entity.
@@ -615,6 +624,20 @@ func ByModelTokenDailyUsages(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOp
 	}
 }
 
+// ByUserModelTokenDailyLimitConfigsCount orders the results by user_model_token_daily_limit_configs count.
+func ByUserModelTokenDailyLimitConfigsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newUserModelTokenDailyLimitConfigsStep(), opts...)
+	}
+}
+
+// ByUserModelTokenDailyLimitConfigs orders the results by user_model_token_daily_limit_configs terms.
+func ByUserModelTokenDailyLimitConfigs(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newUserModelTokenDailyLimitConfigsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
 // ByUserAllowedGroupsCount orders the results by user_allowed_groups count.
 func ByUserAllowedGroupsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -724,6 +747,13 @@ func newModelTokenDailyUsagesStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(ModelTokenDailyUsagesInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, ModelTokenDailyUsagesTable, ModelTokenDailyUsagesColumn),
+	)
+}
+func newUserModelTokenDailyLimitConfigsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(UserModelTokenDailyLimitConfigsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, UserModelTokenDailyLimitConfigsTable, UserModelTokenDailyLimitConfigsColumn),
 	)
 }
 func newUserAllowedGroupsStep() *sqlgraph.Step {
