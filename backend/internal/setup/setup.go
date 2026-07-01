@@ -37,12 +37,12 @@ func setupDefaultAdminConcurrency() int {
 }
 
 // GetDataDir returns the data directory for storing config and lock files.
-// Default is /opt/iba/sub2api/config; can be overridden by DATA_DIR env for testing.
+// Default is /opt/iba/sub2api; can be overridden by DATA_DIR env for testing.
 func GetDataDir() string {
 	if dir := os.Getenv("DATA_DIR"); dir != "" {
 		return dir
 	}
-	return "/opt/iba/sub2api/config"
+	return "/opt/iba/sub2api"
 }
 
 // GetConfigFilePath returns the full path to config.yaml
@@ -52,7 +52,7 @@ func GetConfigFilePath() string {
 
 // GetInstallLockPath returns the full path to .installed lock file
 func GetInstallLockPath() string {
-	return "/data/.installed"
+	return "/app/.installed"
 }
 
 // SetupConfig holds the setup configuration

@@ -1417,7 +1417,7 @@ func load(allowMissingJWTSecret bool) (*Config, error) {
 		viper.AddConfigPath(dataDir)
 	}
 	// 2. Primary data directory
-	viper.AddConfigPath("/opt/iba/sub2api/config")
+	viper.AddConfigPath("/opt/iba/sub2api")
 	// 3. Current directory
 	viper.AddConfigPath(".")
 	// 4. Config subdirectory
