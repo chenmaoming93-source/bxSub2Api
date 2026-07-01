@@ -468,6 +468,84 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (string
 	return token, user, nil
 }
 
+// LoginLDAP completes login after LDAP has verified the password. LDAP accounts
+// are keyed locally by directory username; a real email address is not required.
+// The legacy User.Email column remains the account-key column for compatibility.
+func (s *AuthService) LoginLDAP(ctx context.Context, account, displayName string) (string, *User, error) {
+	account = strings.TrimSpace(strings.ToLower(account))
+	if account == "" || len(account) > 255 {
+		logger.LegacyPrintf("service.auth", "[LDAP] authenticated directory user has no valid username")
+		return "", nil, ErrInvalidCredentials
+	}
+
+	user, err := s.userRepo.GetByEmail(ctx, account)
+	if err != nil && !errors.Is(err, ErrUserNotFound) {
+		logger.LegacyPrintf("service.auth", "[LDAP] database error during login: %v", err)
+		return "", nil, ErrServiceUnavailable
+	}
+	if errors.Is(err, ErrUserNotFound) {
+		if s.cfg == nil || !s.cfg.LDAP.AutoCreateUser {
+			return "", nil, ErrInvalidCredentials
+		}
+
+		randomPassword, randomErr := randomHexString(32)
+		if randomErr != nil {
+			return "", nil, ErrServiceUnavailable
+		}
+		hash, hashErr := s.HashPassword(randomPassword)
+		if hashErr != nil {
+			return "", nil, ErrServiceUnavailable
+		}
+		grantPlan := s.resolveSignupGrantPlan(ctx, "email")
+		var defaultRPMLimit int
+		if s.settingService != nil {
+			defaultRPMLimit = s.settingService.GetDefaultUserRPMLimit(ctx)
+		}
+		localUsername := strings.TrimSpace(displayName)
+		if localUsername == "" {
+			localUsername = account
+		}
+		if runes := []rune(localUsername); len(runes) > 100 {
+			localUsername = string(runes[:100])
+		}
+		user = &User{
+			Email:        account,
+			Username:     localUsername,
+			PasswordHash: hash,
+			Role:         RoleUser,
+			Balance:      grantPlan.Balance,
+			Concurrency:  grantPlan.Concurrency,
+			RPMLimit:     defaultRPMLimit,
+			Status:       StatusActive,
+			// Keep the existing constrained signup_source vocabulary; LDAP remains
+			// an authentication route rather than a new business grant source.
+			SignupSource: "email",
+		}
+		if createErr := s.userRepo.Create(ctx, user); createErr != nil {
+			// A concurrent first login may have created the same email already.
+			if existing, loadErr := s.userRepo.GetByEmail(ctx, account); loadErr == nil {
+				user = existing
+			} else {
+				logger.LegacyPrintf("service.auth", "[LDAP] failed to create local user: %v", createErr)
+				return "", nil, ErrServiceUnavailable
+			}
+		} else {
+			s.postAuthUserBootstrap(ctx, user, "email", false)
+			s.assignSubscriptions(ctx, user.ID, grantPlan.Subscriptions, "auto assigned by LDAP signup defaults")
+			_ = s.snapshotPlatformQuotaDefaults(ctx, user.ID, &grantPlan)
+		}
+	}
+
+	if !user.IsActive() {
+		return "", nil, ErrUserNotActive
+	}
+	token, err := s.GenerateToken(user)
+	if err != nil {
+		return "", nil, fmt.Errorf("generate token: %w", err)
+	}
+	return token, user, nil
+}
+
 // LoginOrRegisterOAuth 用于第三方 OAuth/SSO 登录：
 // - 如果邮箱已存在：直接登录（不需要本地密码）
 // - 如果邮箱不存在：创建新用户并登录

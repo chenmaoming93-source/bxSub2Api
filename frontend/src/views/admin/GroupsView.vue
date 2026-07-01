@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <AppLayout>
     <TablePageLayout>
       <template #filters>
@@ -1403,8 +1403,8 @@
           </p>
         </div>
 
-        <!-- 模型路由配置（仅 anthropic 平台） -->
-        <div v-if="createForm.platform === 'anthropic'" class="border-t pt-4">
+        <!-- 模型路由配置 -->
+        <div class="border-t pt-4">
           <div class="mb-1.5 flex items-center gap-1">
             <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
               {{ t("admin.groups.modelRouting.title") }}
@@ -2655,8 +2655,8 @@
           </p>
         </div>
 
-        <!-- 模型路由配置（仅 anthropic 平台） -->
-        <div v-if="editForm.platform === 'anthropic'" class="border-t pt-4">
+        <!-- 模型路由配置 -->
+        <div class="border-t pt-4">
           <div class="mb-1.5 flex items-center gap-1">
             <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
               {{ t("admin.groups.modelRouting.title") }}
@@ -3150,14 +3150,14 @@ const fallbackGroupOptionsForEdit = computed(() => {
   return options;
 });
 
-// 无效请求兜底分组选项（创建时）- 仅包含 anthropic 平台、非订阅且未配置兜底的分组
+// 无效请求兜底分组选项（创建时）- 仅包含同平台、非订阅且未配置兜底的分组
 const invalidRequestFallbackOptions = computed(() => {
   const options: { value: number | null; label: string }[] = [
     { value: null, label: t("admin.groups.invalidRequestFallback.noFallback") },
   ];
   const eligibleGroups = groups.value.filter(
     (g) =>
-      g.platform === "anthropic" &&
+      g.platform === createForm.platform &&
       g.status === "active" &&
       g.subscription_type !== "subscription" &&
       g.fallback_group_id_on_invalid_request === null,
@@ -3168,7 +3168,7 @@ const invalidRequestFallbackOptions = computed(() => {
   return options;
 });
 
-// 无效请求兜底分组选项（编辑时）- 排除自身
+// 无效请求兜底分组选项（编辑时）- 仅包含同平台、排除自身
 const invalidRequestFallbackOptionsForEdit = computed(() => {
   const options: { value: number | null; label: string }[] = [
     { value: null, label: t("admin.groups.invalidRequestFallback.noFallback") },
@@ -3176,7 +3176,7 @@ const invalidRequestFallbackOptionsForEdit = computed(() => {
   const currentId = editingGroup.value?.id;
   const eligibleGroups = groups.value.filter(
     (g) =>
-      g.platform === "anthropic" &&
+      g.platform === editForm.platform &&
       g.status === "active" &&
       g.subscription_type !== "subscription" &&
       g.fallback_group_id_on_invalid_request === null &&
@@ -3283,7 +3283,7 @@ const editModelsListSelectedCount = computed(
 const createForm = reactive({
   name: "",
   description: "",
-  platform: "anthropic" as GroupPlatform,
+  platform: "openai" as GroupPlatform,
   rate_multiplier: 1.0,
   is_exclusive: false,
   subscription_type: "standard" as SubscriptionType,
@@ -3409,6 +3409,8 @@ const clearAllAccountSearchState = () => {
   showAccountDropdown.value = {};
 };
 
+const accountSearchPlatform = ref<GroupPlatform>('anthropic');
+
 const accountSearchRunner = useKeyedDebouncedSearch<SimpleAccount[]>({
   delay: 300,
   search: async (keyword, { signal }) => {
@@ -3417,7 +3419,7 @@ const accountSearchRunner = useKeyedDebouncedSearch<SimpleAccount[]>({
       20,
       {
         search: keyword,
-        platform: "anthropic",
+        platform: accountSearchPlatform.value,
       },
       { signal },
     );
@@ -3431,8 +3433,8 @@ const accountSearchRunner = useKeyedDebouncedSearch<SimpleAccount[]>({
   },
 });
 
-// 搜索账号（仅限 anthropic 平台）
-const searchAccounts = (key: string) => {
+const searchAccounts = (key: string, platform: GroupPlatform) => {
+  accountSearchPlatform.value = platform;
   accountSearchRunner.trigger(key, accountSearchKeyword.value[key] || "");
 };
 
@@ -3440,7 +3442,8 @@ const searchAccountsByRule = (
   candidate: ModelRoutingCandidateForm,
   isEdit: boolean = false,
 ) => {
-  searchAccounts(getCandidateSearchKey(candidate, isEdit));
+  const platform = isEdit ? editForm.platform : createForm.platform;
+  searchAccounts(getCandidateSearchKey(candidate, isEdit), platform);
 };
 
 // 选择账号
@@ -3502,7 +3505,8 @@ const onAccountSearchFocus = (
   showAccountDropdown.value[key] = true;
   // 如果没有搜索结果，触发一次搜索
   if (!accountSearchResults.value[key]?.length) {
-    searchAccounts(key);
+    const platform = isEdit ? editForm.platform : createForm.platform;
+    searchAccounts(key, platform);
   }
 };
 
@@ -3707,7 +3711,7 @@ const validateRoutingForm = (rules: ModelRoutingRule[]): boolean => {
 const editForm = reactive({
   name: "",
   description: "",
-  platform: "anthropic" as GroupPlatform,
+  platform: "openai" as GroupPlatform,
   rate_multiplier: 1.0,
   is_exclusive: false,
   status: "active" as "active" | "inactive",
@@ -3962,7 +3966,7 @@ const closeCreateModal = () => {
   clearAllAccountSearchState();
   createForm.name = "";
   createForm.description = "";
-  createForm.platform = "anthropic";
+  createForm.platform = "openai";
   createForm.rate_multiplier = 1.0;
   createForm.is_exclusive = false;
   createForm.subscription_type = "standard";

@@ -1,4 +1,4 @@
-package service
+﻿package service
 
 import (
 	"context"
@@ -12,6 +12,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	dbent "github.com/Wei-Shaw/sub2api/ent"
@@ -557,6 +558,8 @@ type adminServiceImpl struct {
 	userSubRepo          UserSubscriptionRepository
 	privacyClientFactory PrivacyClientFactory
 	runtimeBlocker       AccountRuntimeBlocker
+
+	createGroupMu sync.Mutex
 }
 
 type userGroupRateBatchReader interface {
@@ -1789,6 +1792,9 @@ func defaultModelsListCandidateIDs(platform string) []string {
 }
 
 func (s *adminServiceImpl) CreateGroup(ctx context.Context, input *CreateGroupInput) (*Group, error) {
+	s.createGroupMu.Lock()
+	defer s.createGroupMu.Unlock()
+
 	if input.RateMultiplier <= 0 {
 		return nil, errors.New("rate_multiplier must be > 0")
 	}
@@ -1907,6 +1913,16 @@ func (s *adminServiceImpl) CreateGroup(ctx context.Context, input *CreateGroupIn
 		RPMLimit:                        input.RPMLimit,
 	}
 	sanitizeGroupMessagesDispatchFields(group)
+
+	// 检查名称是否已存在（排除已软删除的同名分组）
+	exists, err := s.groupRepo.ExistsByName(ctx, group.Name)
+	if err != nil {
+		return nil, fmt.Errorf("check group exists: %w", err)
+	}
+	if exists {
+		return nil, ErrGroupExists
+	}
+
 	if err := s.groupRepo.Create(ctx, group); err != nil {
 		return nil, err
 	}
