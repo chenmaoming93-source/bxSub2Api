@@ -242,6 +242,18 @@
               </button>
             </div>
 
+            <!-- Default Quota Button -->
+            <button @click="showDefaultQuotaModal = true" class="btn btn-secondary px-2 md:px-3" :title="t('admin.users.defaultQuota.button')">
+              <Icon name="cog" size="sm" class="md:mr-1.5" />
+              <span class="hidden md:inline">{{ t('admin.users.defaultQuota.button', '默认限额') }}</span>
+            </button>
+
+            <!-- Batch Quota Button -->
+            <button @click="showBatchQuotaModal = true" class="btn btn-secondary px-2 md:px-3" :title="t('admin.users.batchQuota.button')">
+              <Icon name="cog" size="sm" class="md:mr-1.5" />
+              <span class="hidden md:inline">{{ t('admin.users.batchQuota.button', '批量管理') }}</span>
+            </button>
+
             <!-- Create User Button (full width on mobile, auto width on desktop) -->
             <button @click="showCreateModal = true" class="btn btn-primary flex-1 md:flex-initial">
               <Icon name="plus" size="md" class="mr-2" />
@@ -752,6 +764,15 @@
       :user="modelTokenQuotaUser"
       @close="closeModelTokenQuotaModal"
     />
+    <DefaultModelTokenQuotaModal
+      :show="showDefaultQuotaModal"
+      @close="showDefaultQuotaModal = false"
+    />
+    <BatchModelTokenQuotaCard
+      :show="showBatchQuotaModal"
+      @close="showBatchQuotaModal = false"
+      @success="loadUsers"
+    />
     <UserApiKeysModal :show="showApiKeysModal" :user="viewingUser" @close="closeApiKeysModal" />
     <UserAllowedGroupsModal :show="showAllowedGroupsModal" :user="allowedGroupsUser" @close="closeAllowedGroupsModal" @success="loadUsers" />
     <UserBalanceModal :show="showBalanceModal" :user="balanceUser" :operation="balanceOperation" @close="closeBalanceModal" @success="loadUsers" />
@@ -794,6 +815,8 @@ import UserCreateModal from '@/components/admin/user/UserCreateModal.vue'
 import UserEditModal from '@/components/admin/user/UserEditModal.vue'
 import UserPlatformQuotaModal from '@/components/admin/user/UserPlatformQuotaModal.vue'
 import UserModelTokenQuotaModal from '@/components/admin/user/UserModelTokenQuotaModal.vue'
+import DefaultModelTokenQuotaModal from '@/components/admin/user/DefaultModelTokenQuotaModal.vue'
+import BatchModelTokenQuotaCard from '@/components/admin/user/BatchModelTokenQuotaCard.vue'
 import UserApiKeysModal from '@/components/admin/user/UserApiKeysModal.vue'
 import UserAllowedGroupsModal from '@/components/admin/user/UserAllowedGroupsModal.vue'
 import UserBalanceModal from '@/components/admin/user/UserBalanceModal.vue'
@@ -1291,6 +1314,8 @@ const showApiKeysModal = ref(false)
 const showAttributesModal = ref(false)
 const showPlatformQuotaModal = ref(false)
 const showModelTokenQuotaModal = ref(false)
+const showDefaultQuotaModal = ref(false)
+const showBatchQuotaModal = ref(false)
 const editingUser = ref<AdminUser | null>(null)
 const deletingUser = ref<AdminUser | null>(null)
 const viewingUser = ref<AdminUser | null>(null)

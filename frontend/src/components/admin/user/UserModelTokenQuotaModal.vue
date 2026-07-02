@@ -35,12 +35,14 @@ import { useI18n } from 'vue-i18n'
 import { adminAPI } from '@/api/admin'
 import type { ModelTokenQuotaUpdateItem, UserModelTokenQuotaItem } from '@/api/admin'
 import type { AdminUser } from '@/types'
+import { useAppStore } from '@/stores/app'
 import BaseDialog from '@/components/common/BaseDialog.vue'
 import Icon from '@/components/icons/Icon.vue'
 
 const props = defineProps<{ show: boolean; user: AdminUser | null }>()
 const emit = defineEmits(['close', 'success'])
 const { t } = useI18n()
+const appStore = useAppStore()
 
 interface QuotaRow {
   key: number
@@ -111,9 +113,13 @@ async function onSave() {
   try {
     const response = await adminAPI.modelTokenQuotas.updateUser(props.user.id, payload)
     rows.value = toRows(response.quotas || [])
+    appStore.showSuccess(t('admin.users.modelTokenQuota.saveSuccess', 'Model token quotas updated'))
     emit('success', response.quotas)
+    emit('close')
   } catch (error: any) {
-    errorMessage.value = error?.response?.data?.message || t('admin.users.modelTokenQuota.updateFailed', 'Failed to update model token limits')
+    const msg = error?.response?.data?.message || t('admin.users.modelTokenQuota.updateFailed', 'Failed to update model token limits')
+    errorMessage.value = msg
+    appStore.showError(msg)
   } finally {
     submitting.value = false
   }

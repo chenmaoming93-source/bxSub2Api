@@ -78,6 +78,29 @@ func (h *UserModelTokenQuotaHandler) Update(c *gin.Context) {
 	response.Success(c, gin.H{"quotas": userModelTokenQuotaResponses(records)})
 }
 
+type batchModelTokenQuotasRequest struct {
+	Operations []service.BatchModelTokenQuotaOperation `json:"operations" binding:"required"`
+}
+
+// Batch 对全体活跃用户批量执行模型 Token 限额操作（新增/修改/删除）。
+func (h *UserModelTokenQuotaHandler) Batch(c *gin.Context) {
+	var req batchModelTokenQuotasRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+	if len(req.Operations) == 0 {
+		response.BadRequest(c, "operations is required")
+		return
+	}
+	result, err := h.adminService.BatchApplyModelTokenQuotasToAllUsers(c.Request.Context(), req.Operations)
+	if err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+	response.Success(c, result)
+}
+
 func (h *UserModelTokenQuotaHandler) ensureUserExists(c *gin.Context, userID int64) bool {
 	if h == nil || h.service == nil {
 		response.Error(c, 503, "user model token quota service not available")

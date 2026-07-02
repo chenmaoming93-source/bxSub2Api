@@ -5029,3 +5029,59 @@ func mergePlatformQuotaDefaults(dst, src *DefaultPlatformQuotaSetting) {
 		dst.MonthlyLimitUSD = src.MonthlyLimitUSD
 	}
 }
+
+// GetDefaultUserModelTokenQuotas 读取新用户默认模型每日 Token 限额配置（JSON 数组）。
+// 容错语义：取值失败或 unmarshal 失败 → 返回空 slice（fail-open，用户创建不被阻断）。
+func (s *SettingService) GetDefaultUserModelTokenQuotas(ctx context.Context) ([]UserModelDailyTokenQuotaInput, error) {
+	raw, err := s.settingRepo.GetValue(ctx, SettingKeyDefaultUserModelTokenQuotas)
+	if err != nil || raw == "" {
+		return nil, nil // 无配置
+	}
+	var parsed []UserModelDailyTokenQuotaInput
+	if err := json.Unmarshal([]byte(raw), &parsed); err != nil {
+		// 向后兼容：json tag 修复前可能存的是 PascalCase 格式
+		slog.Warn("[Setting] unmarshal default_user_model_token_quotas failed, trying legacy format", "error", err)
+		var legacy []struct {
+			Model            string `json:"Model"`
+			DailyLimitTokens *int64 `json:"DailyLimitTokens"`
+		}
+		if err2 := json.Unmarshal([]byte(raw), &legacy); err2 != nil {
+			slog.Warn("[Setting] unmarshal default_user_model_token_quotas legacy format also failed (fail-open)", "error", err2)
+			return nil, nil
+		}
+		parsed = make([]UserModelDailyTokenQuotaInput, len(legacy))
+		for i, l := range legacy {
+			parsed[i] = UserModelDailyTokenQuotaInput{Model: l.Model, DailyLimitTokens: l.DailyLimitTokens}
+		}
+	}
+	return parsed, nil
+}
+
+// SetDefaultUserModelTokenQuotas 写入新用户默认模型每日 Token 限额配置。
+func (s *SettingService) SetDefaultUserModelTokenQuotas(ctx context.Context, inputs []UserModelDailyTokenQuotaInput) error {
+	if inputs == nil {
+		inputs = []UserModelDailyTokenQuotaInput{}
+	}
+	// 校验并去重
+	seen := make(map[string]struct{}, len(inputs))
+	clean := make([]UserModelDailyTokenQuotaInput, 0, len(inputs))
+	for _, input := range inputs {
+		model := strings.TrimSpace(input.Model)
+		if model == "" {
+			return fmt.Errorf("model is required")
+		}
+		if _, ok := seen[model]; ok {
+			return fmt.Errorf("duplicate model: %s", model)
+		}
+		seen[model] = struct{}{}
+		if input.DailyLimitTokens != nil && *input.DailyLimitTokens < 0 {
+			return fmt.Errorf("daily_limit_tokens must be >= 0 or null for model %s", model)
+		}
+		clean = append(clean, UserModelDailyTokenQuotaInput{Model: model, DailyLimitTokens: input.DailyLimitTokens})
+	}
+	blob, err := json.Marshal(clean)
+	if err != nil {
+		return fmt.Errorf("marshal default user model token quotas: %w", err)
+	}
+	return s.settingRepo.Set(ctx, SettingKeyDefaultUserModelTokenQuotas, string(blob))
+}

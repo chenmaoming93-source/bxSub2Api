@@ -31,6 +31,8 @@ type userRepository struct {
 	sql    sqlExecutor
 }
 
+const deletedUserLoginPrefix = "__deleted_user_"
+
 func NewUserRepository(client *dbent.Client, sqlDB *sql.DB) service.UserRepository {
 	return newUserRepositoryWithSQL(client, sqlDB)
 }
@@ -42,6 +44,9 @@ func newUserRepositoryWithSQL(client *dbent.Client, sqlq sqlExecutor) *userRepos
 func (r *userRepository) Create(ctx context.Context, userIn *service.User) error {
 	if userIn == nil {
 		return nil
+	}
+	if isDeletedUserLoginIdentifier(userIn.Email) {
+		return service.ErrEmailReserved
 	}
 
 	// 统一使用 ent 的事务：保证用户与允许分组的更新原子化，
@@ -180,6 +185,9 @@ func (r *userRepository) GetByEmail(ctx context.Context, email string) (*service
 func (r *userRepository) Update(ctx context.Context, userIn *service.User) error {
 	if userIn == nil {
 		return nil
+	}
+	if isDeletedUserLoginIdentifier(userIn.Email) {
+		return service.ErrEmailReserved
 	}
 
 	// 使用 ent 事务包裹用户更新与 allowed_groups 同步，避免跨层事务不一致。
@@ -390,6 +398,19 @@ func (r *userRepository) Delete(ctx context.Context, id int64) error {
 
 // deleteUser 在给定 client（可能是外部事务 client）上删除用户及其身份关联记录，自身不开启/提交事务。
 func (r *userRepository) deleteUser(ctx context.Context, exec *dbent.Client, id int64) error {
+	existing, err := exec.User.Query().
+		Where(dbuser.IDEQ(id)).
+		ForUpdate().
+		Only(ctx)
+	if err != nil {
+		return translatePersistenceError(err, service.ErrUserNotFound, nil)
+	}
+
+	archivedEmail := deletedUserLoginIdentifier(id, existing.Email)
+	if _, err := exec.User.UpdateOneID(id).SetEmail(archivedEmail).Save(ctx); err != nil {
+		return translatePersistenceError(err, service.ErrUserNotFound, service.ErrEmailExists)
+	}
+
 	identityIDs, err := exec.AuthIdentity.Query().
 		Where(authidentity.UserIDEQ(id)).
 		IDs(ctx)
@@ -862,6 +883,23 @@ func userEmailLookupPredicate(email string) predicate.User {
 
 func normalizeEmailLookupValue(email string) string {
 	return strings.ToLower(strings.TrimSpace(email))
+}
+
+func isDeletedUserLoginIdentifier(email string) bool {
+	return strings.HasPrefix(strings.ToLower(strings.TrimSpace(email)), deletedUserLoginPrefix)
+}
+
+func deletedUserLoginIdentifier(id int64, original string) string {
+	prefix := fmt.Sprintf("%s%d__", deletedUserLoginPrefix, id)
+	remaining := 255 - len([]rune(prefix))
+	if remaining <= 0 {
+		return string([]rune(prefix)[:255])
+	}
+	originalRunes := []rune(original)
+	if len(originalRunes) > remaining {
+		originalRunes = originalRunes[:remaining]
+	}
+	return prefix + string(originalRunes)
 }
 
 func normalizedEmailUniquenessLockKey(email string) string {

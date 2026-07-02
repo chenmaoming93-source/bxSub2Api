@@ -192,6 +192,19 @@ func (s *UserRepoSuite) TestDelete() {
 
 	_, err = s.repo.GetByID(s.ctx, user.ID)
 	s.Require().Error(err, "expected error after delete")
+
+	deleted, err := s.repo.GetByIDIncludeDeleted(s.ctx, user.ID)
+	s.Require().NoError(err)
+	s.Require().Equal(deletedUserLoginIdentifier(user.ID, "delete@test.com"), deleted.Email)
+
+	recreated := s.mustCreateUser(&service.User{Email: "delete@test.com"})
+	s.Require().NotEqual(user.ID, recreated.ID)
+}
+
+func (s *UserRepoSuite) TestCreateRejectsDeletedUserLoginPrefix() {
+	user := &service.User{Email: "  __DELETED_USER_123__old@test.com"}
+	err := s.repo.Create(s.ctx, user)
+	s.Require().ErrorIs(err, service.ErrEmailReserved)
 }
 
 func (s *UserRepoSuite) TestDeleteRemovesAuthIdentitiesAndChannels() {

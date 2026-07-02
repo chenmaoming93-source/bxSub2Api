@@ -2168,7 +2168,42 @@ export default {
         add: '添加模型',
         loadFailed: '加载模型 Token 限额失败',
         invalid: '模型不能为空或重复，限额必须是非负整数',
-        updateFailed: '保存模型 Token 限额失败'
+        updateFailed: '保存模型 Token 限额失败',
+        saveSuccess: '模型 Token 限额已更新'
+      },
+      defaultQuota: {
+        button: '默认限额',
+        title: '新用户默认模型每日 Token 限额',
+        description: '新用户创建时将自动继承以下模型 Token 限额配置',
+        model: '上游模型',
+        limit: '每日 Token 限额',
+        unlimited: '不限制',
+        add: '添加模型',
+        loadFailed: '加载默认限额失败',
+        invalid: '模型不能为空或重复，限额必须是非负整数',
+        updateFailed: '保存默认限额失败',
+        saveSuccess: '默认限额已更新'
+      },
+      batchQuota: {
+        button: '批量管理',
+        title: '批量管理全体用户模型 Token 限额',
+        description: '对全体活跃用户执行新增、修改或删除模型每日 Token 限额。每行操作独立执行，请注意确认后不可撤销。',
+        action: '操作',
+        create: '新增',
+        update: '修改',
+        delete: '删除',
+        model: '模型名',
+        limit: '每日 Token 限额',
+        unlimited: '不限制',
+        addRow: '添加行',
+        confirmTitle: '确认批量操作',
+        confirmMessage: '将对全体活跃用户执行 {ops} 项操作，确定继续？',
+        submitting: '执行中...',
+        submit: '执行',
+        success: '批量操作完成，影响 {count} 位用户',
+        failed: '批量操作失败',
+        invalid: '模型不能为空或重复，新增/修改时限额必须是非负整数',
+        deleteHint: '删除操作不需要填写限额'
       }
     },
 
@@ -2442,7 +2477,7 @@ export default {
         }
       },
       modelTokenQuota: {
-        menuItem: '模型 Token 限额',
+        menuItem: '模型全局token限额',
         title: '全局模型每日 Token 限额',
         model: '上游模型',
         limit: '每日 Token 限额',

@@ -465,6 +465,10 @@ const (
 // 值为 map[platform]{daily,weekly,monthly}，null/缺省 = 不限制；0 = 禁用；>0 = USD 上限。
 const SettingKeyDefaultPlatformQuotas = "default_platform_quotas"
 
+// SettingKeyDefaultUserModelTokenQuotas —— 新用户创建时自动继承的用户模型每日 Token 限额默认值（JSON 数组）。
+// 值为 [{"model":"gpt-4","daily_limit_tokens":100000},...]，daily_limit_tokens 为 null 表示不限制。
+const SettingKeyDefaultUserModelTokenQuotas = "default_user_model_token_quotas"
+
 // SettingKeyAuthSourcePlatformQuotas 返回某 auth source 的 platform quota JSON key。
 // 形如 auth_source_default_{source}_platform_quotas
 func SettingKeyAuthSourcePlatformQuotas(source string) string {

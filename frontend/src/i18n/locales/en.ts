@@ -2115,7 +2115,42 @@ export default {
         add: 'Add Model',
         loadFailed: 'Failed to load model token limits',
         invalid: 'Models must be unique and limits must be non-negative integers',
-        updateFailed: 'Failed to update model token limits'
+        updateFailed: 'Failed to update model token limits',
+        saveSuccess: 'Model token quotas updated'
+      },
+      defaultQuota: {
+        button: 'Default Quotas',
+        title: 'Default Model Daily Token Quotas for New Users',
+        description: 'New users will automatically inherit these model token quota settings',
+        model: 'Upstream Model',
+        limit: 'Daily Token Limit',
+        unlimited: 'Unlimited',
+        add: 'Add Model',
+        loadFailed: 'Failed to load default quotas',
+        invalid: 'Models must be unique and limits must be non-negative integers',
+        updateFailed: 'Failed to save default quotas',
+        saveSuccess: 'Default quotas updated'
+      },
+      batchQuota: {
+        button: 'Batch Manage',
+        title: 'Batch Manage User Model Token Quotas',
+        description: 'Create, update, or delete model daily token quotas for all active users. Each row is processed independently. This cannot be undone.',
+        action: 'Action',
+        create: 'Create',
+        update: 'Update',
+        delete: 'Delete',
+        model: 'Model',
+        limit: 'Daily Token Limit',
+        unlimited: 'Unlimited',
+        addRow: 'Add Row',
+        confirmTitle: 'Confirm Batch Operation',
+        confirmMessage: 'This will execute {ops} operations on all active users. Continue?',
+        submitting: 'Executing...',
+        submit: 'Execute',
+        success: 'Batch operation complete, {count} users affected',
+        failed: 'Batch operation failed',
+        invalid: 'Models must be unique and non-empty, limits must be non-negative for create/update',
+        deleteHint: 'No token limit needed for delete'
       }
     },
 

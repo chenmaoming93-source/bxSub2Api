@@ -69,13 +69,6 @@
               {{ t("admin.groups.sortOrder") }}
             </button>
             <button
-              @click="showGlobalModelTokenQuotaModal = true"
-              class="btn btn-secondary"
-            >
-              <Icon name="chartBar" size="md" class="mr-2" />
-              {{ t("admin.groups.modelTokenQuota.menuItem", "Model token limits") }}
-            </button>
-            <button
               @click="openCreateModal"
               class="btn btn-primary"
               data-tour="groups-create-btn"
@@ -399,6 +392,169 @@
             @change="createForm.copy_accounts_from_group_ids = []"
           />
           <p class="input-hint">{{ t("admin.groups.platformHint") }}</p>
+        </div>
+
+
+        <!-- 模型路由配置 -->
+        <div class="border-t pt-4">
+          <div class="mb-1.5 flex items-center gap-1">
+            <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+              {{ t("admin.groups.modelRouting.title") }}
+            </label>
+            <!-- Help Tooltip -->
+            <div class="group relative inline-flex">
+              <Icon
+                name="questionCircle"
+                size="sm"
+                :stroke-width="2"
+                class="cursor-help text-gray-400 transition-colors hover:text-primary-500 dark:text-gray-500 dark:hover:text-primary-400"
+              />
+              <div
+                class="pointer-events-none absolute bottom-full left-0 z-50 mb-2 w-80 opacity-0 transition-all duration-200 group-hover:pointer-events-auto group-hover:opacity-100"
+              >
+                <div
+                  class="rounded-lg bg-gray-900 p-3 text-white shadow-lg dark:bg-gray-800"
+                >
+                  <p class="text-xs leading-relaxed text-gray-300">
+                    {{ t("admin.groups.modelRouting.tooltip") }}
+                  </p>
+                  <div
+                    class="absolute -bottom-1.5 left-3 h-3 w-3 rotate-45 bg-gray-900 dark:bg-gray-800"
+                  ></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- 启用开关 -->
+          <div class="flex items-center gap-3 mb-3">
+            <button
+              type="button"
+              @click="
+                createForm.model_routing_enabled =
+                  !createForm.model_routing_enabled
+              "
+              :class="[
+                'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
+                createForm.model_routing_enabled
+                  ? 'bg-primary-500'
+                  : 'bg-gray-300 dark:bg-dark-600',
+              ]"
+            >
+              <span
+                :class="[
+                  'inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform',
+                  createForm.model_routing_enabled
+                    ? 'translate-x-6'
+                    : 'translate-x-1',
+                ]"
+              />
+            </button>
+            <span class="text-sm text-gray-500 dark:text-gray-400">
+              {{
+                createForm.model_routing_enabled
+                  ? t("admin.groups.modelRouting.enabled")
+                  : t("admin.groups.modelRouting.disabled")
+              }}
+            </span>
+          </div>
+          <p
+            v-if="!createForm.model_routing_enabled"
+            class="text-xs text-gray-500 dark:text-gray-400 mb-3"
+          >
+            {{ t("admin.groups.modelRouting.disabledHint") }}
+          </p>
+          <p v-else class="text-xs text-gray-500 dark:text-gray-400 mb-3">
+            {{ t("admin.groups.modelRouting.noRulesHint") }}
+          </p>
+          <!-- 路由规则列表（仅在启用时显示） -->
+          <div v-if="createForm.model_routing_enabled" class="space-y-3">
+            <div
+              v-for="rule in createModelRoutingRules"
+              :key="getCreateRuleRenderKey(rule)"
+              class="rounded-lg border border-gray-200 p-3 dark:border-dark-600"
+            >
+              <div class="flex items-start gap-3">
+                <div class="min-w-0 flex-1 space-y-3">
+                  <div>
+                    <label class="input-label text-xs">{{
+                      t("admin.groups.modelRouting.routeAlias", "Route alias")
+                    }}</label>
+                    <input
+                      v-model="rule.alias"
+                      type="text"
+                      class="input text-sm"
+                      :placeholder="
+                        t('admin.groups.modelRouting.routeAliasPlaceholder', 'e.g. coding-fast')
+                      "
+                    />
+                  </div>
+                  <div
+                    v-for="candidate in rule.candidates"
+                    :key="getCreateCandidateRenderKey(candidate)"
+                    class="relative space-y-2 rounded-md bg-gray-50 p-3 dark:bg-dark-700/50"
+                  >
+                    <div class="grid gap-2 md:grid-cols-3">
+                      <div>
+                        <label class="input-label text-xs">{{
+                          t("admin.groups.modelRouting.candidateModel", "Upstream model")
+                        }}</label>
+                        <input v-model="candidate.model" type="text" class="input text-sm" />
+                      </div>
+                      <div>
+                        <label class="input-label text-xs">{{
+                          t("admin.groups.modelRouting.priority", "Priority")
+                        }}</label>
+                        <input v-model.number="candidate.priority" type="number" min="0" step="1" class="input text-sm" />
+                      </div>
+                      <div>
+                        <label class="input-label text-xs">{{
+                          t("admin.groups.modelRouting.dailyTokenLimit", "Daily token limit")
+                        }}</label>
+                        <input v-model.number="candidate.daily_token_limit" type="number" min="0" step="1" class="input text-sm" :placeholder="t('admin.groups.modelRouting.unlimited', 'Unlimited')" />
+                      </div>
+                    </div>
+                    <div v-if="candidate.accounts.length > 0" class="mb-2 flex flex-wrap gap-1.5">
+                      <span v-for="account in candidate.accounts" :key="account.id" class="inline-flex items-center gap-1 rounded-full bg-primary-100 px-2.5 py-1 text-xs font-medium text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">
+                        {{ account.name }}
+                        <button type="button" @click="removeSelectedAccount(candidate, account.id)" class="ml-0.5 text-primary-500 hover:text-primary-700 dark:hover:text-primary-200"><Icon name="x" size="xs" /></button>
+                      </span>
+                    </div>
+                    <div class="relative account-search-container">
+                      <input v-model="accountSearchKeyword[getCreateCandidateSearchKey(candidate)]" type="text" class="input text-sm" :placeholder="t('admin.groups.modelRouting.searchAccountPlaceholder')" @input="searchAccountsByRule(candidate)" @focus="onAccountSearchFocus(candidate)" />
+                      <div v-if="showAccountDropdown[getCreateCandidateSearchKey(candidate)] && accountSearchResults[getCreateCandidateSearchKey(candidate)]?.length > 0" class="absolute z-50 mt-1 max-h-48 w-full overflow-auto rounded-lg border bg-white shadow-lg dark:border-dark-600 dark:bg-dark-800">
+                        <button v-for="account in accountSearchResults[getCreateCandidateSearchKey(candidate)]" :key="account.id" type="button" @click="selectAccount(candidate, account)" class="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-dark-700" :class="{ 'opacity-50': candidate.accounts.some((a) => a.id === account.id) }" :disabled="candidate.accounts.some((a) => a.id === account.id)">
+                          <span>{{ account.name }}</span><span class="ml-2 text-xs text-gray-400">#{{ account.id }}</span>
+                        </button>
+                      </div>
+                    </div>
+                    <p v-if="!candidate.model.trim() || candidate.accounts.length === 0 || !Number.isInteger(Number(candidate.priority)) || Number(candidate.priority) < 0 || (candidate.daily_token_limit !== null && candidate.daily_token_limit !== '' && (!Number.isInteger(Number(candidate.daily_token_limit)) || Number(candidate.daily_token_limit) < 0))" class="text-xs text-red-500">
+                      {{ t("admin.groups.modelRouting.candidateValidation", "Model, account, and non-negative integer values are required") }}
+                    </p>
+                    <button type="button" @click="removeRoutingCandidate(rule, candidate)" class="absolute right-2 top-2 p-1 text-gray-400 hover:text-red-500" :title="t('admin.groups.modelRouting.removeCandidate', 'Remove candidate')"><Icon name="x" size="xs" /></button>
+                  </div>
+                  <button type="button" @click="addRoutingCandidate(rule)" class="flex items-center gap-1 text-xs text-primary-600 hover:text-primary-700 dark:text-primary-400"><Icon name="plus" size="xs" />{{ t("admin.groups.modelRouting.addCandidate", "Add candidate") }}</button>
+                </div>
+                <button
+                  type="button"
+                  @click="removeCreateRoutingRule(rule)"
+                  class="mt-5 p-1.5 text-gray-400 hover:text-red-500 transition-colors"
+                  :title="t('admin.groups.modelRouting.removeRule')"
+                >
+                  <Icon name="trash" size="sm" />
+                </button>
+              </div>
+            </div>
+          </div>
+          <!-- 添加规则按钮（仅在启用时显示） -->
+          <button
+            v-if="createForm.model_routing_enabled"
+            type="button"
+            @click="addCreateRoutingRule"
+            class="mt-3 flex items-center gap-1.5 text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
+          >
+            <Icon name="plus" size="sm" />
+            {{ t("admin.groups.modelRouting.addRule") }}
+          </button>
         </div>
         <!-- 从分组复制账号 -->
         <div v-if="copyAccountsGroupOptions.length > 0">
@@ -1402,168 +1558,6 @@
             {{ t("admin.groups.invalidRequestFallback.hint") }}
           </p>
         </div>
-
-        <!-- 模型路由配置 -->
-        <div class="border-t pt-4">
-          <div class="mb-1.5 flex items-center gap-1">
-            <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
-              {{ t("admin.groups.modelRouting.title") }}
-            </label>
-            <!-- Help Tooltip -->
-            <div class="group relative inline-flex">
-              <Icon
-                name="questionCircle"
-                size="sm"
-                :stroke-width="2"
-                class="cursor-help text-gray-400 transition-colors hover:text-primary-500 dark:text-gray-500 dark:hover:text-primary-400"
-              />
-              <div
-                class="pointer-events-none absolute bottom-full left-0 z-50 mb-2 w-80 opacity-0 transition-all duration-200 group-hover:pointer-events-auto group-hover:opacity-100"
-              >
-                <div
-                  class="rounded-lg bg-gray-900 p-3 text-white shadow-lg dark:bg-gray-800"
-                >
-                  <p class="text-xs leading-relaxed text-gray-300">
-                    {{ t("admin.groups.modelRouting.tooltip") }}
-                  </p>
-                  <div
-                    class="absolute -bottom-1.5 left-3 h-3 w-3 rotate-45 bg-gray-900 dark:bg-gray-800"
-                  ></div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <!-- 启用开关 -->
-          <div class="flex items-center gap-3 mb-3">
-            <button
-              type="button"
-              @click="
-                createForm.model_routing_enabled =
-                  !createForm.model_routing_enabled
-              "
-              :class="[
-                'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
-                createForm.model_routing_enabled
-                  ? 'bg-primary-500'
-                  : 'bg-gray-300 dark:bg-dark-600',
-              ]"
-            >
-              <span
-                :class="[
-                  'inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform',
-                  createForm.model_routing_enabled
-                    ? 'translate-x-6'
-                    : 'translate-x-1',
-                ]"
-              />
-            </button>
-            <span class="text-sm text-gray-500 dark:text-gray-400">
-              {{
-                createForm.model_routing_enabled
-                  ? t("admin.groups.modelRouting.enabled")
-                  : t("admin.groups.modelRouting.disabled")
-              }}
-            </span>
-          </div>
-          <p
-            v-if="!createForm.model_routing_enabled"
-            class="text-xs text-gray-500 dark:text-gray-400 mb-3"
-          >
-            {{ t("admin.groups.modelRouting.disabledHint") }}
-          </p>
-          <p v-else class="text-xs text-gray-500 dark:text-gray-400 mb-3">
-            {{ t("admin.groups.modelRouting.noRulesHint") }}
-          </p>
-          <!-- 路由规则列表（仅在启用时显示） -->
-          <div v-if="createForm.model_routing_enabled" class="space-y-3">
-            <div
-              v-for="rule in createModelRoutingRules"
-              :key="getCreateRuleRenderKey(rule)"
-              class="rounded-lg border border-gray-200 p-3 dark:border-dark-600"
-            >
-              <div class="flex items-start gap-3">
-                <div class="min-w-0 flex-1 space-y-3">
-                  <div>
-                    <label class="input-label text-xs">{{
-                      t("admin.groups.modelRouting.routeAlias", "Route alias")
-                    }}</label>
-                    <input
-                      v-model="rule.alias"
-                      type="text"
-                      class="input text-sm"
-                      :placeholder="
-                        t('admin.groups.modelRouting.routeAliasPlaceholder', 'e.g. coding-fast')
-                      "
-                    />
-                  </div>
-                  <div
-                    v-for="candidate in rule.candidates"
-                    :key="getCreateCandidateRenderKey(candidate)"
-                    class="relative space-y-2 rounded-md bg-gray-50 p-3 dark:bg-dark-700/50"
-                  >
-                    <div class="grid gap-2 md:grid-cols-3">
-                      <div>
-                        <label class="input-label text-xs">{{
-                          t("admin.groups.modelRouting.candidateModel", "Upstream model")
-                        }}</label>
-                        <input v-model="candidate.model" type="text" class="input text-sm" />
-                      </div>
-                      <div>
-                        <label class="input-label text-xs">{{
-                          t("admin.groups.modelRouting.priority", "Priority")
-                        }}</label>
-                        <input v-model.number="candidate.priority" type="number" min="0" step="1" class="input text-sm" />
-                      </div>
-                      <div>
-                        <label class="input-label text-xs">{{
-                          t("admin.groups.modelRouting.dailyTokenLimit", "Daily token limit")
-                        }}</label>
-                        <input v-model.number="candidate.daily_token_limit" type="number" min="0" step="1" class="input text-sm" :placeholder="t('admin.groups.modelRouting.unlimited', 'Unlimited')" />
-                      </div>
-                    </div>
-                    <div v-if="candidate.accounts.length > 0" class="mb-2 flex flex-wrap gap-1.5">
-                      <span v-for="account in candidate.accounts" :key="account.id" class="inline-flex items-center gap-1 rounded-full bg-primary-100 px-2.5 py-1 text-xs font-medium text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">
-                        {{ account.name }}
-                        <button type="button" @click="removeSelectedAccount(candidate, account.id)" class="ml-0.5 text-primary-500 hover:text-primary-700 dark:hover:text-primary-200"><Icon name="x" size="xs" /></button>
-                      </span>
-                    </div>
-                    <div class="relative account-search-container">
-                      <input v-model="accountSearchKeyword[getCreateCandidateSearchKey(candidate)]" type="text" class="input text-sm" :placeholder="t('admin.groups.modelRouting.searchAccountPlaceholder')" @input="searchAccountsByRule(candidate)" @focus="onAccountSearchFocus(candidate)" />
-                      <div v-if="showAccountDropdown[getCreateCandidateSearchKey(candidate)] && accountSearchResults[getCreateCandidateSearchKey(candidate)]?.length > 0" class="absolute z-50 mt-1 max-h-48 w-full overflow-auto rounded-lg border bg-white shadow-lg dark:border-dark-600 dark:bg-dark-800">
-                        <button v-for="account in accountSearchResults[getCreateCandidateSearchKey(candidate)]" :key="account.id" type="button" @click="selectAccount(candidate, account)" class="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-dark-700" :class="{ 'opacity-50': candidate.accounts.some((a) => a.id === account.id) }" :disabled="candidate.accounts.some((a) => a.id === account.id)">
-                          <span>{{ account.name }}</span><span class="ml-2 text-xs text-gray-400">#{{ account.id }}</span>
-                        </button>
-                      </div>
-                    </div>
-                    <p v-if="!candidate.model.trim() || candidate.accounts.length === 0 || !Number.isInteger(Number(candidate.priority)) || Number(candidate.priority) < 0 || (candidate.daily_token_limit !== null && candidate.daily_token_limit !== '' && (!Number.isInteger(Number(candidate.daily_token_limit)) || Number(candidate.daily_token_limit) < 0))" class="text-xs text-red-500">
-                      {{ t("admin.groups.modelRouting.candidateValidation", "Model, account, and non-negative integer values are required") }}
-                    </p>
-                    <button type="button" @click="removeRoutingCandidate(rule, candidate)" class="absolute right-2 top-2 p-1 text-gray-400 hover:text-red-500" :title="t('admin.groups.modelRouting.removeCandidate', 'Remove candidate')"><Icon name="x" size="xs" /></button>
-                  </div>
-                  <button type="button" @click="addRoutingCandidate(rule)" class="flex items-center gap-1 text-xs text-primary-600 hover:text-primary-700 dark:text-primary-400"><Icon name="plus" size="xs" />{{ t("admin.groups.modelRouting.addCandidate", "Add candidate") }}</button>
-                </div>
-                <button
-                  type="button"
-                  @click="removeCreateRoutingRule(rule)"
-                  class="mt-5 p-1.5 text-gray-400 hover:text-red-500 transition-colors"
-                  :title="t('admin.groups.modelRouting.removeRule')"
-                >
-                  <Icon name="trash" size="sm" />
-                </button>
-              </div>
-            </div>
-          </div>
-          <!-- 添加规则按钮（仅在启用时显示） -->
-          <button
-            v-if="createForm.model_routing_enabled"
-            type="button"
-            @click="addCreateRoutingRule"
-            class="mt-3 flex items-center gap-1.5 text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
-          >
-            <Icon name="plus" size="sm" />
-            {{ t("admin.groups.modelRouting.addRule") }}
-          </button>
-        </div>
       </form>
 
       <template #footer>
@@ -1652,6 +1646,162 @@
             data-tour="group-form-platform"
           />
           <p class="input-hint">{{ t("admin.groups.platformNotEditable") }}</p>
+        </div>
+
+
+        <!-- 模型路由配置 -->
+        <div class="border-t pt-4">
+          <div class="mb-1.5 flex items-center gap-1">
+            <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+              {{ t("admin.groups.modelRouting.title") }}
+            </label>
+            <!-- Help Tooltip -->
+            <div class="group relative inline-flex">
+              <Icon
+                name="questionCircle"
+                size="sm"
+                :stroke-width="2"
+                class="cursor-help text-gray-400 transition-colors hover:text-primary-500 dark:text-gray-500 dark:hover:text-primary-400"
+              />
+              <div
+                class="pointer-events-none absolute bottom-full left-0 z-50 mb-2 w-80 opacity-0 transition-all duration-200 group-hover:pointer-events-auto group-hover:opacity-100"
+              >
+                <div
+                  class="rounded-lg bg-gray-900 p-3 text-white shadow-lg dark:bg-gray-800"
+                >
+                  <p class="text-xs leading-relaxed text-gray-300">
+                    {{ t("admin.groups.modelRouting.tooltip") }}
+                  </p>
+                  <div
+                    class="absolute -bottom-1.5 left-3 h-3 w-3 rotate-45 bg-gray-900 dark:bg-gray-800"
+                  ></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- 启用开关 -->
+          <div class="flex items-center gap-3 mb-3">
+            <button
+              type="button"
+              @click="
+                editForm.model_routing_enabled = !editForm.model_routing_enabled
+              "
+              :class="[
+                'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
+                editForm.model_routing_enabled
+                  ? 'bg-primary-500'
+                  : 'bg-gray-300 dark:bg-dark-600',
+              ]"
+            >
+              <span
+                :class="[
+                  'inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform',
+                  editForm.model_routing_enabled
+                    ? 'translate-x-6'
+                    : 'translate-x-1',
+                ]"
+              />
+            </button>
+            <span class="text-sm text-gray-500 dark:text-gray-400">
+              {{
+                editForm.model_routing_enabled
+                  ? t("admin.groups.modelRouting.enabled")
+                  : t("admin.groups.modelRouting.disabled")
+              }}
+            </span>
+          </div>
+          <p
+            v-if="!editForm.model_routing_enabled"
+            class="text-xs text-gray-500 dark:text-gray-400 mb-3"
+          >
+            {{ t("admin.groups.modelRouting.disabledHint") }}
+          </p>
+          <p v-else class="text-xs text-gray-500 dark:text-gray-400 mb-3">
+            {{ t("admin.groups.modelRouting.noRulesHint") }}
+          </p>
+          <!-- 路由规则列表（仅在启用时显示） -->
+          <div v-if="editForm.model_routing_enabled" class="space-y-3">
+            <div
+              v-for="rule in editModelRoutingRules"
+              :key="getEditRuleRenderKey(rule)"
+              class="rounded-lg border border-gray-200 p-3 dark:border-dark-600"
+            >
+              <div class="flex items-start gap-3">
+                <div class="min-w-0 flex-1 space-y-3">
+                  <div>
+                    <label class="input-label text-xs">{{
+                      t("admin.groups.modelRouting.routeAlias", "Route alias")
+                    }}</label>
+                    <input
+                      v-model="rule.alias"
+                      type="text"
+                      class="input text-sm"
+                      :placeholder="
+                        t('admin.groups.modelRouting.routeAliasPlaceholder', 'e.g. coding-fast')
+                      "
+                    />
+                  </div>
+                  <div
+                    v-for="candidate in rule.candidates"
+                    :key="getEditCandidateRenderKey(candidate)"
+                    class="relative space-y-2 rounded-md bg-gray-50 p-3 dark:bg-dark-700/50"
+                  >
+                    <div class="grid gap-2 md:grid-cols-3">
+                      <div>
+                        <label class="input-label text-xs">{{ t("admin.groups.modelRouting.candidateModel", "Upstream model") }}</label>
+                        <input v-model="candidate.model" type="text" class="input text-sm" />
+                      </div>
+                      <div>
+                        <label class="input-label text-xs">{{ t("admin.groups.modelRouting.priority", "Priority") }}</label>
+                        <input v-model.number="candidate.priority" type="number" min="0" step="1" class="input text-sm" />
+                      </div>
+                      <div>
+                        <label class="input-label text-xs">{{ t("admin.groups.modelRouting.dailyTokenLimit", "Daily token limit") }}</label>
+                        <input v-model.number="candidate.daily_token_limit" type="number" min="0" step="1" class="input text-sm" :placeholder="t('admin.groups.modelRouting.unlimited', 'Unlimited')" />
+                      </div>
+                    </div>
+                    <div v-if="candidate.accounts.length > 0" class="mb-2 flex flex-wrap gap-1.5">
+                      <span v-for="account in candidate.accounts" :key="account.id" class="inline-flex items-center gap-1 rounded-full bg-primary-100 px-2.5 py-1 text-xs font-medium text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">
+                        {{ account.name }}
+                        <button type="button" @click="removeSelectedAccount(candidate, account.id, true)" class="ml-0.5 text-primary-500 hover:text-primary-700 dark:hover:text-primary-200"><Icon name="x" size="xs" /></button>
+                      </span>
+                    </div>
+                    <div class="relative account-search-container">
+                      <input v-model="accountSearchKeyword[getEditCandidateSearchKey(candidate)]" type="text" class="input text-sm" :placeholder="t('admin.groups.modelRouting.searchAccountPlaceholder')" @input="searchAccountsByRule(candidate, true)" @focus="onAccountSearchFocus(candidate, true)" />
+                      <div v-if="showAccountDropdown[getEditCandidateSearchKey(candidate)] && accountSearchResults[getEditCandidateSearchKey(candidate)]?.length > 0" class="absolute z-50 mt-1 max-h-48 w-full overflow-auto rounded-lg border bg-white shadow-lg dark:border-dark-600 dark:bg-dark-800">
+                        <button v-for="account in accountSearchResults[getEditCandidateSearchKey(candidate)]" :key="account.id" type="button" @click="selectAccount(candidate, account, true)" class="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-dark-700" :class="{ 'opacity-50': candidate.accounts.some((a) => a.id === account.id) }" :disabled="candidate.accounts.some((a) => a.id === account.id)">
+                          <span>{{ account.name }}</span><span class="ml-2 text-xs text-gray-400">#{{ account.id }}</span>
+                        </button>
+                      </div>
+                    </div>
+                    <p v-if="!candidate.model.trim() || candidate.accounts.length === 0 || !Number.isInteger(Number(candidate.priority)) || Number(candidate.priority) < 0 || (candidate.daily_token_limit !== null && candidate.daily_token_limit !== '' && (!Number.isInteger(Number(candidate.daily_token_limit)) || Number(candidate.daily_token_limit) < 0))" class="text-xs text-red-500">
+                      {{ t("admin.groups.modelRouting.candidateValidation", "Model, account, and non-negative integer values are required") }}
+                    </p>
+                    <button type="button" @click="removeRoutingCandidate(rule, candidate, true)" class="absolute right-2 top-2 p-1 text-gray-400 hover:text-red-500" :title="t('admin.groups.modelRouting.removeCandidate', 'Remove candidate')"><Icon name="x" size="xs" /></button>
+                  </div>
+                  <button type="button" @click="addRoutingCandidate(rule)" class="flex items-center gap-1 text-xs text-primary-600 hover:text-primary-700 dark:text-primary-400"><Icon name="plus" size="xs" />{{ t("admin.groups.modelRouting.addCandidate", "Add candidate") }}</button>
+                </div>
+                <button
+                  type="button"
+                  @click="removeEditRoutingRule(rule)"
+                  class="mt-5 p-1.5 text-gray-400 hover:text-red-500 transition-colors"
+                  :title="t('admin.groups.modelRouting.removeRule')"
+                >
+                  <Icon name="trash" size="sm" />
+                </button>
+              </div>
+            </div>
+          </div>
+          <!-- 添加规则按钮（仅在启用时显示） -->
+          <button
+            v-if="editForm.model_routing_enabled"
+            type="button"
+            @click="addEditRoutingRule"
+            class="mt-3 flex items-center gap-1.5 text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
+          >
+            <Icon name="plus" size="sm" />
+            {{ t("admin.groups.modelRouting.addRule") }}
+          </button>
         </div>
         <!-- 从分组复制账号（编辑时） -->
         <div v-if="copyAccountsGroupOptionsForEdit.length > 0">
@@ -2654,161 +2804,6 @@
             {{ t("admin.groups.invalidRequestFallback.hint") }}
           </p>
         </div>
-
-        <!-- 模型路由配置 -->
-        <div class="border-t pt-4">
-          <div class="mb-1.5 flex items-center gap-1">
-            <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
-              {{ t("admin.groups.modelRouting.title") }}
-            </label>
-            <!-- Help Tooltip -->
-            <div class="group relative inline-flex">
-              <Icon
-                name="questionCircle"
-                size="sm"
-                :stroke-width="2"
-                class="cursor-help text-gray-400 transition-colors hover:text-primary-500 dark:text-gray-500 dark:hover:text-primary-400"
-              />
-              <div
-                class="pointer-events-none absolute bottom-full left-0 z-50 mb-2 w-80 opacity-0 transition-all duration-200 group-hover:pointer-events-auto group-hover:opacity-100"
-              >
-                <div
-                  class="rounded-lg bg-gray-900 p-3 text-white shadow-lg dark:bg-gray-800"
-                >
-                  <p class="text-xs leading-relaxed text-gray-300">
-                    {{ t("admin.groups.modelRouting.tooltip") }}
-                  </p>
-                  <div
-                    class="absolute -bottom-1.5 left-3 h-3 w-3 rotate-45 bg-gray-900 dark:bg-gray-800"
-                  ></div>
-                </div>
-              </div>
-            </div>
-          </div>
-          <!-- 启用开关 -->
-          <div class="flex items-center gap-3 mb-3">
-            <button
-              type="button"
-              @click="
-                editForm.model_routing_enabled = !editForm.model_routing_enabled
-              "
-              :class="[
-                'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
-                editForm.model_routing_enabled
-                  ? 'bg-primary-500'
-                  : 'bg-gray-300 dark:bg-dark-600',
-              ]"
-            >
-              <span
-                :class="[
-                  'inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform',
-                  editForm.model_routing_enabled
-                    ? 'translate-x-6'
-                    : 'translate-x-1',
-                ]"
-              />
-            </button>
-            <span class="text-sm text-gray-500 dark:text-gray-400">
-              {{
-                editForm.model_routing_enabled
-                  ? t("admin.groups.modelRouting.enabled")
-                  : t("admin.groups.modelRouting.disabled")
-              }}
-            </span>
-          </div>
-          <p
-            v-if="!editForm.model_routing_enabled"
-            class="text-xs text-gray-500 dark:text-gray-400 mb-3"
-          >
-            {{ t("admin.groups.modelRouting.disabledHint") }}
-          </p>
-          <p v-else class="text-xs text-gray-500 dark:text-gray-400 mb-3">
-            {{ t("admin.groups.modelRouting.noRulesHint") }}
-          </p>
-          <!-- 路由规则列表（仅在启用时显示） -->
-          <div v-if="editForm.model_routing_enabled" class="space-y-3">
-            <div
-              v-for="rule in editModelRoutingRules"
-              :key="getEditRuleRenderKey(rule)"
-              class="rounded-lg border border-gray-200 p-3 dark:border-dark-600"
-            >
-              <div class="flex items-start gap-3">
-                <div class="min-w-0 flex-1 space-y-3">
-                  <div>
-                    <label class="input-label text-xs">{{
-                      t("admin.groups.modelRouting.routeAlias", "Route alias")
-                    }}</label>
-                    <input
-                      v-model="rule.alias"
-                      type="text"
-                      class="input text-sm"
-                      :placeholder="
-                        t('admin.groups.modelRouting.routeAliasPlaceholder', 'e.g. coding-fast')
-                      "
-                    />
-                  </div>
-                  <div
-                    v-for="candidate in rule.candidates"
-                    :key="getEditCandidateRenderKey(candidate)"
-                    class="relative space-y-2 rounded-md bg-gray-50 p-3 dark:bg-dark-700/50"
-                  >
-                    <div class="grid gap-2 md:grid-cols-3">
-                      <div>
-                        <label class="input-label text-xs">{{ t("admin.groups.modelRouting.candidateModel", "Upstream model") }}</label>
-                        <input v-model="candidate.model" type="text" class="input text-sm" />
-                      </div>
-                      <div>
-                        <label class="input-label text-xs">{{ t("admin.groups.modelRouting.priority", "Priority") }}</label>
-                        <input v-model.number="candidate.priority" type="number" min="0" step="1" class="input text-sm" />
-                      </div>
-                      <div>
-                        <label class="input-label text-xs">{{ t("admin.groups.modelRouting.dailyTokenLimit", "Daily token limit") }}</label>
-                        <input v-model.number="candidate.daily_token_limit" type="number" min="0" step="1" class="input text-sm" :placeholder="t('admin.groups.modelRouting.unlimited', 'Unlimited')" />
-                      </div>
-                    </div>
-                    <div v-if="candidate.accounts.length > 0" class="mb-2 flex flex-wrap gap-1.5">
-                      <span v-for="account in candidate.accounts" :key="account.id" class="inline-flex items-center gap-1 rounded-full bg-primary-100 px-2.5 py-1 text-xs font-medium text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">
-                        {{ account.name }}
-                        <button type="button" @click="removeSelectedAccount(candidate, account.id, true)" class="ml-0.5 text-primary-500 hover:text-primary-700 dark:hover:text-primary-200"><Icon name="x" size="xs" /></button>
-                      </span>
-                    </div>
-                    <div class="relative account-search-container">
-                      <input v-model="accountSearchKeyword[getEditCandidateSearchKey(candidate)]" type="text" class="input text-sm" :placeholder="t('admin.groups.modelRouting.searchAccountPlaceholder')" @input="searchAccountsByRule(candidate, true)" @focus="onAccountSearchFocus(candidate, true)" />
-                      <div v-if="showAccountDropdown[getEditCandidateSearchKey(candidate)] && accountSearchResults[getEditCandidateSearchKey(candidate)]?.length > 0" class="absolute z-50 mt-1 max-h-48 w-full overflow-auto rounded-lg border bg-white shadow-lg dark:border-dark-600 dark:bg-dark-800">
-                        <button v-for="account in accountSearchResults[getEditCandidateSearchKey(candidate)]" :key="account.id" type="button" @click="selectAccount(candidate, account, true)" class="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-dark-700" :class="{ 'opacity-50': candidate.accounts.some((a) => a.id === account.id) }" :disabled="candidate.accounts.some((a) => a.id === account.id)">
-                          <span>{{ account.name }}</span><span class="ml-2 text-xs text-gray-400">#{{ account.id }}</span>
-                        </button>
-                      </div>
-                    </div>
-                    <p v-if="!candidate.model.trim() || candidate.accounts.length === 0 || !Number.isInteger(Number(candidate.priority)) || Number(candidate.priority) < 0 || (candidate.daily_token_limit !== null && candidate.daily_token_limit !== '' && (!Number.isInteger(Number(candidate.daily_token_limit)) || Number(candidate.daily_token_limit) < 0))" class="text-xs text-red-500">
-                      {{ t("admin.groups.modelRouting.candidateValidation", "Model, account, and non-negative integer values are required") }}
-                    </p>
-                    <button type="button" @click="removeRoutingCandidate(rule, candidate, true)" class="absolute right-2 top-2 p-1 text-gray-400 hover:text-red-500" :title="t('admin.groups.modelRouting.removeCandidate', 'Remove candidate')"><Icon name="x" size="xs" /></button>
-                  </div>
-                  <button type="button" @click="addRoutingCandidate(rule)" class="flex items-center gap-1 text-xs text-primary-600 hover:text-primary-700 dark:text-primary-400"><Icon name="plus" size="xs" />{{ t("admin.groups.modelRouting.addCandidate", "Add candidate") }}</button>
-                </div>
-                <button
-                  type="button"
-                  @click="removeEditRoutingRule(rule)"
-                  class="mt-5 p-1.5 text-gray-400 hover:text-red-500 transition-colors"
-                  :title="t('admin.groups.modelRouting.removeRule')"
-                >
-                  <Icon name="trash" size="sm" />
-                </button>
-              </div>
-            </div>
-          </div>
-          <!-- 添加规则按钮（仅在启用时显示） -->
-          <button
-            v-if="editForm.model_routing_enabled"
-            type="button"
-            @click="addEditRoutingRule"
-            class="mt-3 flex items-center gap-1.5 text-sm text-primary-600 hover:text-primary-700 dark:text-primary-400 dark:hover:text-primary-300"
-          >
-            <Icon name="plus" size="sm" />
-            {{ t("admin.groups.modelRouting.addRule") }}
-          </button>
-        </div>
       </form>
 
       <template #footer>
@@ -2970,11 +2965,6 @@
       @close="showRPMOverridesModal = false"
       @success="loadGroups"
     />
-
-    <GlobalModelTokenQuotaModal
-      :show="showGlobalModelTokenQuotaModal"
-      @close="showGlobalModelTokenQuotaModal = false"
-    />
   </AppLayout>
 </template>
 
@@ -3005,7 +2995,6 @@ import PlatformIcon from "@/components/common/PlatformIcon.vue";
 import Icon from "@/components/icons/Icon.vue";
 import GroupRateMultipliersModal from "@/components/admin/group/GroupRateMultipliersModal.vue";
 import GroupRPMOverridesModal from "@/components/admin/group/GroupRPMOverridesModal.vue";
-import GlobalModelTokenQuotaModal from "@/components/admin/group/GlobalModelTokenQuotaModal.vue";
 import GroupCapacityBadge from "@/components/common/GroupCapacityBadge.vue";
 import { VueDraggable } from "vue-draggable-plus";
 import { createStableObjectKeyResolver } from "@/utils/stableObjectKey";
@@ -3263,7 +3252,6 @@ const deletingGroup = ref<AdminGroup | null>(null);
 const showRateMultipliersModal = ref(false);
 const rateMultipliersGroup = ref<AdminGroup | null>(null);
 const showRPMOverridesModal = ref(false);
-const showGlobalModelTokenQuotaModal = ref(false);
 const rpmOverridesGroup = ref<AdminGroup | null>(null);
 const sortableGroups = ref<AdminGroup[]>([]);
 const createMessagesDispatchDefaults = createDefaultMessagesDispatchFormState();

@@ -297,6 +297,15 @@ func (r *dailyTokenQuotaRepository) UpsertUserModelDailyTokenQuotas(ctx context.
 	return r.ListUserModelDailyTokenQuotas(ctx, userID, at)
 }
 
+func (r *dailyTokenQuotaRepository) DeleteUserModelTokenQuotaByModel(ctx context.Context, userID int64, model string) error {
+	_, err := r.client.UserModelTokenDailyLimitConfig.Delete().
+		Where(usermodeltokendailylimitconfig.UserIDEQ(userID), usermodeltokendailylimitconfig.ModelEQ(model)).Exec(ctx)
+	if err != nil {
+		return fmt.Errorf("delete user model daily token config by model: %w", err)
+	}
+	return nil
+}
+
 // ─── Increment (atomic usage write) ──────────────────────────────────
 
 func (r *dailyTokenQuotaRepository) IncrementDailyTokenQuotas(ctx context.Context, increment service.DailyTokenQuotaIncrement) error {

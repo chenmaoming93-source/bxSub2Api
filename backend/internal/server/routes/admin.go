@@ -271,6 +271,7 @@ func registerUserManagementRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
 		users.POST("/:id/platform-quotas/reset", h.Admin.User.ResetUserPlatformQuotaWindow)
 		users.GET("/:id/model-token-quotas", h.Admin.UserModelTokenQuota.List)
 		users.PUT("/:id/model-token-quotas", h.Admin.UserModelTokenQuota.Update)
+		users.POST("/model-token-quotas/batch", h.Admin.UserModelTokenQuota.Batch)
 
 		// User attribute values
 		users.GET("/:id/attributes", h.Admin.UserAttribute.GetUserAttributes)
@@ -482,6 +483,9 @@ func registerSettingsRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
 		adminSettings.PUT("/web-search-emulation", h.Admin.Setting.UpdateWebSearchEmulationConfig)
 		adminSettings.POST("/web-search-emulation/test", h.Admin.Setting.TestWebSearchEmulation)
 		adminSettings.POST("/web-search-emulation/reset-usage", h.Admin.Setting.ResetWebSearchUsage)
+		// 新用户默认模型 Token 限额
+		adminSettings.GET("/default-model-token-quotas", h.Admin.Setting.GetDefaultModelTokenQuotas)
+		adminSettings.PUT("/default-model-token-quotas", h.Admin.Setting.UpdateDefaultModelTokenQuotas)
 	}
 }
 

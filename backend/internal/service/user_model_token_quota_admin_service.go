@@ -34,9 +34,6 @@ func (s *UserModelTokenQuotaAdminService) Upsert(ctx context.Context, userID int
 	if userID <= 0 {
 		return nil, fmt.Errorf("user_id must be positive")
 	}
-	if len(inputs) == 0 {
-		return nil, fmt.Errorf("quotas is required")
-	}
 	seen := make(map[string]struct{}, len(inputs))
 	clean := make([]UserModelDailyTokenQuotaInput, 0, len(inputs))
 	for _, input := range inputs {

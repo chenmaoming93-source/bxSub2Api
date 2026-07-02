@@ -68,8 +68,22 @@ type UserModelDailyTokenQuotaRecord struct {
 }
 
 type UserModelDailyTokenQuotaInput struct {
-	Model            string
-	DailyLimitTokens *int64
+	Model            string `json:"model"`
+	DailyLimitTokens *int64 `json:"daily_limit_tokens"`
+}
+
+// BatchModelTokenQuotaOperation 批量操作用户模型 Token 限额的单条指令。
+type BatchModelTokenQuotaOperation struct {
+	Action           string `json:"action"` // "create", "update", "delete"
+	Model            string `json:"model"`
+	DailyLimitTokens *int64 `json:"daily_limit_tokens"`
+}
+
+// BatchModelTokenQuotaResult 批量操作用户模型 Token 限额的结果。
+type BatchModelTokenQuotaResult struct {
+	AffectedUsers int      `json:"affected_users"`
+	Operations    int      `json:"operations"`
+	Errors        []string `json:"errors,omitempty"`
 }
 
 type ModelTokenQuotaAdminRepository interface {
@@ -84,6 +98,7 @@ type ModelDailyTokenQuotaCacheInvalidator interface {
 type UserModelTokenQuotaAdminRepository interface {
 	ListUserModelDailyTokenQuotas(context.Context, int64, time.Time) ([]UserModelDailyTokenQuotaRecord, error)
 	UpsertUserModelDailyTokenQuotas(context.Context, int64, time.Time, []UserModelDailyTokenQuotaInput) ([]UserModelDailyTokenQuotaRecord, error)
+	DeleteUserModelTokenQuotaByModel(context.Context, int64, string) error
 }
 
 type UserModelDailyTokenQuotaCacheInvalidator interface {
