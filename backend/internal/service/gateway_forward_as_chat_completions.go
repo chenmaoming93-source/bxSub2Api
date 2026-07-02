@@ -146,8 +146,9 @@ func (s *GatewayService) ForwardAsChatCompletions(
 			Kind:               "request_error",
 			Message:            safeErr,
 		})
-		writeGatewayCCError(c, http.StatusBadGateway, "server_error", "Upstream request failed")
-		return nil, fmt.Errorf("upstream request failed: %s", safeErr)
+		// Do not write an error response here. The handler may still be able to
+		// route the request to the next configured model/account candidate.
+		return nil, &UpstreamFailoverError{StatusCode: 0}
 	}
 	defer func() { _ = resp.Body.Close() }()
 
@@ -160,27 +161,22 @@ func (s *GatewayService) ForwardAsChatCompletions(
 		upstreamMsg := strings.TrimSpace(extractUpstreamErrorMessage(respBody))
 		upstreamMsg = sanitizeUpstreamErrorMessage(upstreamMsg)
 
-		if s.shouldFailoverUpstreamError(resp.StatusCode) {
-			appendOpsUpstreamError(c, OpsUpstreamErrorEvent{
-				Platform:           account.Platform,
-				AccountID:          account.ID,
-				AccountName:        account.Name,
-				UpstreamStatusCode: resp.StatusCode,
-				UpstreamRequestID:  resp.Header.Get("x-request-id"),
-				Kind:               "failover",
-				Message:            upstreamMsg,
-			})
-			if s.rateLimitService != nil {
-				s.rateLimitService.HandleUpstreamError(ctx, account, resp.StatusCode, resp.Header, respBody, mappedModel)
-			}
-			return nil, &UpstreamFailoverError{
-				StatusCode:   resp.StatusCode,
-				ResponseBody: respBody,
-			}
+		appendOpsUpstreamError(c, OpsUpstreamErrorEvent{
+			Platform:           account.Platform,
+			AccountID:          account.ID,
+			AccountName:        account.Name,
+			UpstreamStatusCode: resp.StatusCode,
+			UpstreamRequestID:  resp.Header.Get("x-request-id"),
+			Kind:               "failover",
+			Message:            upstreamMsg,
+		})
+		// Every upstream HTTP failure is request-local failover information. Do
+		// not mutate the persistent account state; the next request may try this
+		// account again.
+		return nil, &UpstreamFailoverError{
+			StatusCode:   resp.StatusCode,
+			ResponseBody: respBody,
 		}
-
-		writeGatewayCCError(c, mapUpstreamStatusCode(resp.StatusCode), "server_error", upstreamMsg)
-		return nil, fmt.Errorf("upstream error: %d %s", resp.StatusCode, upstreamMsg)
 	}
 
 	// 13. Extract reasoning effort from CC request body
