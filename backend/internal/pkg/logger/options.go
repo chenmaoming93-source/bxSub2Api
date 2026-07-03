@@ -7,8 +7,8 @@ import (
 
 const (
 	// DefaultLogPath 为默认日志文件路径。
-	DefaultLogPath     = "/var/log/iba/sub2api/sub2api.log"
-	defaultLogFilename = "sub2api.log"
+	DefaultLogPath     = "/var/log/iba/sub2api/info.log"
+	defaultLogFilename = "info.log"
 )
 
 type InitOptions struct {
