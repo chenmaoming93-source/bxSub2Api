@@ -22,7 +22,6 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/usersubscription"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
 	"github.com/Wei-Shaw/sub2api/internal/service"
-	"github.com/lib/pq"
 
 	entsql "entgo.io/ent/dialect/sql"
 )
@@ -31,6 +30,8 @@ type userRepository struct {
 	client *dbent.Client
 	sql    sqlExecutor
 }
+
+const deletedUserLoginPrefix = "__deleted_user_"
 
 func NewUserRepository(client *dbent.Client, sqlDB *sql.DB) service.UserRepository {
 	return newUserRepositoryWithSQL(client, sqlDB)
@@ -43,6 +44,9 @@ func newUserRepositoryWithSQL(client *dbent.Client, sqlq sqlExecutor) *userRepos
 func (r *userRepository) Create(ctx context.Context, userIn *service.User) error {
 	if userIn == nil {
 		return nil
+	}
+	if isDeletedUserLoginIdentifier(userIn.Email) {
+		return service.ErrEmailReserved
 	}
 
 	// 统一使用 ent 的事务：保证用户与允许分组的更新原子化，
@@ -181,6 +185,9 @@ func (r *userRepository) GetByEmail(ctx context.Context, email string) (*service
 func (r *userRepository) Update(ctx context.Context, userIn *service.User) error {
 	if userIn == nil {
 		return nil
+	}
+	if isDeletedUserLoginIdentifier(userIn.Email) {
+		return service.ErrEmailReserved
 	}
 
 	// 使用 ent 事务包裹用户更新与 allowed_groups 同步，避免跨层事务不一致。
@@ -391,6 +398,19 @@ func (r *userRepository) Delete(ctx context.Context, id int64) error {
 
 // deleteUser 在给定 client（可能是外部事务 client）上删除用户及其身份关联记录，自身不开启/提交事务。
 func (r *userRepository) deleteUser(ctx context.Context, exec *dbent.Client, id int64) error {
+	existing, err := exec.User.Query().
+		Where(dbuser.IDEQ(id)).
+		ForUpdate().
+		Only(ctx)
+	if err != nil {
+		return translatePersistenceError(err, service.ErrUserNotFound, nil)
+	}
+
+	archivedEmail := deletedUserLoginIdentifier(id, existing.Email)
+	if _, err := exec.User.UpdateOneID(id).SetEmail(archivedEmail).Save(ctx); err != nil {
+		return translatePersistenceError(err, service.ErrUserNotFound, service.ErrEmailExists)
+	}
+
 	identityIDs, err := exec.AuthIdentity.Query().
 		Where(authidentity.UserIDEQ(id)).
 		IDs(ctx)
@@ -627,14 +647,15 @@ func (r *userRepository) GetLatestUsedAtByUserIDs(ctx context.Context, userIDs [
 		return nil, fmt.Errorf("sql executor is not configured")
 	}
 
-	const query = `
+	condition, conditionArgs := int64InCondition("user_id", userIDs)
+	query := `
 		SELECT user_id, MAX(created_at) AS last_used_at
 		FROM usage_logs
-		WHERE user_id = ANY($1)
+		WHERE ` + condition + `
 		GROUP BY user_id
 	`
 
-	rows, err := r.sql.QueryContext(ctx, query, pq.Array(userIDs))
+	rows, err := r.sql.QueryContext(ctx, query, conditionArgs...)
 	if err != nil {
 		return nil, err
 	}
@@ -669,7 +690,12 @@ func userLastUsedAtOrder(sortOrder string) []func(*entsql.Selector) {
 	orderExpr := func(direction, nulls string, tieOrder func(string) string) func(*entsql.Selector) {
 		return func(s *entsql.Selector) {
 			subquery := fmt.Sprintf("(SELECT MAX(created_at) FROM usage_logs WHERE user_id = %s)", s.C(dbuser.FieldID))
-			s.OrderExpr(entsql.Expr(subquery + " " + direction + " NULLS " + nulls))
+			if nulls == "FIRST" {
+				s.OrderExpr(entsql.Expr("(" + subquery + " IS NULL) DESC"))
+			} else {
+				s.OrderExpr(entsql.Expr("(" + subquery + " IS NULL) ASC"))
+			}
+			s.OrderExpr(entsql.Expr(subquery + " " + direction))
 			s.OrderBy(tieOrder(s.C(dbuser.FieldID)))
 		}
 	}
@@ -698,7 +724,7 @@ func (r *userRepository) filterUsersByAttributes(ctx context.Context, attrs map[
 	args := make([]any, 0, len(attrs)*2+1)
 	argIndex := 1
 	for attrID, value := range attrs {
-		clauses = append(clauses, fmt.Sprintf("(attribute_id = $%d AND value ILIKE $%d)", argIndex, argIndex+1))
+		clauses = append(clauses, fmt.Sprintf("(attribute_id = ?/*%d*/ AND LOWER(value) LIKE LOWER(?/*%d*/))", argIndex, argIndex+1))
 		args = append(args, attrID, "%"+value+"%")
 		argIndex += 2
 	}
@@ -708,7 +734,7 @@ func (r *userRepository) filterUsersByAttributes(ctx context.Context, attrs map[
 		 FROM user_attribute_values
 		 WHERE %s
 		 GROUP BY user_id
-		 HAVING COUNT(DISTINCT attribute_id) = $%d`,
+		 HAVING COUNT(DISTINCT attribute_id) = ?/*%d*/`,
 		strings.Join(clauses, " OR "),
 		argIndex,
 	)
@@ -788,9 +814,11 @@ func (r *userRepository) BatchSetConcurrency(ctx context.Context, userIDs []int6
 	if value < 0 {
 		value = 0
 	}
+	condition, conditionArgs := int64InCondition("id", userIDs)
+	args := append([]any{value}, conditionArgs...)
 	res, err := r.sql.ExecContext(ctx,
-		"UPDATE users SET concurrency = $1, updated_at = NOW() WHERE id = ANY($2) AND deleted_at IS NULL",
-		value, pq.Array(userIDs))
+		"UPDATE users SET concurrency = ?, updated_at = NOW() WHERE "+condition+" AND deleted_at IS NULL",
+		args...)
 	if err != nil {
 		return 0, fmt.Errorf("batch set concurrency: %w", err)
 	}
@@ -802,9 +830,11 @@ func (r *userRepository) BatchAddConcurrency(ctx context.Context, userIDs []int6
 	if len(userIDs) == 0 {
 		return 0, nil
 	}
+	condition, conditionArgs := int64InCondition("id", userIDs)
+	args := append([]any{delta}, conditionArgs...)
 	res, err := r.sql.ExecContext(ctx,
-		"UPDATE users SET concurrency = GREATEST(concurrency + $1, 0), updated_at = NOW() WHERE id = ANY($2) AND deleted_at IS NULL",
-		delta, pq.Array(userIDs))
+		"UPDATE users SET concurrency = GREATEST(concurrency + ?, 0), updated_at = NOW() WHERE "+condition+" AND deleted_at IS NULL",
+		args...)
 	if err != nil {
 		return 0, fmt.Errorf("batch add concurrency: %w", err)
 	}
@@ -853,6 +883,23 @@ func userEmailLookupPredicate(email string) predicate.User {
 
 func normalizeEmailLookupValue(email string) string {
 	return strings.ToLower(strings.TrimSpace(email))
+}
+
+func isDeletedUserLoginIdentifier(email string) bool {
+	return strings.HasPrefix(strings.ToLower(strings.TrimSpace(email)), deletedUserLoginPrefix)
+}
+
+func deletedUserLoginIdentifier(id int64, original string) string {
+	prefix := fmt.Sprintf("%s%d__", deletedUserLoginPrefix, id)
+	remaining := 255 - len([]rune(prefix))
+	if remaining <= 0 {
+		return string([]rune(prefix)[:255])
+	}
+	originalRunes := []rune(original)
+	if len(originalRunes) > remaining {
+		originalRunes = originalRunes[:remaining]
+	}
+	return prefix + string(originalRunes)
 }
 
 func normalizedEmailUniquenessLockKey(email string) string {

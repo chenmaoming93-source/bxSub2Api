@@ -3,6 +3,7 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"sort"
@@ -10,10 +11,11 @@ import (
 
 	dbent "github.com/Wei-Shaw/sub2api/ent"
 	"github.com/Wei-Shaw/sub2api/ent/group"
+	groupcandidateconfig "github.com/Wei-Shaw/sub2api/ent/groupcandidatetokendailylimitconfig"
+	"github.com/Wei-Shaw/sub2api/internal/domain"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/logger"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
 	"github.com/Wei-Shaw/sub2api/internal/service"
-	"github.com/lib/pq"
 
 	entsql "entgo.io/ent/dialect/sql"
 )
@@ -37,6 +39,15 @@ func newGroupRepositoryWithSQL(client *dbent.Client, sqlq sqlExecutor) *groupRep
 }
 
 func (r *groupRepository) Create(ctx context.Context, groupIn *service.Group) error {
+	routing, err := modelRoutingRaw(groupIn.ModelRouting)
+	if err != nil {
+		return err
+	}
+	routingWithLimits := routing
+	routing, err = stripDeprecatedRouteDailyTokenLimits(routing)
+	if err != nil {
+		return err
+	}
 	builder := r.client.Group.Create().
 		SetName(groupIn.Name).
 		SetDescription(groupIn.Description).
@@ -71,7 +82,7 @@ func (r *groupRepository) Create(ctx context.Context, groupIn *service.Group) er
 
 	// 设置模型路由配置
 	if groupIn.ModelRouting != nil {
-		builder = builder.SetModelRouting(groupIn.ModelRouting)
+		builder = builder.SetModelRouting(routing)
 	}
 
 	// 设置支持的模型系列（始终设置，空数组表示不限制）
@@ -82,6 +93,9 @@ func (r *groupRepository) Create(ctx context.Context, groupIn *service.Group) er
 		groupIn.ID = created.ID
 		groupIn.CreatedAt = created.CreatedAt
 		groupIn.UpdatedAt = created.UpdatedAt
+		if err := r.replaceGroupCandidateTokenLimits(ctx, groupIn.ID, routingWithLimits); err != nil {
+			return err
+		}
 		if err := enqueueSchedulerOutbox(ctx, r.sql, service.SchedulerOutboxEventGroupChanged, nil, &groupIn.ID, nil); err != nil {
 			logger.LegacyPrintf("repository.group", "[SchedulerOutbox] enqueue group create failed: group=%d err=%v", groupIn.ID, err)
 		}
@@ -112,10 +126,24 @@ func (r *groupRepository) GetByIDLite(ctx context.Context, id int64) (*service.G
 	if err != nil {
 		return nil, translatePersistenceError(err, service.ErrGroupNotFound, nil)
 	}
-	return groupEntityToService(m), nil
+	out := groupEntityToService(m)
+	groups := []service.Group{*out}
+	if err := r.hydrateGroupCandidateTokenLimits(ctx, groups); err != nil {
+		return nil, err
+	}
+	return &groups[0], nil
 }
 
 func (r *groupRepository) Update(ctx context.Context, groupIn *service.Group) error {
+	routing, err := modelRoutingRaw(groupIn.ModelRouting)
+	if err != nil {
+		return err
+	}
+	routingWithLimits := routing
+	routing, err = stripDeprecatedRouteDailyTokenLimits(routing)
+	if err != nil {
+		return err
+	}
 	builder := r.client.Group.UpdateOneID(groupIn.ID).
 		SetName(groupIn.Name).
 		SetDescription(groupIn.Description).
@@ -192,7 +220,7 @@ func (r *groupRepository) Update(ctx context.Context, groupIn *service.Group) er
 
 	// 处理 ModelRouting：nil 时清除，否则设置
 	if groupIn.ModelRouting != nil {
-		builder = builder.SetModelRouting(groupIn.ModelRouting)
+		builder = builder.SetModelRouting(routing)
 	} else {
 		builder = builder.ClearModelRouting()
 	}
@@ -205,10 +233,186 @@ func (r *groupRepository) Update(ctx context.Context, groupIn *service.Group) er
 		return translatePersistenceError(err, service.ErrGroupNotFound, service.ErrGroupExists)
 	}
 	groupIn.UpdatedAt = updated.UpdatedAt
+	if hasRouteDailyTokenLimitField(routingWithLimits) {
+		if err := r.replaceGroupCandidateTokenLimits(ctx, groupIn.ID, routingWithLimits); err != nil {
+			return err
+		}
+	}
 	if err := enqueueSchedulerOutbox(ctx, r.sql, service.SchedulerOutboxEventGroupChanged, nil, &groupIn.ID, nil); err != nil {
 		logger.LegacyPrintf("repository.group", "[SchedulerOutbox] enqueue group update failed: group=%d err=%v", groupIn.ID, err)
 	}
 	return nil
+}
+
+type groupCandidateLimitInput struct {
+	Model            string `json:"model"`
+	DailyLimitTokens *int64 `json:"daily_token_limit"`
+}
+
+// replaceGroupCandidateTokenLimits splits candidate limits out of the group
+// save payload. groups.model_routing stores routing only; this config table is
+// the sole persistence and runtime source for candidate token limits.
+func (r *groupRepository) replaceGroupCandidateTokenLimits(ctx context.Context, groupID int64, routing domain.ModelRoutingJSON) error {
+	if r == nil || r.client == nil || groupID <= 0 {
+		return nil
+	}
+	var routes map[string][]groupCandidateLimitInput
+	if err := json.Unmarshal(routing.RawMessage(), &routes); err != nil {
+		return fmt.Errorf("parse group candidate token limits: %w", err)
+	}
+	if _, err := r.client.GroupCandidateTokenDailyLimitConfig.Delete().
+		Where(groupcandidateconfig.GroupIDEQ(groupID)).Exec(ctx); err != nil {
+		return fmt.Errorf("clear group candidate token limits: %w", err)
+	}
+	for routeAlias, candidates := range routes {
+		for _, candidate := range candidates {
+			if candidate.DailyLimitTokens == nil {
+				continue
+			}
+			model := strings.TrimSpace(candidate.Model)
+			if model == "" {
+				model = routeAlias
+			}
+			if err := r.client.GroupCandidateTokenDailyLimitConfig.Create().
+				SetGroupID(groupID).
+				SetRouteAlias(routeAlias).
+				SetUpstreamModel(model).
+				SetDailyLimitTokens(*candidate.DailyLimitTokens).
+				OnConflictColumns(
+					groupcandidateconfig.FieldGroupID,
+					groupcandidateconfig.FieldRouteAlias,
+					groupcandidateconfig.FieldUpstreamModel,
+				).
+				UpdateDailyLimitTokens().
+				Exec(ctx); err != nil {
+				return fmt.Errorf("store group candidate token limit: %w", err)
+			}
+		}
+	}
+	return nil
+}
+
+// hydrateGroupCandidateTokenLimits projects the authoritative config-table
+// values into the admin-facing model_routing JSON. This is a read projection
+// only; groups.model_routing remains free of quota data.
+func (r *groupRepository) hydrateGroupCandidateTokenLimits(ctx context.Context, groups []service.Group) error {
+	if r == nil || r.client == nil || len(groups) == 0 {
+		return nil
+	}
+	ids := make([]int64, 0, len(groups))
+	index := make(map[int64]int, len(groups))
+	for i := range groups {
+		ids = append(ids, groups[i].ID)
+		index[groups[i].ID] = i
+	}
+	rows, err := r.client.GroupCandidateTokenDailyLimitConfig.Query().
+		Where(groupcandidateconfig.GroupIDIn(ids...)).All(ctx)
+	if err != nil {
+		return fmt.Errorf("load group candidate token limits: %w", err)
+	}
+	byGroup := make(map[int64]map[string]int64)
+	for _, row := range rows {
+		if row.DailyLimitTokens == nil {
+			continue
+		}
+		if byGroup[row.GroupID] == nil {
+			byGroup[row.GroupID] = make(map[string]int64)
+		}
+		byGroup[row.GroupID][row.RouteAlias+"\x00"+row.UpstreamModel] = *row.DailyLimitTokens
+	}
+	for groupID, limits := range byGroup {
+		i, ok := index[groupID]
+		if !ok {
+			continue
+		}
+		routing, err := modelRoutingRaw(groups[i].ModelRouting)
+		if err != nil {
+			return err
+		}
+		var routes map[string][]map[string]any
+		if err := json.Unmarshal(routing.RawMessage(), &routes); err != nil {
+			return fmt.Errorf("hydrate group candidate token limits: %w", err)
+		}
+		for routeAlias, candidates := range routes {
+			for _, candidate := range candidates {
+				model, _ := candidate["model"].(string)
+				model = strings.TrimSpace(model)
+				if model == "" {
+					model = routeAlias
+				}
+				if limit, exists := limits[routeAlias+"\x00"+model]; exists {
+					candidate["daily_token_limit"] = limit
+				} else {
+					candidate["daily_token_limit"] = nil
+				}
+			}
+		}
+		data, err := json.Marshal(routes)
+		if err != nil {
+			return fmt.Errorf("marshal hydrated group candidate token limits: %w", err)
+		}
+		groups[i].ModelRouting = domain.NewModelRoutingJSON(data)
+	}
+	return nil
+}
+
+func hasRouteDailyTokenLimitField(routing domain.ModelRoutingJSON) bool {
+	var routes map[string][]map[string]json.RawMessage
+	if err := json.Unmarshal(routing.RawMessage(), &routes); err != nil {
+		return false
+	}
+	for _, candidates := range routes {
+		for _, candidate := range candidates {
+			if _, ok := candidate["daily_token_limit"]; ok {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func stripDeprecatedRouteDailyTokenLimits(routing domain.ModelRoutingJSON) (domain.ModelRoutingJSON, error) {
+	raw := routing.RawMessage()
+	if len(strings.TrimSpace(string(raw))) == 0 {
+		return domain.NewModelRoutingJSON([]byte("{}")), nil
+	}
+	var routes map[string]any
+	if err := json.Unmarshal(raw, &routes); err != nil {
+		return domain.ModelRoutingJSON{}, fmt.Errorf("strip deprecated route daily token limits: %w", err)
+	}
+	for _, value := range routes {
+		candidates, ok := value.([]any)
+		if !ok {
+			continue
+		}
+		for _, candidate := range candidates {
+			if object, ok := candidate.(map[string]any); ok {
+				delete(object, "daily_token_limit")
+			}
+		}
+	}
+	clean, err := json.Marshal(routes)
+	if err != nil {
+		return domain.ModelRoutingJSON{}, fmt.Errorf("strip deprecated route daily token limits: %w", err)
+	}
+	return domain.NewModelRoutingJSON(clean), nil
+}
+
+func modelRoutingRaw(value any) (domain.ModelRoutingJSON, error) {
+	if value == nil {
+		return domain.ModelRoutingJSON{}, nil
+	}
+	if routing, ok := value.(domain.ModelRoutingJSON); ok {
+		return routing, nil
+	}
+	if raw, ok := value.(json.RawMessage); ok {
+		return domain.NewModelRoutingJSON(raw), nil
+	}
+	data, err := json.Marshal(value)
+	if err != nil {
+		return domain.ModelRoutingJSON{}, fmt.Errorf("marshal model routing: %w", err)
+	}
+	return domain.NewModelRoutingJSON(data), nil
 }
 
 func (r *groupRepository) Delete(ctx context.Context, id int64) error {
@@ -282,6 +486,9 @@ func (r *groupRepository) ListWithFilters(ctx context.Context, params pagination
 			outGroups[i].ActiveAccountCount = c.Active
 			outGroups[i].RateLimitedAccountCount = c.RateLimited
 		}
+	}
+	if err := r.hydrateGroupCandidateTokenLimits(ctx, outGroups); err != nil {
+		return nil, nil, err
 	}
 
 	return outGroups, paginationResultFromTotal(int64(total), params), nil
@@ -369,6 +576,9 @@ func (r *groupRepository) listWithAccountCountSort(ctx context.Context, q *dbent
 		if idx, ok := pageIdx[g.ID]; ok {
 			outGroups[idx] = *g
 		}
+	}
+	if err := r.hydrateGroupCandidateTokenLimits(ctx, outGroups); err != nil {
+		return nil, nil, err
 	}
 
 	return outGroups, paginationResultFromTotal(int64(total), params), nil
@@ -489,7 +699,7 @@ func (r *groupRepository) ListActiveByPlatform(ctx context.Context, platform str
 }
 
 func (r *groupRepository) ExistsByName(ctx context.Context, name string) (bool, error) {
-	return r.client.Group.Query().Where(group.NameEQ(name)).Exist(ctx)
+	return r.client.Group.Query().Where(group.NameEQ(name), group.DeletedAtIsNil()).Exist(ctx)
 }
 
 // ExistsByIDs 批量检查分组是否存在（仅检查未软删除记录）。
@@ -517,11 +727,16 @@ func (r *groupRepository) ExistsByIDs(ctx context.Context, ids []int64) (map[int
 		return result, nil
 	}
 
+	idsJSON, err := jsonArrayParam(uniqueIDs)
+	if err != nil {
+		return nil, err
+	}
 	rows, err := r.sql.QueryContext(ctx, `
 		SELECT id
-		FROM groups
-		WHERE id = ANY($1) AND deleted_at IS NULL
-	`, pq.Array(uniqueIDs))
+		FROM `+"`groups`"+`
+		WHERE id IN (SELECT id FROM JSON_TABLE(?, '$[*]' COLUMNS(id BIGINT PATH '$')) AS group_ids)
+		  AND deleted_at IS NULL
+	`, idsJSON)
 	if err != nil {
 		return nil, err
 	}
@@ -544,17 +759,17 @@ func (r *groupRepository) GetAccountCount(ctx context.Context, groupID int64) (t
 	var rateLimited int64
 	err = scanSingleRow(ctx, r.sql,
 		fmt.Sprintf(`SELECT
-			COUNT(*) FILTER (WHERE a.deleted_at IS NULL),
-			COUNT(*) FILTER (WHERE %s),
-			COUNT(*) FILTER (WHERE %s)
+			SUM(CASE WHEN a.deleted_at IS NULL THEN 1 ELSE 0 END),
+			SUM(CASE WHEN %s THEN 1 ELSE 0 END),
+			SUM(CASE WHEN %s THEN 1 ELSE 0 END)
 		FROM account_groups ag JOIN accounts a ON a.id = ag.account_id
-		WHERE ag.group_id = $1`, groupAccountAvailableSQL, groupAccountTemporarilyLimitedSQL),
+		WHERE ag.group_id = ?`, groupAccountAvailableSQL, groupAccountTemporarilyLimitedSQL),
 		[]any{groupID}, &total, &active, &rateLimited)
 	return
 }
 
 func (r *groupRepository) DeleteAccountGroupsByGroupID(ctx context.Context, groupID int64) (int64, error) {
-	res, err := r.sql.ExecContext(ctx, "DELETE FROM account_groups WHERE group_id = $1", groupID)
+	res, err := r.sql.ExecContext(ctx, "DELETE FROM account_groups WHERE group_id = ?", groupID)
 	if err != nil {
 		return 0, err
 	}
@@ -589,7 +804,7 @@ func (r *groupRepository) DeleteCascade(ctx context.Context, id int64) ([]int64,
 
 	// Lock the group row to avoid concurrent writes while we cascade.
 	// 这里使用 exec.QueryContext 手动扫描，确保同一事务内加锁并能区分"未找到"与其他错误。
-	rows, err := exec.QueryContext(ctx, "SELECT id FROM groups WHERE id = $1 AND deleted_at IS NULL FOR UPDATE", id)
+	rows, err := exec.QueryContext(ctx, "SELECT id FROM `groups` WHERE id = ? AND deleted_at IS NULL FOR UPDATE", id)
 	if err != nil {
 		return nil, err
 	}
@@ -613,7 +828,7 @@ func (r *groupRepository) DeleteCascade(ctx context.Context, id int64) ([]int64,
 	var affectedUserIDs []int64
 	if groupSvc.IsSubscriptionType() {
 		// 只查询未软删除的订阅，避免通知已取消订阅的用户
-		rows, err := exec.QueryContext(ctx, "SELECT user_id FROM user_subscriptions WHERE group_id = $1 AND deleted_at IS NULL", id)
+		rows, err := exec.QueryContext(ctx, "SELECT user_id FROM user_subscriptions WHERE group_id = ? AND deleted_at IS NULL", id)
 		if err != nil {
 			return nil, err
 		}
@@ -633,19 +848,19 @@ func (r *groupRepository) DeleteCascade(ctx context.Context, id int64) ([]int64,
 		}
 
 		// 软删除订阅：设置 deleted_at 而非硬删除
-		if _, err := exec.ExecContext(ctx, "UPDATE user_subscriptions SET deleted_at = NOW() WHERE group_id = $1 AND deleted_at IS NULL", id); err != nil {
+		if _, err := exec.ExecContext(ctx, "UPDATE user_subscriptions SET deleted_at = NOW() WHERE group_id = ? AND deleted_at IS NULL", id); err != nil {
 			return nil, err
 		}
 	}
 
 	// 2. Remove the group id from user_allowed_groups join table.
 	// Legacy users.allowed_groups 列已弃用，不再同步。
-	if _, err := exec.ExecContext(ctx, "DELETE FROM user_allowed_groups WHERE group_id = $1", id); err != nil {
+	if _, err := exec.ExecContext(ctx, "DELETE FROM user_allowed_groups WHERE group_id = ?", id); err != nil {
 		return nil, err
 	}
 
 	// 3. Delete account_groups join rows.
-	if _, err := exec.ExecContext(ctx, "DELETE FROM account_groups WHERE group_id = $1", id); err != nil {
+	if _, err := exec.ExecContext(ctx, "DELETE FROM account_groups WHERE group_id = ?", id); err != nil {
 		return nil, err
 	}
 
@@ -699,18 +914,22 @@ func (r *groupRepository) loadAccountCounts(ctx context.Context, groupIDs []int6
 	if len(groupIDs) == 0 {
 		return counts, nil
 	}
+	idsJSON, err := jsonArrayParam(groupIDs)
+	if err != nil {
+		return nil, err
+	}
 
 	rows, err := r.sql.QueryContext(
 		ctx,
 		fmt.Sprintf(`SELECT ag.group_id,
-			COUNT(*) FILTER (WHERE a.deleted_at IS NULL) AS total,
-			COUNT(*) FILTER (WHERE %s) AS active,
-			COUNT(*) FILTER (WHERE %s) AS rate_limited
+			SUM(CASE WHEN a.deleted_at IS NULL THEN 1 ELSE 0 END) AS total,
+			SUM(CASE WHEN %s THEN 1 ELSE 0 END) AS active,
+			SUM(CASE WHEN %s THEN 1 ELSE 0 END) AS rate_limited
 		FROM account_groups ag
 		JOIN accounts a ON a.id = ag.account_id
-		WHERE ag.group_id = ANY($1)
+		WHERE ag.group_id IN (SELECT id FROM JSON_TABLE(?, '$[*]' COLUMNS(id BIGINT PATH '$')) AS group_ids)
 		GROUP BY ag.group_id`, groupAccountAvailableSQL, groupAccountTemporarilyLimitedSQL),
-		pq.Array(groupIDs),
+		idsJSON,
 	)
 	if err != nil {
 		return nil, err
@@ -742,11 +961,15 @@ func (r *groupRepository) GetAccountIDsByGroupIDs(ctx context.Context, groupIDs 
 	if len(groupIDs) == 0 {
 		return nil, nil
 	}
+	idsJSON, err := jsonArrayParam(groupIDs)
+	if err != nil {
+		return nil, err
+	}
 
 	rows, err := r.sql.QueryContext(
 		ctx,
-		"SELECT DISTINCT account_id FROM account_groups WHERE group_id = ANY($1) ORDER BY account_id",
-		pq.Array(groupIDs),
+		"SELECT DISTINCT account_id FROM account_groups WHERE group_id IN (SELECT id FROM JSON_TABLE(?, '$[*]' COLUMNS(id BIGINT PATH '$')) AS group_ids) ORDER BY account_id",
+		idsJSON,
 	)
 	if err != nil {
 		return nil, err
@@ -773,15 +996,19 @@ func (r *groupRepository) BindAccountsToGroup(ctx context.Context, groupID int64
 	if len(accountIDs) == 0 {
 		return nil
 	}
+	idsJSON, err := jsonArrayParam(accountIDs)
+	if err != nil {
+		return err
+	}
 
 	// 使用 INSERT ... ON CONFLICT DO NOTHING 忽略已存在的绑定
-	_, err := r.sql.ExecContext(
+	_, err = r.sql.ExecContext(
 		ctx,
-		`INSERT INTO account_groups (account_id, group_id, priority, created_at)
-		 SELECT unnest($1::bigint[]), $2, 50, NOW()
-		 ON CONFLICT (account_id, group_id) DO NOTHING`,
-		pq.Array(accountIDs),
+		`INSERT IGNORE INTO account_groups (account_id, group_id, priority, created_at)
+		 SELECT account_ids.id, ?, 50, NOW()
+		 FROM JSON_TABLE(?, '$[*]' COLUMNS(id BIGINT PATH '$')) AS account_ids`,
 		groupID,
+		idsJSON,
 	)
 	if err != nil {
 		return err
@@ -816,14 +1043,19 @@ func (r *groupRepository) UpdateSortOrders(ctx context.Context, updates []servic
 	if len(groupIDs) == 0 {
 		return nil
 	}
+	idsJSON, err := jsonArrayParam(groupIDs)
+	if err != nil {
+		return err
+	}
 
 	// 与旧实现保持一致：任何不存在/已删除的分组都返回 not found，且不执行更新。
 	var existingCount int
 	if err := scanSingleRow(
 		ctx,
 		r.sql,
-		`SELECT COUNT(*) FROM groups WHERE deleted_at IS NULL AND id = ANY($1)`,
-		[]any{pq.Array(groupIDs)},
+		"SELECT COUNT(*) FROM `groups` WHERE deleted_at IS NULL "+
+			`AND id IN (SELECT id FROM JSON_TABLE(?, '$[*]' COLUMNS(id BIGINT PATH '$')) AS group_ids)`,
+		[]any{idsJSON},
 		&existingCount,
 	); err != nil {
 		return err
@@ -834,22 +1066,21 @@ func (r *groupRepository) UpdateSortOrders(ctx context.Context, updates []servic
 
 	args := make([]any, 0, len(groupIDs)*2+1)
 	caseClauses := make([]string, 0, len(groupIDs))
-	placeholder := 1
 	for _, id := range groupIDs {
-		caseClauses = append(caseClauses, fmt.Sprintf("WHEN $%d THEN $%d", placeholder, placeholder+1))
+		caseClauses = append(caseClauses, "WHEN ? THEN ?")
 		args = append(args, id, sortOrderByID[id])
-		placeholder += 2
 	}
-	args = append(args, pq.Array(groupIDs))
+	args = append(args, idsJSON)
 
 	query := fmt.Sprintf(`
-		UPDATE groups
+		UPDATE `+"`groups`"+`
 		SET sort_order = CASE id
 			%s
 			ELSE sort_order
 		END
-		WHERE deleted_at IS NULL AND id = ANY($%d)
-	`, strings.Join(caseClauses, "\n\t\t\t"), placeholder)
+		WHERE deleted_at IS NULL
+		  AND id IN (SELECT id FROM JSON_TABLE(?, '$[*]' COLUMNS(id BIGINT PATH '$')) AS group_ids)
+	`, strings.Join(caseClauses, "\n\t\t\t"))
 
 	result, err := r.sql.ExecContext(ctx, query, args...)
 	if err != nil {

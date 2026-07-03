@@ -2,4 +2,4 @@
 -- Add optional admin notes for accounts.
 
 ALTER TABLE accounts
-ADD COLUMN IF NOT EXISTS notes TEXT;
+ADD COLUMN notes TEXT;

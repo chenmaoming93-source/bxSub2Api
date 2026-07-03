@@ -92,21 +92,22 @@ func deleteOldRowsByID(
 		batchSize = opsCleanupBatchSize
 	}
 
-	where := fmt.Sprintf("%s < $1", timeColumn)
+	where := fmt.Sprintf("%s < ?", timeColumn)
 	if castCutoffToDate {
-		where = fmt.Sprintf("%s < $1::date", timeColumn)
+		where = fmt.Sprintf("%s < DATE(?)", timeColumn)
 	}
 
 	q := fmt.Sprintf(`
-WITH batch AS (
-  SELECT id FROM %s
-  WHERE %s
-  ORDER BY id
-  LIMIT $2
-)
 DELETE FROM %s
-WHERE id IN (SELECT id FROM batch)
-`, table, where, table)
+WHERE id IN (
+  SELECT id FROM (
+    SELECT id FROM %s
+    WHERE %s
+    ORDER BY id
+    LIMIT ?
+  ) AS batch
+)
+`, table, table, where)
 
 	var total int64
 	for {
@@ -158,5 +159,7 @@ func isMissingRelationError(err error) bool {
 		return false
 	}
 	s := strings.ToLower(err.Error())
-	return strings.Contains(s, "does not exist") && strings.Contains(s, "relation")
+	return (strings.Contains(s, "does not exist") && strings.Contains(s, "relation")) ||
+		strings.Contains(s, "error 1146") ||
+		strings.Contains(s, "doesn't exist")
 }

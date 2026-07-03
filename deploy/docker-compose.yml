@@ -200,6 +200,7 @@ services:
       - goldendb_data:/var/lib/mysql
     environment:
       - MYSQL_ROOT_PASSWORD=${GOLDENDB_ROOT_PASSWORD:-${GOLDENDB_PASSWORD}}
+      - MYSQL_USER=${GOLDENDB_USER:-sub2api}
       - MYSQL_PASSWORD=${GOLDENDB_PASSWORD:?GOLDENDB_PASSWORD is required}
       - MYSQL_DATABASE=${GOLDENDB_DB:-sub2api}
       - TZ=${TZ:-Asia/Shanghai}

@@ -22,24 +22,24 @@
 
 
 -- Legacy pre-aggregation tables (from 026 and/or previous branches)
-DROP TABLE IF EXISTS ops_metrics_daily CASCADE;
-DROP TABLE IF EXISTS ops_metrics_hourly CASCADE;
+DROP TABLE IF EXISTS ops_metrics_daily;
+DROP TABLE IF EXISTS ops_metrics_hourly;
 
 -- Core ops tables that may exist in some deployments / branches
-DROP TABLE IF EXISTS ops_system_metrics CASCADE;
-DROP TABLE IF EXISTS ops_error_logs CASCADE;
-DROP TABLE IF EXISTS ops_alert_events CASCADE;
-DROP TABLE IF EXISTS ops_alert_rules CASCADE;
-DROP TABLE IF EXISTS ops_job_heartbeats CASCADE;
-DROP TABLE IF EXISTS ops_retry_attempts CASCADE;
+DROP TABLE IF EXISTS ops_system_metrics;
+DROP TABLE IF EXISTS ops_error_logs;
+DROP TABLE IF EXISTS ops_alert_events;
+DROP TABLE IF EXISTS ops_alert_rules;
+DROP TABLE IF EXISTS ops_job_heartbeats;
+DROP TABLE IF EXISTS ops_retry_attempts;
 
 -- Optional legacy tables (best-effort cleanup)
-DROP TABLE IF EXISTS ops_scheduled_reports CASCADE;
-DROP TABLE IF EXISTS ops_group_availability_configs CASCADE;
-DROP TABLE IF EXISTS ops_group_availability_events CASCADE;
+DROP TABLE IF EXISTS ops_scheduled_reports;
+DROP TABLE IF EXISTS ops_group_availability_configs;
+DROP TABLE IF EXISTS ops_group_availability_events;
 
 -- Optional legacy views/indexes
-DROP VIEW IF EXISTS ops_latest_metrics CASCADE;
+DROP VIEW IF EXISTS ops_latest_metrics;
 
 -- =====================================================================
 -- 031_ops_core_schema.sql
@@ -72,7 +72,7 @@ CREATE TABLE IF NOT EXISTS ops_error_logs (
     api_key_id BIGINT,
     account_id BIGINT,
     group_id BIGINT,
-    client_ip inet,
+    client_ip VARCHAR(45),
 
     -- Dimensions for global filtering
     platform VARCHAR(32),
@@ -126,7 +126,7 @@ CREATE TABLE IF NOT EXISTS ops_error_logs (
     is_retryable BOOLEAN NOT NULL DEFAULT false,
     retry_count INT NOT NULL DEFAULT 0,
 
-    created_at DATETIME(6) NOT NULL DEFAULT NOW()
+    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
 );
 
 -- ============================================
@@ -136,7 +136,7 @@ CREATE TABLE IF NOT EXISTS ops_error_logs (
 CREATE TABLE IF NOT EXISTS ops_retry_attempts (
     id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
 
-    created_at DATETIME(6) NOT NULL DEFAULT NOW(),
+    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
 
     requested_by_user_id BIGINT,
     source_error_id BIGINT,
@@ -166,7 +166,7 @@ CREATE TABLE IF NOT EXISTS ops_retry_attempts (
 CREATE TABLE IF NOT EXISTS ops_system_metrics (
     id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
 
-    created_at DATETIME(6) NOT NULL DEFAULT NOW(),
+    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     window_minutes INT NOT NULL DEFAULT 1,
 
     -- Optional dimensions (only if collector chooses to write per-dimension snapshots)
@@ -238,7 +238,7 @@ CREATE TABLE IF NOT EXISTS ops_job_heartbeats (
     last_error TEXT,
     last_duration_ms BIGINT,
 
-    updated_at DATETIME(6) NOT NULL DEFAULT NOW()
+    updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
 );
 
 -- ============================================
@@ -268,14 +268,14 @@ CREATE TABLE IF NOT EXISTS ops_alert_rules (
     filters JSON,
 
     last_triggered_at DATETIME(6),
-    created_at DATETIME(6) NOT NULL DEFAULT NOW(),
-    updated_at DATETIME(6) NOT NULL DEFAULT NOW()
+    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_ops_alert_rules_name_unique
+CREATE UNIQUE INDEX idx_ops_alert_rules_name_unique
     ON ops_alert_rules (name);
 
-CREATE INDEX IF NOT EXISTS idx_ops_alert_rules_enabled
+CREATE INDEX idx_ops_alert_rules_enabled
     ON ops_alert_rules (enabled);
 
 CREATE TABLE IF NOT EXISTS ops_alert_events (
@@ -292,17 +292,17 @@ CREATE TABLE IF NOT EXISTS ops_alert_events (
     threshold_value DOUBLE PRECISION,
     dimensions JSON,
 
-    fired_at DATETIME(6) NOT NULL DEFAULT NOW(),
+    fired_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     resolved_at DATETIME(6),
 
     email_sent BOOLEAN NOT NULL DEFAULT false,
-    created_at DATETIME(6) NOT NULL DEFAULT NOW()
+    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
 );
 
-CREATE INDEX IF NOT EXISTS idx_ops_alert_events_rule_status
+CREATE INDEX idx_ops_alert_events_rule_status
     ON ops_alert_events (rule_id, status);
 
-CREATE INDEX IF NOT EXISTS idx_ops_alert_events_fired_at
+CREATE INDEX idx_ops_alert_events_fired_at
     ON ops_alert_events (fired_at DESC);
 
 -- =====================================================================
@@ -355,26 +355,26 @@ CREATE TABLE IF NOT EXISTS ops_metrics_hourly (
     ttft_p95_ms INT,
     ttft_p99_ms INT,
 
-    computed_at DATETIME(6) NOT NULL DEFAULT NOW(),
-    created_at DATETIME(6) NOT NULL DEFAULT NOW()
+    computed_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
 );
 
 -- Uniqueness across three 鈥渄imension modes鈥?(overall / platform / group).
 -- Postgres UNIQUE treats NULLs as distinct, so we enforce uniqueness via COALESCE.
-CREATE UNIQUE INDEX IF NOT EXISTS idx_ops_metrics_hourly_unique_dim
+CREATE UNIQUE INDEX idx_ops_metrics_hourly_unique_dim
     ON ops_metrics_hourly (
         bucket_start,
-        COALESCE(platform, ''),
-        COALESCE(group_id, 0)
+        (COALESCE(platform, '')),
+        (COALESCE(group_id, 0))
     );
 
-CREATE INDEX IF NOT EXISTS idx_ops_metrics_hourly_bucket
+CREATE INDEX idx_ops_metrics_hourly_bucket
     ON ops_metrics_hourly (bucket_start DESC);
 
-CREATE INDEX IF NOT EXISTS idx_ops_metrics_hourly_platform_bucket
+CREATE INDEX idx_ops_metrics_hourly_platform_bucket
     ON ops_metrics_hourly (platform, bucket_start DESC);
 
-CREATE INDEX IF NOT EXISTS idx_ops_metrics_hourly_group_bucket
+CREATE INDEX idx_ops_metrics_hourly_group_bucket
     ON ops_metrics_hourly (group_id, bucket_start DESC);
 
 -- ============================================
@@ -409,24 +409,24 @@ CREATE TABLE IF NOT EXISTS ops_metrics_daily (
     ttft_p95_ms INT,
     ttft_p99_ms INT,
 
-    computed_at DATETIME(6) NOT NULL DEFAULT NOW(),
-    created_at DATETIME(6) NOT NULL DEFAULT NOW()
+    computed_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_ops_metrics_daily_unique_dim
+CREATE UNIQUE INDEX idx_ops_metrics_daily_unique_dim
     ON ops_metrics_daily (
         bucket_date,
-        COALESCE(platform, ''),
-        COALESCE(group_id, 0)
+        (COALESCE(platform, '')),
+        (COALESCE(group_id, 0))
     );
 
-CREATE INDEX IF NOT EXISTS idx_ops_metrics_daily_bucket
+CREATE INDEX idx_ops_metrics_daily_bucket
     ON ops_metrics_daily (bucket_date DESC);
 
-CREATE INDEX IF NOT EXISTS idx_ops_metrics_daily_platform_bucket
+CREATE INDEX idx_ops_metrics_daily_platform_bucket
     ON ops_metrics_daily (platform, bucket_date DESC);
 
-CREATE INDEX IF NOT EXISTS idx_ops_metrics_daily_group_bucket
+CREATE INDEX idx_ops_metrics_daily_group_bucket
     ON ops_metrics_daily (group_id, bucket_date DESC);
 
 -- =====================================================================
@@ -444,55 +444,55 @@ CREATE INDEX IF NOT EXISTS idx_ops_metrics_daily_group_bucket
 -- ============================================
 
 -- ops_error_logs
-CREATE INDEX IF NOT EXISTS idx_ops_error_logs_created_at
+CREATE INDEX idx_ops_error_logs_created_at
     ON ops_error_logs (created_at DESC);
 
-CREATE INDEX IF NOT EXISTS idx_ops_error_logs_platform_time
+CREATE INDEX idx_ops_error_logs_platform_time
     ON ops_error_logs (platform, created_at DESC);
 
-CREATE INDEX IF NOT EXISTS idx_ops_error_logs_group_time
+CREATE INDEX idx_ops_error_logs_group_time
     ON ops_error_logs (group_id, created_at DESC);
 
-CREATE INDEX IF NOT EXISTS idx_ops_error_logs_account_time
+CREATE INDEX idx_ops_error_logs_account_time
     ON ops_error_logs (account_id, created_at DESC);
 
-CREATE INDEX IF NOT EXISTS idx_ops_error_logs_status_time
+CREATE INDEX idx_ops_error_logs_status_time
     ON ops_error_logs (status_code, created_at DESC);
 
-CREATE INDEX IF NOT EXISTS idx_ops_error_logs_phase_time
+CREATE INDEX idx_ops_error_logs_phase_time
     ON ops_error_logs (error_phase, created_at DESC);
 
-CREATE INDEX IF NOT EXISTS idx_ops_error_logs_type_time
+CREATE INDEX idx_ops_error_logs_type_time
     ON ops_error_logs (error_type, created_at DESC);
 
-CREATE INDEX IF NOT EXISTS idx_ops_error_logs_request_id
+CREATE INDEX idx_ops_error_logs_request_id
     ON ops_error_logs (request_id);
 
-CREATE INDEX IF NOT EXISTS idx_ops_error_logs_client_request_id
+CREATE INDEX idx_ops_error_logs_client_request_id
     ON ops_error_logs (client_request_id);
 
 -- ops_system_metrics
-CREATE INDEX IF NOT EXISTS idx_ops_system_metrics_created_at
+CREATE INDEX idx_ops_system_metrics_created_at
     ON ops_system_metrics (created_at DESC);
 
-CREATE INDEX IF NOT EXISTS idx_ops_system_metrics_window_time
+CREATE INDEX idx_ops_system_metrics_window_time
     ON ops_system_metrics (window_minutes, created_at DESC);
 
-CREATE INDEX IF NOT EXISTS idx_ops_system_metrics_platform_time
+CREATE INDEX idx_ops_system_metrics_platform_time
     ON ops_system_metrics (platform, created_at DESC);
 
-CREATE INDEX IF NOT EXISTS idx_ops_system_metrics_group_time
+CREATE INDEX idx_ops_system_metrics_group_time
     ON ops_system_metrics (group_id, created_at DESC);
 
 -- ops_retry_attempts
-CREATE INDEX IF NOT EXISTS idx_ops_retry_attempts_created_at
+CREATE INDEX idx_ops_retry_attempts_created_at
     ON ops_retry_attempts (created_at DESC);
 
-CREATE INDEX IF NOT EXISTS idx_ops_retry_attempts_source_error
+CREATE INDEX idx_ops_retry_attempts_source_error
     ON ops_retry_attempts (source_error_id, created_at DESC);
 
 -- Prevent concurrent retries for the same ops_error_logs row (race-free, multi-instance safe).
-CREATE UNIQUE INDEX IF NOT EXISTS idx_ops_retry_attempts_unique_active
+CREATE UNIQUE INDEX idx_ops_retry_attempts_unique_active
     ON ops_retry_attempts (source_error_id);
 
 -- ============================================
@@ -519,17 +519,17 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_ops_retry_attempts_unique_active
 
 -- Hourly table
 ALTER TABLE ops_metrics_hourly
-    ADD COLUMN IF NOT EXISTS duration_avg_ms DOUBLE PRECISION,
-    ADD COLUMN IF NOT EXISTS duration_max_ms INT,
-    ADD COLUMN IF NOT EXISTS ttft_avg_ms DOUBLE PRECISION,
-    ADD COLUMN IF NOT EXISTS ttft_max_ms INT;
+    ADD COLUMN duration_avg_ms DOUBLE PRECISION,
+    ADD COLUMN duration_max_ms INT,
+    ADD COLUMN ttft_avg_ms DOUBLE PRECISION,
+    ADD COLUMN ttft_max_ms INT;
 
 -- Daily table
 ALTER TABLE ops_metrics_daily
-    ADD COLUMN IF NOT EXISTS duration_avg_ms DOUBLE PRECISION,
-    ADD COLUMN IF NOT EXISTS duration_max_ms INT,
-    ADD COLUMN IF NOT EXISTS ttft_avg_ms DOUBLE PRECISION,
-    ADD COLUMN IF NOT EXISTS ttft_max_ms INT;
+    ADD COLUMN duration_avg_ms DOUBLE PRECISION,
+    ADD COLUMN duration_max_ms INT,
+    ADD COLUMN ttft_avg_ms DOUBLE PRECISION,
+    ADD COLUMN ttft_max_ms INT;
 
 -- =====================================================================
 -- 035_ops_alert_rules_notify_email.sql
@@ -542,7 +542,7 @@ ALTER TABLE ops_metrics_daily
 
 
 ALTER TABLE ops_alert_rules
-    ADD COLUMN IF NOT EXISTS notify_email BOOLEAN NOT NULL DEFAULT true;
+    ADD COLUMN notify_email BOOLEAN NOT NULL DEFAULT true;
 
 -- =====================================================================
 -- 036_ops_seed_default_alert_rules.sql
@@ -568,5 +568,5 @@ INSERT IGNORE INTO ops_alert_rules (
 -- This migration is intentionally idempotent.
 
 ALTER TABLE ops_system_metrics
-  ADD COLUMN IF NOT EXISTS redis_conn_total INT,
-  ADD COLUMN IF NOT EXISTS redis_conn_idle INT;
+  ADD COLUMN redis_conn_total INT,
+  ADD COLUMN redis_conn_idle INT;

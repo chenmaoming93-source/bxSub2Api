@@ -1,6 +1,6 @@
 -- Add payment_mode field to payment_provider_instances
 -- Values: 'redirect' (hosted page redirect), 'api' (API call for QR/payurl), '' (default/N/A)
-ALTER TABLE payment_provider_instances ADD COLUMN IF NOT EXISTS payment_mode VARCHAR(20) NOT NULL DEFAULT '';
+ALTER TABLE payment_provider_instances ADD COLUMN payment_mode VARCHAR(20) NOT NULL DEFAULT '';
 
 -- Migrate existing data: easypay instances with 'easypay' in supported_types → redirect mode
 -- Remove 'easypay' from supported_types and set payment_mode = 'redirect'

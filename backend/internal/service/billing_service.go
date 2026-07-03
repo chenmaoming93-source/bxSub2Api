@@ -189,53 +189,53 @@ func NewBillingService(cfg *config.Config, pricingService *PricingService) *Bill
 func (s *BillingService) initFallbackPricing() {
 	// Claude 4.5 Opus
 	s.fallbackPrices["claude-opus-4.5"] = &ModelPricing{
-		InputPricePerToken:         5e-6,    // $5 per MTok
-		OutputPricePerToken:        25e-6,   // $25 per MTok
-		CacheCreationPricePerToken: 6.25e-6, // $6.25 per MTok
+		InputPricePerToken:         5e-6,    // ? per MTok
+		OutputPricePerToken:        25e-6,   // ? per MTok
+		CacheCreationPricePerToken: 6.25e-6, // ?.25 per MTok
 		CacheReadPricePerToken:     0.5e-6,  // $0.50 per MTok
 		SupportsCacheBreakdown:     false,
 	}
 
 	// Claude 4 Sonnet
 	s.fallbackPrices["claude-sonnet-4"] = &ModelPricing{
-		InputPricePerToken:         3e-6,    // $3 per MTok
-		OutputPricePerToken:        15e-6,   // $15 per MTok
-		CacheCreationPricePerToken: 3.75e-6, // $3.75 per MTok
+		InputPricePerToken:         3e-6,    // ? per MTok
+		OutputPricePerToken:        15e-6,   // ? per MTok
+		CacheCreationPricePerToken: 3.75e-6, // ?.75 per MTok
 		CacheReadPricePerToken:     0.3e-6,  // $0.30 per MTok
 		SupportsCacheBreakdown:     false,
 	}
 
 	// Claude 3.5 Sonnet
 	s.fallbackPrices["claude-3-5-sonnet"] = &ModelPricing{
-		InputPricePerToken:         3e-6,    // $3 per MTok
-		OutputPricePerToken:        15e-6,   // $15 per MTok
-		CacheCreationPricePerToken: 3.75e-6, // $3.75 per MTok
+		InputPricePerToken:         3e-6,    // ? per MTok
+		OutputPricePerToken:        15e-6,   // ? per MTok
+		CacheCreationPricePerToken: 3.75e-6, // ?.75 per MTok
 		CacheReadPricePerToken:     0.3e-6,  // $0.30 per MTok
 		SupportsCacheBreakdown:     false,
 	}
 
 	// Claude 3.5 Haiku
 	s.fallbackPrices["claude-3-5-haiku"] = &ModelPricing{
-		InputPricePerToken:         1e-6,    // $1 per MTok
-		OutputPricePerToken:        5e-6,    // $5 per MTok
-		CacheCreationPricePerToken: 1.25e-6, // $1.25 per MTok
+		InputPricePerToken:         1e-6,    // ? per MTok
+		OutputPricePerToken:        5e-6,    // ? per MTok
+		CacheCreationPricePerToken: 1.25e-6, // ?.25 per MTok
 		CacheReadPricePerToken:     0.1e-6,  // $0.10 per MTok
 		SupportsCacheBreakdown:     false,
 	}
 
 	// Claude 3 Opus
 	s.fallbackPrices["claude-3-opus"] = &ModelPricing{
-		InputPricePerToken:         15e-6,    // $15 per MTok
-		OutputPricePerToken:        75e-6,    // $75 per MTok
-		CacheCreationPricePerToken: 18.75e-6, // $18.75 per MTok
-		CacheReadPricePerToken:     1.5e-6,   // $1.50 per MTok
+		InputPricePerToken:         15e-6,    // ? per MTok
+		OutputPricePerToken:        75e-6,    // ? per MTok
+		CacheCreationPricePerToken: 18.75e-6, // ?.75 per MTok
+		CacheReadPricePerToken:     1.5e-6,   // ?.50 per MTok
 		SupportsCacheBreakdown:     false,
 	}
 
 	// Claude 3 Haiku
 	s.fallbackPrices["claude-3-haiku"] = &ModelPricing{
 		InputPricePerToken:         0.25e-6, // $0.25 per MTok
-		OutputPricePerToken:        1.25e-6, // $1.25 per MTok
+		OutputPricePerToken:        1.25e-6, // ?.25 per MTok
 		CacheCreationPricePerToken: 0.3e-6,  // $0.30 per MTok
 		CacheReadPricePerToken:     0.03e-6, // $0.03 per MTok
 		SupportsCacheBreakdown:     false,
@@ -249,20 +249,20 @@ func (s *BillingService) initFallbackPricing() {
 
 	// Gemini 3.1 Pro
 	s.fallbackPrices["gemini-3.1-pro"] = &ModelPricing{
-		InputPricePerToken:         2e-6,   // $2 per MTok
-		OutputPricePerToken:        12e-6,  // $12 per MTok
-		CacheCreationPricePerToken: 2e-6,   // $2 per MTok
+		InputPricePerToken:         2e-6,   // ? per MTok
+		OutputPricePerToken:        12e-6,  // ? per MTok
+		CacheCreationPricePerToken: 2e-6,   // ? per MTok
 		CacheReadPricePerToken:     0.2e-6, // $0.20 per MTok
 		SupportsCacheBreakdown:     false,
 	}
 
 	// OpenAI GPT-5.4（业务指定价格）
 	s.fallbackPrices["gpt-5.4"] = &ModelPricing{
-		InputPricePerToken:             2.5e-6,  // $2.5 per MTok
-		InputPricePerTokenPriority:     5e-6,    // $5 per MTok
-		OutputPricePerToken:            15e-6,   // $15 per MTok
-		OutputPricePerTokenPriority:    30e-6,   // $30 per MTok
-		CacheCreationPricePerToken:     2.5e-6,  // $2.5 per MTok
+		InputPricePerToken:             2.5e-6,  // ?.5 per MTok
+		InputPricePerTokenPriority:     5e-6,    // ? per MTok
+		OutputPricePerToken:            15e-6,   // ? per MTok
+		OutputPricePerTokenPriority:    30e-6,   // ? per MTok
+		CacheCreationPricePerToken:     2.5e-6,  // ?.5 per MTok
 		CacheReadPricePerToken:         0.25e-6, // $0.25 per MTok
 		CacheReadPricePerTokenPriority: 0.5e-6,  // $0.5 per MTok
 		SupportsCacheBreakdown:         false,
@@ -298,11 +298,11 @@ func (s *BillingService) initFallbackPricing() {
 	}
 	// Codex 族兜底统一按 GPT-5.3 Codex 价格计费
 	s.fallbackPrices["gpt-5.3-codex"] = &ModelPricing{
-		InputPricePerToken:             1.5e-6, // $1.5 per MTok
-		InputPricePerTokenPriority:     3e-6,   // $3 per MTok
-		OutputPricePerToken:            12e-6,  // $12 per MTok
-		OutputPricePerTokenPriority:    24e-6,  // $24 per MTok
-		CacheCreationPricePerToken:     1.5e-6, // $1.5 per MTok
+		InputPricePerToken:             1.5e-6, // ?.5 per MTok
+		InputPricePerTokenPriority:     3e-6,   // ? per MTok
+		OutputPricePerToken:            12e-6,  // ? per MTok
+		OutputPricePerTokenPriority:    24e-6,  // ? per MTok
+		CacheCreationPricePerToken:     1.5e-6, // ?.5 per MTok
 		CacheReadPricePerToken:         0.15e-6,
 		CacheReadPricePerTokenPriority: 0.3e-6,
 		SupportsCacheBreakdown:         false,
@@ -333,15 +333,15 @@ func (s *BillingService) initFallbackPricing() {
 	// ---- 智谱 GLM（Z.AI）----
 	// Source: https://docs.z.ai/guides/overview/pricing (USD per 1M tokens)
 	// 注意：CacheReadPricePerToken 即"缓存命中"价格，CacheCreationPricePerToken 留空（智谱未公开写入价，按 0 处理）。
-	// GLM-4.6 与 GLM-4.5 在 z.ai 国际版上定价一致；GLM-4.5 国内按 ¥0.8/¥2，汇率换算后约 $0.112/$0.28，与国际版 $0.6/$2.2 不同，本分支采用国际版 USD 口径与现有 Claude/GPT 一致。
+	// GLM-4.6 与 GLM-4.5 在 z.ai 国际版上定价一致；GLM-4.5 国内按 ¥0.8/¥2，汇率换算后约 $0.112/$0.28，与国际版 $0.6/?.2 不同，本分支采用国际版 USD 口径与现有 Claude/GPT 一致。
 	s.fallbackPrices["glm-5.1"] = &ModelPricing{
-		InputPricePerToken:     1.4e-6, // $1.40 per MTok
-		OutputPricePerToken:    4.4e-6, // $4.40 per MTok
+		InputPricePerToken:     1.4e-6, // ?.40 per MTok
+		OutputPricePerToken:    4.4e-6, // ?.40 per MTok
 		CacheReadPricePerToken: 0.26e-6,
 		SupportsCacheBreakdown: false,
 	}
 	s.fallbackPrices["glm-5"] = &ModelPricing{
-		InputPricePerToken:     1e-6, // $1.00 per MTok
+		InputPricePerToken:     1e-6, // ?.00 per MTok
 		OutputPricePerToken:    3.2e-6,
 		CacheReadPricePerToken: 0.2e-6,
 		SupportsCacheBreakdown: false,
@@ -377,7 +377,7 @@ func (s *BillingService) initFallbackPricing() {
 		SupportsCacheBreakdown: false,
 	}
 	s.fallbackPrices["glm-4.5-x"] = &ModelPricing{
-		InputPricePerToken:     2.2e-6, // $2.20 per MTok
+		InputPricePerToken:     2.2e-6, // ?.20 per MTok
 		OutputPricePerToken:    8.9e-6,
 		CacheReadPricePerToken: 0.45e-6,
 		SupportsCacheBreakdown: false,
@@ -418,7 +418,7 @@ func (s *BillingService) initFallbackPricing() {
 	// K2-0905 / K2-0711 官方页面未保留定价，不覆盖。
 	s.fallbackPrices["kimi-k2.6"] = &ModelPricing{
 		InputPricePerToken:     0.95e-6, // $0.95 per MTok (cache miss)
-		OutputPricePerToken:    4e-6,    // $4.00 per MTok
+		OutputPricePerToken:    4e-6,    // ?.00 per MTok
 		CacheReadPricePerToken: 0.15e-6, // $0.15 per MTok (cache hit, ¥1.10)
 		SupportsCacheBreakdown: false,
 	}
@@ -431,7 +431,7 @@ func (s *BillingService) initFallbackPricing() {
 	}
 	s.fallbackPrices["kimi-k2.5"] = &ModelPricing{
 		InputPricePerToken:     0.60e-6, // $0.60 per MTok
-		OutputPricePerToken:    3e-6,    // $3.00 per MTok
+		OutputPricePerToken:    3e-6,    // ?.00 per MTok
 		CacheReadPricePerToken: 0.098e-6,
 		SupportsCacheBreakdown: false,
 	}
@@ -453,7 +453,7 @@ func (s *BillingService) initFallbackPricing() {
 	// 注意：MiniMax M3 在 >512K context 时价格翻倍，本兜底采用 ≤512K 标准 tier（保守口径，对用户有利）。
 	// 如需支持长上下文 multiplier，可后续参考 GPT-5.4 模式扩展 LongContextXxx 字段。
 	s.fallbackPrices["minimax-m3"] = &ModelPricing{
-		InputPricePerToken:     0.60e-6, // $0.60 per MTok (≤512K standard tier, 含 50% 永久折扣前原价 $1.20)
+		InputPricePerToken:     0.60e-6, // $0.60 per MTok (≤512K standard tier, 含 50% 永久折扣前原价 ?.20)
 		OutputPricePerToken:    2.40e-6,
 		CacheReadPricePerToken: 0.12e-6,
 		SupportsCacheBreakdown: false,

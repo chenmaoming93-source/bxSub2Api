@@ -1,8 +1,8 @@
 -- 为 users 表添加 TOTP 双因素认证字段。
 ALTER TABLE users
-  ADD COLUMN IF NOT EXISTS totp_secret_encrypted TEXT DEFAULT NULL,
-  ADD COLUMN IF NOT EXISTS totp_enabled BOOLEAN NOT NULL DEFAULT FALSE,
-  ADD COLUMN IF NOT EXISTS totp_enabled_at DATETIME(6) DEFAULT NULL;
+  ADD COLUMN totp_secret_encrypted TEXT,
+  ADD COLUMN totp_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+  ADD COLUMN totp_enabled_at DATETIME(6) DEFAULT NULL;
 
 -- 创建索引以支持快速查询启用 2FA 的用户。
-CREATE INDEX IF NOT EXISTS idx_users_totp_enabled ON users(totp_enabled);
+CREATE INDEX idx_users_totp_enabled ON users(totp_enabled);

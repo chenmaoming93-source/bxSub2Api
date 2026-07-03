@@ -45,8 +45,7 @@ func TestAccountRepository_ListOAuthRefreshCandidates_SQLFilter(t *testing.T) {
 	require.Contains(t, normalized, "status = 'active'")
 	require.Contains(t, normalized, "type = 'oauth'")
 	require.Contains(t, normalized, "platform IN ('anthropic', 'openai', 'gemini', 'antigravity')")
-	require.Contains(t, normalized, "credentials ? 'refresh_token'")
-	require.Contains(t, normalized, "btrim(credentials->>'refresh_token') <> ''")
+	require.Contains(t, normalized, "TRIM(COALESCE(JSON_UNQUOTE(JSON_EXTRACT(credentials, '$.refresh_token')), '')) <> ''")
 	require.Contains(t, normalized, "temp_unschedulable_until > NOW()")
 	require.Contains(t, normalized, "temp_unschedulable_reason LIKE 'token refresh retry exhausted:%'")
 	require.Contains(t, normalized, "IS NOT TRUE",
@@ -54,6 +53,8 @@ func TestAccountRepository_ListOAuthRefreshCandidates_SQLFilter(t *testing.T) {
 	require.NotContains(t, normalized, "AND NOT (",
 		"plain NOT (...) excludes NULL temp_unschedulable_until rows (the common healthy case)")
 	require.Contains(t, normalized, "ORDER BY priority ASC, id ASC")
+	require.NotContains(t, normalized, "credentials ? 'refresh_token'")
+	require.NotContains(t, normalized, "credentials->>'refresh_token'")
 	require.NotContains(t, normalized, "credentials->>'expires_at'")
 	require.NoError(t, mock.ExpectationsWereMet())
 }

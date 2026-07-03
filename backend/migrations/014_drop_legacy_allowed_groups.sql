@@ -9,6 +9,20 @@
 -- 该列现已废弃，所有读写操作均使用 user_allowed_groups 联接表。
 
 -- 删除 allowed_groups 列
-ALTER TABLE users DROP COLUMN IF EXISTS allowed_groups;
+SET @sub2api_drop_users_allowed_groups_sql = (
+    SELECT IF(
+        EXISTS (
+            SELECT 1
+            FROM information_schema.columns
+            WHERE table_schema = DATABASE()
+              AND table_name = 'users'
+              AND column_name = 'allowed_groups'
+        ),
+        'ALTER TABLE users DROP COLUMN allowed_groups',
+        'DO 0'
+    )
+);
 
--- 添加注释记录删除原因
+PREPARE sub2api_drop_users_allowed_groups_stmt FROM @sub2api_drop_users_allowed_groups_sql;
+EXECUTE sub2api_drop_users_allowed_groups_stmt;
+DEALLOCATE PREPARE sub2api_drop_users_allowed_groups_stmt;

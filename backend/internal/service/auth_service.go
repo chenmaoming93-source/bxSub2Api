@@ -82,10 +82,11 @@ type DefaultSubscriptionAssigner interface {
 }
 
 type signupGrantPlan struct {
-	Balance        float64
-	Concurrency    int
-	Subscriptions  []DefaultSubscriptionSetting
-	PlatformQuotas map[string]*DefaultPlatformQuotaSetting
+	Balance          float64
+	Concurrency      int
+	Subscriptions    []DefaultSubscriptionSetting
+	PlatformQuotas   map[string]*DefaultPlatformQuotaSetting
+	ModelTokenQuotas []UserModelDailyTokenQuotaInput
 }
 
 // NewAuthService 创建认证服务实例
@@ -232,6 +233,7 @@ func (s *AuthService) RegisterWithVerification(ctx context.Context, email, passw
 	s.assignSubscriptions(ctx, user.ID, grantPlan.Subscriptions, "auto assigned by signup defaults")
 	// snapshot user × platform quota（fail-open）
 	_ = s.snapshotPlatformQuotaDefaults(ctx, user.ID, &grantPlan)
+	s.snapshotModelTokenQuotaDefaults(ctx, user.ID, &grantPlan)
 	if s.affiliateService != nil {
 		if _, err := s.affiliateService.EnsureUserAffiliate(ctx, user.ID); err != nil {
 			logger.LegacyPrintf("service.auth", "[Auth] Failed to initialize affiliate profile for user %d: %v", user.ID, err)
@@ -468,6 +470,85 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (string
 	return token, user, nil
 }
 
+// LoginLDAP completes login after LDAP has verified the password. LDAP accounts
+// are keyed locally by directory username; a real email address is not required.
+// The legacy User.Email column remains the account-key column for compatibility.
+func (s *AuthService) LoginLDAP(ctx context.Context, account, displayName string) (string, *User, error) {
+	account = strings.TrimSpace(strings.ToLower(account))
+	if account == "" || len(account) > 255 {
+		logger.LegacyPrintf("service.auth", "[LDAP] authenticated directory user has no valid username")
+		return "", nil, ErrInvalidCredentials
+	}
+
+	user, err := s.userRepo.GetByEmail(ctx, account)
+	if err != nil && !errors.Is(err, ErrUserNotFound) {
+		logger.LegacyPrintf("service.auth", "[LDAP] database error during login: %v", err)
+		return "", nil, ErrServiceUnavailable
+	}
+	if errors.Is(err, ErrUserNotFound) {
+		if s.cfg == nil || !s.cfg.LDAP.AutoCreateUser {
+			return "", nil, ErrInvalidCredentials
+		}
+
+		randomPassword, randomErr := randomHexString(32)
+		if randomErr != nil {
+			return "", nil, ErrServiceUnavailable
+		}
+		hash, hashErr := s.HashPassword(randomPassword)
+		if hashErr != nil {
+			return "", nil, ErrServiceUnavailable
+		}
+		grantPlan := s.resolveSignupGrantPlan(ctx, "email")
+		var defaultRPMLimit int
+		if s.settingService != nil {
+			defaultRPMLimit = s.settingService.GetDefaultUserRPMLimit(ctx)
+		}
+		localUsername := strings.TrimSpace(displayName)
+		if localUsername == "" {
+			localUsername = account
+		}
+		if runes := []rune(localUsername); len(runes) > 100 {
+			localUsername = string(runes[:100])
+		}
+		user = &User{
+			Email:        account,
+			Username:     localUsername,
+			PasswordHash: hash,
+			Role:         RoleUser,
+			Balance:      grantPlan.Balance,
+			Concurrency:  grantPlan.Concurrency,
+			RPMLimit:     defaultRPMLimit,
+			Status:       StatusActive,
+			// Keep the existing constrained signup_source vocabulary; LDAP remains
+			// an authentication route rather than a new business grant source.
+			SignupSource: "email",
+		}
+		if createErr := s.userRepo.Create(ctx, user); createErr != nil {
+			// A concurrent first login may have created the same email already.
+			if existing, loadErr := s.userRepo.GetByEmail(ctx, account); loadErr == nil {
+				user = existing
+			} else {
+				logger.LegacyPrintf("service.auth", "[LDAP] failed to create local user: %v", createErr)
+				return "", nil, ErrServiceUnavailable
+			}
+		} else {
+			s.postAuthUserBootstrap(ctx, user, "email", false)
+			s.assignSubscriptions(ctx, user.ID, grantPlan.Subscriptions, "auto assigned by LDAP signup defaults")
+			_ = s.snapshotPlatformQuotaDefaults(ctx, user.ID, &grantPlan)
+			s.snapshotModelTokenQuotaDefaults(ctx, user.ID, &grantPlan)
+		}
+	}
+
+	if !user.IsActive() {
+		return "", nil, ErrUserNotActive
+	}
+	token, err := s.GenerateToken(user)
+	if err != nil {
+		return "", nil, fmt.Errorf("generate token: %w", err)
+	}
+	return token, user, nil
+}
+
 // LoginOrRegisterOAuth 用于第三方 OAuth/SSO 登录：
 // - 如果邮箱已存在：直接登录（不需要本地密码）
 // - 如果邮箱不存在：创建新用户并登录
@@ -543,6 +624,7 @@ func (s *AuthService) LoginOrRegisterOAuth(ctx context.Context, email, username 
 				s.assignSubscriptions(ctx, user.ID, grantPlan.Subscriptions, "auto assigned by signup defaults")
 				// snapshot user × platform quota（fail-open）
 				_ = s.snapshotPlatformQuotaDefaults(ctx, user.ID, &grantPlan)
+				s.snapshotModelTokenQuotaDefaults(ctx, user.ID, &grantPlan)
 			}
 		} else {
 			logger.LegacyPrintf("service.auth", "[Auth] Database error during oauth login: %v", err)
@@ -708,6 +790,7 @@ func (s *AuthService) loginOrRegisterOAuthWithTokenPair(ctx context.Context, ema
 					s.assignSubscriptions(ctx, user.ID, grantPlan.Subscriptions, "auto assigned by signup defaults")
 					// snapshot user × platform quota（fail-open）
 					_ = s.snapshotPlatformQuotaDefaults(ctx, user.ID, &grantPlan)
+					s.snapshotModelTokenQuotaDefaults(ctx, user.ID, &grantPlan)
 					s.bindOAuthAffiliate(ctx, user.ID, affiliateCode)
 				}
 			} else {
@@ -729,6 +812,7 @@ func (s *AuthService) loginOrRegisterOAuthWithTokenPair(ctx context.Context, ema
 					s.assignSubscriptions(ctx, user.ID, grantPlan.Subscriptions, "auto assigned by signup defaults")
 					// snapshot user × platform quota（fail-open）
 					_ = s.snapshotPlatformQuotaDefaults(ctx, user.ID, &grantPlan)
+					s.snapshotModelTokenQuotaDefaults(ctx, user.ID, &grantPlan)
 					s.bindOAuthAffiliate(ctx, user.ID, affiliateCode)
 					if invitationRedeemCode != nil {
 						if err := s.redeemRepo.Use(ctx, invitationRedeemCode.ID, user.ID); err != nil {
@@ -821,6 +905,9 @@ func (s *AuthService) resolveSignupGrantPlan(ctx context.Context, signupSource s
 		plan.PlatformQuotas = quotas
 	} else {
 		logger.LegacyPrintf("service.auth", "[Auth] Warning: load default platform quotas failed: %v (fail-open)", err)
+	}
+	if modelQuotas, err := s.settingService.GetDefaultUserModelTokenQuotas(ctx); err == nil && len(modelQuotas) > 0 {
+		plan.ModelTokenQuotas = modelQuotas
 	}
 	// ============================================================================================
 
@@ -997,7 +1084,7 @@ func (s *AuthService) hasProviderGrantRecord(
 
 	rows, err := s.entClient.QueryContext(
 		ctx,
-		`SELECT 1 FROM user_provider_default_grants WHERE user_id = $1 AND provider_type = $2 AND grant_reason = $3 LIMIT 1`,
+		`SELECT 1 FROM user_provider_default_grants WHERE user_id = ? AND provider_type = ? AND grant_reason = ? LIMIT 1`,
 		userID,
 		strings.TrimSpace(providerType),
 		strings.TrimSpace(grantReason),
@@ -1683,4 +1770,26 @@ func (s *AuthService) snapshotPlatformQuotaDefaults(ctx context.Context, userID 
 		return nil // fail-open：返回 nil，让调用方继续
 	}
 	return nil
+}
+
+// snapshotModelTokenQuotaDefaults 将注册/首次登录时确定的模型 Token 限额写入用户配置。
+// 仅在 plan.ModelTokenQuotas 非空时执行，fail-open：错误只记日志不阻断注册。
+func (s *AuthService) snapshotModelTokenQuotaDefaults(ctx context.Context, userID int64, plan *signupGrantPlan) {
+	if s.entClient == nil || plan == nil || len(plan.ModelTokenQuotas) == 0 {
+		return
+	}
+	for _, q := range plan.ModelTokenQuotas {
+		model := strings.TrimSpace(q.Model)
+		if model == "" {
+			continue
+		}
+		if q.DailyLimitTokens == nil {
+			continue
+		}
+		if err := s.entClient.UserModelTokenDailyLimitConfig.Create().
+			SetUserID(userID).SetModel(model).SetDailyLimitTokens(*q.DailyLimitTokens).
+			Exec(ctx); err != nil {
+			logger.LegacyPrintf("service.auth", "[Auth] Warning: snapshot model token quota failed user=%d model=%s: %v (fail-open)", userID, model, err)
+		}
+	}
 }

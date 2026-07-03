@@ -190,6 +190,43 @@ func TestGatewayService_AnthropicAPIKeyPassthrough_ForwardStreamPreservesBodyAnd
 	require.Empty(t, rec.Header().Get("Set-Cookie"), "响应头应经过安全过滤")
 }
 
+func TestGatewayService_AnthropicAPIKeyPassthrough_UsesSelectedUpstreamModelIdentity(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	body := []byte(`{"model":"fast-code","messages":[{"role":"user","content":"hi"}],"max_tokens":16}`)
+	parsed, err := ParseGatewayRequest(NewRequestBodyRef(body), PlatformAnthropic)
+	require.NoError(t, err)
+	parsed.UpstreamModel = "model-a"
+
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	c.Request = httptest.NewRequest(http.MethodPost, "/v1/messages", nil)
+
+	upstream := &anthropicHTTPUpstreamRecorder{
+		resp: &http.Response{
+			StatusCode: http.StatusOK,
+			Header: http.Header{
+				"Content-Type": []string{"application/json"},
+				"x-request-id": []string{"rid-selected-model"},
+			},
+			Body: io.NopCloser(strings.NewReader(`{"id":"msg_1","type":"message","role":"assistant","content":[],"usage":{"input_tokens":2,"output_tokens":3}}`)),
+		},
+	}
+	cfg := &config.Config{Gateway: config.GatewayConfig{MaxLineSize: defaultMaxLineSize}}
+	svc := &GatewayService{
+		cfg:                  cfg,
+		responseHeaderFilter: compileResponseHeaderFilter(cfg),
+		httpUpstream:         upstream,
+	}
+
+	result, err := svc.Forward(context.Background(), c, newAnthropicAPIKeyAccountForTest(), parsed)
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	require.Equal(t, "model-a", gjson.GetBytes(upstream.lastBody, "model").String())
+	require.Equal(t, "fast-code", result.Model)
+	require.Equal(t, "model-a", result.UpstreamModel)
+}
+
 func TestGatewayService_AnthropicAPIKeyPassthrough_ForwardCountTokensPreservesBody(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 

@@ -3,4 +3,4 @@
 -- This is intentionally idempotent.
 
 ALTER TABLE ops_error_logs
-    ADD COLUMN IF NOT EXISTS upstream_errors JSON;
+    ADD COLUMN upstream_errors JSON;

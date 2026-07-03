@@ -5,8 +5,6 @@
 --   api_key_id 为空(INVALID_API_KEY 无效) => attempted_key_prefix
 -- 落库快照(而非读时 JOIN api_keys):key 之后被删时 api_keys.key 会被 tombstone
 -- 覆盖,快照可保留报错当时的真实前缀。
-SET LOCAL lock_timeout = '5s';
-SET LOCAL statement_timeout = '10min';
 
 ALTER TABLE ops_error_logs
-    ADD COLUMN IF NOT EXISTS api_key_prefix VARCHAR(32);
+    ADD COLUMN api_key_prefix VARCHAR(32);

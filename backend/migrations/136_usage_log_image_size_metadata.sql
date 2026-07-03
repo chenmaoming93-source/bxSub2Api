@@ -2,16 +2,16 @@
 -- `image_size` remains the canonical billing tier used for cost calculation.
 
 ALTER TABLE usage_logs
-    ADD COLUMN IF NOT EXISTS image_input_size VARCHAR(32);
+    ADD COLUMN image_input_size VARCHAR(32);
 
 ALTER TABLE usage_logs
-    ADD COLUMN IF NOT EXISTS image_output_size VARCHAR(32);
+    ADD COLUMN image_output_size VARCHAR(32);
 
 ALTER TABLE usage_logs
-    ADD COLUMN IF NOT EXISTS image_size_source VARCHAR(16);
+    ADD COLUMN image_size_source VARCHAR(16);
 
 ALTER TABLE usage_logs
-    ADD COLUMN IF NOT EXISTS image_size_breakdown JSON;
+    ADD COLUMN image_size_breakdown JSON;
 
 ALTER TABLE usage_logs
     ADD CONSTRAINT usage_logs_image_size_source_check

@@ -835,7 +835,7 @@ func (s *BillingCacheService) checkRPM(ctx context.Context, user *User, group *G
 
 // checkBalanceEligibility 检查余额模式资格
 func (s *BillingCacheService) checkBalanceEligibility(ctx context.Context, userID int64) error {
-	balance, err := s.GetUserBalance(ctx, userID)
+	_, err := s.GetUserBalance(ctx, userID)
 	if err != nil {
 		if s.circuitBreaker != nil {
 			s.circuitBreaker.OnFailure(err)
@@ -847,9 +847,10 @@ func (s *BillingCacheService) checkBalanceEligibility(ctx context.Context, userI
 		s.circuitBreaker.OnSuccess()
 	}
 
-	if balance <= 0 {
-		return ErrInsufficientBalance
-	}
+	// [账户余额相关] 因特殊需要，不再校验账户余额
+	// if balance <= 0 {
+	// 	return ErrInsufficientBalance
+	// }
 
 	return nil
 }

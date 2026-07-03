@@ -2,7 +2,7 @@
 -- Records the User-Agent header from API requests for analytics and debugging
 
 ALTER TABLE usage_logs
-    ADD COLUMN IF NOT EXISTS user_agent VARCHAR(512);
+    ADD COLUMN user_agent VARCHAR(512);
 
 -- Optional: Add index for user_agent queries (uncomment if needed for analytics)
--- CREATE INDEX IF NOT EXISTS idx_usage_logs_user_agent ON usage_logs(user_agent);
+-- CREATE INDEX idx_usage_logs_user_agent ON usage_logs(user_agent);

@@ -103,6 +103,9 @@ func RegisterAdminRoutes(
 
 		// 邀请返利（专属用户管理）
 		registerAffiliateRoutes(admin, h)
+
+		// 全局模型 Token 配额
+		registerModelTokenQuotaRoutes(admin, h)
 	}
 }
 
@@ -132,6 +135,14 @@ func registerAdminAPIKeyRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
 	apiKeys := admin.Group("/api-keys")
 	{
 		apiKeys.PUT("/:id", h.Admin.APIKey.UpdateGroup)
+	}
+}
+
+func registerModelTokenQuotaRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
+	quotas := admin.Group("/model-token-quotas")
+	{
+		quotas.GET("", h.Admin.ModelTokenQuota.List)
+		quotas.PUT("", h.Admin.ModelTokenQuota.Update)
 	}
 }
 
@@ -258,6 +269,9 @@ func registerUserManagementRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
 		users.GET("/:id/platform-quotas", h.Admin.User.GetUserPlatformQuotas)
 		users.PUT("/:id/platform-quotas", h.Admin.User.UpdateUserPlatformQuotas)
 		users.POST("/:id/platform-quotas/reset", h.Admin.User.ResetUserPlatformQuotaWindow)
+		users.GET("/:id/model-token-quotas", h.Admin.UserModelTokenQuota.List)
+		users.PUT("/:id/model-token-quotas", h.Admin.UserModelTokenQuota.Update)
+		users.POST("/model-token-quotas/batch", h.Admin.UserModelTokenQuota.Batch)
 
 		// User attribute values
 		users.GET("/:id/attributes", h.Admin.UserAttribute.GetUserAttributes)
@@ -469,6 +483,9 @@ func registerSettingsRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
 		adminSettings.PUT("/web-search-emulation", h.Admin.Setting.UpdateWebSearchEmulationConfig)
 		adminSettings.POST("/web-search-emulation/test", h.Admin.Setting.TestWebSearchEmulation)
 		adminSettings.POST("/web-search-emulation/reset-usage", h.Admin.Setting.ResetWebSearchUsage)
+		// 新用户默认模型 Token 限额
+		adminSettings.GET("/default-model-token-quotas", h.Admin.Setting.GetDefaultModelTokenQuotas)
+		adminSettings.PUT("/default-model-token-quotas", h.Admin.Setting.UpdateDefaultModelTokenQuotas)
 	}
 }
 

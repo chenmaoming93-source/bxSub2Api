@@ -3,10 +3,10 @@
 -- 2) aff_code_custom: 标记当前 aff_code 是否被管理员手动改写过（用于"专属用户"列表筛选）
 
 ALTER TABLE user_affiliates
-    ADD COLUMN IF NOT EXISTS aff_rebate_rate_percent DECIMAL(5,2);
+    ADD COLUMN aff_rebate_rate_percent DECIMAL(5,2);
 
 ALTER TABLE user_affiliates
-    ADD COLUMN IF NOT EXISTS aff_code_custom BOOLEAN NOT NULL DEFAULT false;
+    ADD COLUMN aff_code_custom BOOLEAN NOT NULL DEFAULT false;
 
-CREATE INDEX IF NOT EXISTS idx_user_affiliates_admin_settings
+CREATE INDEX idx_user_affiliates_admin_settings
     ON user_affiliates (updated_at);

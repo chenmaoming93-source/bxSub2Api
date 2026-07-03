@@ -1639,6 +1639,52 @@ func HasPlatformQuotasWith(preds ...predicate.UserPlatformQuota) predicate.User 
 	})
 }
 
+// HasModelTokenDailyUsages applies the HasEdge predicate on the "model_token_daily_usages" edge.
+func HasModelTokenDailyUsages() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, ModelTokenDailyUsagesTable, ModelTokenDailyUsagesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasModelTokenDailyUsagesWith applies the HasEdge predicate on the "model_token_daily_usages" edge with a given conditions (other predicates).
+func HasModelTokenDailyUsagesWith(preds ...predicate.UserModelTokenDailyUsage) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newModelTokenDailyUsagesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasUserModelTokenDailyLimitConfigs applies the HasEdge predicate on the "user_model_token_daily_limit_configs" edge.
+func HasUserModelTokenDailyLimitConfigs() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, UserModelTokenDailyLimitConfigsTable, UserModelTokenDailyLimitConfigsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasUserModelTokenDailyLimitConfigsWith applies the HasEdge predicate on the "user_model_token_daily_limit_configs" edge with a given conditions (other predicates).
+func HasUserModelTokenDailyLimitConfigsWith(preds ...predicate.UserModelTokenDailyLimitConfig) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newUserModelTokenDailyLimitConfigsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasUserAllowedGroups applies the HasEdge predicate on the "user_allowed_groups" edge.
 func HasUserAllowedGroups() predicate.User {
 	return predicate.User(func(s *sql.Selector) {

@@ -83,10 +83,16 @@ func main() {
 				log.Fatalf("Auto setup failed: %v", err)
 			}
 			// Continue to main server after auto-setup
+		} else if hasConfig, err := setup.HasBootstrapConfig(); err != nil {
+			log.Fatalf("Failed to inspect bootstrap config: %v", err)
+		} else if hasConfig {
+			log.Println("Existing config detected, starting automatic setup...")
+			if err := setup.AutoSetupFromConfig(); err != nil {
+				log.Fatalf("Config-based auto setup failed: %v", err)
+			}
 		} else {
 			log.Println("First run detected, starting setup wizard...")
 			runSetupServer()
-			return
 		}
 	}
 
@@ -100,8 +106,14 @@ func runSetupServer() {
 	r.Use(middleware.CORS(config.CORSConfig{}))
 	r.Use(middleware.SecurityHeaders(config.CSPConfig{Enabled: true, Policy: config.DefaultCSPPolicy}, nil))
 
+	installed := make(chan struct{}, 1)
 	// Register setup routes
-	setup.RegisterRoutes(r)
+	setup.RegisterRoutes(r, func() {
+		select {
+		case installed <- struct{}{}:
+		default:
+		}
+	})
 
 	// Serve embedded frontend if available
 	if web.HasEmbeddedFrontend() {
@@ -125,6 +137,17 @@ func runSetupServer() {
 		IdleTimeout:       120 * time.Second,
 		Protocols:         protocols,
 	}
+	go func() {
+		<-installed
+		// Let the successful install response reach the browser before replacing
+		// the bootstrap router with the full application router.
+		time.Sleep(500 * time.Millisecond)
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := server.Shutdown(ctx); err != nil {
+			log.Printf("Failed to stop setup server: %v", err)
+		}
+	}()
 
 	if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		log.Fatalf("Failed to start setup server: %v", err)

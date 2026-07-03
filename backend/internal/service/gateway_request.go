@@ -231,6 +231,7 @@ func refreshGatewayRequestRanges(parsed *ParsedRequest, protocol string) error {
 type ParsedRequest struct {
 	Body            *RequestBodyRef // 原始请求体引用（保留用于转发）；替换内容请走 ReplaceBody
 	Model           string          // 请求的模型名称
+	UpstreamModel   string          // 实际发送给上游的模型名称；为空时使用 Model
 	Stream          bool            // 是否为流式请求
 	MetadataUserID  string          // metadata.user_id（用于会话亲和）
 	HasSystem       bool            // 是否包含 system 字段（包含 null 也视为显式传入）

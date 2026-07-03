@@ -4,29 +4,69 @@ import (
 	"context"
 	"regexp"
 	"testing"
+	"time"
 
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
+	"github.com/Wei-Shaw/sub2api/internal/service"
 	"github.com/stretchr/testify/require"
 )
 
-func TestSchedulerOutboxRepositoryDeleteConsumedUpToUsesBoundedCTE(t *testing.T) {
+func TestSchedulerOutboxRepositoryListAfterAndReleaseDedupUsesMySQLTransaction(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer func() { _ = db.Close() }()
+
+	repo := &schedulerOutboxRepository{db: db}
+	createdAt := time.Unix(1710000000, 0)
+	const selectSQL = `
+		SELECT id, event_type, account_id, group_id, payload, created_at
+		FROM scheduler_outbox
+		WHERE id > ?
+		ORDER BY id ASC
+		LIMIT ?
+		FOR UPDATE
+	`
+	const updateSQL = "UPDATE scheduler_outbox SET dedup_key = NULL WHERE dedup_key IS NOT NULL AND id IN (?)"
+	mock.ExpectBegin()
+	mock.ExpectQuery(regexp.QuoteMeta(selectSQL)).
+		WithArgs(int64(10), 2).
+		WillReturnRows(sqlmock.NewRows([]string{"id", "event_type", "account_id", "group_id", "payload", "created_at"}).
+			AddRow(int64(11), service.SchedulerOutboxEventAccountChanged, int64(42), nil, []byte(`{"group_ids":[7]}`), createdAt))
+	mock.ExpectExec(regexp.QuoteMeta(updateSQL)).
+		WithArgs(int64(11)).
+		WillReturnResult(sqlmock.NewResult(0, 1))
+	mock.ExpectCommit()
+
+	events, err := repo.ListAfterAndReleaseDedup(context.Background(), 10, 2)
+
+	require.NoError(t, err)
+	require.Len(t, events, 1)
+	require.EqualValues(t, 11, events[0].ID)
+	require.Equal(t, service.SchedulerOutboxEventAccountChanged, events[0].EventType)
+	require.NotNil(t, events[0].AccountID)
+	require.EqualValues(t, 42, *events[0].AccountID)
+	require.Equal(t, createdAt, events[0].CreatedAt)
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestSchedulerOutboxRepositoryDeleteConsumedUpToUsesBoundedSubquery(t *testing.T) {
 	db, mock, err := sqlmock.New()
 	require.NoError(t, err)
 	defer func() { _ = db.Close() }()
 
 	repo := &schedulerOutboxRepository{db: db}
 	const expectedSQL = `
-		WITH doomed AS (
-			SELECT id
-			FROM scheduler_outbox
-			WHERE id <= $1
-				AND created_at < NOW() - INTERVAL '10 seconds'
-			ORDER BY id ASC
-			LIMIT $2
+		DELETE FROM scheduler_outbox
+		WHERE id IN (
+			SELECT id FROM (
+				SELECT id
+				FROM scheduler_outbox
+				WHERE id <= ?
+					AND created_at < NOW() - INTERVAL 10 SECOND
+				ORDER BY id ASC
+				LIMIT ?
+			) AS doomed
 		)
-		DELETE FROM scheduler_outbox o
-		USING doomed d
-		WHERE o.id = d.id
 	`
 	mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
 		WithArgs(int64(42), 5000).
@@ -91,6 +131,26 @@ func TestSchedulerOutboxRepositoryTryAcquireCleanupLockUnavailable(t *testing.T)
 	require.False(t, acquired)
 	require.Nil(t, lease)
 
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestEnqueueSchedulerOutboxDedupUsesMySQLInsertIgnore(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer func() { _ = db.Close() }()
+
+	accountID := int64(42)
+	const expectedSQL = `
+			INSERT IGNORE INTO scheduler_outbox (event_type, account_id, group_id, payload, dedup_key)
+			VALUES (?, ?, ?, ?, ?)
+		`
+	mock.ExpectExec(regexp.QuoteMeta(expectedSQL)).
+		WithArgs(service.SchedulerOutboxEventAccountChanged, &accountID, nil, nil, sqlmock.AnyArg()).
+		WillReturnResult(sqlmock.NewResult(0, 1))
+
+	err = enqueueSchedulerOutbox(context.Background(), db, service.SchedulerOutboxEventAccountChanged, &accountID, nil, nil)
+
+	require.NoError(t, err)
 	require.NoError(t, mock.ExpectationsWereMet())
 }
 

@@ -3752,3 +3752,35 @@ func equalPlatformQuotaSettings(before, after map[string]*service.DefaultPlatfor
 	}
 	return true
 }
+
+// GetDefaultModelTokenQuotas 获取新用户默认模型每日 Token 限额配置。
+func (h *SettingHandler) GetDefaultModelTokenQuotas(c *gin.Context) {
+	quotas, err := h.settingService.GetDefaultUserModelTokenQuotas(c.Request.Context())
+	if err != nil {
+		slog.Error("default_user_model_token_quotas_get_failed", "error", err)
+		response.Success(c, gin.H{"quotas": []interface{}{}})
+		return
+	}
+	if quotas == nil {
+		quotas = []service.UserModelDailyTokenQuotaInput{}
+	}
+	response.Success(c, gin.H{"quotas": quotas})
+}
+
+type updateDefaultModelTokenQuotasRequest struct {
+	Quotas []service.UserModelDailyTokenQuotaInput `json:"quotas" binding:"required"`
+}
+
+// UpdateDefaultModelTokenQuotas 更新新用户默认模型每日 Token 限额配置。
+func (h *SettingHandler) UpdateDefaultModelTokenQuotas(c *gin.Context) {
+	var req updateDefaultModelTokenQuotasRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+	if err := h.settingService.SetDefaultUserModelTokenQuotas(c.Request.Context(), req.Quotas); err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+	response.Success(c, gin.H{"message": "Default model token quotas updated"})
+}

@@ -19,6 +19,10 @@ func NewGoldenDBDumper(cfg *config.Config) service.DBDumper {
 	return &GoldenDBDumper{cfg: &cfg.Database}
 }
 
+func NewMySQLDumper(cfg *config.Config) service.DBDumper {
+	return NewGoldenDBDumper(cfg)
+}
+
 func (d *GoldenDBDumper) Dump(ctx context.Context) (io.ReadCloser, error) {
 	args := []string{
 		"-h", d.cfg.Host,

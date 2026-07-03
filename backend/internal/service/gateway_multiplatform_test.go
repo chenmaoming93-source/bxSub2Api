@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/Wei-Shaw/sub2api/internal/config"
+	"github.com/Wei-Shaw/sub2api/internal/domain"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/ctxkey"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
 	"github.com/stretchr/testify/require"
@@ -3210,6 +3211,75 @@ func TestGatewayService_SelectAccountWithLoadAwareness(t *testing.T) {
 		require.NotNil(t, result.Account)
 		require.Equal(t, int64(2), result.Account.ID)
 	})
+}
+
+func TestGroupedModelCandidateRoutingUsesCandidateModelForAccountFiltering(t *testing.T) {
+	ctx := context.Background()
+	groupID := int64(12012)
+
+	repo := &mockAccountRepoForPlatform{
+		accounts: []Account{
+			{
+				ID:            1,
+				Platform:      PlatformAnthropic,
+				Priority:      1,
+				Status:        StatusActive,
+				Schedulable:   true,
+				Concurrency:   5,
+				Credentials:   map[string]any{"model_mapping": map[string]any{"fallback-model": "fallback-model"}},
+				AccountGroups: []AccountGroup{{GroupID: groupID}},
+			},
+			{
+				ID:            2,
+				Platform:      PlatformAnthropic,
+				Priority:      1,
+				Status:        StatusActive,
+				Schedulable:   true,
+				Concurrency:   5,
+				Credentials:   map[string]any{"model_mapping": map[string]any{"actual-model": "actual-model"}},
+				AccountGroups: []AccountGroup{{GroupID: groupID}},
+			},
+		},
+		accountsByID: map[int64]*Account{},
+	}
+	for i := range repo.accounts {
+		repo.accountsByID[repo.accounts[i].ID] = &repo.accounts[i]
+	}
+
+	groupRepo := &mockGroupRepoForGateway{
+		groups: map[int64]*Group{
+			groupID: {
+				ID:                  groupID,
+				Platform:            PlatformAnthropic,
+				Status:              StatusActive,
+				Hydrated:            true,
+				ModelRoutingEnabled: true,
+				ModelRouting: map[string][]domain.ModelRouteCandidate{
+					"alias-model": {
+						{Model: "actual-model", AccountIDs: []int64{2}, Priority: 1},
+						{Model: "fallback-model", AccountIDs: []int64{1}, Priority: 2},
+					},
+				},
+			},
+		},
+	}
+
+	cfg := testConfig()
+	cfg.Gateway.Scheduling.LoadBatchEnabled = true
+
+	svc := &GatewayService{
+		accountRepo:        repo,
+		groupRepo:          groupRepo,
+		cache:              &mockGatewayCacheForPlatform{},
+		cfg:                cfg,
+		concurrencyService: NewConcurrencyService(&mockConcurrencyCache{}),
+	}
+
+	result, err := svc.SelectAccountWithLoadAwareness(ctx, &groupID, "", "alias-model", nil, "", 0)
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	require.NotNil(t, result.Account)
+	require.Equal(t, int64(2), result.Account.ID)
 }
 
 func TestGatewayService_GroupResolution_ReusesContextGroup(t *testing.T) {

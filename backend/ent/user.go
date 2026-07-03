@@ -97,11 +97,15 @@ type UserEdges struct {
 	PendingAuthSessions []*PendingAuthSession `json:"pending_auth_sessions,omitempty"`
 	// PlatformQuotas holds the value of the platform_quotas edge.
 	PlatformQuotas []*UserPlatformQuota `json:"platform_quotas,omitempty"`
+	// ModelTokenDailyUsages holds the value of the model_token_daily_usages edge.
+	ModelTokenDailyUsages []*UserModelTokenDailyUsage `json:"model_token_daily_usages,omitempty"`
+	// UserModelTokenDailyLimitConfigs holds the value of the user_model_token_daily_limit_configs edge.
+	UserModelTokenDailyLimitConfigs []*UserModelTokenDailyLimitConfig `json:"user_model_token_daily_limit_configs,omitempty"`
 	// UserAllowedGroups holds the value of the user_allowed_groups edge.
 	UserAllowedGroups []*UserAllowedGroup `json:"user_allowed_groups,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [14]bool
+	loadedTypes [16]bool
 }
 
 // APIKeysOrErr returns the APIKeys value or an error if the edge
@@ -221,10 +225,28 @@ func (e UserEdges) PlatformQuotasOrErr() ([]*UserPlatformQuota, error) {
 	return nil, &NotLoadedError{edge: "platform_quotas"}
 }
 
+// ModelTokenDailyUsagesOrErr returns the ModelTokenDailyUsages value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) ModelTokenDailyUsagesOrErr() ([]*UserModelTokenDailyUsage, error) {
+	if e.loadedTypes[13] {
+		return e.ModelTokenDailyUsages, nil
+	}
+	return nil, &NotLoadedError{edge: "model_token_daily_usages"}
+}
+
+// UserModelTokenDailyLimitConfigsOrErr returns the UserModelTokenDailyLimitConfigs value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) UserModelTokenDailyLimitConfigsOrErr() ([]*UserModelTokenDailyLimitConfig, error) {
+	if e.loadedTypes[14] {
+		return e.UserModelTokenDailyLimitConfigs, nil
+	}
+	return nil, &NotLoadedError{edge: "user_model_token_daily_limit_configs"}
+}
+
 // UserAllowedGroupsOrErr returns the UserAllowedGroups value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) UserAllowedGroupsOrErr() ([]*UserAllowedGroup, error) {
-	if e.loadedTypes[13] {
+	if e.loadedTypes[15] {
 		return e.UserAllowedGroups, nil
 	}
 	return nil, &NotLoadedError{edge: "user_allowed_groups"}
@@ -486,6 +508,16 @@ func (_m *User) QueryPendingAuthSessions() *PendingAuthSessionQuery {
 // QueryPlatformQuotas queries the "platform_quotas" edge of the User entity.
 func (_m *User) QueryPlatformQuotas() *UserPlatformQuotaQuery {
 	return NewUserClient(_m.config).QueryPlatformQuotas(_m)
+}
+
+// QueryModelTokenDailyUsages queries the "model_token_daily_usages" edge of the User entity.
+func (_m *User) QueryModelTokenDailyUsages() *UserModelTokenDailyUsageQuery {
+	return NewUserClient(_m.config).QueryModelTokenDailyUsages(_m)
+}
+
+// QueryUserModelTokenDailyLimitConfigs queries the "user_model_token_daily_limit_configs" edge of the User entity.
+func (_m *User) QueryUserModelTokenDailyLimitConfigs() *UserModelTokenDailyLimitConfigQuery {
+	return NewUserClient(_m.config).QueryUserModelTokenDailyLimitConfigs(_m)
 }
 
 // QueryUserAllowedGroups queries the "user_allowed_groups" edge of the User entity.

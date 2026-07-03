@@ -20,23 +20,23 @@ CREATE TABLE IF NOT EXISTS channel_monitors (
     endpoint          VARCHAR(500) NOT NULL,    -- base origin
     api_key_encrypted TEXT         NOT NULL,    -- AES-256-GCM (base64)
     primary_model     VARCHAR(200) NOT NULL,
-    extra_models      JSON        NOT NULL DEFAULT (JSON_ARRAY()),
+    extra_models      JSON NULL,
     group_name        VARCHAR(100) NOT NULL DEFAULT '',
     enabled           BOOLEAN      NOT NULL DEFAULT TRUE,
     interval_seconds  INT          NOT NULL,
     last_checked_at   DATETIME(6),
     created_by        BIGINT       NOT NULL,
-    created_at        DATETIME(6)  NOT NULL DEFAULT NOW(),
-    updated_at        DATETIME(6)  NOT NULL DEFAULT NOW(),
+    created_at        DATETIME(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    updated_at        DATETIME(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     CONSTRAINT channel_monitors_provider_check CHECK (provider IN ('openai', 'anthropic', 'gemini')),
     CONSTRAINT channel_monitors_interval_check CHECK (interval_seconds BETWEEN 15 AND 3600)
 );
 
-CREATE INDEX IF NOT EXISTS idx_channel_monitors_enabled_last_checked
+CREATE INDEX idx_channel_monitors_enabled_last_checked
     ON channel_monitors (enabled, last_checked_at);
-CREATE INDEX IF NOT EXISTS idx_channel_monitors_provider
+CREATE INDEX idx_channel_monitors_provider
     ON channel_monitors (provider);
-CREATE INDEX IF NOT EXISTS idx_channel_monitors_group_name
+CREATE INDEX idx_channel_monitors_group_name
     ON channel_monitors (group_name);
 
 CREATE TABLE IF NOT EXISTS channel_monitor_histories (
@@ -47,12 +47,12 @@ CREATE TABLE IF NOT EXISTS channel_monitor_histories (
     latency_ms      INT,
     ping_latency_ms INT,
     message         VARCHAR(500) NOT NULL DEFAULT '',
-    checked_at      DATETIME(6)  NOT NULL DEFAULT NOW(),
+    checked_at      DATETIME(6)  NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     CONSTRAINT channel_monitor_histories_status_check
         CHECK (status IN ('operational', 'degraded', 'failed', 'error'))
 );
 
-CREATE INDEX IF NOT EXISTS idx_channel_monitor_histories_monitor_model_checked
+CREATE INDEX idx_channel_monitor_histories_monitor_model_checked
     ON channel_monitor_histories (monitor_id, model, checked_at DESC);
-CREATE INDEX IF NOT EXISTS idx_channel_monitor_histories_checked_at
+CREATE INDEX idx_channel_monitor_histories_checked_at
     ON channel_monitor_histories (checked_at);

@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -39,7 +40,7 @@ executed_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
 execution_time BIGINT NOT NULL DEFAULT 0,
 error TEXT NULL,
 error_stmt TEXT NULL,
-hash TEXT NOT NULL DEFAULT '',
+hash VARCHAR(64) NOT NULL DEFAULT '',
 partial_hashes TEXT NULL,
 operator_version TEXT NULL
 );
@@ -57,6 +58,21 @@ const paymentOrdersOutTradeNoUniqueIndex = "paymentorder_out_trade_no_unique"
 const schedulerOutboxPendingDedupKeyMigration = "153_scheduler_outbox_pending_dedup_key_index_notx.sql"
 const schedulerOutboxPendingDedupKeyIndex = "idx_scheduler_outbox_pending_dedup_key"
 
+var (
+	createIndexIfNotExistsPattern = regexp.MustCompile(`(?is)^\s*CREATE\s+(UNIQUE\s+)?INDEX\s+IF\s+NOT\s+EXISTS\s+` + identifierPattern("index") + `\s+ON\s+` + identifierPattern("table"))
+	dropIndexIfExistsPattern      = regexp.MustCompile(`(?is)^\s*DROP\s+INDEX\s+IF\s+EXISTS\s+` + identifierPattern("index") + `(?:\s+ON\s+` + identifierPattern("table") + `)?\s*$`)
+	alterTablePattern             = regexp.MustCompile(`(?is)^\s*ALTER\s+TABLE\s+` + identifierPattern("table") + `\s+(?P<clauses>.+)$`)
+	addColumnIfNotExistsPattern   = regexp.MustCompile(`(?is)^\s*ADD\s+COLUMN\s+IF\s+NOT\s+EXISTS\s+` + identifierPattern("column") + `\s+`)
+	dropColumnIfExistsPattern     = regexp.MustCompile(`(?is)^\s*DROP\s+COLUMN\s+IF\s+EXISTS\s+` + identifierPattern("column") + `\s*$`)
+	dropObjectCascadePattern      = regexp.MustCompile(`(?is)^(\s*DROP\s+(?:TABLE|VIEW)\s+IF\s+EXISTS\s+.+?)\s+CASCADE\s*$`)
+	setLocalPattern               = regexp.MustCompile(`(?is)^\s*SET\s+LOCAL\s+`)
+)
+
+type migrationExecutor interface {
+	ExecContext(context.Context, string, ...any) (sql.Result, error)
+	QueryRowContext(context.Context, string, ...any) *sql.Row
+}
+
 type migrationChecksumCompatibilityRule struct {
 	fileChecksum       string
 	acceptedDBChecksum map[string]struct{}
@@ -69,6 +85,7 @@ type migrationChecksumCompatibilityRule struct {
 var migrationChecksumCompatibilityRules = map[string]migrationChecksumCompatibilityRule{
 	"054_drop_legacy_cache_columns.sql":                       newMigrationChecksumCompatibilityRule("82de761156e03876653e7a6a4eee883cd927847036f779b0b9f34c42a8af7a7d", "182c193f3359946cf094090cd9e57d5c3fd9abaffbc1e8fc378646b8a6fa12b4"),
 	"061_add_usage_log_request_type.sql":                      newMigrationChecksumCompatibilityRule("66207e7aa5dd0429c2e2c0fabdaf79783ff157fa0af2e81adff2ee03790ec65c", "08a248652cbab7cfde147fc6ef8cda464f2477674e20b718312faa252e0481c0", "222b4a09c797c22e5922b6b172327c824f5463aaa8760e4f621bc5c22e2be0f3"),
+	"082_refactor_channel_pricing.sql":                        newMigrationChecksumCompatibilityRule("ed57a176dc8843b1ef12963f556b66f380f126aaf12d61cf3dbcf3ff61145553", "d185c5d859a5705dc6d1abb998a314f5624f0081b49602575c578dfc796bf460"),
 	"109_auth_identity_compat_backfill.sql":                   newMigrationChecksumCompatibilityRule("0580b4602d85435edf9aca1633db580bb3932f26517f75134106f80275ec2ace", "551e498aa5616d2d91096e9d72cf9fb36e418ee22eacc557f8811cadbc9e20ee"),
 	"110_pending_auth_and_provider_default_grants.sql":        newMigrationChecksumCompatibilityRule("32cf87ee787b1bb36b5c691367c96eee37518fa3eed6f3322cf68795e3745279", "e3d1f433be2b564cfbdc549adf98fce13c5c7b363ebc20fd05b765d0563b0925"),
 	"112_add_payment_order_provider_key_snapshot.sql":         newMigrationChecksumCompatibilityRule("b75f8f56d39455682787696a3d92ad25b055444ca328fb7fca9a460a15d68d99", "ffd3e8a2c9295fa9cbefefd629a78268877e5b51bc970a82d9b3f46ec4ebd15e"),
@@ -219,7 +236,7 @@ func applyMigrationsFS(ctx context.Context, db *sql.DB, fsys fs.FS) error {
 				if stripSQLLineComment(trimmed) == "" {
 					continue
 				}
-				if _, err := db.ExecContext(ctx, trimmed); err != nil {
+				if err := executeMigrationStatement(ctx, db, trimmed); err != nil {
 					return fmt.Errorf("apply migration %s (non-tx statement %d): %w", name, i+1, err)
 				}
 			}
@@ -236,9 +253,9 @@ func applyMigrationsFS(ctx context.Context, db *sql.DB, fsys fs.FS) error {
 		}
 
 		// 执行迁移 SQL
-		if _, err := tx.ExecContext(ctx, content); err != nil {
+		if err := executeMigrationStatements(ctx, tx, content, name, "tx"); err != nil {
 			_ = tx.Rollback()
-			return fmt.Errorf("apply migration %s: %w", name, err)
+			return err
 		}
 
 		// 记录迁移已完成，保存文件名和校验和
@@ -391,6 +408,327 @@ func tableExists(ctx context.Context, db *sql.DB, tableName string) (bool, error
 	return exists, err
 }
 
+func executeMigrationStatements(ctx context.Context, exec migrationExecutor, content, name, mode string) error {
+	statements := splitSQLStatements(content)
+	for i, stmt := range statements {
+		trimmed := strings.TrimSpace(stmt)
+		if trimmed == "" {
+			continue
+		}
+		if stripSQLLineComment(trimmed) == "" {
+			continue
+		}
+		if err := executeMigrationStatement(ctx, exec, trimmed); err != nil {
+			return fmt.Errorf("apply migration %s (%s statement %d): %w", name, mode, i+1, err)
+		}
+	}
+	return nil
+}
+
+func executeMigrationStatement(ctx context.Context, exec migrationExecutor, stmt string) error {
+	normalized := stripSQLLineComment(strings.TrimSpace(stmt))
+	if normalized == "" {
+		return nil
+	}
+	if setLocalPattern.MatchString(normalized) {
+		return nil
+	}
+
+	if rewritten, skip, err := rewriteCreateIndexIfNotExists(ctx, exec, normalized); err != nil {
+		return err
+	} else if skip {
+		return nil
+	} else if rewritten != "" {
+		_, err := exec.ExecContext(ctx, rewritten)
+		return err
+	}
+
+	if rewritten, skip, err := rewriteDropIndexIfExists(ctx, exec, normalized); err != nil {
+		return err
+	} else if skip {
+		return nil
+	} else if rewritten != "" {
+		_, err := exec.ExecContext(ctx, rewritten)
+		return err
+	}
+
+	if rewritten, skip, err := rewriteAlterTableColumnIfExists(ctx, exec, normalized); err != nil {
+		return err
+	} else if skip {
+		return nil
+	} else if rewritten != "" {
+		_, err := exec.ExecContext(ctx, rewritten)
+		return err
+	}
+
+	if rewritten := rewriteDropObjectCascade(normalized); rewritten != "" {
+		_, err := exec.ExecContext(ctx, rewritten)
+		return err
+	}
+
+	_, err := exec.ExecContext(ctx, normalized)
+	return err
+}
+
+func rewriteCreateIndexIfNotExists(ctx context.Context, exec migrationExecutor, stmt string) (string, bool, error) {
+	matches := createIndexIfNotExistsPattern.FindStringSubmatch(stmt)
+	if matches == nil {
+		return "", false, nil
+	}
+
+	indexName := regexpNamedMatch(createIndexIfNotExistsPattern, matches, "index_quoted")
+	if indexName == "" {
+		indexName = regexpNamedMatch(createIndexIfNotExistsPattern, matches, "index_plain")
+	}
+	tableName := regexpNamedMatch(createIndexIfNotExistsPattern, matches, "table_quoted")
+	if tableName == "" {
+		tableName = regexpNamedMatch(createIndexIfNotExistsPattern, matches, "table_plain")
+	}
+	exists, err := indexExists(ctx, exec, tableName, indexName)
+	if err != nil {
+		return "", false, fmt.Errorf("check index %s on %s: %w", indexName, tableName, err)
+	}
+	if exists {
+		return "", true, nil
+	}
+	return createIndexIfNotExistsPattern.ReplaceAllString(stmt, "CREATE ${1}INDEX "+quoteIdentifier(indexName)+" ON "+quoteIdentifier(tableName)), false, nil
+}
+
+func rewriteDropIndexIfExists(ctx context.Context, exec migrationExecutor, stmt string) (string, bool, error) {
+	matches := dropIndexIfExistsPattern.FindStringSubmatch(stmt)
+	if matches == nil {
+		return "", false, nil
+	}
+
+	indexName := regexpNamedMatch(dropIndexIfExistsPattern, matches, "index_quoted")
+	if indexName == "" {
+		indexName = regexpNamedMatch(dropIndexIfExistsPattern, matches, "index_plain")
+	}
+	tableName := regexpNamedMatch(dropIndexIfExistsPattern, matches, "table_quoted")
+	if tableName == "" {
+		tableName = regexpNamedMatch(dropIndexIfExistsPattern, matches, "table_plain")
+	}
+
+	if tableName != "" {
+		exists, err := indexExists(ctx, exec, tableName, indexName)
+		if err != nil {
+			return "", false, fmt.Errorf("check index %s on %s: %w", indexName, tableName, err)
+		}
+		if !exists {
+			return "", true, nil
+		}
+		return "DROP INDEX " + quoteIdentifier(indexName) + " ON " + quoteIdentifier(tableName), false, nil
+	}
+
+	tables, err := indexTables(ctx, exec, indexName)
+	if err != nil {
+		return "", false, fmt.Errorf("lookup index %s: %w", indexName, err)
+	}
+	if len(tables) == 0 {
+		return "", true, nil
+	}
+	if len(tables) > 1 {
+		return "", false, fmt.Errorf("index %s exists on multiple tables: %s", indexName, strings.Join(tables, ", "))
+	}
+	return "DROP INDEX " + quoteIdentifier(indexName) + " ON " + quoteIdentifier(tables[0]), false, nil
+}
+
+func rewriteAlterTableColumnIfExists(ctx context.Context, exec migrationExecutor, stmt string) (string, bool, error) {
+	matches := alterTablePattern.FindStringSubmatch(stmt)
+	if matches == nil {
+		return "", false, nil
+	}
+
+	tableName := regexpNamedMatch(alterTablePattern, matches, "table_quoted")
+	if tableName == "" {
+		tableName = regexpNamedMatch(alterTablePattern, matches, "table_plain")
+	}
+	clauses := regexpNamedMatch(alterTablePattern, matches, "clauses")
+	if !strings.Contains(strings.ToUpper(clauses), "IF") {
+		return "", false, nil
+	}
+
+	parts := splitTopLevelComma(clauses)
+	rewrittenParts := make([]string, 0, len(parts))
+	changed := false
+	for _, part := range parts {
+		trimmed := strings.TrimSpace(part)
+		if trimmed == "" {
+			continue
+		}
+
+		if addMatches := addColumnIfNotExistsPattern.FindStringSubmatch(trimmed); addMatches != nil {
+			columnName := regexpNamedMatch(addColumnIfNotExistsPattern, addMatches, "column_quoted")
+			if columnName == "" {
+				columnName = regexpNamedMatch(addColumnIfNotExistsPattern, addMatches, "column_plain")
+			}
+			exists, err := columnExists(ctx, exec, tableName, columnName)
+			if err != nil {
+				return "", false, fmt.Errorf("check column %s on %s: %w", columnName, tableName, err)
+			}
+			changed = true
+			if exists {
+				continue
+			}
+			rewrittenParts = append(rewrittenParts, addColumnIfNotExistsPattern.ReplaceAllString(trimmed, "ADD COLUMN "+quoteIdentifier(columnName)+" "))
+			continue
+		}
+
+		if dropMatches := dropColumnIfExistsPattern.FindStringSubmatch(trimmed); dropMatches != nil {
+			columnName := regexpNamedMatch(dropColumnIfExistsPattern, dropMatches, "column_quoted")
+			if columnName == "" {
+				columnName = regexpNamedMatch(dropColumnIfExistsPattern, dropMatches, "column_plain")
+			}
+			exists, err := columnExists(ctx, exec, tableName, columnName)
+			if err != nil {
+				return "", false, fmt.Errorf("check column %s on %s: %w", columnName, tableName, err)
+			}
+			changed = true
+			if !exists {
+				continue
+			}
+			rewrittenParts = append(rewrittenParts, "DROP COLUMN "+quoteIdentifier(columnName))
+			continue
+		}
+
+		rewrittenParts = append(rewrittenParts, trimmed)
+	}
+
+	if !changed {
+		return "", false, nil
+	}
+	if len(rewrittenParts) == 0 {
+		return "", true, nil
+	}
+	return "ALTER TABLE " + quoteIdentifier(tableName) + " " + strings.Join(rewrittenParts, ", "), false, nil
+}
+
+func rewriteDropObjectCascade(stmt string) string {
+	matches := dropObjectCascadePattern.FindStringSubmatch(stmt)
+	if matches == nil {
+		return ""
+	}
+	return matches[1]
+}
+
+func indexExists(ctx context.Context, exec migrationExecutor, tableName, indexName string) (bool, error) {
+	var exists bool
+	err := exec.QueryRowContext(ctx, `
+		SELECT EXISTS (
+			SELECT 1
+			FROM information_schema.statistics
+			WHERE table_schema = DATABASE() AND table_name = ? AND index_name = ?
+		)
+	`, tableName, indexName).Scan(&exists)
+	return exists, err
+}
+
+func indexTables(ctx context.Context, exec migrationExecutor, indexName string) ([]string, error) {
+	rows, err := queryContext(ctx, exec, `
+		SELECT DISTINCT table_name
+		FROM information_schema.statistics
+		WHERE table_schema = DATABASE() AND index_name = ?
+		ORDER BY table_name
+	`, indexName)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		_ = rows.Close()
+	}()
+
+	var tables []string
+	for rows.Next() {
+		var tableName string
+		if err := rows.Scan(&tableName); err != nil {
+			return nil, err
+		}
+		tables = append(tables, tableName)
+	}
+	return tables, rows.Err()
+}
+
+func columnExists(ctx context.Context, exec migrationExecutor, tableName, columnName string) (bool, error) {
+	var exists bool
+	err := exec.QueryRowContext(ctx, `
+		SELECT EXISTS (
+			SELECT 1
+			FROM information_schema.columns
+			WHERE table_schema = DATABASE() AND table_name = ? AND column_name = ?
+		)
+	`, tableName, columnName).Scan(&exists)
+	return exists, err
+}
+
+func splitTopLevelComma(s string) []string {
+	var parts []string
+	start := 0
+	depth := 0
+	inSingleQuote := false
+	inDoubleQuote := false
+	inBacktick := false
+	for i, r := range s {
+		switch r {
+		case '\'':
+			if !inDoubleQuote && !inBacktick {
+				inSingleQuote = !inSingleQuote
+			}
+		case '"':
+			if !inSingleQuote && !inBacktick {
+				inDoubleQuote = !inDoubleQuote
+			}
+		case '`':
+			if !inSingleQuote && !inDoubleQuote {
+				inBacktick = !inBacktick
+			}
+		case '(':
+			if !inSingleQuote && !inDoubleQuote && !inBacktick {
+				depth++
+			}
+		case ')':
+			if !inSingleQuote && !inDoubleQuote && !inBacktick && depth > 0 {
+				depth--
+			}
+		case ',':
+			if !inSingleQuote && !inDoubleQuote && !inBacktick && depth == 0 {
+				parts = append(parts, s[start:i])
+				start = i + 1
+			}
+		}
+	}
+	parts = append(parts, s[start:])
+	return parts
+}
+
+type queryer interface {
+	QueryContext(context.Context, string, ...any) (*sql.Rows, error)
+}
+
+func queryContext(ctx context.Context, exec migrationExecutor, query string, args ...any) (*sql.Rows, error) {
+	q, ok := exec.(queryer)
+	if !ok {
+		return nil, errors.New("migration executor does not support QueryContext")
+	}
+	return q.QueryContext(ctx, query, args...)
+}
+
+func identifierPattern(name string) string {
+	return `(?:` + "`" + `(?P<` + name + `_quoted>[^` + "`" + `]+)` + "`" + `|(?P<` + name + `_plain>[A-Za-z0-9_]+))`
+}
+
+func regexpNamedMatch(re *regexp.Regexp, matches []string, name string) string {
+	for i, groupName := range re.SubexpNames() {
+		if groupName == name && i < len(matches) {
+			return matches[i]
+		}
+	}
+	return ""
+}
+
+func quoteIdentifier(name string) string {
+	return "`" + strings.ReplaceAll(name, "`", "``") + "`"
+}
+
 func latestMigrationBaseline(fsys fs.FS) (string, string, string, error) {
 	files, err := fs.Glob(fsys, "*.sql")
 	if err != nil {
@@ -468,13 +806,75 @@ func validateMigrationExecutionMode(name, content string) (bool, error) {
 }
 
 func splitSQLStatements(content string) []string {
-	parts := strings.Split(content, ";")
-	out := make([]string, 0, len(parts))
-	for _, part := range parts {
-		if strings.TrimSpace(part) == "" {
+	var out []string
+	start := 0
+	inSingleQuote := false
+	inDoubleQuote := false
+	inBacktick := false
+	inLineComment := false
+	inBlockComment := false
+	for i := 0; i < len(content); i++ {
+		ch := content[i]
+		var next byte
+		if i+1 < len(content) {
+			next = content[i+1]
+		}
+
+		if inLineComment {
+			if ch == '\n' || ch == '\r' {
+				inLineComment = false
+			}
 			continue
 		}
-		out = append(out, part)
+		if inBlockComment {
+			if ch == '*' && next == '/' {
+				inBlockComment = false
+				i++
+			}
+			continue
+		}
+		if !inSingleQuote && !inDoubleQuote && !inBacktick {
+			if ch == '-' && next == '-' {
+				inLineComment = true
+				i++
+				continue
+			}
+			if ch == '/' && next == '*' {
+				inBlockComment = true
+				i++
+				continue
+			}
+		}
+
+		switch ch {
+		case '\'':
+			if !inDoubleQuote && !inBacktick {
+				if inSingleQuote && next == '\'' {
+					i++
+				} else {
+					inSingleQuote = !inSingleQuote
+				}
+			}
+		case '"':
+			if !inSingleQuote && !inBacktick {
+				inDoubleQuote = !inDoubleQuote
+			}
+		case '`':
+			if !inSingleQuote && !inDoubleQuote {
+				inBacktick = !inBacktick
+			}
+		case ';':
+			if !inSingleQuote && !inDoubleQuote && !inBacktick {
+				part := content[start:i]
+				if strings.TrimSpace(part) != "" {
+					out = append(out, part)
+				}
+				start = i + 1
+			}
+		}
+	}
+	if tail := content[start:]; strings.TrimSpace(tail) != "" {
+		out = append(out, tail)
 	}
 	return out
 }

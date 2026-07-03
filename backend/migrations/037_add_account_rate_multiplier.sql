@@ -7,8 +7,8 @@
 -- 注意：usage_logs.account_rate_multiplier 不做回填、不设置 NOT NULL。
 -- 老数据为 NULL 时，统计口径按 1.0 处理（COALESCE）。
 
-ALTER TABLE IF EXISTS accounts
-  ADD COLUMN IF NOT EXISTS rate_multiplier DECIMAL(10,4) NOT NULL DEFAULT 1.0;
+ALTER TABLE accounts
+  ADD COLUMN rate_multiplier DECIMAL(10,4) NOT NULL DEFAULT 1.0;
 
-ALTER TABLE IF EXISTS usage_logs
-  ADD COLUMN IF NOT EXISTS account_rate_multiplier DECIMAL(10,4);
+ALTER TABLE usage_logs
+  ADD COLUMN account_rate_multiplier DECIMAL(10,4);

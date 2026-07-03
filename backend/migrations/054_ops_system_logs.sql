@@ -3,7 +3,7 @@
 
 CREATE TABLE IF NOT EXISTS ops_system_logs (
   id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  created_at DATETIME(6) NOT NULL DEFAULT NOW(),
+  created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
   level VARCHAR(16) NOT NULL,
   component VARCHAR(128) NOT NULL DEFAULT '',
   message TEXT NOT NULL,
@@ -13,31 +13,31 @@ CREATE TABLE IF NOT EXISTS ops_system_logs (
   account_id BIGINT,
   platform VARCHAR(32),
   model VARCHAR(128),
-  extra JSON NOT NULL DEFAULT (JSON_OBJECT())
+  extra JSON NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_ops_system_logs_created_at_id
+CREATE INDEX idx_ops_system_logs_created_at_id
   ON ops_system_logs (created_at DESC, id DESC);
 
-CREATE INDEX IF NOT EXISTS idx_ops_system_logs_level_created_at
+CREATE INDEX idx_ops_system_logs_level_created_at
   ON ops_system_logs (level, created_at DESC);
 
-CREATE INDEX IF NOT EXISTS idx_ops_system_logs_component_created_at
+CREATE INDEX idx_ops_system_logs_component_created_at
   ON ops_system_logs (component, created_at DESC);
 
-CREATE INDEX IF NOT EXISTS idx_ops_system_logs_request_id
+CREATE INDEX idx_ops_system_logs_request_id
   ON ops_system_logs (request_id);
 
-CREATE INDEX IF NOT EXISTS idx_ops_system_logs_client_request_id
+CREATE INDEX idx_ops_system_logs_client_request_id
   ON ops_system_logs (client_request_id);
 
-CREATE INDEX IF NOT EXISTS idx_ops_system_logs_user_id_created_at
+CREATE INDEX idx_ops_system_logs_user_id_created_at
   ON ops_system_logs (user_id, created_at DESC);
 
-CREATE INDEX IF NOT EXISTS idx_ops_system_logs_account_id_created_at
+CREATE INDEX idx_ops_system_logs_account_id_created_at
   ON ops_system_logs (account_id, created_at DESC);
 
-CREATE INDEX IF NOT EXISTS idx_ops_system_logs_platform_model_created_at
+CREATE INDEX idx_ops_system_logs_platform_model_created_at
   ON ops_system_logs (platform, model, created_at DESC);
 
 CREATE FULLTEXT INDEX idx_ops_system_logs_message_search
@@ -45,11 +45,11 @@ CREATE FULLTEXT INDEX idx_ops_system_logs_message_search
 
 CREATE TABLE IF NOT EXISTS ops_system_log_cleanup_audits (
   id BIGINT NOT NULL AUTO_INCREMENT PRIMARY KEY,
-  created_at DATETIME(6) NOT NULL DEFAULT NOW(),
+  created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
   operator_id BIGINT NOT NULL,
-  conditions JSON NOT NULL DEFAULT (JSON_OBJECT()),
+  conditions JSON NULL,
   deleted_rows BIGINT NOT NULL DEFAULT 0
 );
 
-CREATE INDEX IF NOT EXISTS idx_ops_system_log_cleanup_audits_created_at
+CREATE INDEX idx_ops_system_log_cleanup_audits_created_at
   ON ops_system_log_cleanup_audits (created_at DESC, id DESC);

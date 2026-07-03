@@ -1,4 +1,4 @@
-package service
+﻿package service
 
 import (
 	"context"
@@ -12,11 +12,14 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	dbent "github.com/Wei-Shaw/sub2api/ent"
 	"github.com/Wei-Shaw/sub2api/ent/authidentity"
 	"github.com/Wei-Shaw/sub2api/ent/authidentitychannel"
+	dbuser "github.com/Wei-Shaw/sub2api/ent/user"
+	usermodeltokendailylimitconfig "github.com/Wei-Shaw/sub2api/ent/usermodeltokendailylimitconfig"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/antigravity"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/claude"
 	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
@@ -127,6 +130,9 @@ type AdminService interface {
 	BatchDeleteRedeemCodes(ctx context.Context, ids []int64) (int64, error)
 	ExpireRedeemCode(ctx context.Context, id int64) (*RedeemCode, error)
 	ResetAccountQuota(ctx context.Context, id int64) error
+
+	// Batch model token quota management
+	BatchApplyModelTokenQuotasToAllUsers(ctx context.Context, operations []BatchModelTokenQuotaOperation) (*BatchModelTokenQuotaResult, error)
 }
 
 // CreateUserInput represents input for creating a new user via admin operations.
@@ -216,7 +222,7 @@ type CreateGroupInput struct {
 	// 无效请求兜底分组 ID（仅 anthropic 平台使用）
 	FallbackGroupIDOnInvalidRequest *int64
 	// 模型路由配置（仅 anthropic 平台使用）
-	ModelRouting        map[string][]int64
+	ModelRouting        json.RawMessage
 	ModelRoutingEnabled bool // 是否启用模型路由
 	MCPXMLInject        *bool
 	// 支持的模型系列（仅 antigravity 平台使用）
@@ -257,7 +263,7 @@ type UpdateGroupInput struct {
 	// 无效请求兜底分组 ID（仅 anthropic 平台使用）
 	FallbackGroupIDOnInvalidRequest *int64
 	// 模型路由配置（仅 anthropic 平台使用）
-	ModelRouting        map[string][]int64
+	ModelRouting        json.RawMessage
 	ModelRoutingEnabled *bool // 是否启用模型路由
 	MCPXMLInject        *bool
 	// 支持的模型系列（仅 antigravity 平台使用）
@@ -552,11 +558,14 @@ type adminServiceImpl struct {
 	proxyLatencyCache    ProxyLatencyCache
 	authCacheInvalidator APIKeyAuthCacheInvalidator
 	entClient            *dbent.Client // 用于开启数据库事务
-	settingService       *SettingService
-	defaultSubAssigner   DefaultSubscriptionAssigner
-	userSubRepo          UserSubscriptionRepository
-	privacyClientFactory PrivacyClientFactory
-	runtimeBlocker       AccountRuntimeBlocker
+	settingService          *SettingService
+	defaultSubAssigner      DefaultSubscriptionAssigner
+	userSubRepo             UserSubscriptionRepository
+	privacyClientFactory    PrivacyClientFactory
+	runtimeBlocker          AccountRuntimeBlocker
+	tokenQuotaAdminRepo     UserModelTokenQuotaAdminRepository
+
+	createGroupMu sync.Mutex
 }
 
 type userGroupRateBatchReader interface {
@@ -583,6 +592,7 @@ func NewAdminService(
 	userSubRepo UserSubscriptionRepository,
 	privacyClientFactory PrivacyClientFactory,
 	runtimeBlocker AccountRuntimeBlocker,
+	tokenQuotaAdminRepo UserModelTokenQuotaAdminRepository,
 ) AdminService {
 	return &adminServiceImpl{
 		userRepo:             userRepo,
@@ -603,6 +613,7 @@ func NewAdminService(
 		userSubRepo:          userSubRepo,
 		privacyClientFactory: privacyClientFactory,
 		runtimeBlocker:       runtimeBlocker,
+		tokenQuotaAdminRepo:  tokenQuotaAdminRepo,
 	}
 }
 
@@ -719,6 +730,7 @@ func (s *adminServiceImpl) CreateUser(ctx context.Context, input *CreateUserInpu
 		return nil, err
 	}
 	s.assignDefaultSubscriptions(ctx, user.ID)
+	s.assignDefaultModelTokenQuotas(ctx, user.ID)
 	return user, nil
 }
 
@@ -737,6 +749,149 @@ func (s *adminServiceImpl) assignDefaultSubscriptions(ctx context.Context, userI
 			logger.LegacyPrintf("service.admin", "failed to assign default subscription: user_id=%d group_id=%d err=%v", userID, item.GroupID, err)
 		}
 	}
+}
+
+func (s *adminServiceImpl) assignDefaultModelTokenQuotas(ctx context.Context, userID int64) {
+	if s.settingService == nil || s.tokenQuotaAdminRepo == nil || userID <= 0 {
+		return
+	}
+	defaults, err := s.settingService.GetDefaultUserModelTokenQuotas(ctx)
+	if err != nil || len(defaults) == 0 {
+		return
+	}
+	if _, err := s.tokenQuotaAdminRepo.UpsertUserModelDailyTokenQuotas(ctx, userID, time.Now(), defaults); err != nil {
+		logger.LegacyPrintf("service.admin", "failed to assign default model token quotas: user_id=%d err=%v", userID, err)
+	}
+}
+
+// BatchApplyModelTokenQuotasToAllUsers 对全体活跃用户批量执行模型 Token 限额操作。
+func (s *adminServiceImpl) BatchApplyModelTokenQuotasToAllUsers(ctx context.Context, operations []BatchModelTokenQuotaOperation) (*BatchModelTokenQuotaResult, error) {
+	if s.entClient == nil {
+		return nil, fmt.Errorf("ent client unavailable")
+	}
+	if s.tokenQuotaAdminRepo == nil {
+		return nil, fmt.Errorf("token quota admin repo unavailable")
+	}
+
+	// 校验 operations
+	seen := make(map[string]struct{}, len(operations))
+	for _, op := range operations {
+		model := strings.TrimSpace(op.Model)
+		if model == "" {
+			return nil, fmt.Errorf("model is required")
+		}
+		if _, ok := seen[model]; ok {
+			return nil, fmt.Errorf("duplicate model in operations: %s", model)
+		}
+		seen[model] = struct{}{}
+		switch op.Action {
+		case "create", "update":
+			if op.DailyLimitTokens != nil && *op.DailyLimitTokens < 0 {
+				return nil, fmt.Errorf("daily_limit_tokens must be >= 0 or null for model %s", model)
+			}
+		case "delete":
+		default:
+			return nil, fmt.Errorf("unknown action %q, must be create/update/delete", op.Action)
+		}
+	}
+
+	// 获取所有活跃用户 ID
+	allUserIDs, err := s.entClient.User.Query().Where(dbuser.DeletedAtIsNil()).IDs(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("query all active user IDs: %w", err)
+	}
+	if len(allUserIDs) == 0 {
+		return &BatchModelTokenQuotaResult{AffectedUsers: 0, Operations: len(operations)}, nil
+	}
+
+	result := &BatchModelTokenQuotaResult{Operations: len(operations)}
+	affectedSet := make(map[int64]struct{})
+
+	for _, op := range operations {
+		model := strings.TrimSpace(op.Model)
+		switch op.Action {
+		case "create":
+			// 找到已有该 model 配置的用户
+			existing, err := s.entClient.UserModelTokenDailyLimitConfig.Query().
+				Where(usermodeltokendailylimitconfig.ModelEQ(model)).
+				All(ctx)
+			if err != nil {
+				result.Errors = append(result.Errors, fmt.Sprintf("model %s: query existing configs: %v", model, err))
+				continue
+			}
+			existingSet := make(map[int64]bool, len(existing))
+			for _, cfg := range existing {
+				existingSet[cfg.UserID] = true
+			}
+			// nil limit = 不限制，无需创建配置
+			if op.DailyLimitTokens == nil {
+				continue
+			}
+			for _, uid := range allUserIDs {
+				if existingSet[uid] {
+					continue
+				}
+				if err := s.entClient.UserModelTokenDailyLimitConfig.Create().
+					SetUserID(uid).SetModel(model).SetDailyLimitTokens(*op.DailyLimitTokens).
+					Exec(ctx); err != nil {
+					result.Errors = append(result.Errors, fmt.Sprintf("model %s user %d create: %v", model, uid, err))
+					continue
+				}
+				affectedSet[uid] = struct{}{}
+			}
+		case "update":
+			// 找到有该 model 配置的用户
+			existing, err := s.entClient.UserModelTokenDailyLimitConfig.Query().
+				Where(usermodeltokendailylimitconfig.ModelEQ(model)).
+				All(ctx)
+			if err != nil {
+				result.Errors = append(result.Errors, fmt.Sprintf("model %s: query existing configs: %v", model, err))
+				continue
+			}
+			if op.DailyLimitTokens == nil {
+				// nil = 清除限制，删除配置
+				for _, cfg := range existing {
+					if err := s.tokenQuotaAdminRepo.DeleteUserModelTokenQuotaByModel(ctx, cfg.UserID, model); err != nil {
+						result.Errors = append(result.Errors, fmt.Sprintf("model %s user %d update: %v", model, cfg.UserID, err))
+						continue
+					}
+					affectedSet[cfg.UserID] = struct{}{}
+				}
+			} else {
+				for _, cfg := range existing {
+					if err := s.entClient.UserModelTokenDailyLimitConfig.Create().
+						SetUserID(cfg.UserID).SetModel(model).SetDailyLimitTokens(*op.DailyLimitTokens).
+						OnConflictColumns(
+							usermodeltokendailylimitconfig.FieldUserID,
+							usermodeltokendailylimitconfig.FieldModel,
+						).UpdateDailyLimitTokens().
+						Exec(ctx); err != nil {
+						result.Errors = append(result.Errors, fmt.Sprintf("model %s user %d update: %v", model, cfg.UserID, err))
+						continue
+					}
+					affectedSet[cfg.UserID] = struct{}{}
+				}
+			}
+		case "delete":
+			// 找到有该 model 配置的用户并删除
+			existing, err := s.entClient.UserModelTokenDailyLimitConfig.Query().
+				Where(usermodeltokendailylimitconfig.ModelEQ(model)).
+				All(ctx)
+			if err != nil {
+				result.Errors = append(result.Errors, fmt.Sprintf("model %s: query existing configs: %v", model, err))
+				continue
+			}
+			for _, cfg := range existing {
+				if err := s.tokenQuotaAdminRepo.DeleteUserModelTokenQuotaByModel(ctx, cfg.UserID, model); err != nil {
+					result.Errors = append(result.Errors, fmt.Sprintf("model %s user %d delete: %v", model, cfg.UserID, err))
+					continue
+				}
+				affectedSet[cfg.UserID] = struct{}{}
+			}
+		}
+	}
+	result.AffectedUsers = len(affectedSet)
+	return result, nil
 }
 
 func (s *adminServiceImpl) UpdateUser(ctx context.Context, id int64, input *UpdateUserInput) (*User, error) {
@@ -1262,14 +1417,13 @@ func (s *adminServiceImpl) listAffiliateBalanceHistory(ctx context.Context, user
 
 	rows, err := s.entClient.QueryContext(ctx, `
 SELECT id,
-       amount::double precision,
+       amount,
        created_at
 FROM user_affiliate_ledger
-WHERE user_id = $1
+WHERE user_id = ?
   AND action = 'transfer'
 ORDER BY created_at DESC, id DESC
-OFFSET $2
-LIMIT $3`, userID, params.Offset(), params.Limit())
+LIMIT ? OFFSET ?`, userID, params.Limit(), params.Offset())
 	if err != nil {
 		return nil, 0, err
 	}
@@ -1311,7 +1465,7 @@ func countAffiliateBalanceHistory(ctx context.Context, client *dbent.Client, use
 	rows, err := client.QueryContext(ctx, `
 SELECT COUNT(*)
 FROM user_affiliate_ledger
-WHERE user_id = $1
+WHERE user_id = ?
   AND action = 'transfer'`, userID)
 	if err != nil {
 		return 0, err
@@ -1790,6 +1944,9 @@ func defaultModelsListCandidateIDs(platform string) []string {
 }
 
 func (s *adminServiceImpl) CreateGroup(ctx context.Context, input *CreateGroupInput) (*Group, error) {
+	s.createGroupMu.Lock()
+	defer s.createGroupMu.Unlock()
+
 	if input.RateMultiplier <= 0 {
 		return nil, errors.New("rate_multiplier must be > 0")
 	}
@@ -1908,6 +2065,16 @@ func (s *adminServiceImpl) CreateGroup(ctx context.Context, input *CreateGroupIn
 		RPMLimit:                        input.RPMLimit,
 	}
 	sanitizeGroupMessagesDispatchFields(group)
+
+	// 检查名称是否已存在（排除已软删除的同名分组）
+	exists, err := s.groupRepo.ExistsByName(ctx, group.Name)
+	if err != nil {
+		return nil, fmt.Errorf("check group exists: %w", err)
+	}
+	if exists {
+		return nil, ErrGroupExists
+	}
+
 	if err := s.groupRepo.Create(ctx, group); err != nil {
 		return nil, err
 	}

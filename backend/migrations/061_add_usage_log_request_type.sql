@@ -1,12 +1,12 @@
 -- Add request_type enum for usage_logs while keeping legacy stream/openai_ws_mode compatibility.
 ALTER TABLE usage_logs
-    ADD COLUMN IF NOT EXISTS request_type SMALLINT NOT NULL DEFAULT 0;
+    ADD COLUMN request_type SMALLINT NOT NULL DEFAULT 0;
 
 ALTER TABLE usage_logs
     ADD CONSTRAINT usage_logs_request_type_check
     CHECK (request_type IN (0, 1, 2, 3));
 
-CREATE INDEX IF NOT EXISTS idx_usage_logs_request_type_created_at
+CREATE INDEX idx_usage_logs_request_type_created_at
     ON usage_logs (request_type, created_at);
 
 -- Bounded startup backfill from legacy fields.

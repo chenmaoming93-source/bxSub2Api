@@ -1,2 +1,2 @@
-ALTER TABLE groups
-ADD COLUMN IF NOT EXISTS messages_dispatch_model_config JSON NOT NULL DEFAULT (JSON_OBJECT());
+ALTER TABLE `groups`
+ADD COLUMN messages_dispatch_model_config JSON NULL;

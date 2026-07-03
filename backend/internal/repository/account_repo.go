@@ -1,13 +1,9 @@
-// Package repository 实现数据访问层（Repository Pattern）。
-//
-// 该包提供了与数据库交互的所有操作，包括 CRUD、复杂查询和批量操作。
-// 采用 Repository 模式将数据访问逻辑与业务逻辑分离，便于测试和维护。
-//
-// 主要特性：
-//   - 使用 Ent ORM 进行类型安全的数据库操作
-//   - 对于复杂查询（如批量更新、聚合统计）使用原生 SQL
-//   - 提供统一的错误翻译机制，将数据库错误转换为业务错误
-//   - 支持软删除，所有查询自动过滤已删除记录
+// Package repository 瀹炵幇鏁版嵁璁块棶灞傦紙Repository Pattern锛夈€?//
+// 璇ュ寘鎻愪緵浜嗕笌鏁版嵁搴撲氦浜掔殑鎵€鏈夋搷浣滐紝鍖呮嫭 CRUD銆佸鏉傛煡璇㈠拰鎵归噺鎿嶄綔銆?// 閲囩敤 Repository 妯″紡灏嗘暟鎹闂€昏緫涓庝笟鍔￠€昏緫鍒嗙锛屼究浜庢祴璇曞拰缁存姢銆?//
+// 涓昏鐗规€э細
+//   - 浣跨敤 Ent ORM 杩涜绫诲瀷瀹夊叏鐨勬暟鎹簱鎿嶄綔
+//   - 瀵逛簬澶嶆潅鏌ヨ锛堝鎵归噺鏇存柊銆佽仛鍚堢粺璁★級浣跨敤鍘熺敓 SQL
+//   - 鎻愪緵缁熶竴鐨勯敊璇炕璇戞満鍒讹紝灏嗘暟鎹簱閿欒杞崲涓轰笟鍔￠敊璇?//   - 鏀寔杞垹闄わ紝鎵€鏈夋煡璇㈣嚜鍔ㄨ繃婊ゅ凡鍒犻櫎璁板綍
 package repository
 
 import (
@@ -28,25 +24,19 @@ import (
 	"github.com/Wei-Shaw/sub2api/internal/pkg/logger"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
 	"github.com/Wei-Shaw/sub2api/internal/service"
-	"github.com/lib/pq"
 
 	entsql "entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqljson"
 )
 
-// accountRepository 实现 service.AccountRepository 接口。
-// 提供 AI API 账户的完整数据访问功能。
-//
-// 设计说明：
-//   - client: Ent 客户端，用于类型安全的 ORM 操作
-//   - sql: 原生 SQL 执行器，用于复杂查询和批量操作
-//   - schedulerCache: 调度器缓存，用于在账号状态变更时同步快照
+// accountRepository 瀹炵幇 service.AccountRepository 鎺ュ彛銆?// 鎻愪緵 AI API 璐︽埛鐨勫畬鏁存暟鎹闂姛鑳姐€?//
+// 璁捐璇存槑锛?//   - client: Ent 瀹㈡埛绔紝鐢ㄤ簬绫诲瀷瀹夊叏鐨?ORM 鎿嶄綔
+//   - sql: 鍘熺敓 SQL 鎵ц鍣紝鐢ㄤ簬澶嶆潅鏌ヨ鍜屾壒閲忔搷浣?//   - schedulerCache: 璋冨害鍣ㄧ紦瀛橈紝鐢ㄤ簬鍦ㄨ处鍙风姸鎬佸彉鏇存椂鍚屾蹇収
 type accountRepository struct {
-	client *dbent.Client // Ent ORM 客户端
-	sql    sqlExecutor   // 原生 SQL 执行接口
-	// schedulerCache 用于在账号状态变更时主动同步快照到缓存，
-	// 确保粘性会话能及时感知账号不可用状态。
-	// Used to proactively sync account snapshot to cache when status changes,
+	client *dbent.Client
+	sql    sqlExecutor
+	// schedulerCache 鐢ㄤ簬鍦ㄨ处鍙风姸鎬佸彉鏇存椂涓诲姩鍚屾蹇収鍒扮紦瀛橈紝
+	// 纭繚绮樻€т細璇濊兘鍙婃椂鎰熺煡璐﹀彿涓嶅彲鐢ㄧ姸鎬併€?	// Used to proactively sync account snapshot to cache when status changes,
 	// ensuring sticky sessions can promptly detect unavailable accounts.
 	schedulerCache service.SchedulerCache
 }
@@ -67,13 +57,10 @@ var schedulerNeutralExtraKeys = map[string]struct{}{
 const postgresParameterBatchSize = 50000
 
 // NewAccountRepository 创建账户仓储实例。
-// 这是对外暴露的构造函数，返回接口类型以便于依赖注入。
 func NewAccountRepository(client *dbent.Client, sqlDB *sql.DB, schedulerCache service.SchedulerCache) service.AccountRepository {
 	return newAccountRepositoryWithSQL(client, sqlDB, schedulerCache)
 }
 
-// newAccountRepositoryWithSQL 是内部构造函数，支持依赖注入 SQL 执行器。
-// 这种设计便于单元测试时注入 mock 对象。
 func newAccountRepositoryWithSQL(client *dbent.Client, sqlq sqlExecutor, schedulerCache service.SchedulerCache) *accountRepository {
 	return &accountRepository{client: client, sql: sqlq, schedulerCache: schedulerCache}
 }
@@ -246,11 +233,10 @@ func (r *accountRepository) GetByIDs(ctx context.Context, ids []int64) ([]*servi
 	return out, nil
 }
 
+// ExistsByID 妫€鏌ユ寚瀹?ID 鐨勮处鍙锋槸鍚﹀瓨鍦ㄣ€?// 鐩告瘮 GetByID锛屾鏂规硶鎬ц兘鏇翠紭锛屽洜涓猴細
+//   - 浣跨敤 Exist() 鏂规硶鐢熸垚 SELECT EXISTS 鏌ヨ锛屽彧杩斿洖甯冨皵鍊?//   - 涓嶅姞杞藉畬鏁寸殑璐﹀彿瀹炰綋鍙婂叾鍏宠仈鏁版嵁锛圙roups銆丳roxy 绛夛級
+//
 // ExistsByID 检查指定 ID 的账号是否存在。
-// 相比 GetByID，此方法性能更优，因为：
-//   - 使用 Exist() 方法生成 SELECT EXISTS 查询，只返回布尔值
-//   - 不加载完整的账号实体及其关联数据（Groups、Proxy 等）
-//   - 适用于删除前的存在性检查等只需判断有无的场景
 func (r *accountRepository) ExistsByID(ctx context.Context, id int64) (bool, error) {
 	exists, err := r.client.Account.Query().Where(dbaccount.IDEQ(id)).Exist(ctx)
 	if err != nil {
@@ -264,7 +250,7 @@ func (r *accountRepository) GetByCRSAccountID(ctx context.Context, crsAccountID 
 		return nil, nil
 	}
 
-	// 使用 sqljson.ValueEQ 生成 JSON 路径过滤，避免手写 SQL 片段导致语法兼容问题。
+	// 使用 sqljson.ValueEQ 生成 JSON 路径过滤。
 	m, err := r.client.Account.Query().
 		Where(func(s *entsql.Selector) {
 			s.Where(sqljson.ValueEQ(dbaccount.FieldExtra, crsAccountID, sqljson.Path("crs_account_id")))
@@ -289,11 +275,11 @@ func (r *accountRepository) GetByCRSAccountID(ctx context.Context, crsAccountID 
 
 func (r *accountRepository) ListCRSAccountIDs(ctx context.Context) (map[string]int64, error) {
 	rows, err := r.sql.QueryContext(ctx, `
-		SELECT id, extra->>'crs_account_id'
+		SELECT id, JSON_UNQUOTE(JSON_EXTRACT(extra, '$.crs_account_id'))
 		FROM accounts
 		WHERE deleted_at IS NULL
-			AND extra->>'crs_account_id' IS NOT NULL
-			AND extra->>'crs_account_id' != ''
+			AND JSON_UNQUOTE(JSON_EXTRACT(extra, '$.crs_account_id')) IS NOT NULL
+			AND JSON_UNQUOTE(JSON_EXTRACT(extra, '$.crs_account_id')) != ''
 	`)
 	if err != nil {
 		return nil, err
@@ -404,8 +390,7 @@ func (r *accountRepository) Update(ctx context.Context, account *service.Account
 	if err := enqueueSchedulerOutbox(ctx, r.sql, service.SchedulerOutboxEventAccountChanged, &account.ID, nil, buildSchedulerGroupPayload(account.GroupIDs)); err != nil {
 		logger.LegacyPrintf("repository.account", "[SchedulerOutbox] enqueue account update failed: account=%d err=%v", account.ID, err)
 	}
-	// 普通账号编辑（如 model_mapping / credentials）也需要立即刷新单账号快照，
-	// 否则网关在 outbox worker 延迟或异常时仍可能读到旧配置。
+	// 普通账号编辑也需要立即刷新单账号快照。
 	r.syncSchedulerAccountSnapshot(ctx, account.ID)
 	return nil
 }
@@ -426,7 +411,7 @@ func (r *accountRepository) Delete(ctx context.Context, id int64) error {
 	if err != nil {
 		return err
 	}
-	// 使用事务保证账号与关联分组的删除原子性
+	// 使用事务保证账号与关联分组的删除原子性。
 	tx, err := r.client.Tx(ctx)
 	if err != nil && !errors.Is(err, dbent.ErrTxStarted) {
 		return err
@@ -437,14 +422,14 @@ func (r *accountRepository) Delete(ctx context.Context, id int64) error {
 		defer func() { _ = tx.Rollback() }()
 		txClient = tx.Client()
 	} else {
-		// 已处于外部事务中（ErrTxStarted），复用当前 client
+		// 宸插浜庡閮ㄤ簨鍔′腑锛圗rrTxStarted锛夛紝澶嶇敤褰撳墠 client
 		txClient = r.client
 	}
 
 	if _, err := txClient.AccountGroup.Delete().Where(dbaccountgroup.AccountIDEQ(id)).Exec(ctx); err != nil {
 		return err
 	}
-	if _, err := txClient.ExecContext(ctx, "DELETE FROM scheduled_test_plans WHERE account_id = $1", id); err != nil {
+	if _, err := txClient.ExecContext(ctx, "DELETE FROM scheduled_test_plans WHERE account_id = ?", id); err != nil {
 		return err
 	}
 	if _, err := txClient.Account.Delete().Where(dbaccount.IDEQ(id)).Exec(ctx); err != nil {
@@ -653,10 +638,10 @@ func (r *accountRepository) ListOAuthRefreshCandidates(ctx context.Context) ([]s
 	if r.sql == nil {
 		return nil, errors.New("account repository SQL executor not configured")
 	}
-	// (cond) IS NOT TRUE 把 NULL 和 FALSE 都视为"可被刷新"。直接写
-	// NOT (a AND b) 在 PG 三值逻辑下会把 a 或 b 为 NULL 的行（即绝大多数
-	// 健康账号：temp_unschedulable_until=NULL）也排除，导致后台 token
-	// 刷新工作器漏掉所有正常账号 → access_token 到期后请求开始 401。
+	// (cond) IS NOT TRUE 鎶?NULL 鍜?FALSE 閮借涓?鍙鍒锋柊"銆傜洿鎺ュ啓
+	// NOT (a AND b) 鍦?PG 涓夊€奸€昏緫涓嬩細鎶?a 鎴?b 涓?NULL 鐨勮锛堝嵆缁濆ぇ澶氭暟
+	// 鍋ュ悍璐﹀彿锛歵emp_unschedulable_until=NULL锛変篃鎺掗櫎锛屽鑷村悗鍙?token
+	// 保留 NULL/FALSE 均可刷新语义，避免漏掉健康账号。
 	rows, err := r.sql.QueryContext(ctx, `
 		SELECT id
 		FROM accounts
@@ -664,8 +649,7 @@ func (r *accountRepository) ListOAuthRefreshCandidates(ctx context.Context) ([]s
 			AND status = 'active'
 			AND type = 'oauth'
 			AND platform IN ('anthropic', 'openai', 'gemini', 'antigravity')
-			AND credentials ? 'refresh_token'
-			AND btrim(credentials->>'refresh_token') <> ''
+			AND TRIM(COALESCE(JSON_UNQUOTE(JSON_EXTRACT(credentials, '$.refresh_token')), '')) <> ''
 			AND (
 				temp_unschedulable_until > NOW()
 				AND temp_unschedulable_reason LIKE 'token refresh retry exhausted:%'
@@ -748,18 +732,20 @@ func (r *accountRepository) BatchUpdateLastUsed(ctx context.Context, updates map
 	args := make([]any, 0, len(updates)*2+1)
 	caseSQL := "UPDATE accounts SET last_used_at = CASE id"
 
-	idx := 1
 	for id, ts := range updates {
-		caseSQL += " WHEN $" + itoa(idx) + " THEN $" + itoa(idx+1) + "::timestamptz"
+		caseSQL += " WHEN ? THEN ?"
 		args = append(args, id, ts)
 		ids = append(ids, id)
-		idx += 2
 	}
 
-	caseSQL += " END, updated_at = NOW() WHERE id = ANY($" + itoa(idx) + ") AND deleted_at IS NULL"
-	args = append(args, pq.Array(ids))
+	idsJSON, err := jsonArrayParam(ids)
+	if err != nil {
+		return err
+	}
+	caseSQL += " END, updated_at = NOW() WHERE id IN (SELECT id FROM JSON_TABLE(?, '$[*]' COLUMNS(id BIGINT PATH '$')) AS account_ids) AND deleted_at IS NULL"
+	args = append(args, idsJSON)
 
-	_, err := r.sql.ExecContext(ctx, caseSQL, args...)
+	_, err = r.sql.ExecContext(ctx, caseSQL, args...)
 	if err != nil {
 		return err
 	}
@@ -791,10 +777,8 @@ func (r *accountRepository) SetError(ctx context.Context, id int64, errorMsg str
 	return nil
 }
 
-// syncSchedulerAccountSnapshot 在账号状态变更时主动同步快照到调度器缓存。
-// 当账号被设置为错误、禁用、不可调度或临时不可调度时调用，
-// 确保调度器和粘性会话逻辑能及时感知账号的最新状态，避免继续使用不可用账号。
-//
+// syncSchedulerAccountSnapshot 鍦ㄨ处鍙风姸鎬佸彉鏇存椂涓诲姩鍚屾蹇収鍒拌皟搴﹀櫒缂撳瓨銆?// 褰撹处鍙疯璁剧疆涓洪敊璇€佺鐢ㄣ€佷笉鍙皟搴︽垨涓存椂涓嶅彲璋冨害鏃惰皟鐢紝
+// 纭繚璋冨害鍣ㄥ拰绮樻€т細璇濋€昏緫鑳藉強鏃舵劅鐭ヨ处鍙风殑鏈€鏂扮姸鎬侊紝閬垮厤缁х画浣跨敤涓嶅彲鐢ㄨ处鍙枫€?//
 // syncSchedulerAccountSnapshot proactively syncs account snapshot to scheduler cache
 // when account status changes. Called when account is set to error, disabled,
 // unschedulable, or temporarily unschedulable, ensuring scheduler and sticky session
@@ -930,7 +914,7 @@ func (r *accountRepository) BindGroups(ctx context.Context, accountID int64, gro
 	if err != nil {
 		return err
 	}
-	// 使用事务保证删除旧绑定与创建新绑定的原子性
+	// 使用事务保证删除旧绑定与创建新绑定的原子性。
 	tx, err := r.client.Tx(ctx)
 	if err != nil && !errors.Is(err, dbent.ErrTxStarted) {
 		return err
@@ -941,7 +925,7 @@ func (r *accountRepository) BindGroups(ctx context.Context, accountID int64, gro
 		defer func() { _ = tx.Rollback() }()
 		txClient = tx.Client()
 	} else {
-		// 已处于外部事务中（ErrTxStarted），复用当前 client
+		// 宸插浜庡閮ㄤ簨鍔′腑锛圗rrTxStarted锛夛紝澶嶇敤褰撳墠 client
 		txClient = r.client
 	}
 
@@ -1028,7 +1012,6 @@ func (r *accountRepository) ListSchedulableByPlatform(ctx context.Context, platf
 }
 
 func (r *accountRepository) ListSchedulableByGroupIDAndPlatform(ctx context.Context, groupID int64, platform string) ([]service.Account, error) {
-	// 单平台查询复用多平台逻辑，保持过滤条件与排序策略一致。
 	return r.queryAccountsByGroup(ctx, groupID, accountGroupQueryOptions{
 		status:      service.StatusActive,
 		schedulable: true,
@@ -1040,8 +1023,6 @@ func (r *accountRepository) ListSchedulableByPlatforms(ctx context.Context, plat
 	if len(platforms) == 0 {
 		return nil, nil
 	}
-	// 仅返回可调度的活跃账号，并过滤处于过载/限流窗口的账号。
-	// 代理与分组信息统一在 accountsToService 中批量加载，避免 N+1 查询。
 	now := time.Now()
 	accounts, err := r.client.Account.Query().
 		Where(
@@ -1110,7 +1091,6 @@ func (r *accountRepository) ListSchedulableByGroupIDAndPlatforms(ctx context.Con
 	if len(platforms) == 0 {
 		return nil, nil
 	}
-	// 复用按分组查询逻辑，保证分组优先级 + 账号优先级的排序与筛选一致。
 	return r.queryAccountsByGroup(ctx, groupID, accountGroupQueryOptions{
 		status:      service.StatusActive,
 		schedulable: true,
@@ -1157,15 +1137,14 @@ func (r *accountRepository) SetModelRateLimit(ctx context.Context, id int64, sco
 	client := clientFromContext(ctx, r.client)
 	result, err := client.ExecContext(
 		ctx,
-		`UPDATE accounts SET 
-			extra = jsonb_set(
-				jsonb_set(COALESCE(extra, '{}'::jsonb), '{model_rate_limits}'::text[], COALESCE(extra->'model_rate_limits', '{}'::jsonb), true),
-				ARRAY['model_rate_limits', $1]::text[],
-				$2::jsonb,
-				true
+		`UPDATE accounts SET
+			extra = JSON_SET(
+				JSON_SET(COALESCE(extra, JSON_OBJECT()), '$.model_rate_limits',
+					COALESCE(JSON_EXTRACT(extra, '$.model_rate_limits'), JSON_OBJECT())),
+				CONCAT('$.model_rate_limits.', JSON_QUOTE(?)), CAST(? AS JSON)
 			),
 			updated_at = NOW()
-		WHERE id = $3 AND deleted_at IS NULL`,
+		WHERE id = ? AND deleted_at IS NULL`,
 		scope,
 		raw,
 		id,
@@ -1206,13 +1185,13 @@ func (r *accountRepository) SetOverloaded(ctx context.Context, id int64, until t
 func (r *accountRepository) SetTempUnschedulable(ctx context.Context, id int64, until time.Time, reason string) error {
 	result, err := r.sql.ExecContext(ctx, `
 		UPDATE accounts
-		SET temp_unschedulable_until = $1,
-			temp_unschedulable_reason = $2,
+		SET temp_unschedulable_until = ?,
+			temp_unschedulable_reason = ?,
 			updated_at = NOW()
-		WHERE id = $3
+		WHERE id = ?
 			AND deleted_at IS NULL
-			AND (temp_unschedulable_until IS NULL OR temp_unschedulable_until < $1)
-	`, until, reason, id)
+			AND (temp_unschedulable_until IS NULL OR temp_unschedulable_until < ?)
+	`, until, reason, id, until)
 	if err != nil {
 		return err
 	}
@@ -1236,7 +1215,7 @@ func (r *accountRepository) ClearTempUnschedulable(ctx context.Context, id int64
 		SET temp_unschedulable_until = NULL,
 			temp_unschedulable_reason = NULL,
 			updated_at = NOW()
-		WHERE id = $1
+		WHERE id = ?
 			AND deleted_at IS NULL
 	`, id)
 	if err != nil {
@@ -1270,7 +1249,7 @@ func (r *accountRepository) ClearAntigravityQuotaScopes(ctx context.Context, id 
 	client := clientFromContext(ctx, r.client)
 	result, err := client.ExecContext(
 		ctx,
-		"UPDATE accounts SET extra = COALESCE(extra, '{}'::jsonb) - 'antigravity_quota_scopes', updated_at = NOW() WHERE id = $1 AND deleted_at IS NULL",
+		"UPDATE accounts SET extra = JSON_REMOVE(COALESCE(extra, JSON_OBJECT()), '$.antigravity_quota_scopes'), updated_at = NOW() WHERE id = ? AND deleted_at IS NULL",
 		id,
 	)
 	if err != nil {
@@ -1294,7 +1273,7 @@ func (r *accountRepository) ClearModelRateLimits(ctx context.Context, id int64) 
 	client := clientFromContext(ctx, r.client)
 	result, err := client.ExecContext(
 		ctx,
-		"UPDATE accounts SET extra = COALESCE(extra, '{}'::jsonb) - 'model_rate_limits', updated_at = NOW() WHERE id = $1 AND deleted_at IS NULL",
+		"UPDATE accounts SET extra = JSON_REMOVE(COALESCE(extra, JSON_OBJECT()), '$.model_rate_limits'), updated_at = NOW() WHERE id = ? AND deleted_at IS NULL",
 		id,
 	)
 	if err != nil {
@@ -1329,7 +1308,6 @@ func (r *accountRepository) UpdateSessionWindow(ctx context.Context, id int64, s
 	if err != nil {
 		return err
 	}
-	// 触发调度器缓存更新（仅当窗口时间有变化时）
 	if start != nil || end != nil {
 		if err := enqueueSchedulerOutbox(ctx, r.sql, service.SchedulerOutboxEventAccountChanged, &id, nil, nil); err != nil {
 			logger.LegacyPrintf("repository.account", "[SchedulerOutbox] enqueue session window update failed: account=%d err=%v", id, err)
@@ -1378,7 +1356,7 @@ func (r *accountRepository) AutoPauseExpiredAccounts(ctx context.Context, now ti
 			AND schedulable = TRUE
 			AND auto_pause_on_expired = TRUE
 			AND expires_at IS NOT NULL
-			AND expires_at <= $1
+			AND expires_at <= ?
 	`, now)
 	if err != nil {
 		return 0, err
@@ -1400,7 +1378,7 @@ func (r *accountRepository) UpdateExtra(ctx context.Context, id int64, updates m
 		return nil
 	}
 
-	// 使用 JSONB 合并操作实现原子更新，避免读-改-写的并发丢失更新问题
+	// 浣跨敤 JSONB 鍚堝苟鎿嶄綔瀹炵幇鍘熷瓙鏇存柊锛岄伩鍏嶈-鏀?鍐欑殑骞跺彂涓㈠け鏇存柊闂
 	payload, err := json.Marshal(updates)
 	if err != nil {
 		return err
@@ -1409,7 +1387,7 @@ func (r *accountRepository) UpdateExtra(ctx context.Context, id int64, updates m
 	client := clientFromContext(ctx, r.client)
 	result, err := client.ExecContext(
 		ctx,
-		"UPDATE accounts SET extra = COALESCE(extra, '{}'::jsonb) || $1::jsonb, updated_at = NOW() WHERE id = $2 AND deleted_at IS NULL",
+		"UPDATE accounts SET extra = JSON_MERGE_PATCH(COALESCE(extra, JSON_OBJECT()), CAST(? AS JSON)), updated_at = NOW() WHERE id = ? AND deleted_at IS NULL",
 		string(payload), id,
 	)
 
@@ -1429,9 +1407,7 @@ func (r *accountRepository) UpdateExtra(ctx context.Context, id int64, updates m
 			logger.LegacyPrintf("repository.account", "[SchedulerOutbox] enqueue extra update failed: account=%d err=%v", id, err)
 		}
 	} else {
-		// 观测型 extra 字段不需要触发 bucket 重建，但仍同步单账号快照，
-		// 让 sticky session / GetAccount 命中缓存时也能读到最新数据，
-		// 同时避免缓存局部 patch 覆盖掉并发写入的其它账号字段。
+		// 观测型 extra 字段不重建 bucket，但仍同步单账号快照。
 		r.syncSchedulerAccountSnapshot(ctx, id)
 	}
 	return nil
@@ -1474,74 +1450,63 @@ func (r *accountRepository) BulkUpdate(ctx context.Context, ids []int64, updates
 	setClauses := make([]string, 0, 8)
 	args := make([]any, 0, 8)
 
-	idx := 1
 	if updates.Name != nil {
-		setClauses = append(setClauses, "name = $"+itoa(idx))
+		setClauses = append(setClauses, "name = ?")
 		args = append(args, *updates.Name)
-		idx++
 	}
 	if updates.ProxyID != nil {
-		// 0 表示清除代理（前端发送 0 而不是 null 来表达清除意图）
+		// 0 琛ㄧず娓呴櫎浠ｇ悊锛堝墠绔彂閫?0 鑰屼笉鏄?null 鏉ヨ〃杈炬竻闄ゆ剰鍥撅級
 		if *updates.ProxyID == 0 {
 			setClauses = append(setClauses, "proxy_id = NULL")
 		} else {
-			setClauses = append(setClauses, "proxy_id = $"+itoa(idx))
+			setClauses = append(setClauses, "proxy_id = ?")
 			args = append(args, *updates.ProxyID)
-			idx++
 		}
 	}
 	if updates.Concurrency != nil {
-		setClauses = append(setClauses, "concurrency = $"+itoa(idx))
+		setClauses = append(setClauses, "concurrency = ?")
 		args = append(args, *updates.Concurrency)
-		idx++
 	}
 	if updates.Priority != nil {
-		setClauses = append(setClauses, "priority = $"+itoa(idx))
+		setClauses = append(setClauses, "priority = ?")
 		args = append(args, *updates.Priority)
-		idx++
 	}
 	if updates.RateMultiplier != nil {
-		setClauses = append(setClauses, "rate_multiplier = $"+itoa(idx))
+		setClauses = append(setClauses, "rate_multiplier = ?")
 		args = append(args, *updates.RateMultiplier)
-		idx++
 	}
 	if updates.LoadFactor != nil {
 		if *updates.LoadFactor <= 0 {
 			setClauses = append(setClauses, "load_factor = NULL")
 		} else {
-			setClauses = append(setClauses, "load_factor = $"+itoa(idx))
+			setClauses = append(setClauses, "load_factor = ?")
 			args = append(args, *updates.LoadFactor)
-			idx++
 		}
 	}
 	if updates.Status != nil {
-		setClauses = append(setClauses, "status = $"+itoa(idx))
+		setClauses = append(setClauses, "status = ?")
 		args = append(args, *updates.Status)
-		idx++
 	}
 	if updates.Schedulable != nil {
-		setClauses = append(setClauses, "schedulable = $"+itoa(idx))
+		setClauses = append(setClauses, "schedulable = ?")
 		args = append(args, *updates.Schedulable)
-		idx++
 	}
-	// JSONB 需要合并而非覆盖，使用 raw SQL 保持旧行为。
+	// JSON 字段需要合并而非覆盖。
 	if len(updates.Credentials) > 0 {
 		payload, err := json.Marshal(updates.Credentials)
 		if err != nil {
 			return 0, err
 		}
-		setClauses = append(setClauses, "credentials = COALESCE(credentials, '{}'::jsonb) || $"+itoa(idx)+"::jsonb")
+		setClauses = append(setClauses, "credentials = JSON_MERGE_PATCH(COALESCE(credentials, JSON_OBJECT()), CAST(? AS JSON))")
 		args = append(args, payload)
-		idx++
 	}
 	if len(updates.Extra) > 0 {
 		payload, err := json.Marshal(updates.Extra)
 		if err != nil {
 			return 0, err
 		}
-		setClauses = append(setClauses, "extra = COALESCE(extra, '{}'::jsonb) || $"+itoa(idx)+"::jsonb")
+		setClauses = append(setClauses, "extra = JSON_MERGE_PATCH(COALESCE(extra, JSON_OBJECT()), CAST(? AS JSON))")
 		args = append(args, payload)
-		idx++
 	}
 
 	if len(setClauses) == 0 {
@@ -1550,8 +1515,12 @@ func (r *accountRepository) BulkUpdate(ctx context.Context, ids []int64, updates
 
 	setClauses = append(setClauses, "updated_at = NOW()")
 
-	query := "UPDATE accounts SET " + joinClauses(setClauses, ", ") + " WHERE id = ANY($" + itoa(idx) + ") AND deleted_at IS NULL"
-	args = append(args, pq.Array(ids))
+	idsJSON, err := jsonArrayParam(ids)
+	if err != nil {
+		return 0, err
+	}
+	query := "UPDATE accounts SET " + joinClauses(setClauses, ", ") + " WHERE id IN (SELECT id FROM JSON_TABLE(?, '$[*]' COLUMNS(id BIGINT PATH '$')) AS account_ids) AND deleted_at IS NULL"
+	args = append(args, idsJSON)
 
 	result, err := r.sql.ExecContext(ctx, query, args...)
 	if err != nil {
@@ -1583,14 +1552,13 @@ func (r *accountRepository) BulkUpdate(ctx context.Context, ids []int64, updates
 type accountGroupQueryOptions struct {
 	status      string
 	schedulable bool
-	platforms   []string // 允许的多个平台，空切片表示不进行平台过滤
+	platforms   []string // 鍏佽鐨勫涓钩鍙帮紝绌哄垏鐗囪〃绀轰笉杩涜骞冲彴杩囨护
 }
 
 func (r *accountRepository) queryAccountsByGroup(ctx context.Context, groupID int64, opts accountGroupQueryOptions) ([]service.Account, error) {
 	q := r.client.AccountGroup.Query().
 		Where(dbaccountgroup.GroupIDEQ(groupID))
 
-	// 通过 account_groups 中间表查询账号，并按需叠加状态/平台/调度能力过滤。
 	preds := make([]dbpredicate.Account, 0, 6)
 	preds = append(preds, dbaccount.DeletedAtIsNil())
 	if opts.status != "" {
@@ -1882,10 +1850,9 @@ func mergeGroupIDs(a []int64, b []int64) []int64 {
 	return out
 }
 
-// buildSchedulerGroupPayload 构造 EventAccountChanged / EventAccountGroupsChanged
-// 事件的 payload。空 groupIDs 必须返回 untyped nil（any 而非 map[string]any(nil)），
-// 否则 enqueueSchedulerOutbox 的 "payload != nil" 接口判空会被 typed-nil 欺骗，
-// 把 payload marshal 成 "null" 写入 dedup_key 哈希，破坏与其他 nil-payload 调用的去重一致性。
+// buildSchedulerGroupPayload 鏋勯€?EventAccountChanged / EventAccountGroupsChanged
+// 浜嬩欢鐨?payload銆傜┖ groupIDs 蹇呴』杩斿洖 untyped nil锛坅ny 鑰岄潪 map[string]any(nil)锛夛紝
+// 空 groupIDs 返回 untyped nil，保持 outbox 去重语义。
 func buildSchedulerGroupPayload(groupIDs []int64) any {
 	if len(groupIDs) == 0 {
 		return nil
@@ -1966,9 +1933,7 @@ func itoa(v int) string {
 	return strconv.Itoa(v)
 }
 
-// FindByExtraField 根据 extra 字段中的键值对查找账号。
-// 使用 PostgreSQL JSONB @> 操作符进行高效查询（需要 GIN 索引支持）。
-//
+// FindByExtraField 鏍规嵁 extra 瀛楁涓殑閿€煎鏌ユ壘璐﹀彿銆?// 浣跨敤 PostgreSQL JSONB @> 鎿嶄綔绗﹁繘琛岄珮鏁堟煡璇紙闇€瑕?GIN 绱㈠紩鏀寔锛夈€?//
 // FindByExtraField finds accounts by key-value pairs in the extra field.
 // Uses PostgreSQL JSONB @> operator for efficient queries (requires GIN index).
 func (r *accountRepository) FindByExtraField(ctx context.Context, key string, value any) ([]service.Account, error) {
@@ -2021,160 +1986,79 @@ func (r *accountRepository) FindByExtraField(ctx context.Context, key string, va
 }
 
 // nowUTC is a SQL expression to generate a UTC RFC3339 timestamp string.
-const nowUTC = `to_char(NOW() AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.US"Z"')`
+const nowUTC = `DATE_FORMAT(UTC_TIMESTAMP(6), '%Y-%m-%dT%H:%i:%s.%fZ')`
 
 // dailyExpiredExpr is a SQL expression that evaluates to TRUE when daily quota period has expired.
 // Supports both rolling (24h from start) and fixed (pre-computed reset_at) modes.
 const dailyExpiredExpr = `(
-	CASE WHEN COALESCE(extra->>'quota_daily_reset_mode', 'rolling') = 'fixed'
-	THEN NOW() >= COALESCE((extra->>'quota_daily_reset_at')::timestamptz, '1970-01-01'::timestamptz)
-	ELSE COALESCE((extra->>'quota_daily_start')::timestamptz, '1970-01-01'::timestamptz)
-		+ '24 hours'::interval <= NOW()
+	CASE WHEN COALESCE(JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_daily_reset_mode')), 'rolling') = 'fixed'
+	THEN UTC_TIMESTAMP(6) >= COALESCE(STR_TO_DATE(REPLACE(SUBSTRING_INDEX(JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_daily_reset_at')), '.', 1), 'T', ' '), '%Y-%m-%d %H:%i:%s'), '1970-01-01 00:00:00')
+	ELSE DATE_ADD(COALESCE(STR_TO_DATE(REPLACE(SUBSTRING_INDEX(JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_daily_start')), '.', 1), 'T', ' '), '%Y-%m-%d %H:%i:%s'), '1970-01-01 00:00:00'), INTERVAL 24 HOUR) <= UTC_TIMESTAMP(6)
 	END
 )`
 
 // weeklyExpiredExpr is a SQL expression that evaluates to TRUE when weekly quota period has expired.
 const weeklyExpiredExpr = `(
-	CASE WHEN COALESCE(extra->>'quota_weekly_reset_mode', 'rolling') = 'fixed'
-	THEN NOW() >= COALESCE((extra->>'quota_weekly_reset_at')::timestamptz, '1970-01-01'::timestamptz)
-	ELSE COALESCE((extra->>'quota_weekly_start')::timestamptz, '1970-01-01'::timestamptz)
-		+ '168 hours'::interval <= NOW()
+	CASE WHEN COALESCE(JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_weekly_reset_mode')), 'rolling') = 'fixed'
+	THEN UTC_TIMESTAMP(6) >= COALESCE(STR_TO_DATE(REPLACE(SUBSTRING_INDEX(JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_weekly_reset_at')), '.', 1), 'T', ' '), '%Y-%m-%d %H:%i:%s'), '1970-01-01 00:00:00')
+	ELSE DATE_ADD(COALESCE(STR_TO_DATE(REPLACE(SUBSTRING_INDEX(JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_weekly_start')), '.', 1), 'T', ' '), '%Y-%m-%d %H:%i:%s'), '1970-01-01 00:00:00'), INTERVAL 168 HOUR) <= UTC_TIMESTAMP(6)
 	END
 )`
 
 // nextDailyResetAtExpr is a SQL expression to compute the next daily reset_at when a reset occurs.
 // For fixed mode: computes the next future reset time based on NOW(), timezone, and configured hour.
 // This correctly handles long-inactive accounts by jumping directly to the next valid reset point.
-const nextDailyResetAtExpr = `(
-	CASE WHEN COALESCE(extra->>'quota_daily_reset_mode', 'rolling') = 'fixed'
-	THEN to_char((
-		-- Compute today's reset point in the configured timezone, then pick next future one
-		CASE WHEN NOW() >= (
-			date_trunc('day', NOW() AT TIME ZONE COALESCE(extra->>'quota_reset_timezone', 'UTC'))
-			+ (COALESCE((extra->>'quota_daily_reset_hour')::int, 0) || ' hours')::interval
-		) AT TIME ZONE COALESCE(extra->>'quota_reset_timezone', 'UTC')
-		-- NOW() is at or past today's reset point → next reset is tomorrow
-		THEN (
-			date_trunc('day', NOW() AT TIME ZONE COALESCE(extra->>'quota_reset_timezone', 'UTC'))
-			+ (COALESCE((extra->>'quota_daily_reset_hour')::int, 0) || ' hours')::interval
-			+ '1 day'::interval
-		) AT TIME ZONE COALESCE(extra->>'quota_reset_timezone', 'UTC')
-		-- NOW() is before today's reset point → next reset is today
-		ELSE (
-			date_trunc('day', NOW() AT TIME ZONE COALESCE(extra->>'quota_reset_timezone', 'UTC'))
-			+ (COALESCE((extra->>'quota_daily_reset_hour')::int, 0) || ' hours')::interval
-		) AT TIME ZONE COALESCE(extra->>'quota_reset_timezone', 'UTC')
-		END
-	) AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"')
-	ELSE NULL END
-)`
+const nextDailyResetAtExpr = `NULL`
 
 // nextWeeklyResetAtExpr is a SQL expression to compute the next weekly reset_at when a reset occurs.
 // For fixed mode: computes the next future reset time based on NOW(), timezone, configured day and hour.
 // This correctly handles long-inactive accounts by jumping directly to the next valid reset point.
-const nextWeeklyResetAtExpr = `(
-	CASE WHEN COALESCE(extra->>'quota_weekly_reset_mode', 'rolling') = 'fixed'
-	THEN to_char((
-		-- Compute this week's reset point in the configured timezone
-		-- Step 1: get today's date at reset hour in configured tz
-		-- Step 2: compute days forward to target weekday
-		-- Step 3: if same day but past reset hour, advance 7 days
-		CASE
-		WHEN (
-			-- days_forward = (target_day - current_day + 7) % 7
-			(COALESCE((extra->>'quota_weekly_reset_day')::int, 1)
-			 - EXTRACT(DOW FROM NOW() AT TIME ZONE COALESCE(extra->>'quota_reset_timezone', 'UTC'))::int
-			 + 7) % 7
-		) = 0 AND NOW() >= (
-			date_trunc('day', NOW() AT TIME ZONE COALESCE(extra->>'quota_reset_timezone', 'UTC'))
-			+ (COALESCE((extra->>'quota_weekly_reset_hour')::int, 0) || ' hours')::interval
-		) AT TIME ZONE COALESCE(extra->>'quota_reset_timezone', 'UTC')
-		-- Same weekday and past reset hour → next week
-		THEN (
-			date_trunc('day', NOW() AT TIME ZONE COALESCE(extra->>'quota_reset_timezone', 'UTC'))
-			+ (COALESCE((extra->>'quota_weekly_reset_hour')::int, 0) || ' hours')::interval
-			+ '7 days'::interval
-		) AT TIME ZONE COALESCE(extra->>'quota_reset_timezone', 'UTC')
-		ELSE (
-			-- Advance to target weekday this week (or next if days_forward > 0)
-			date_trunc('day', NOW() AT TIME ZONE COALESCE(extra->>'quota_reset_timezone', 'UTC'))
-			+ (COALESCE((extra->>'quota_weekly_reset_hour')::int, 0) || ' hours')::interval
-			+ ((
-				(COALESCE((extra->>'quota_weekly_reset_day')::int, 1)
-				 - EXTRACT(DOW FROM NOW() AT TIME ZONE COALESCE(extra->>'quota_reset_timezone', 'UTC'))::int
-				 + 7) % 7
-			) || ' days')::interval
-		) AT TIME ZONE COALESCE(extra->>'quota_reset_timezone', 'UTC')
-		END
-	) AT TIME ZONE 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS"Z"')
-	ELSE NULL END
-)`
+const nextWeeklyResetAtExpr = `NULL`
 
-// IncrementQuotaUsed 原子递增账号的配额用量（总/日/周三个维度）
-// 日/周额度在周期过期时自动重置为 0 再递增。
-// 支持滚动窗口（rolling）和固定时间（fixed）两种重置模式。
+// IncrementQuotaUsed 鍘熷瓙閫掑璐﹀彿鐨勯厤棰濈敤閲忥紙鎬?鏃?鍛ㄤ笁涓淮搴︼級
+// IncrementQuotaUsed 原子递增账号的总、日、周配额用量。
 func (r *accountRepository) IncrementQuotaUsed(ctx context.Context, id int64, amount float64) error {
-	rows, err := r.sql.QueryContext(ctx,
-		`UPDATE accounts SET extra = (
-			COALESCE(extra, '{}'::jsonb)
-			-- 总额度：始终递增
-			|| jsonb_build_object('quota_used', COALESCE((extra->>'quota_used')::numeric, 0) + $1)
-			-- 日额度：仅在 quota_daily_limit > 0 时处理
-			|| CASE WHEN COALESCE((extra->>'quota_daily_limit')::numeric, 0) > 0 THEN
-				jsonb_build_object(
-					'quota_daily_used',
-					CASE WHEN `+dailyExpiredExpr+`
-					THEN $1
-					ELSE COALESCE((extra->>'quota_daily_used')::numeric, 0) + $1 END,
-					'quota_daily_start',
-					CASE WHEN `+dailyExpiredExpr+`
+	res, err := r.sql.ExecContext(ctx,
+		`UPDATE accounts SET extra = JSON_SET(
+			COALESCE(extra, JSON_OBJECT()),
+			'$.quota_used', CAST(COALESCE(NULLIF(JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_used')), ''), '0') AS DECIMAL(20,10)) + ?,
+			'$.quota_daily_used',
+				CASE WHEN CAST(COALESCE(NULLIF(JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_daily_limit')), ''), '0') AS DECIMAL(20,10)) > 0
+					THEN CASE WHEN `+dailyExpiredExpr+` THEN ? ELSE CAST(COALESCE(NULLIF(JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_daily_used')), ''), '0') AS DECIMAL(20,10)) + ? END
+					ELSE CAST(COALESCE(NULLIF(JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_daily_used')), ''), '0') AS DECIMAL(20,10)) END,
+			'$.quota_daily_start',
+				CASE WHEN CAST(COALESCE(NULLIF(JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_daily_limit')), ''), '0') AS DECIMAL(20,10)) > 0 AND `+dailyExpiredExpr+`
 					THEN `+nowUTC+`
-					ELSE COALESCE(extra->>'quota_daily_start', `+nowUTC+`) END
-				)
-				-- 固定模式重置时更新下次重置时间
-				|| CASE WHEN `+dailyExpiredExpr+` AND `+nextDailyResetAtExpr+` IS NOT NULL
-				   THEN jsonb_build_object('quota_daily_reset_at', `+nextDailyResetAtExpr+`)
-				   ELSE '{}'::jsonb END
-			ELSE '{}'::jsonb END
-			-- 周额度：仅在 quota_weekly_limit > 0 时处理
-			|| CASE WHEN COALESCE((extra->>'quota_weekly_limit')::numeric, 0) > 0 THEN
-				jsonb_build_object(
-					'quota_weekly_used',
-					CASE WHEN `+weeklyExpiredExpr+`
-					THEN $1
-					ELSE COALESCE((extra->>'quota_weekly_used')::numeric, 0) + $1 END,
-					'quota_weekly_start',
-					CASE WHEN `+weeklyExpiredExpr+`
+					ELSE COALESCE(JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_daily_start')), `+nowUTC+`) END,
+			'$.quota_weekly_used',
+				CASE WHEN CAST(COALESCE(NULLIF(JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_weekly_limit')), ''), '0') AS DECIMAL(20,10)) > 0
+					THEN CASE WHEN `+weeklyExpiredExpr+` THEN ? ELSE CAST(COALESCE(NULLIF(JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_weekly_used')), ''), '0') AS DECIMAL(20,10)) + ? END
+					ELSE CAST(COALESCE(NULLIF(JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_weekly_used')), ''), '0') AS DECIMAL(20,10)) END,
+			'$.quota_weekly_start',
+				CASE WHEN CAST(COALESCE(NULLIF(JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_weekly_limit')), ''), '0') AS DECIMAL(20,10)) > 0 AND `+weeklyExpiredExpr+`
 					THEN `+nowUTC+`
-					ELSE COALESCE(extra->>'quota_weekly_start', `+nowUTC+`) END
-				)
-				-- 固定模式重置时更新下次重置时间
-				|| CASE WHEN `+weeklyExpiredExpr+` AND `+nextWeeklyResetAtExpr+` IS NOT NULL
-				   THEN jsonb_build_object('quota_weekly_reset_at', `+nextWeeklyResetAtExpr+`)
-				   ELSE '{}'::jsonb END
-			ELSE '{}'::jsonb END
+					ELSE COALESCE(JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_weekly_start')), `+nowUTC+`) END
 		), updated_at = NOW()
-		WHERE id = $2 AND deleted_at IS NULL
-		RETURNING
-			COALESCE((extra->>'quota_used')::numeric, 0),
-			COALESCE((extra->>'quota_limit')::numeric, 0)`,
-		amount, id)
+		WHERE id = ? AND deleted_at IS NULL`,
+		amount, amount, amount, amount, amount, id)
 	if err != nil {
 		return err
 	}
-	defer func() { _ = rows.Close() }()
+	affected, _ := res.RowsAffected()
+	if affected == 0 {
+		return service.ErrAccountNotFound
+	}
 
 	var newUsed, limit float64
-	if rows.Next() {
-		if err := rows.Scan(&newUsed, &limit); err != nil {
-			return err
-		}
-	}
-	if err := rows.Err(); err != nil {
+	if err := scanSingleRow(ctx, r.sql, `
+SELECT
+	CAST(COALESCE(NULLIF(JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_used')), ''), '0') AS DECIMAL(20,10)),
+	CAST(COALESCE(NULLIF(JSON_UNQUOTE(JSON_EXTRACT(extra, '$.quota_limit')), ''), '0') AS DECIMAL(20,10))
+FROM accounts
+WHERE id = ? AND deleted_at IS NULL`, []any{id}, &newUsed, &limit); err != nil {
 		return err
 	}
 
-	// 任一维度配额刚超限时触发调度快照刷新
 	if limit > 0 && newUsed >= limit && (newUsed-amount) < limit {
 		if err := enqueueSchedulerOutbox(ctx, r.sql, service.SchedulerOutboxEventAccountChanged, &id, nil, nil); err != nil {
 			logger.LegacyPrintf("repository.account", "[SchedulerOutbox] enqueue quota exceeded failed: account=%d err=%v", id, err)
@@ -2183,33 +2067,31 @@ func (r *accountRepository) IncrementQuotaUsed(ctx context.Context, id int64, am
 	return nil
 }
 
-// ResetQuotaUsed 重置账号所有维度的配额用量为 0
-// 保留固定重置模式的配置字段（quota_daily_reset_mode 等），仅清零用量和窗口起始时间
+// ResetQuotaUsed 閲嶇疆璐﹀彿鎵€鏈夌淮搴︾殑閰嶉鐢ㄩ噺涓?0
+// ResetQuotaUsed 重置账号各维度配额用量。
 func (r *accountRepository) ResetQuotaUsed(ctx context.Context, id int64) error {
 	_, err := r.sql.ExecContext(ctx,
-		`UPDATE accounts SET extra = (
-			COALESCE(extra, '{}'::jsonb)
-			|| '{"quota_used": 0, "quota_daily_used": 0, "quota_weekly_used": 0}'::jsonb
-		) - 'quota_daily_start' - 'quota_weekly_start' - 'quota_daily_reset_at' - 'quota_weekly_reset_at', updated_at = NOW()
-		WHERE id = $1 AND deleted_at IS NULL`,
+		`UPDATE accounts SET extra = JSON_REMOVE(
+			JSON_SET(COALESCE(extra, JSON_OBJECT()), '$.quota_used', 0, '$.quota_daily_used', 0, '$.quota_weekly_used', 0),
+			'$.quota_daily_start', '$.quota_weekly_start', '$.quota_daily_reset_at', '$.quota_weekly_reset_at'
+		), updated_at = NOW()
+		WHERE id = ? AND deleted_at IS NULL`,
 		id)
 	if err != nil {
 		return err
 	}
-	// 重置配额后触发调度快照刷新，使账号重新参与调度
 	if err := enqueueSchedulerOutbox(ctx, r.sql, service.SchedulerOutboxEventAccountChanged, &id, nil, nil); err != nil {
 		logger.LegacyPrintf("repository.account", "[SchedulerOutbox] enqueue quota reset failed: account=%d err=%v", id, err)
 	}
 	return nil
 }
 
-// RevertProxyFallback 将账号的 proxy_id 切回 proxy_fallback_origin_id，并清空 origin 字段。
-// 仅当 proxy_fallback_origin_id IS NOT NULL 时执行更新；
-// 若影响行数为 0，则返回 ErrAccountNotInFallback（账号存在但不在 fallback 状态）。
+// RevertProxyFallback 灏嗚处鍙风殑 proxy_id 鍒囧洖 proxy_fallback_origin_id锛屽苟娓呯┖ origin 瀛楁銆?// 浠呭綋 proxy_fallback_origin_id IS NOT NULL 鏃舵墽琛屾洿鏂帮紱
+// RevertProxyFallback 将账号切回原代理。
 func (r *accountRepository) RevertProxyFallback(ctx context.Context, accountID int64) error {
 	res, err := r.sql.ExecContext(ctx, `
 		UPDATE accounts SET proxy_id=proxy_fallback_origin_id, proxy_fallback_origin_id=NULL, updated_at=NOW()
-		WHERE id=$1 AND proxy_fallback_origin_id IS NOT NULL AND deleted_at IS NULL`, accountID)
+		WHERE id=? AND proxy_fallback_origin_id IS NOT NULL AND deleted_at IS NULL`, accountID)
 	if err != nil {
 		return err
 	}

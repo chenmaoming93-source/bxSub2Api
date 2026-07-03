@@ -7,10 +7,8 @@ import (
 	"regexp"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/Wei-Shaw/sub2api/internal/pkg/response"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/sysutil"
 
 	"github.com/gin-gonic/gin"
 )
@@ -18,8 +16,10 @@ import (
 // installMutex prevents concurrent installation attempts (TOCTOU protection)
 var installMutex sync.Mutex
 
-// RegisterRoutes registers setup wizard routes
-func RegisterRoutes(r *gin.Engine) {
+// RegisterRoutes registers setup wizard routes. onInstalled is invoked after a
+// successful installation so the bootstrap HTTP server can transition to the
+// full application server without relying on an external process supervisor.
+func RegisterRoutes(r *gin.Engine, onInstalled func()) {
 	setup := r.Group("/setup")
 	{
 		// Status endpoint is always accessible (read-only)
@@ -31,7 +31,12 @@ func RegisterRoutes(r *gin.Engine) {
 		{
 			protected.POST("/test-db", testDatabase)
 			protected.POST("/test-redis", testRedis)
-			protected.POST("/install", install)
+			protected.POST("/install", func(c *gin.Context) {
+				install(c)
+				if c.Writer.Status() < http.StatusBadRequest && !NeedsSetup() && onInstalled != nil {
+					onInstalled()
+				}
+			})
 		}
 	}
 }
@@ -340,16 +345,8 @@ func install(c *gin.Context) {
 		return
 	}
 
-	// Schedule service restart in background after sending response
-	// This ensures the client receives the success response before the service restarts
-	go func() {
-		// Wait a moment to ensure the response is sent
-		time.Sleep(500 * time.Millisecond)
-		sysutil.RestartServiceAsync()
-	}()
-
 	response.Success(c, gin.H{
-		"message": "Installation completed successfully. Service will restart automatically.",
+		"message": "Installation completed successfully. Service is starting automatically.",
 		"restart": true,
 	})
 }

@@ -94,6 +94,10 @@ const (
 	EdgeSubscriptions = "subscriptions"
 	// EdgeUsageLogs holds the string denoting the usage_logs edge name in mutations.
 	EdgeUsageLogs = "usage_logs"
+	// EdgeCandidateTokenDailyUsages holds the string denoting the candidate_token_daily_usages edge name in mutations.
+	EdgeCandidateTokenDailyUsages = "candidate_token_daily_usages"
+	// EdgeGroupCandidateTokenDailyLimitConfigs holds the string denoting the group_candidate_token_daily_limit_configs edge name in mutations.
+	EdgeGroupCandidateTokenDailyLimitConfigs = "group_candidate_token_daily_limit_configs"
 	// EdgeAccounts holds the string denoting the accounts edge name in mutations.
 	EdgeAccounts = "accounts"
 	// EdgeAllowedUsers holds the string denoting the allowed_users edge name in mutations.
@@ -132,6 +136,20 @@ const (
 	UsageLogsInverseTable = "usage_logs"
 	// UsageLogsColumn is the table column denoting the usage_logs relation/edge.
 	UsageLogsColumn = "group_id"
+	// CandidateTokenDailyUsagesTable is the table that holds the candidate_token_daily_usages relation/edge.
+	CandidateTokenDailyUsagesTable = "group_candidate_token_daily_usages"
+	// CandidateTokenDailyUsagesInverseTable is the table name for the GroupCandidateTokenDailyUsage entity.
+	// It exists in this package in order to avoid circular dependency with the "groupcandidatetokendailyusage" package.
+	CandidateTokenDailyUsagesInverseTable = "group_candidate_token_daily_usages"
+	// CandidateTokenDailyUsagesColumn is the table column denoting the candidate_token_daily_usages relation/edge.
+	CandidateTokenDailyUsagesColumn = "group_id"
+	// GroupCandidateTokenDailyLimitConfigsTable is the table that holds the group_candidate_token_daily_limit_configs relation/edge.
+	GroupCandidateTokenDailyLimitConfigsTable = "group_candidate_token_daily_limit_configs"
+	// GroupCandidateTokenDailyLimitConfigsInverseTable is the table name for the GroupCandidateTokenDailyLimitConfig entity.
+	// It exists in this package in order to avoid circular dependency with the "groupcandidatetokendailylimitconfig" package.
+	GroupCandidateTokenDailyLimitConfigsInverseTable = "group_candidate_token_daily_limit_configs"
+	// GroupCandidateTokenDailyLimitConfigsColumn is the table column denoting the group_candidate_token_daily_limit_configs relation/edge.
+	GroupCandidateTokenDailyLimitConfigsColumn = "group_id"
 	// AccountsTable is the table that holds the accounts relation/edge. The primary key declared below.
 	AccountsTable = "account_groups"
 	// AccountsInverseTable is the table name for the Account entity.
@@ -504,6 +522,34 @@ func ByUsageLogs(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
+// ByCandidateTokenDailyUsagesCount orders the results by candidate_token_daily_usages count.
+func ByCandidateTokenDailyUsagesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newCandidateTokenDailyUsagesStep(), opts...)
+	}
+}
+
+// ByCandidateTokenDailyUsages orders the results by candidate_token_daily_usages terms.
+func ByCandidateTokenDailyUsages(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newCandidateTokenDailyUsagesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByGroupCandidateTokenDailyLimitConfigsCount orders the results by group_candidate_token_daily_limit_configs count.
+func ByGroupCandidateTokenDailyLimitConfigsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newGroupCandidateTokenDailyLimitConfigsStep(), opts...)
+	}
+}
+
+// ByGroupCandidateTokenDailyLimitConfigs orders the results by group_candidate_token_daily_limit_configs terms.
+func ByGroupCandidateTokenDailyLimitConfigs(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newGroupCandidateTokenDailyLimitConfigsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
 // ByAccountsCount orders the results by accounts count.
 func ByAccountsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -585,6 +631,20 @@ func newUsageLogsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(UsageLogsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, UsageLogsTable, UsageLogsColumn),
+	)
+}
+func newCandidateTokenDailyUsagesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(CandidateTokenDailyUsagesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, CandidateTokenDailyUsagesTable, CandidateTokenDailyUsagesColumn),
+	)
+}
+func newGroupCandidateTokenDailyLimitConfigsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(GroupCandidateTokenDailyLimitConfigsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, GroupCandidateTokenDailyLimitConfigsTable, GroupCandidateTokenDailyLimitConfigsColumn),
 	)
 }
 func newAccountsStep() *sqlgraph.Step {

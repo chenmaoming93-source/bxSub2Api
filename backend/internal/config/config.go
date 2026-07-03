@@ -71,6 +71,7 @@ type Config struct {
 	Ops                     OpsConfig                     `mapstructure:"ops"`
 	JWT                     JWTConfig                     `mapstructure:"jwt"`
 	Totp                    TotpConfig                    `mapstructure:"totp"`
+	LDAP                    LDAPConfig                    `mapstructure:"ldap"`
 	LinuxDo                 LinuxDoConnectConfig          `mapstructure:"linuxdo_connect"`
 	WeChat                  WeChatConnectConfig           `mapstructure:"wechat_connect"`
 	OIDC                    OIDCConnectConfig             `mapstructure:"oidc_connect"`
@@ -94,6 +95,27 @@ type Config struct {
 	Gemini                  GeminiConfig                  `mapstructure:"gemini"`
 	Update                  UpdateConfig                  `mapstructure:"update"`
 	Idempotency             IdempotencyConfig             `mapstructure:"idempotency"`
+}
+
+// LDAPConfig controls optional LDAP/Active Directory password authentication.
+// When disabled, the existing local login path is unchanged.
+type LDAPConfig struct {
+	Enabled               bool     `mapstructure:"enabled"`
+	ServerURL             string   `mapstructure:"server_url"`
+	BaseDN                string   `mapstructure:"base_dn"`
+	UserDN                string   `mapstructure:"user_dn"`
+	BindDN                string   `mapstructure:"bind_dn"`
+	BindPassword          string   `mapstructure:"bind_password"`
+	UserFilter            string   `mapstructure:"user_filter"`
+	UsernameAttribute     string   `mapstructure:"username_attribute"`
+	EmailAttribute        string   `mapstructure:"email_attribute"`
+	DisplayNameAttribute  string   `mapstructure:"display_name_attribute"`
+	Domain                string   `mapstructure:"domain"`
+	StartTLS              bool     `mapstructure:"start_tls"`
+	InsecureSkipVerify    bool     `mapstructure:"insecure_skip_verify"`
+	AutoCreateUser        bool     `mapstructure:"auto_create_user"`
+	LocalLoginAccounts    []string `mapstructure:"local_login_accounts"`
+	ConnectTimeoutSeconds int      `mapstructure:"connect_timeout_seconds"`
 }
 
 type LogConfig struct {
@@ -1394,8 +1416,8 @@ func load(allowMissingJWTSecret bool) (*Config, error) {
 	if dataDir := os.Getenv("DATA_DIR"); dataDir != "" {
 		viper.AddConfigPath(dataDir)
 	}
-	// 2. Docker data directory
-	viper.AddConfigPath("/app/data")
+	// 2. Primary data directory
+	viper.AddConfigPath("/opt/iba/sub2api")
 	// 3. Current directory
 	viper.AddConfigPath(".")
 	// 4. Config subdirectory
@@ -1636,6 +1658,24 @@ func setDefaults() {
 
 	// Turnstile
 	viper.SetDefault("turnstile.required", false)
+
+	// LDAP / Active Directory authentication is opt-in.
+	viper.SetDefault("ldap.enabled", false)
+	viper.SetDefault("ldap.server_url", "")
+	viper.SetDefault("ldap.base_dn", "")
+	viper.SetDefault("ldap.user_dn", "")
+	viper.SetDefault("ldap.bind_dn", "")
+	viper.SetDefault("ldap.bind_password", "")
+	viper.SetDefault("ldap.user_filter", "(sAMAccountName=%s)")
+	viper.SetDefault("ldap.username_attribute", "sAMAccountName")
+	viper.SetDefault("ldap.email_attribute", "mail")
+	viper.SetDefault("ldap.display_name_attribute", "displayName")
+	viper.SetDefault("ldap.domain", "")
+	viper.SetDefault("ldap.start_tls", true)
+	viper.SetDefault("ldap.insecure_skip_verify", false)
+	viper.SetDefault("ldap.auto_create_user", true)
+	viper.SetDefault("ldap.local_login_accounts", []string{})
+	viper.SetDefault("ldap.connect_timeout_seconds", 10)
 
 	// LinuxDo Connect OAuth 登录
 	viper.SetDefault("linuxdo_connect.enabled", false)
@@ -1996,6 +2036,31 @@ func setDefaults() {
 }
 
 func (c *Config) Validate() error {
+	if c.LDAP.Enabled {
+		serverURL := strings.TrimSpace(c.LDAP.ServerURL)
+		if serverURL == "" {
+			return fmt.Errorf("ldap.server_url is required when ldap.enabled=true")
+		}
+		u, err := url.Parse(serverURL)
+		if err != nil || (u.Scheme != "ldap" && u.Scheme != "ldaps") || u.Host == "" {
+			return fmt.Errorf("ldap.server_url must be a valid ldap:// or ldaps:// URL")
+		}
+		if strings.TrimSpace(c.LDAP.BaseDN) == "" {
+			return fmt.Errorf("ldap.base_dn is required when ldap.enabled=true")
+		}
+		if strings.Count(c.LDAP.UserFilter, "%s") != 1 {
+			return fmt.Errorf("ldap.user_filter must contain exactly one %%s placeholder")
+		}
+		if c.LDAP.UserDN != "" && strings.Count(c.LDAP.UserDN, "%s") != 1 {
+			return fmt.Errorf("ldap.user_dn must contain exactly one %%s placeholder")
+		}
+		if c.LDAP.Domain == "" && c.LDAP.UserDN == "" && strings.TrimSpace(c.LDAP.BindDN) == "" {
+			return fmt.Errorf("ldap.bind_dn is required for search-bind authentication")
+		}
+		if c.LDAP.ConnectTimeoutSeconds <= 0 {
+			return fmt.Errorf("ldap.connect_timeout_seconds must be positive")
+		}
+	}
 	jwtSecret := strings.TrimSpace(c.JWT.Secret)
 	if jwtSecret == "" {
 		return fmt.Errorf("jwt.secret is required")

@@ -1,1 +1,1 @@
-ALTER TABLE accounts ADD COLUMN IF NOT EXISTS load_factor INTEGER;
+ALTER TABLE accounts ADD COLUMN load_factor INTEGER;

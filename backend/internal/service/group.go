@@ -1,6 +1,8 @@
 package service
 
 import (
+	"encoding/json"
+	"sort"
 	"strings"
 	"time"
 
@@ -41,9 +43,8 @@ type Group struct {
 	FallbackGroupIDOnInvalidRequest *int64
 
 	// 模型路由配置
-	// key: 模型匹配模式（支持 * 通配符，如 "claude-opus-*"）
-	// value: 优先账号 ID 列表
-	ModelRouting        map[string][]int64
+	// 兼容旧账号 ID 数组与新候选对象数组；具体解析由 domain 包负责。
+	ModelRouting        any
 	ModelRoutingEnabled bool
 
 	// MCP XML 协议注入开关（仅 antigravity 平台使用）
@@ -133,23 +134,52 @@ func IsGroupContextValid(group *Group) bool {
 // GetRoutingAccountIDs 根据请求模型获取路由账号 ID 列表
 // 返回匹配的优先账号 ID 列表，如果没有匹配规则则返回 nil
 func (g *Group) GetRoutingAccountIDs(requestedModel string) []int64 {
-	if !g.ModelRoutingEnabled || len(g.ModelRouting) == 0 || requestedModel == "" {
+	candidates := g.GetRoutingCandidates(requestedModel)
+	if len(candidates) == 0 {
 		return nil
 	}
+	return candidates[0].AccountIDs
+}
 
-	// 1. 精确匹配优先
-	if accountIDs, ok := g.ModelRouting[requestedModel]; ok && len(accountIDs) > 0 {
-		return accountIDs
+// GetRoutingCandidates returns ordered route candidates for the requested model.
+func (g *Group) GetRoutingCandidates(requestedModel string) []domain.ModelRouteCandidate {
+	if !g.ModelRoutingEnabled || g.ModelRouting == nil || requestedModel == "" {
+		return nil
 	}
-
-	// 2. 通配符匹配（前缀匹配）
-	for pattern, accountIDs := range g.ModelRouting {
-		if matchModelPattern(pattern, requestedModel) && len(accountIDs) > 0 {
-			return accountIDs
-		}
+	data, err := json.Marshal(g.ModelRouting)
+	if err != nil {
+		return nil
 	}
+	config, err := domain.ParseModelRoutingConfig(data)
+	if err != nil {
+		return nil
+	}
+	candidates := config.Match(requestedModel)
+	if len(candidates) == 0 {
+		return nil
+	}
+	return candidates
+}
 
-	return nil
+// ModelRoutingRuleNames returns deterministic route names for diagnostics.
+func (g *Group) ModelRoutingRuleNames() []string {
+	if g == nil || g.ModelRouting == nil {
+		return nil
+	}
+	data, err := json.Marshal(g.ModelRouting)
+	if err != nil {
+		return nil
+	}
+	config, err := domain.ParseModelRoutingConfig(data)
+	if err != nil {
+		return nil
+	}
+	keys := make([]string, 0, len(config))
+	for key := range config {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	return keys
 }
 
 // matchModelPattern 检查模型是否匹配模式

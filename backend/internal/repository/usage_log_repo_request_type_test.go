@@ -6,6 +6,7 @@ import (
 	"database/sql/driver"
 	"fmt"
 	"reflect"
+	"strings"
 	"testing"
 	"time"
 
@@ -196,9 +197,9 @@ func TestBuildUsageLogBestEffortInsertQuery_IncludesRequestedModelColumn(t *test
 
 	query, args := buildUsageLogBestEffortInsertQuery([]usageLogInsertPrepared{prepared})
 
-	require.Contains(t, query, "INSERT INTO usage_logs (")
-	require.Contains(t, query, "\n\t\t\tmodel,\n\t\t\trequested_model,\n\t\t\tupstream_model,")
-	require.Contains(t, query, "\n\t\t\trequest_id,\n\t\t\tmodel,\n\t\t\trequested_model,\n\t\t\tupstream_model,")
+	require.Contains(t, query, "INSERT IGNORE INTO usage_logs (")
+	require.Contains(t, query, "requested_model, upstream_model,")
+	require.Contains(t, query, "model, requested_model, upstream_model,")
 	require.Len(t, args, len(prepared.args))
 	require.Equal(t, prepared.args[5], args[5])
 }
@@ -215,7 +216,7 @@ func TestExecUsageLogInsertNoResult_PersistsRequestedModel(t *testing.T) {
 		CreatedAt:      time.Date(2025, 1, 4, 12, 0, 0, 0, time.UTC),
 	})
 
-	mock.ExpectExec("INSERT INTO usage_logs").
+	mock.ExpectExec("INSERT IGNORE INTO usage_logs").
 		WithArgs(anySliceToDriverValues(prepared.args)...).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 
@@ -235,7 +236,8 @@ func TestPrepareUsageLogInsert_ArgCountMatchesTypes(t *testing.T) {
 		CreatedAt:      time.Date(2025, 1, 5, 12, 0, 0, 0, time.UTC),
 	})
 
-	require.Len(t, prepared.args, len(usageLogInsertArgTypes))
+	columns := strings.Split(strings.ReplaceAll(strings.TrimSpace(usageLogInsertColumns), "\n", ""), ",")
+	require.Len(t, prepared.args, len(columns))
 }
 
 func TestPrepareUsageLogInsert_PersistsImageSizeMetadata(t *testing.T) {

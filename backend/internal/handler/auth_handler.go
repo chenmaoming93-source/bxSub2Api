@@ -10,6 +10,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/internal/handler/dto"
 	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/ip"
+	"github.com/Wei-Shaw/sub2api/internal/pkg/ldapauth"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/response"
 	middleware2 "github.com/Wei-Shaw/sub2api/internal/server/middleware"
 	"github.com/Wei-Shaw/sub2api/internal/service"
@@ -27,6 +28,7 @@ type AuthHandler struct {
 	redeemService        *service.RedeemService
 	totpService          *service.TotpService
 	userAttributeService *service.UserAttributeService
+	ldapAuthenticator    ldapauth.Authenticator
 
 	dingTalkClientInstance *DingTalkClient
 	dingTalkClientMu       sync.Mutex
@@ -34,7 +36,7 @@ type AuthHandler struct {
 
 // NewAuthHandler creates a new AuthHandler
 func NewAuthHandler(cfg *config.Config, authService *service.AuthService, userService *service.UserService, settingService *service.SettingService, promoService *service.PromoService, redeemService *service.RedeemService, totpService *service.TotpService, userAttributeService *service.UserAttributeService) *AuthHandler {
-	return &AuthHandler{
+	h := &AuthHandler{
 		cfg:                  cfg,
 		authService:          authService,
 		userService:          userService,
@@ -44,6 +46,10 @@ func NewAuthHandler(cfg *config.Config, authService *service.AuthService, userSe
 		totpService:          totpService,
 		userAttributeService: userAttributeService,
 	}
+	if cfg != nil && cfg.LDAP.Enabled {
+		h.ldapAuthenticator = ldapauth.New(cfg.LDAP)
+	}
+	return h
 }
 
 // RegisterRequest represents the registration request payload
@@ -71,9 +77,22 @@ type SendVerifyCodeResponse struct {
 
 // LoginRequest represents the login request payload
 type LoginRequest struct {
-	Email          string `json:"email" binding:"required,email"`
+	Email          string `json:"email" binding:"required"`
 	Password       string `json:"password" binding:"required"`
 	TurnstileToken string `json:"turnstile_token"`
+}
+
+func (h *AuthHandler) shouldUseLDAP(account string) bool {
+	if h == nil || h.cfg == nil || !h.cfg.LDAP.Enabled || h.ldapAuthenticator == nil {
+		return false
+	}
+	account = strings.TrimSpace(account)
+	for _, localAccount := range h.cfg.LDAP.LocalLoginAccounts {
+		if strings.EqualFold(account, strings.TrimSpace(localAccount)) {
+			return false
+		}
+	}
+	return true
 }
 
 // AuthResponse 认证响应格式（匹配前端期望）
@@ -230,7 +249,20 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
-	token, user, err := h.authService.Login(c.Request.Context(), req.Email, req.Password)
+	var token string
+	var user *service.User
+	var err error
+	if h.shouldUseLDAP(req.Email) {
+		identity, ldapErr := h.ldapAuthenticator.Authenticate(req.Email, req.Password)
+		if ldapErr != nil {
+			slog.Warn("LDAP authentication failed", "account", strings.TrimSpace(req.Email), "error", ldapErr)
+			response.ErrorFrom(c, service.ErrInvalidCredentials)
+			return
+		}
+		token, user, err = h.authService.LoginLDAP(c.Request.Context(), identity.Username, identity.DisplayName)
+	} else {
+		token, user, err = h.authService.Login(c.Request.Context(), req.Email, req.Password)
+	}
 	if err != nil {
 		response.ErrorFrom(c, err)
 		return

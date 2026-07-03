@@ -49,7 +49,7 @@ type UserPlatformQuotaRecord struct {
 type UserPlatformQuotaRepository interface {
 	// GetByUserPlatform 查询单条配额记录，未找到时返回 (nil, nil)。
 	GetByUserPlatform(ctx context.Context, userID int64, platform string) (*UserPlatformQuotaRecord, error)
-	// BulkInsertInitial 幂等批量插入初始配额记录（ON CONFLICT DO NOTHING）。
+	// BulkInsertInitial 幂等批量插入初始配额记录（MySQL upsert）。
 	BulkInsertInitial(ctx context.Context, records []UserPlatformQuotaRecord) error
 	// IncrementUsageWithReset 原子地累加用量，若窗口已过期则先重置再累加。
 	IncrementUsageWithReset(ctx context.Context, userID int64, platform string, cost float64, now time.Time) error

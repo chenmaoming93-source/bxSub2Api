@@ -57,10 +57,10 @@ func (AuthIdentity) Fields() []ent.Field {
 			Validate(validateAuthProviderType),
 		field.String("provider_key").
 			NotEmpty().
-			SchemaType(map[string]string{dialect.MySQL: "text"}),
+			SchemaType(map[string]string{dialect.MySQL: "varchar(500)"}),
 		field.String("provider_subject").
 			NotEmpty().
-			SchemaType(map[string]string{dialect.MySQL: "text"}),
+			SchemaType(map[string]string{dialect.MySQL: "varchar(500)"}),
 		field.Time("verified_at").
 			Optional().
 			Nillable().

@@ -308,6 +308,14 @@ func (h *GatewayHandler) Messages(c *gin.Context) {
 						zap.String("platform", platform),
 						zap.Error(err),
 					)
+					if errors.Is(err, service.ErrRoutedTokenQuotaExhausted) {
+						status, code, message, retryAfter := billingErrorDetails(err)
+						if retryAfter > 0 {
+							c.Header("Retry-After", strconv.Itoa(retryAfter))
+						}
+						h.handleStreamingAwareError(c, status, code, message, streamStarted)
+						return
+					}
 					h.handleStreamingAwareError(c, http.StatusServiceUnavailable, "api_error", "No available accounts: "+err.Error(), streamStarted)
 					return
 				}
@@ -586,6 +594,14 @@ func (h *GatewayHandler) Messages(c *gin.Context) {
 						zap.Bool("fallback_used", fallbackUsed),
 						zap.Error(err),
 					)
+					if errors.Is(err, service.ErrRoutedTokenQuotaExhausted) {
+						status, code, message, retryAfter := billingErrorDetails(err)
+						if retryAfter > 0 {
+							c.Header("Retry-After", strconv.Itoa(retryAfter))
+						}
+						h.handleStreamingAwareError(c, status, code, message, streamStarted)
+						return
+					}
 					h.handleStreamingAwareError(c, http.StatusServiceUnavailable, "api_error", "No available accounts: "+err.Error(), streamStarted)
 					return
 				}
@@ -756,6 +772,9 @@ func (h *GatewayHandler) Messages(c *gin.Context) {
 					h.errorResponse(c, http.StatusBadRequest, "invalid_request_error", "Failed to parse request body")
 					return
 				}
+			}
+			if selection.UpstreamModel != "" && selection.UpstreamModel != reqModel {
+				attemptParsedReq.UpstreamModel = selection.UpstreamModel
 			}
 			// Bedrock CC 兼容：清理 body 专有字段 + 过滤 anthropic-beta header，适用于所有转发路径
 			if err := attemptParsedReq.ReplaceBody(h.gatewayService.ApplyBedrockCCCompat(c, attemptParsedReq.Body.Bytes(), attemptParsedReq.Model, account, apiKey.GroupID)); err != nil {
@@ -2067,6 +2086,9 @@ func billingErrorDetails(err error) (status int, code, message string, retryAfte
 		msg := pkgerrors.Message(err)
 		retrySeconds := 60 - int(time.Now().Unix()%60)
 		return http.StatusTooManyRequests, "rate_limit_exceeded", msg, retrySeconds
+	}
+	if errors.Is(err, service.ErrRoutedTokenQuotaExhausted) {
+		return http.StatusTooManyRequests, "rate_limit_exceeded", "Daily token quota exhausted for all routed model candidates", 0
 	}
 	if errors.Is(err, service.ErrUserPlatformDailyQuotaExhausted) ||
 		errors.Is(err, service.ErrUserPlatformWeeklyQuotaExhausted) ||

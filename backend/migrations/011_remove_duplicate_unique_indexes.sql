@@ -1,39 +1,35 @@
 -- 011_remove_duplicate_unique_indexes.sql
--- 移除重复的唯一索引
--- 这些字段在 ent schema 的 Fields() 中已声明 .Unique()，
--- 因此在 Indexes() 中再次声明 index.Fields("x").Unique() 会创建重复索引。
--- 本迁移脚本清理这些冗余索引。
+-- 移除重复的唯一索引。
+-- 这些字段已通过 schema 字段级 Unique 声明唯一约束；历史迁移或索引声明可能又创建了重复索引。
+-- 本迁移只清理已知冗余索引；索引不存在时跳过，保证全新安装和旧库升级都可重复执行。
+--
+-- 常见命名约定：
+-- - 字段级 Unique 创建的索引名: <table>_<field>_key
+-- - Indexes 中 Unique 创建的索引名: <table>_<field>
+-- - 初始化迁移中的普通索引: idx_<table>_<field>
 
--- 重复索引命名约定（由 Ent 自动生成/历史迁移遗留）:
--- - 字段级 Unique() 创建的索引名: <table>_<field>_key
--- - Indexes() 中的 Unique() 创建的索引名: <table>_<field>
--- - 初始化迁移中的非唯一索引: idx_<table>_<field>
+-- api_keys 的 key 字段
+DROP INDEX IF EXISTS apikey_key ON api_keys;
+DROP INDEX IF EXISTS api_keys_key ON api_keys;
+DROP INDEX IF EXISTS idx_api_keys_key ON api_keys;
 
--- 仅当索引存在时才删除（幂等操作）
+-- users 的 email 字段
+DROP INDEX IF EXISTS user_email ON users;
+DROP INDEX IF EXISTS users_email ON users;
+DROP INDEX IF EXISTS idx_users_email ON users;
 
--- api_keys 表: key 字段
-DROP INDEX IF EXISTS apikey_key;
-DROP INDEX IF EXISTS api_keys_key;
-DROP INDEX IF EXISTS idx_api_keys_key;
+-- settings 的 key 字段
+DROP INDEX IF EXISTS settings_key ON settings;
+DROP INDEX IF EXISTS idx_settings_key ON settings;
 
--- users 表: email 字段
-DROP INDEX IF EXISTS user_email;
-DROP INDEX IF EXISTS users_email;
-DROP INDEX IF EXISTS idx_users_email;
+-- redeem_codes 的 code 字段
+DROP INDEX IF EXISTS redeemcode_code ON redeem_codes;
+DROP INDEX IF EXISTS redeem_codes_code ON redeem_codes;
+DROP INDEX IF EXISTS idx_redeem_codes_code ON redeem_codes;
 
--- settings 表: key 字段
-DROP INDEX IF EXISTS settings_key;
-DROP INDEX IF EXISTS idx_settings_key;
+-- groups 的 name 字段
+DROP INDEX IF EXISTS group_name ON `groups`;
+DROP INDEX IF EXISTS groups_name ON `groups`;
+DROP INDEX IF EXISTS idx_groups_name ON `groups`;
 
--- redeem_codes 表: code 字段
-DROP INDEX IF EXISTS redeemcode_code;
-DROP INDEX IF EXISTS redeem_codes_code;
-DROP INDEX IF EXISTS idx_redeem_codes_code;
-
--- groups 表: name 字段
-DROP INDEX IF EXISTS group_name;
-DROP INDEX IF EXISTS groups_name;
-DROP INDEX IF EXISTS idx_groups_name;
-
--- 注意: 每个字段的唯一约束仍由字段级 Unique() 创建的约束保留，
--- 如 api_keys_key_key、users_email_key 等。
+-- 注意：字段级唯一约束对应的索引会保留，例如 api_keys_key_key、users_email_key 等。

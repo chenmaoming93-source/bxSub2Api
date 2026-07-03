@@ -22,14 +22,14 @@ CREATE TABLE IF NOT EXISTS user_platform_quotas (
     weekly_window_start  DATETIME(6),
     monthly_window_start DATETIME(6),
 
-    created_at           DATETIME(6) NOT NULL DEFAULT NOW(),
-    updated_at           DATETIME(6) NOT NULL DEFAULT NOW(),
+    created_at           DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    updated_at           DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     deleted_at           DATETIME(6)
 );
 
 -- 软删除友好唯一索引：同用户同平台只允许一条未删除记录
-CREATE UNIQUE INDEX IF NOT EXISTS userplatformquota_user_id_platform_uq
+CREATE UNIQUE INDEX userplatformquota_user_id_platform_uq
     ON user_platform_quotas (user_id, platform);
 
-CREATE INDEX IF NOT EXISTS userplatformquota_user_id
+CREATE INDEX userplatformquota_user_id
     ON user_platform_quotas (user_id);

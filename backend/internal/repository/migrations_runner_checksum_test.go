@@ -43,7 +43,16 @@ func TestIsMigrationChecksumCompatible(t *testing.T) {
 		require.True(t, ok)
 	})
 
-	t.Run("非白名单迁移不兼容", func(t *testing.T) {
+	t.Run("082 legacy checksum is compatible", func(t *testing.T) {
+		ok := isMigrationChecksumCompatible(
+			"082_refactor_channel_pricing.sql",
+			"d185c5d859a5705dc6d1abb998a314f5624f0081b49602575c578dfc796bf460",
+			"ed57a176dc8843b1ef12963f556b66f380f126aaf12d61cf3dbcf3ff61145553",
+		)
+		require.True(t, ok)
+	})
+
+	t.Run("unknown migration remains incompatible", func(t *testing.T) {
 		ok := isMigrationChecksumCompatible(
 			"001_init.sql",
 			"182c193f3359946cf094090cd9e57d5c3fd9abaffbc1e8fc378646b8a6fa12b4",

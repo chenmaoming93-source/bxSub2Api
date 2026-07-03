@@ -2,12 +2,11 @@
 -- Supports three billing modes: token (per-token with context intervals),
 -- per_request (per-request with context-size tiers), and image (per-image).
 
-SET LOCAL lock_timeout = '5s';
-SET LOCAL statement_timeout = '10min';
 
 -- 1. 为 channel_model_pricing 添加 billing_mode 列
+-- Add billing_mode to channel_model_pricing.
 ALTER TABLE channel_model_pricing
-    ADD COLUMN IF NOT EXISTS billing_mode VARCHAR(20) NOT NULL DEFAULT 'token';
+    ADD COLUMN billing_mode VARCHAR(20) NOT NULL DEFAULT 'token';
 
 -- 2. 创建区间定价子表
 CREATE TABLE IF NOT EXISTS channel_pricing_intervals (
@@ -22,11 +21,11 @@ CREATE TABLE IF NOT EXISTS channel_pricing_intervals (
     cache_read_price  NUMERIC(20,12),
     per_request_price NUMERIC(20,12),
     sort_order        INT            NOT NULL DEFAULT 0,
-    created_at        DATETIME(6)    NOT NULL DEFAULT NOW(),
-    updated_at        DATETIME(6)    NOT NULL DEFAULT NOW()
+    created_at        DATETIME(6)    NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    updated_at        DATETIME(6)    NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
 );
 
-CREATE INDEX IF NOT EXISTS idx_channel_pricing_intervals_pricing_id
+CREATE INDEX idx_channel_pricing_intervals_pricing_id
     ON channel_pricing_intervals (pricing_id);
 
 
