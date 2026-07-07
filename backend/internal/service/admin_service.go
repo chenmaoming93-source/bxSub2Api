@@ -1,4 +1,4 @@
-﻿package service
+package service
 
 import (
 	"context"
@@ -558,12 +558,12 @@ type adminServiceImpl struct {
 	proxyLatencyCache    ProxyLatencyCache
 	authCacheInvalidator APIKeyAuthCacheInvalidator
 	entClient            *dbent.Client // 用于开启数据库事务
-	settingService          *SettingService
-	defaultSubAssigner      DefaultSubscriptionAssigner
-	userSubRepo             UserSubscriptionRepository
-	privacyClientFactory    PrivacyClientFactory
-	runtimeBlocker          AccountRuntimeBlocker
-	tokenQuotaAdminRepo     UserModelTokenQuotaAdminRepository
+	settingService       *SettingService
+	defaultSubAssigner   DefaultSubscriptionAssigner
+	userSubRepo          UserSubscriptionRepository
+	privacyClientFactory PrivacyClientFactory
+	runtimeBlocker       AccountRuntimeBlocker
+	tokenQuotaAdminRepo  UserModelTokenQuotaAdminRepository
 
 	createGroupMu sync.Mutex
 }
@@ -2054,6 +2054,7 @@ func (s *adminServiceImpl) CreateGroup(ctx context.Context, input *CreateGroupIn
 		FallbackGroupID:                 input.FallbackGroupID,
 		FallbackGroupIDOnInvalidRequest: fallbackOnInvalidRequest,
 		ModelRouting:                    input.ModelRouting,
+		ModelRoutingEnabled:             input.ModelRoutingEnabled,
 		MCPXMLInject:                    mcpXMLInject,
 		SupportedModelScopes:            input.SupportedModelScopes,
 		AllowMessagesDispatch:           input.AllowMessagesDispatch,
