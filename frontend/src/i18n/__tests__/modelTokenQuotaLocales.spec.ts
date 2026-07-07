@@ -26,4 +26,12 @@ describe('model routing and token quota locale keys', () => {
     expect(zh.admin.groups.modelRouting.addCandidate).not.toContain('admin.')
     expect(en.admin.groups.modelRouting.addCandidate).not.toContain('admin.')
   })
+
+  it('explains the difference between zero and a blank token quota', () => {
+    expect(zh.admin.users.modelTokenQuota.unlimited).toBe('0=不限额 空=删除')
+    expect(zh.admin.users.defaultQuota.unlimited).toBe('0=不限额 空=删除')
+    expect(zh.admin.users.batchQuota.unlimited).toBe('0=不限额 空=删除')
+    expect(zh.admin.groups.modelRouting.unlimited).toBe('0=不限额 空=删除')
+    expect(zh.admin.groups.modelTokenQuota.unlimited).toBe('0=不限额 空=删除')
+  })
 })

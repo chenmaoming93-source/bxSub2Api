@@ -575,6 +575,39 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/admin/token-usage/models',
+    name: 'AdminTokenUsageModels',
+    component: () => import('@/views/admin/token-usage/ModelTokenUsageView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: true,
+      title: 'Token Usage - Models',
+      titleKey: 'admin.tokenUsage.models'
+    }
+  },
+  {
+    path: '/admin/token-usage/routes',
+    name: 'AdminTokenUsageRoutes',
+    component: () => import('@/views/admin/token-usage/RouteTokenUsageView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: true,
+      title: 'Token Usage - Routes',
+      titleKey: 'admin.tokenUsage.routes'
+    }
+  },
+  {
+    path: '/admin/token-usage/users',
+    name: 'AdminTokenUsageUsers',
+    component: () => import('@/views/admin/token-usage/UserModelTokenUsageView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: true,
+      title: 'Token Usage - Users',
+      titleKey: 'admin.tokenUsage.users'
+    }
+  },
+  {
     path: '/admin/affiliates',
     redirect: '/admin/affiliates/invites'
   },

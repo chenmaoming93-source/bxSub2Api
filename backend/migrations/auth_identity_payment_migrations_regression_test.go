@@ -7,13 +7,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestMigration112UsesIdempotentAddColumn(t *testing.T) {
+func TestMigration112UsesGoldenDBAddColumn(t *testing.T) {
 	content, err := FS.ReadFile("112_add_payment_order_provider_key_snapshot.sql")
 	require.NoError(t, err)
 
 	sql := string(content)
-	require.Contains(t, sql, "ADD COLUMN IF NOT EXISTS provider_key VARCHAR(30)")
-	require.NotContains(t, sql, "ADD COLUMN provider_key VARCHAR(30);")
+	require.Contains(t, sql, "ADD COLUMN provider_key VARCHAR(30)")
+	require.NotContains(t, sql, "ADD COLUMN IF NOT EXISTS")
 }
 
 func TestMigration118DoesNotForceOverwriteAuthSourceGrantDefaults(t *testing.T) {
@@ -65,8 +65,8 @@ func TestMigration119DefersPaymentIndexRolloutToOnlineFollowup(t *testing.T) {
 	require.Contains(t, followupSQL, "explicit duplicate out_trade_no precheck")
 	require.Contains(t, followupSQL, "out_trade_no_unique_key")
 	require.Contains(t, followupSQL, "NULLIF(out_trade_no, '')")
-	require.Contains(t, followupSQL, "CREATE UNIQUE INDEX IF NOT EXISTS paymentorder_out_trade_no_unique")
-	require.Contains(t, followupSQL, "DROP INDEX paymentorder_out_trade_no ON payment_orders")
+	require.Contains(t, followupSQL, "CREATE UNIQUE INDEX paymentorder_out_trade_no_unique")
+	require.Contains(t, followupSQL, "DROP INDEX IF EXISTS paymentorder_out_trade_no ON payment_orders")
 	require.NotContains(t, followupSQL, "CONCURRENTLY")
 	require.NotContains(t, followupSQL, "WHERE out_trade_no <> ''")
 
@@ -130,9 +130,10 @@ func TestMigration134AddsAffiliateLedgerAuditFieldsWithoutJSONCast(t *testing.T)
 	require.NoError(t, err)
 
 	sql := string(content)
-	require.Contains(t, sql, "ADD COLUMN IF NOT EXISTS source_order_id BIGINT")
-	require.Contains(t, sql, "ADD COLUMN IF NOT EXISTS balance_after DECIMAL(20,8)")
-	require.Contains(t, sql, "ADD COLUMN IF NOT EXISTS aff_quota_after DECIMAL(20,8)")
+	require.Contains(t, sql, "ADD COLUMN source_order_id BIGINT")
+	require.Contains(t, sql, "ADD COLUMN balance_after DECIMAL(20,8)")
+	require.Contains(t, sql, "ADD COLUMN aff_quota_after DECIMAL(20,8)")
+	require.NotContains(t, sql, "ADD COLUMN IF NOT EXISTS")
 	require.Contains(t, sql, "offline PostgreSQL-to-GoldenDB data migration script")
 	require.NotContains(t, sql, "CROSS JOIN LATERAL")
 	require.NotContains(t, sql, "substring(")
@@ -157,7 +158,8 @@ func TestMigration151AddsAccountAutoPauseExpiryPartialIndex(t *testing.T) {
 	require.NoError(t, err)
 
 	sql := string(content)
-	require.Contains(t, sql, "CREATE INDEX IF NOT EXISTS idx_accounts_autopause_expiry_due")
+	require.Contains(t, sql, "CREATE INDEX idx_accounts_autopause_expiry_due")
+	require.NotContains(t, sql, "CREATE INDEX IF NOT EXISTS")
 	require.Contains(t, sql, "ON accounts (expires_at)")
 	require.NotContains(t, sql, "WHERE deleted_at IS NULL")
 	require.NotContains(t, sql, "CONCURRENTLY")

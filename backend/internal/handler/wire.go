@@ -42,6 +42,7 @@ func ProvideAdminHandlers(
 	complianceHandler *admin.ComplianceHandler,
 	modelTokenQuotaHandler *admin.ModelTokenQuotaHandler,
 	userModelTokenQuotaHandler *admin.UserModelTokenQuotaHandler,
+	tokenUsageReportHandler *admin.TokenUsageReportHandler,
 ) *AdminHandlers {
 	return &AdminHandlers{
 		Dashboard:              dashboardHandler,
@@ -77,6 +78,7 @@ func ProvideAdminHandlers(
 		Compliance:             complianceHandler,
 		ModelTokenQuota:        modelTokenQuotaHandler,
 		UserModelTokenQuota:    userModelTokenQuotaHandler,
+		TokenUsageReport:       tokenUsageReportHandler,
 	}
 }
 
@@ -193,6 +195,7 @@ var ProviderSet = wire.NewSet(
 	admin.NewComplianceHandler,
 	admin.NewModelTokenQuotaHandler,
 	admin.NewUserModelTokenQuotaHandler,
+	admin.NewTokenUsageReportHandler,
 
 	// AdminHandlers and Handlers constructors
 	ProvideAdminHandlers,

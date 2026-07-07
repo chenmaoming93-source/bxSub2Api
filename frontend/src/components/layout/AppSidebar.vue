@@ -764,7 +764,18 @@ const adminNavItems = computed((): NavItem[] => {
         { path: '/admin/orders/plans', label: t('nav.paymentPlans'), icon: CreditCardIcon },
       ],
     },
-    { path: '/admin/usage', label: t('nav.usage'), icon: ChartIcon }
+    { path: '/admin/usage', label: t('nav.usage'), icon: ChartIcon },
+    {
+      path: '/admin/token-usage/models',
+      label: t('nav.tokenUsage'),
+      icon: ChartIcon,
+      hideInSimpleMode: true,
+      children: [
+        { path: '/admin/token-usage/models', label: t('nav.tokenUsageModels'), icon: ChartIcon },
+        { path: '/admin/token-usage/routes', label: t('nav.tokenUsageRoutes'), icon: ChartIcon },
+        { path: '/admin/token-usage/users', label: t('nav.tokenUsageUsers'), icon: ChartIcon },
+      ],
+    },
   ]
 
   const visible = applyFeatureFlags(baseItems)

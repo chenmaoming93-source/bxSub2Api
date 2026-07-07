@@ -110,6 +110,17 @@ export default {
     }
   },
 
+  tokenUsageReport: {
+    modelTitle: '全局模型 Token 统计', routeTitle: '模型路由 Token 统计', userTitle: '用户模型 Token 统计',
+    model: '模型', group: '分组', routeAlias: '路由别名', upstreamModel: '上游模型（可选）', user: '用户', optionalModel: '模型（可选）',
+    searchModel: '搜索模型名称…', searchGroups: '搜索分组…', searchRoutes: '搜索路由…', searchUsers: '按邮箱、用户名或 ID 搜索…', optionalModelPlaceholder: '搜索或不选择模型…',
+    startDate: '开始日期', endDate: '结束日期', start: '开始', end: '结束', sortBy: '排序字段', order: '排序方向', date: '日期', tokens: 'Token 数', descending: '降序', ascending: '升序', query: '查询', retry: '重试',
+    empty: '请选择统计目标并点击“查询”查看 Token 用量。', queryFailed: '查询失败', loadFailed: '加载报表失败',
+    totalTokens: 'Token 总量', usageRate: '使用率', usedTokens: '已用 Token', dailyLimit: '每日限额', status: '状态', priority: '优先级', route: '路由',
+    normal: '正常', warning: '预警', exceeded: '已超限', unlimited: '不限额', deleted: '已删除', userId: '用户 #{id}',
+    deletedUsers: '已删除用户', excludeDeletedUsers: '不包含已删除用户', includeDeletedUsers: '包含已删除用户'
+  },
+
   // Key Usage Query Page
   keyUsage: {
     title: 'API Key 用量查询',
@@ -415,6 +426,10 @@ export default {
     channelPricing: '渠道定价',
     channelMonitor: '渠道监控',
     channelStatus: '渠道状态',
+    tokenUsage: 'Token 消耗统计',
+    tokenUsageModels: '全局模型',
+    tokenUsageRoutes: '模型路由',
+    tokenUsageUsers: '用户模型',
     riskControl: '风控中心',
   },
 
@@ -2163,7 +2178,7 @@ export default {
         subtitle: '为用户 {email} 按实际上游模型配置每日 Token 限额',
         model: '上游模型',
         limit: '每日 Token 限额',
-        unlimited: '不限制',
+        unlimited: '0=不限额 空=删除',
         used: '今日已用',
         add: '添加模型',
         loadFailed: '加载模型 Token 限额失败',
@@ -2177,7 +2192,7 @@ export default {
         description: '新用户创建时将自动继承以下模型 Token 限额配置',
         model: '上游模型',
         limit: '每日 Token 限额',
-        unlimited: '不限制',
+        unlimited: '0=不限额 空=删除',
         add: '添加模型',
         loadFailed: '加载默认限额失败',
         invalid: '模型不能为空或重复，限额必须是非负整数',
@@ -2194,7 +2209,7 @@ export default {
         delete: '删除',
         model: '模型名',
         limit: '每日 Token 限额',
-        unlimited: '不限制',
+        unlimited: '0=不限额 空=删除',
         addRow: '添加行',
         confirmTitle: '确认批量操作',
         confirmMessage: '将对全体活跃用户执行 {ops} 项操作，确定继续？',
@@ -2459,7 +2474,7 @@ export default {
         candidateModel: '上游模型',
         priority: '优先级',
         dailyTokenLimit: '每日 Token 限额',
-        unlimited: '不限制',
+        unlimited: '0=不限额 空=删除',
         candidateValidation: '必须填写模型、选择账号，并使用非负整数',
         removeCandidate: '删除候选',
         addCandidate: '添加候选',
@@ -2481,7 +2496,7 @@ export default {
         title: '全局模型每日 Token 限额',
         model: '上游模型',
         limit: '每日 Token 限额',
-        unlimited: '不限制',
+        unlimited: '0=不限额 空=删除',
         used: '今日已用',
         add: '添加模型',
         loadFailed: '加载全局模型 Token 限额失败',

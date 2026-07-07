@@ -39,6 +39,7 @@ type AdminHandlers struct {
 	Compliance             *admin.ComplianceHandler
 	ModelTokenQuota        *admin.ModelTokenQuotaHandler
 	UserModelTokenQuota    *admin.UserModelTokenQuotaHandler
+	TokenUsageReport       *admin.TokenUsageReportHandler
 }
 
 // Handlers contains all HTTP handlers

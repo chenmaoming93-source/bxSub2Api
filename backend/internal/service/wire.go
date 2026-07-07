@@ -601,6 +601,7 @@ var ProviderSet = wire.NewSet(
 	NewAffiliateService,
 	NewModelTokenQuotaAdminService,
 	NewUserModelTokenQuotaAdminService,
+	NewTokenUsageReportService,
 	ProvidePaymentConfigService,
 	ProvidePaymentService,
 	ProvidePaymentOrderExpiryService,
