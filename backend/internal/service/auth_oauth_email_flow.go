@@ -159,13 +159,15 @@ func (s *AuthService) RegisterOAuthEmailAccount(
 		SignupSource: signupSource,
 	}
 
-	if err := s.userRepo.Create(ctx, user); err != nil {
-		if errors.Is(err, ErrEmailExists) {
-			return nil, nil, ErrEmailExists
-		}
-		slog.Error("oauth email register: userRepo.Create failed", "email", email, "signup_source", signupSource, "error", err.Error())
+	provisioned, created, err := s.provisionAuthUser(ctx, user)
+	if err != nil {
+		slog.Error("oauth email register: user provisioning failed", "email", email, "signup_source", signupSource, "error", err.Error())
 		return nil, nil, ErrServiceUnavailable
 	}
+	if !created {
+		return nil, nil, ErrEmailExists
+	}
+	user = provisioned
 
 	tokenPair, err := s.GenerateTokenPair(ctx, user, "")
 	if err != nil {
@@ -241,12 +243,14 @@ func (s *AuthService) RegisterVerifiedOAuthEmailAccount(
 		SignupSource: signupSource,
 	}
 
-	if err := s.userRepo.Create(ctx, user); err != nil {
-		if errors.Is(err, ErrEmailExists) {
-			return nil, nil, ErrEmailExists
-		}
+	provisioned, created, err := s.provisionAuthUser(ctx, user)
+	if err != nil {
 		return nil, nil, ErrServiceUnavailable
 	}
+	if !created {
+		return nil, nil, ErrEmailExists
+	}
+	user = provisioned
 
 	tokenPair, err := s.GenerateTokenPair(ctx, user, "")
 	if err != nil {

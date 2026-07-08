@@ -34,8 +34,8 @@ describe('token usage admin views', () => {
   it('sends selected sorting to the backend on every report', () => {
     for (const view of ['ModelTokenUsageView.vue', 'RouteTokenUsageView.vue', 'UserModelTokenUsageView.vue']) {
       const source = readFileSync(resolve(process.cwd(), 'src/views/admin/token-usage', view), 'utf8')
-      expect(source).toContain('sort_by: sortBy.value')
-      expect(source).toContain('sort_order: sortOrder.value')
+      expect(source).toContain("sort_by: sortRules.value.map(rule => rule.field).join(',')")
+      expect(source).toContain("sort_order: sortRules.value.map(rule => rule.order).join(',')")
     }
   })
 })

@@ -396,7 +396,12 @@
 
 
         <!-- 模型路由配置 -->
-        <div class="border-t pt-4">
+        <GroupModelRoutingEditor
+          v-model:enabled="createForm.model_routing_enabled"
+          v-model:rules="createModelRoutingRules"
+          :platform="createForm.platform"
+        />
+        <div v-if="false" class="border-t pt-4">
           <div class="mb-1.5 flex items-center gap-1">
             <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
               {{ t("admin.groups.modelRouting.title") }}
@@ -1650,7 +1655,12 @@
 
 
         <!-- 模型路由配置 -->
-        <div class="border-t pt-4">
+        <GroupModelRoutingEditor
+          v-model:enabled="editForm.model_routing_enabled"
+          v-model:rules="editModelRoutingRules"
+          :platform="editForm.platform"
+        />
+        <div v-if="false" class="border-t pt-4">
           <div class="mb-1.5 flex items-center gap-1">
             <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
               {{ t("admin.groups.modelRouting.title") }}
@@ -2995,6 +3005,7 @@ import PlatformIcon from "@/components/common/PlatformIcon.vue";
 import Icon from "@/components/icons/Icon.vue";
 import GroupRateMultipliersModal from "@/components/admin/group/GroupRateMultipliersModal.vue";
 import GroupRPMOverridesModal from "@/components/admin/group/GroupRPMOverridesModal.vue";
+import GroupModelRoutingEditor from "@/components/admin/group/GroupModelRoutingEditor.vue";
 import GroupCapacityBadge from "@/components/common/GroupCapacityBadge.vue";
 import { VueDraggable } from "vue-draggable-plus";
 import { createStableObjectKeyResolver } from "@/utils/stableObjectKey";

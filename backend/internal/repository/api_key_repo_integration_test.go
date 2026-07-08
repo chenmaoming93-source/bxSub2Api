@@ -54,6 +54,32 @@ func (s *APIKeyRepoSuite) TestCreate() {
 	s.Require().Equal("sk-create-test", got.Key)
 }
 
+func (s *APIKeyRepoSuite) TestActivePlatformAndDefaultKeyUniquenessAllowsReplacementAfterSoftDelete() {
+	user := s.mustCreateUser("api-key-unique@test.com")
+	platform := "cursor"
+
+	create := func(rawKey, purpose string, keyPlatform *string) *service.APIKey {
+		key := &service.APIKey{
+			UserID: user.ID, Key: rawKey, Name: rawKey,
+			Status: service.StatusActive, Purpose: purpose, Platform: keyPlatform,
+		}
+		s.Require().NoError(s.repo.Create(s.ctx, key))
+		return key
+	}
+
+	platformKey := create("sk-platform-first", "platform", &platform)
+	duplicatePlatform := &service.APIKey{UserID: user.ID, Key: "sk-platform-duplicate", Name: "duplicate", Status: service.StatusActive, Purpose: "platform", Platform: &platform}
+	s.Require().Error(s.repo.Create(s.ctx, duplicatePlatform))
+	s.Require().NoError(s.repo.Delete(s.ctx, platformKey.ID))
+	create("sk-platform-replacement", "platform", &platform)
+
+	defaultKey := create("sk-default-first", "default", nil)
+	duplicateDefault := &service.APIKey{UserID: user.ID, Key: "sk-default-duplicate", Name: "duplicate", Status: service.StatusActive, Purpose: "default"}
+	s.Require().Error(s.repo.Create(s.ctx, duplicateDefault))
+	s.Require().NoError(s.repo.Delete(s.ctx, defaultKey.ID))
+	create("sk-default-replacement", "default", nil)
+}
+
 func (s *APIKeyRepoSuite) TestGetByID_NotFound() {
 	_, err := s.repo.GetByID(s.ctx, 999999)
 	s.Require().Error(err, "expected error for non-existent ID")

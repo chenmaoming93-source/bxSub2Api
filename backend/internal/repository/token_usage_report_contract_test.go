@@ -50,6 +50,25 @@ func TestTokenUsageDateSeriesAndReportOrderAreSafe(t *testing.T) {
 	}
 }
 
+func TestTokenUsageReportOrderSupportsOrderedRules(t *testing.T) {
+	columns := reportSortColumns(map[string]string{"model": "r.model"})
+	order := tokenUsageReportOrderBy(TokenUsageSort{By: "model,used_tokens,usage_date", Order: "asc,desc,asc"}, columns, "r.model ASC")
+	if order != "r.model ASC, r.used_tokens DESC, r.usage_date ASC, r.model ASC" {
+		t.Fatalf("unexpected multi-field ordering: %s", order)
+	}
+	if validSortList("model,model", "asc,desc", columnsToAllowed(columns)) {
+		t.Fatal("duplicate sort field accepted")
+	}
+}
+
+func columnsToAllowed(columns map[string]string) map[string]bool {
+	allowed := make(map[string]bool, len(columns))
+	for field := range columns {
+		allowed[field] = true
+	}
+	return allowed
+}
+
 func TestTokenUsageRepresentativeQueriesHaveIndexedPlans(t *testing.T) {
 	db, err := sql.Open("sqlite", ":memory:")
 	if err != nil {

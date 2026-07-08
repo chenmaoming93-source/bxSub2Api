@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"testing"
 
 	"github.com/Wei-Shaw/sub2api/internal/config"
@@ -10,7 +11,7 @@ import (
 
 type ldapAuthenticatorStub struct{}
 
-func (ldapAuthenticatorStub) Authenticate(string, string) (*ldapauth.User, error) {
+func (ldapAuthenticatorStub) Authenticate(context.Context, string, string) (*ldapauth.User, error) {
 	return nil, nil
 }
 

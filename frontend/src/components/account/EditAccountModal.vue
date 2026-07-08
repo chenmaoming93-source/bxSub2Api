@@ -48,10 +48,11 @@
         </div>
         <div>
           <label class="input-label">{{ t('admin.accounts.apiKey') }}</label>
+          <div class="relative">
           <input
             v-model="editApiKey"
-            type="password"
-            class="input font-mono"
+            :type="showApiKey ? 'text' : 'password'"
+            class="input font-mono pr-10"
             autocomplete="new-password"
             data-1p-ignore
             data-lpignore="true"
@@ -64,8 +65,11 @@
                   : account.platform === 'antigravity'
                     ? 'sk-...'
                     : 'sk-ant-...'
-            "
-          />
+            " />
+          <button type="button" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" @click="showApiKey = !showApiKey">
+            <Icon :name="showApiKey ? 'eyeOff' : 'eye'" />
+          </button>
+          </div>
           <p class="input-hint">{{ t('admin.accounts.leaveEmptyToKeep') }}</p>
         </div>
 
@@ -569,12 +573,16 @@
         </div>
         <div>
           <label class="input-label">{{ t('admin.accounts.upstream.apiKey') }}</label>
+          <div class="relative">
           <input
             v-model="editApiKey"
-            type="password"
-            class="input font-mono"
-            placeholder="sk-..."
-          />
+            :type="showApiKey ? 'text' : 'password'"
+            class="input font-mono pr-10"
+            placeholder="sk-..."          />
+          <button type="button" class="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300" @click="showApiKey = !showApiKey">
+            <Icon :name="showApiKey ? 'eyeOff' : 'eye'" />
+          </button>
+          </div>
           <p class="input-hint">{{ t('admin.accounts.leaveEmptyToKeep') }}</p>
         </div>
       </div>
@@ -2464,6 +2472,7 @@ interface TempUnschedRuleForm {
 const submitting = ref(false)
 const editBaseUrl = ref('https://api.anthropic.com')
 const editApiKey = ref('')
+const showApiKey = ref(false)
 // Bedrock credentials
 const editBedrockAccessKeyId = ref('')
 const editBedrockSecretAccessKey = ref('')
@@ -3183,7 +3192,22 @@ const syncFormFromAccount = (newAccount: Account | null) => {
     customErrorCodesEnabled.value = false
     selectedErrorCodes.value = []
   }
+  showApiKey.value = false
   editApiKey.value = ''
+  // Fetch raw credentials to pre-fill API key input
+  if (props.account?.id) {
+    adminAPI.accounts.getCredentials(props.account.id).then((creds: Record<string, unknown>) => {
+      if (creds?.api_key && typeof creds.api_key === 'string') {
+        editApiKey.value = creds.api_key
+      }
+      if (creds?.aws_secret_access_key && typeof creds.aws_secret_access_key === 'string') {
+        editBedrockSecretAccessKey.value = creds.aws_secret_access_key
+      }
+      if (creds?.aws_session_token && typeof creds.aws_session_token === 'string') {
+        editBedrockSessionToken.value = creds.aws_session_token
+      }
+    }).catch(() => {})
+  }
 }
 
 async function loadTLSProfiles() {

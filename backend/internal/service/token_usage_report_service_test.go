@@ -114,6 +114,20 @@ func TestTokenUsageReportServiceAllowsDimensionSpecificSorts(t *testing.T) {
 	}
 }
 
+func TestTokenUsageReportServiceAllowsPrioritizedSortRules(t *testing.T) {
+	day := time.Date(2026, 7, 6, 0, 0, 0, 0, time.Local)
+	svc := NewTokenUsageReportService(modelTokenUsageRepoStub{})
+	query := TokenUsageReportQuery{StartDate: day, EndDate: day, Page: 1, PageSize: 20, SortBy: "model,used_tokens,usage_date", SortOrder: "asc,desc,asc"}
+	if _, err := svc.GetModelReport(context.Background(), query); err != nil {
+		t.Fatalf("prioritized sort rules rejected: %v", err)
+	}
+	query.SortBy = "model,model"
+	query.SortOrder = "asc,desc"
+	if _, err := svc.GetModelReport(context.Background(), query); err == nil {
+		t.Fatal("duplicate sort rule accepted")
+	}
+}
+
 func TestTokenUsageReportServiceRejectsUnboundedQuery(t *testing.T) {
 	svc := NewTokenUsageReportService(modelTokenUsageRepoStub{})
 	_, err := svc.GetModelReport(context.Background(), TokenUsageReportQuery{Page: 1, PageSize: 101})

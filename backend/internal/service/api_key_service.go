@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"html"
 	"strconv"
@@ -80,6 +81,17 @@ type APIKeyRepository interface {
 	IncrementRateLimitUsage(ctx context.Context, id int64, cost float64) error
 	ResetRateLimitWindows(ctx context.Context, id int64) error
 	GetRateLimitData(ctx context.Context, id int64) (*APIKeyRateLimitData, error)
+}
+
+// DefaultAPIKeyRepository is the narrow internal extension required by
+// provisioning. Keeping it separate avoids widening unrelated API-key ports.
+type DefaultAPIKeyRepository interface {
+	GetDefaultByUserID(ctx context.Context, userID int64) (*APIKey, error)
+}
+
+// PlatformAPIKeyRepository is the narrow extension for platform-key lookups.
+type PlatformAPIKeyRepository interface {
+	GetByUserIDAndPlatform(ctx context.Context, userID int64, platform string) (*APIKey, error)
 }
 
 // APIKeyRateLimitData holds rate limit usage and window state for an API key.
@@ -209,6 +221,9 @@ type APIKeyService struct {
 	authGroup             singleflight.Group
 	lastUsedTouchL1       sync.Map // keyID -> nextAllowedAt(time.Time)
 	lastUsedTouchSF       singleflight.Group
+	defaultGroupResolver  interface {
+		ResolveDefaultGroup(ctx context.Context) (DefaultGroupResult, error)
+	}
 }
 
 // NewAPIKeyService 创建API Key服务实例
@@ -238,6 +253,67 @@ func NewAPIKeyService(
 // Called after construction (e.g. in wire) to avoid circular dependencies.
 func (s *APIKeyService) SetRateLimitCacheInvalidator(inv RateLimitCacheInvalidator) {
 	s.rateLimitCacheInvalid = inv
+}
+
+// SetDefaultGroupResolver configures the internal default-group lookup used by
+// trusted provisioning flows. It does not expose a new HTTP API.
+func (s *APIKeyService) SetDefaultGroupResolver(resolver interface {
+	ResolveDefaultGroup(ctx context.Context) (DefaultGroupResult, error)
+}) {
+	s.defaultGroupResolver = resolver
+}
+
+// EnsureDefaultAPIKey returns the user's active default API key, creating it
+// when absent. Repository uniqueness handling makes concurrent calls
+// idempotent; a loser of the create race reads back the winner's key.
+func (s *APIKeyService) EnsureDefaultAPIKey(ctx context.Context, userID int64) (*APIKey, error) {
+	defaultRepo, ok := s.apiKeyRepo.(DefaultAPIKeyRepository)
+	if !ok {
+		return nil, fmt.Errorf("api key repository does not support default key lookup")
+	}
+	existing, err := defaultRepo.GetDefaultByUserID(ctx, userID)
+	if err == nil {
+		return existing, nil
+	}
+	if !errors.Is(err, ErrAPIKeyNotFound) {
+		return nil, fmt.Errorf("get default api key: %w", err)
+	}
+
+	var groupID *int64
+	if s.defaultGroupResolver != nil {
+		resolved, err := s.defaultGroupResolver.ResolveDefaultGroup(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("resolve default group: %w", err)
+		}
+		if resolved.State == DefaultGroupFound && resolved.Group != nil {
+			id := resolved.Group.ID
+			groupID = &id
+		}
+	}
+
+	rawKey, err := s.GenerateKey()
+	if err != nil {
+		return nil, fmt.Errorf("generate default api key: %w", err)
+	}
+	created := &APIKey{
+		UserID:  userID,
+		Key:     rawKey,
+		Name:    "Default API Key",
+		Purpose: "default",
+		GroupID: groupID,
+		Status:  StatusActive,
+	}
+	if err := s.apiKeyRepo.Create(ctx, created); err != nil {
+		if errors.Is(err, ErrAPIKeyExists) {
+			existing, readErr := defaultRepo.GetDefaultByUserID(ctx, userID)
+			if readErr == nil {
+				return existing, nil
+			}
+			return nil, fmt.Errorf("read default api key after conflict: %w", readErr)
+		}
+		return nil, fmt.Errorf("create default api key: %w", err)
+	}
+	return created, nil
 }
 
 func (s *APIKeyService) compileAPIKeyIPRules(apiKey *APIKey) {

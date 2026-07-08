@@ -62,14 +62,19 @@ export interface TokenUsageQueryParams {
   end_date?: string
   page?: number
   page_size?: number
-  sort_by?: TokenUsageSortField
-  sort_order?: 'asc' | 'desc'
+  sort_by?: string
+  sort_order?: string
 }
 
 export type TokenUsageSortField =
   | 'usage_date' | 'model' | 'user' | 'user_deleted' | 'group' | 'route_alias'
   | 'upstream_model' | 'priority' | 'used_tokens' | 'daily_limit_tokens'
   | 'usage_rate' | 'status'
+
+export interface TokenUsageSortRule {
+  field: TokenUsageSortField
+  order: 'asc' | 'desc'
+}
 
 export interface ModelReportParams extends TokenUsageQueryParams {
   model?: string

@@ -9,10 +9,10 @@
           {{ t('tokenUsageReport.group') }}
         </th>
         <th class="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-          {{ t('tokenUsageReport.route') }}
+          {{ t('tokenUsageReport.routeAlias') }}
         </th>
         <th class="px-4 py-3 text-left text-xs font-medium uppercase text-gray-500 dark:text-gray-400">
-          {{ t('tokenUsageReport.upstreamModel') }}
+          {{ t('tokenUsageReport.upstreamModelName') }}
         </th>
         <th class="px-4 py-3 text-right text-xs font-medium uppercase text-gray-500 dark:text-gray-400">
           {{ t('tokenUsageReport.priority') }}

@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/Wei-Shaw/sub2api/internal/config"
 	"github.com/Wei-Shaw/sub2api/internal/handler/dto"
@@ -83,6 +84,77 @@ func NewSettingHandler(settingService *service.SettingService, emailService *ser
 // the constructor signature used by existing unit tests.
 func (h *SettingHandler) SetNotificationEmailService(notificationEmailService *service.NotificationEmailService) {
 	h.notificationEmailService = notificationEmailService
+}
+
+type defaultGroupResponse struct {
+	Configured bool                `json:"configured"`
+	Name       string              `json:"name"`
+	Exists     bool                `json:"exists"`
+	Group      *defaultGroupRecord `json:"group"`
+}
+
+type defaultGroupRecord struct {
+	ID       int64  `json:"id"`
+	Name     string `json:"name"`
+	Platform string `json:"platform"`
+	Status   string `json:"status"`
+}
+
+type updateDefaultGroupRequest struct {
+	Name string `json:"name"`
+}
+
+func defaultGroupResponseFromResult(result service.DefaultGroupResult) defaultGroupResponse {
+	payload := defaultGroupResponse{
+		Configured: result.State != service.DefaultGroupUnconfigured,
+		Name:       result.Name,
+		Exists:     result.State == service.DefaultGroupFound,
+	}
+	if result.Group != nil {
+		payload.Group = &defaultGroupRecord{
+			ID: result.Group.ID, Name: result.Group.Name,
+			Platform: result.Group.Platform, Status: result.Group.Status,
+		}
+	}
+	return payload
+}
+
+// GetDefaultGroup 返回默认分组配置及解析状态。
+func (h *SettingHandler) GetDefaultGroup(c *gin.Context) {
+	result, err := h.settingService.ResolveDefaultGroup(c.Request.Context())
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, defaultGroupResponseFromResult(result))
+}
+
+// UpdateDefaultGroup 保存默认分组名；允许名称对应的分组暂不存在。
+func (h *SettingHandler) UpdateDefaultGroup(c *gin.Context) {
+	var req updateDefaultGroupRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "invalid request body")
+		return
+	}
+	name := strings.TrimSpace(req.Name)
+	if name == "" {
+		response.BadRequest(c, "default group name is required")
+		return
+	}
+	if utf8.RuneCountInString(name) > 100 {
+		response.BadRequest(c, "default group name must not exceed 100 characters")
+		return
+	}
+	if err := h.settingService.SetDefaultGroupName(c.Request.Context(), name); err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	result, err := h.settingService.ResolveDefaultGroup(c.Request.Context())
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, defaultGroupResponseFromResult(result))
 }
 
 // GetSettings 获取所有系统设置

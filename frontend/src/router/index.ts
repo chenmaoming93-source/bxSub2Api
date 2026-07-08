@@ -427,6 +427,17 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/admin/default-group-routing',
+    name: 'AdminDefaultGroupRouting',
+    component: () => import('@/views/admin/DefaultGroupRoutingView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: true,
+      titleKey: 'admin.defaultGroupRouting.title',
+      descriptionKey: 'admin.defaultGroupRouting.description'
+    }
+  },
+  {
     path: '/admin/channels',
     redirect: '/admin/channels/pricing'
   },

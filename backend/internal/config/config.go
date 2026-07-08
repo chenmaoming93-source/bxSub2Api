@@ -60,41 +60,50 @@ const (
 const DefaultUpstreamResponseReadMaxBytes int64 = 128 * 1024 * 1024
 
 type Config struct {
-	Server                  ServerConfig                  `mapstructure:"server"`
-	Log                     LogConfig                     `mapstructure:"log"`
-	CORS                    CORSConfig                    `mapstructure:"cors"`
-	Security                SecurityConfig                `mapstructure:"security"`
-	Billing                 BillingConfig                 `mapstructure:"billing"`
-	Turnstile               TurnstileConfig               `mapstructure:"turnstile"`
-	Database                DatabaseConfig                `mapstructure:"database"`
-	Redis                   RedisConfig                   `mapstructure:"redis"`
-	Ops                     OpsConfig                     `mapstructure:"ops"`
-	JWT                     JWTConfig                     `mapstructure:"jwt"`
-	Totp                    TotpConfig                    `mapstructure:"totp"`
-	LDAP                    LDAPConfig                    `mapstructure:"ldap"`
-	LinuxDo                 LinuxDoConnectConfig          `mapstructure:"linuxdo_connect"`
-	WeChat                  WeChatConnectConfig           `mapstructure:"wechat_connect"`
-	OIDC                    OIDCConnectConfig             `mapstructure:"oidc_connect"`
-	DingTalk                DingTalkConnectConfig         `mapstructure:"dingtalk_connect"`
-	GitHubOAuth             EmailOAuthProviderConfig      `mapstructure:"github_oauth"`
-	GoogleOAuth             EmailOAuthProviderConfig      `mapstructure:"google_oauth"`
-	Default                 DefaultConfig                 `mapstructure:"default"`
-	RateLimit               RateLimitConfig               `mapstructure:"rate_limit"`
-	Pricing                 PricingConfig                 `mapstructure:"pricing"`
-	Gateway                 GatewayConfig                 `mapstructure:"gateway"`
-	APIKeyAuth              APIKeyAuthCacheConfig         `mapstructure:"api_key_auth_cache"`
-	SubscriptionCache       SubscriptionCacheConfig       `mapstructure:"subscription_cache"`
-	SubscriptionMaintenance SubscriptionMaintenanceConfig `mapstructure:"subscription_maintenance"`
-	Dashboard               DashboardCacheConfig          `mapstructure:"dashboard_cache"`
-	DashboardAgg            DashboardAggregationConfig    `mapstructure:"dashboard_aggregation"`
-	UsageCleanup            UsageCleanupConfig            `mapstructure:"usage_cleanup"`
-	Concurrency             ConcurrencyConfig             `mapstructure:"concurrency"`
-	TokenRefresh            TokenRefreshConfig            `mapstructure:"token_refresh"`
-	RunMode                 string                        `mapstructure:"run_mode" yaml:"run_mode"`
-	Timezone                string                        `mapstructure:"timezone"` // e.g. "Asia/Shanghai", "UTC"
-	Gemini                  GeminiConfig                  `mapstructure:"gemini"`
-	Update                  UpdateConfig                  `mapstructure:"update"`
-	Idempotency             IdempotencyConfig             `mapstructure:"idempotency"`
+	Server                     ServerConfig                     `mapstructure:"server"`
+	Log                        LogConfig                        `mapstructure:"log"`
+	CORS                       CORSConfig                       `mapstructure:"cors"`
+	Security                   SecurityConfig                   `mapstructure:"security"`
+	Billing                    BillingConfig                    `mapstructure:"billing"`
+	Turnstile                  TurnstileConfig                  `mapstructure:"turnstile"`
+	Database                   DatabaseConfig                   `mapstructure:"database"`
+	Redis                      RedisConfig                      `mapstructure:"redis"`
+	Ops                        OpsConfig                        `mapstructure:"ops"`
+	JWT                        JWTConfig                        `mapstructure:"jwt"`
+	Totp                       TotpConfig                       `mapstructure:"totp"`
+	LDAP                       LDAPConfig                       `mapstructure:"ldap"`
+	LinuxDo                    LinuxDoConnectConfig             `mapstructure:"linuxdo_connect"`
+	WeChat                     WeChatConnectConfig              `mapstructure:"wechat_connect"`
+	OIDC                       OIDCConnectConfig                `mapstructure:"oidc_connect"`
+	DingTalk                   DingTalkConnectConfig            `mapstructure:"dingtalk_connect"`
+	GitHubOAuth                EmailOAuthProviderConfig         `mapstructure:"github_oauth"`
+	GoogleOAuth                EmailOAuthProviderConfig         `mapstructure:"google_oauth"`
+	Default                    DefaultConfig                    `mapstructure:"default"`
+	RateLimit                  RateLimitConfig                  `mapstructure:"rate_limit"`
+	Pricing                    PricingConfig                    `mapstructure:"pricing"`
+	Gateway                    GatewayConfig                    `mapstructure:"gateway"`
+	APIKeyAuth                 APIKeyAuthCacheConfig            `mapstructure:"api_key_auth_cache"`
+	SubscriptionCache          SubscriptionCacheConfig          `mapstructure:"subscription_cache"`
+	SubscriptionMaintenance    SubscriptionMaintenanceConfig    `mapstructure:"subscription_maintenance"`
+	Dashboard                  DashboardCacheConfig             `mapstructure:"dashboard_cache"`
+	DashboardAgg               DashboardAggregationConfig       `mapstructure:"dashboard_aggregation"`
+	UsageCleanup               UsageCleanupConfig               `mapstructure:"usage_cleanup"`
+	Concurrency                ConcurrencyConfig                `mapstructure:"concurrency"`
+	TokenRefresh               TokenRefreshConfig               `mapstructure:"token_refresh"`
+	RunMode                    string                           `mapstructure:"run_mode" yaml:"run_mode"`
+	Timezone                   string                           `mapstructure:"timezone"` // e.g. "Asia/Shanghai", "UTC"
+	Gemini                     GeminiConfig                     `mapstructure:"gemini"`
+	Update                     UpdateConfig                     `mapstructure:"update"`
+	Idempotency                IdempotencyConfig                `mapstructure:"idempotency"`
+	ExternalAPIKeyProvisioning ExternalAPIKeyProvisioningConfig `mapstructure:"external_api_key_provisioning"`
+}
+
+// ExternalAPIKeyProvisioningConfig controls the private API used by trusted external provisioners.
+type ExternalAPIKeyProvisioningConfig struct {
+	Enabled               bool   `mapstructure:"enabled"`
+	AccessToken           string `mapstructure:"access_token"`
+	RateLimitBizPerMinute int    `mapstructure:"rate_limit_biz_per_minute"`
+	RateLimitAuthPerMinute int   `mapstructure:"rate_limit_auth_per_minute"`
 }
 
 // LDAPConfig controls optional LDAP/Active Directory password authentication.
@@ -1460,6 +1469,7 @@ func load(allowMissingJWTSecret bool) (*Config, error) {
 	}
 	cfg.Server.FrontendURL = strings.TrimSpace(cfg.Server.FrontendURL)
 	cfg.JWT.Secret = strings.TrimSpace(cfg.JWT.Secret)
+	cfg.ExternalAPIKeyProvisioning.AccessToken = strings.TrimSpace(cfg.ExternalAPIKeyProvisioning.AccessToken)
 	cfg.LinuxDo.ClientID = strings.TrimSpace(cfg.LinuxDo.ClientID)
 	cfg.LinuxDo.ClientSecret = strings.TrimSpace(cfg.LinuxDo.ClientSecret)
 	cfg.LinuxDo.AuthorizeURL = strings.TrimSpace(cfg.LinuxDo.AuthorizeURL)
@@ -1578,6 +1588,8 @@ func load(allowMissingJWTSecret bool) (*Config, error) {
 
 func setDefaults() {
 	viper.SetDefault("run_mode", RunModeStandard)
+	viper.SetDefault("external_api_key_provisioning.enabled", false)
+	viper.SetDefault("external_api_key_provisioning.access_token", "")
 
 	// Server
 	viper.SetDefault("server.host", "0.0.0.0")
@@ -2036,6 +2048,15 @@ func setDefaults() {
 }
 
 func (c *Config) Validate() error {
+	if c.ExternalAPIKeyProvisioning.Enabled {
+		token := strings.TrimSpace(c.ExternalAPIKeyProvisioning.AccessToken)
+		if token == "" {
+			return fmt.Errorf("external_api_key_provisioning.access_token is required when enabled")
+		}
+		if len([]byte(token)) < 32 || strings.IndexFunc(token, func(r rune) bool { return r == ' ' || r == '\t' || r == '\r' || r == '\n' }) >= 0 {
+			return fmt.Errorf("external_api_key_provisioning.access_token must be at least 32 bytes and contain no whitespace")
+		}
+	}
 	if c.LDAP.Enabled {
 		serverURL := strings.TrimSpace(c.LDAP.ServerURL)
 		if serverURL == "" {

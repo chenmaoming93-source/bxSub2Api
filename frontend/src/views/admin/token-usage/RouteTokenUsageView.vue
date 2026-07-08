@@ -75,27 +75,7 @@
           <label class="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{{ t('tokenUsageReport.end') }}</label>
           <input v-model="endDateModel" type="date" class="input text-sm" @change="onDateChange" />
         </div>
-        <div>
-          <label class="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{{ t('tokenUsageReport.sortBy') }}</label>
-          <select v-model="sortBy" class="input text-sm">
-            <option value="usage_date">{{ t('tokenUsageReport.date') }}</option>
-            <option value="group">{{ t('tokenUsageReport.group') }}</option>
-            <option value="route_alias">{{ t('tokenUsageReport.route') }}</option>
-            <option value="upstream_model">{{ t('tokenUsageReport.upstreamModel') }}</option>
-            <option value="priority">{{ t('tokenUsageReport.priority') }}</option>
-            <option value="used_tokens">{{ t('tokenUsageReport.usedTokens') }}</option>
-            <option value="daily_limit_tokens">{{ t('tokenUsageReport.dailyLimit') }}</option>
-            <option value="usage_rate">{{ t('tokenUsageReport.usageRate') }}</option>
-            <option value="status">{{ t('tokenUsageReport.status') }}</option>
-          </select>
-        </div>
-        <div>
-          <label class="mb-1 block text-xs font-medium text-gray-500 dark:text-gray-400">{{ t('tokenUsageReport.order') }}</label>
-          <select v-model="sortOrder" class="input text-sm">
-            <option value="desc">{{ t('tokenUsageReport.descending') }}</option>
-            <option value="asc">{{ t('tokenUsageReport.ascending') }}</option>
-          </select>
-        </div>
+        <TokenUsageSortEditor v-model="sortRules" :options="sortOptions" />
         <div>
           <button class="btn btn-primary btn-sm" :disabled="!canQuery" @click="search">
             {{ t('tokenUsageReport.query') }}
@@ -138,17 +118,28 @@ import TokenUsageReportLayout from '@/components/admin/token-usage/TokenUsageRep
 import TokenUsageSummary from '@/components/admin/token-usage/TokenUsageSummary.vue'
 import RouteTokenUsageTable from '@/components/admin/token-usage/RouteTokenUsageTable.vue'
 import Pagination from '@/components/common/Pagination.vue'
+import TokenUsageSortEditor from '@/components/admin/token-usage/TokenUsageSortEditor.vue'
 import { useTokenUsageReport } from '@/composables/useTokenUsageReport'
 import { tokenUsageAPI } from '@/api/admin/tokenUsage'
-import type { TokenUsageReport, RouteTokenUsageItem, TokenUsageOption, TokenUsageSortField } from '@/api/admin/tokenUsage'
+import type { TokenUsageReport, RouteTokenUsageItem, TokenUsageOption, TokenUsageSortField, TokenUsageSortRule } from '@/api/admin/tokenUsage'
 
 const report = useTokenUsageReport({ paramPrefix: 'route' })
 const { t } = useI18n()
 
 const items = ref<RouteTokenUsageItem[]>([])
 const reportResult = ref<TokenUsageReport<RouteTokenUsageItem> | null>(null)
-const sortBy = ref<TokenUsageSortField>('usage_date')
-const sortOrder = ref<'asc' | 'desc'>('desc')
+const sortRules = ref<TokenUsageSortRule[]>([{ field: 'usage_date', order: 'desc' }])
+const sortOptions = computed<Array<{ value: TokenUsageSortField; label: string }>>(() => [
+  { value: 'usage_date', label: t('tokenUsageReport.date') },
+  { value: 'group', label: t('tokenUsageReport.group') },
+  { value: 'route_alias', label: t('tokenUsageReport.routeAlias') },
+  { value: 'upstream_model', label: t('tokenUsageReport.upstreamModelName') },
+  { value: 'priority', label: t('tokenUsageReport.priority') },
+  { value: 'used_tokens', label: t('tokenUsageReport.usedTokens') },
+  { value: 'daily_limit_tokens', label: t('tokenUsageReport.dailyLimit') },
+  { value: 'usage_rate', label: t('tokenUsageReport.usageRate') },
+  { value: 'status', label: t('tokenUsageReport.status') }
+])
 
 // 鈹€鈹€ Group search 鈹€鈹€
 const groupSearch = ref(report.targetLabel.value || '')
@@ -244,8 +235,8 @@ async function search() {
       end_date: endDateModel.value,
       page: report.page.value,
       page_size: report.pageSize.value,
-      sort_by: sortBy.value,
-      sort_order: sortOrder.value
+      sort_by: sortRules.value.map(rule => rule.field).join(','),
+      sort_order: sortRules.value.map(rule => rule.order).join(',')
     }
     if (selectedGroup.value) params.group_id = selectedGroup.value.id
     if (routeSearch.value.trim()) params.route_alias = routeSearch.value.trim()
@@ -276,10 +267,10 @@ async function onPageSizeChange(ps: number) {
   await search()
 }
 
-watch([sortBy, sortOrder], async () => {
+watch(sortRules, async () => {
   await report.setPage(1)
   await search()
-})
+}, { deep: true })
 
 // 鈹€鈹€ Init 鈹€鈹€
 onMounted(async () => {

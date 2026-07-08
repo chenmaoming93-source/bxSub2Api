@@ -118,10 +118,7 @@ func (s *TokenUsageReportService) GetModelReport(ctx context.Context, query Toke
 	if query.StartDate.IsZero() || query.EndDate.IsZero() || query.EndDate.Before(query.StartDate) || query.Page < 1 || query.PageSize < 1 || query.PageSize > 100 {
 		return ModelTokenUsageReport{}, ErrInvalidTokenUsageReportQuery
 	}
-	if !validTokenUsageSort(query.SortBy, "model") {
-		return ModelTokenUsageReport{}, ErrInvalidTokenUsageReportQuery
-	}
-	if query.SortOrder != "asc" && query.SortOrder != "desc" {
+	if !validTokenUsageSort(query.SortBy, query.SortOrder, "model") {
 		return ModelTokenUsageReport{}, ErrInvalidTokenUsageReportQuery
 	}
 	rows, total, used, err := s.repo.ListModelTokenUsage(ctx, query)
@@ -164,28 +161,36 @@ func validateBaseQuery(q TokenUsageReportQuery) error {
 	if q.StartDate.IsZero() || q.EndDate.IsZero() || q.EndDate.Before(q.StartDate) || q.Page < 1 || q.PageSize < 1 || q.PageSize > 100 {
 		return ErrInvalidTokenUsageReportQuery
 	}
-	if q.SortOrder != "asc" && q.SortOrder != "desc" {
-		return ErrInvalidTokenUsageReportQuery
-	}
 	return nil
 }
 
-func validTokenUsageSort(sortBy string, extra ...string) bool {
+func validTokenUsageSort(sortBy, sortOrder string, extra ...string) bool {
 	common := map[string]bool{"usage_date": true, "used_tokens": true, "daily_limit_tokens": true, "usage_rate": true, "status": true}
-	if common[sortBy] {
-		return true
-	}
 	for _, field := range extra {
-		if sortBy == field {
-			return true
-		}
+		common[field] = true
 	}
-	return false
+	return repositorySortListValid(sortBy, sortOrder, common)
+}
+
+func repositorySortListValid(sortBy, sortOrder string, allowed map[string]bool) bool {
+	fields, orders := strings.Split(sortBy, ","), strings.Split(sortOrder, ",")
+	if len(fields) == 0 || len(fields) != len(orders) {
+		return false
+	}
+	seen := map[string]bool{}
+	for i := range fields {
+		field, order := strings.TrimSpace(fields[i]), strings.TrimSpace(orders[i])
+		if field == "" || !allowed[field] || seen[field] || order != "asc" && order != "desc" {
+			return false
+		}
+		seen[field] = true
+	}
+	return true
 }
 
 func (s *TokenUsageReportService) GetRouteReport(ctx context.Context, q RouteTokenUsageReportQuery) (RouteTokenUsageReport, error) {
 	q.RouteAlias, q.UpstreamModel = strings.TrimSpace(q.RouteAlias), strings.TrimSpace(q.UpstreamModel)
-	if q.GroupID < 0 || validateBaseQuery(q.TokenUsageReportQuery) != nil || !validTokenUsageSort(q.SortBy, "group", "route_alias", "upstream_model", "priority") {
+	if q.GroupID < 0 || validateBaseQuery(q.TokenUsageReportQuery) != nil || !validTokenUsageSort(q.SortBy, q.SortOrder, "group", "route_alias", "upstream_model", "priority") {
 		return RouteTokenUsageReport{}, ErrInvalidTokenUsageReportQuery
 	}
 	rows, total, used, err := s.repo.ListRouteTokenUsage(ctx, q)
@@ -202,7 +207,7 @@ func (s *TokenUsageReportService) GetRouteReport(ctx context.Context, q RouteTok
 
 func (s *TokenUsageReportService) GetUserReport(ctx context.Context, q UserTokenUsageReportQuery) (UserTokenUsageReport, error) {
 	q.Model = strings.TrimSpace(q.Model)
-	if q.UserID < 0 || validateBaseQuery(q.TokenUsageReportQuery) != nil || !validTokenUsageSort(q.SortBy, "user", "model", "user_deleted") {
+	if q.UserID < 0 || validateBaseQuery(q.TokenUsageReportQuery) != nil || !validTokenUsageSort(q.SortBy, q.SortOrder, "user", "model", "user_deleted") {
 		return UserTokenUsageReport{}, ErrInvalidTokenUsageReportQuery
 	}
 	rows, total, used, err := s.repo.ListUserTokenUsage(ctx, q)

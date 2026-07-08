@@ -126,6 +126,16 @@ export async function getById(id: number): Promise<Account> {
 }
 
 /**
+ * Get raw (unredacted) credentials for an account.
+ * @param id - Account ID
+ * @returns Credentials map
+ */
+export async function getCredentials(id: number): Promise<Record<string, unknown>> {
+  const { data } = await apiClient.get<{ credentials: Record<string, unknown> }>(`/admin/accounts/${id}/credentials`)
+  return data.credentials
+}
+
+/**
  * Create new account
  * @param accountData - Account data
  * @returns Created account
@@ -779,6 +789,7 @@ export const accountsAPI = {
   list,
   listWithEtag,
   getById,
+  getCredentials,
   create,
   update,
   checkMixedChannelRisk,

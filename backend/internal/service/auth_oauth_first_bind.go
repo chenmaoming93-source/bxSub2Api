@@ -60,9 +60,13 @@ func (s *AuthService) applyProviderDefaultSettingsOnFirstBind(
 	var result entsql.Result
 	if err := client.Driver().Exec(
 		ctx,
-		`INSERT IGNORE INTO user_provider_default_grants (user_id, provider_type, grant_reason)
-VALUES (?, ?, ?)`,
-		[]any{userID, strings.TrimSpace(providerType), "first_bind"},
+		`INSERT INTO user_provider_default_grants (user_id, provider_type, grant_reason)
+SELECT ?, ?, ?
+WHERE NOT EXISTS (
+    SELECT 1 FROM user_provider_default_grants
+    WHERE user_id = ? AND provider_type = ? AND grant_reason = ?
+)`,
+		[]any{userID, strings.TrimSpace(providerType), "first_bind", userID, strings.TrimSpace(providerType), "first_bind"},
 		&result,
 	); err != nil {
 		return fmt.Errorf("record first bind provider grant: %w", err)

@@ -38,11 +38,8 @@ func (c TokenUsageQueryContract) Validate() error {
 	if c.Page.Page < 1 || c.Page.PageSize < 1 || c.Page.PageSize > TokenUsageMaxPageSize {
 		return fmt.Errorf("%w: pagination", ErrInvalidTokenUsageQuery)
 	}
-	if c.Sort.By != "usage_date" && c.Sort.By != "used_tokens" {
+	if !validSortList(c.Sort.By, c.Sort.Order, map[string]bool{"usage_date": true, "used_tokens": true, "daily_limit_tokens": true, "usage_rate": true, "status": true}) {
 		return fmt.Errorf("%w: sort_by", ErrInvalidTokenUsageQuery)
-	}
-	if c.Sort.Order != "asc" && c.Sort.Order != "desc" {
-		return fmt.Errorf("%w: sort_order", ErrInvalidTokenUsageQuery)
 	}
 	return nil
 }
@@ -55,8 +52,36 @@ func tokenUsageOrderBy(sort TokenUsageSort) string {
 }
 
 func tokenUsageReportOrderBy(sort TokenUsageSort, columns map[string]string, tieBreakers ...string) string {
-	column := columns[sort.By]
-	return column + " " + strings.ToUpper(sort.Order) + ", " + strings.Join(tieBreakers, ", ")
+	fields, orders := splitSortList(sort.By), splitSortList(sort.Order)
+	parts := make([]string, 0, len(fields)+len(tieBreakers))
+	for i, field := range fields {
+		parts = append(parts, columns[field]+" "+strings.ToUpper(orders[i]))
+	}
+	parts = append(parts, tieBreakers...)
+	return strings.Join(parts, ", ")
+}
+
+func splitSortList(value string) []string {
+	parts := strings.Split(value, ",")
+	for i := range parts {
+		parts[i] = strings.TrimSpace(parts[i])
+	}
+	return parts
+}
+
+func validSortList(sortBy, sortOrder string, allowed map[string]bool) bool {
+	fields, orders := splitSortList(sortBy), splitSortList(sortOrder)
+	if len(fields) == 0 || len(fields) != len(orders) {
+		return false
+	}
+	seen := make(map[string]bool, len(fields))
+	for i, field := range fields {
+		if field == "" || !allowed[field] || seen[field] || orders[i] != "asc" && orders[i] != "desc" {
+			return false
+		}
+		seen[field] = true
+	}
+	return true
 }
 
 var tokenUsageCommonSortColumns = map[string]string{

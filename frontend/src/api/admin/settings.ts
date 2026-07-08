@@ -16,6 +16,30 @@ export interface DefaultSubscriptionSetting {
   validity_days: number;
 }
 
+export interface DefaultGroupRecord {
+  id: number;
+  name: string;
+  platform: string;
+  status: string;
+}
+
+export interface DefaultGroupStatus {
+  configured: boolean;
+  name: string;
+  exists: boolean;
+  group: DefaultGroupRecord | null;
+}
+
+export async function getDefaultGroup(): Promise<DefaultGroupStatus> {
+  const { data } = await apiClient.get<DefaultGroupStatus>("/admin/default-group");
+  return data;
+}
+
+export async function updateDefaultGroup(name: string): Promise<DefaultGroupStatus> {
+  const { data } = await apiClient.put<DefaultGroupStatus>("/admin/settings/default-group", { name });
+  return data;
+}
+
 // ── 平台限额类型 ──────────────────────────────────────────────────
 export type PlatformType = "anthropic" | "openai" | "gemini" | "antigravity"
 export type QuotaWindowType = "daily" | "weekly" | "monthly"
@@ -1347,6 +1371,8 @@ export async function resetWebSearchUsage(payload: {
 }
 
 export const settingsAPI = {
+  getDefaultGroup,
+  updateDefaultGroup,
   getSettings,
   updateSettings,
   testSmtpConnection,
