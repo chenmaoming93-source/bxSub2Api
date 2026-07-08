@@ -38,6 +38,7 @@ totp:
 ldap:
   enabled: true
   server_url: "ldap://8.154.40.173:489"
+
   base_dn: "DC=qa,DC=bx"
   # Set user_dn for direct bind, otherwise bind_dn/bind_password are used to search the user first.
   user_dn: ""
@@ -57,6 +58,7 @@ ldap:
   local_login_accounts:
     - "admin@example.com"
 
+
 # External API key provisioning. Provides a Bearer-protected endpoint for
 # trusted internal services to obtain platform-scoped API keys for users.
 # Set rate_limit_*_per_minute to -1 to disable rate limiting (recommended for intranet).
@@ -65,6 +67,7 @@ external_api_key_provisioning:
   access_token: "iy8MCojtQzVKSc6vAhwdU0lOL3TE4DbN"
   rate_limit_biz_per_minute: -1
   rate_limit_auth_per_minute: -1
+
 
 run_mode: "standard"
 timezone: "Asia/Shanghai"
