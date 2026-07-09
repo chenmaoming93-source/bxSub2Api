@@ -232,6 +232,14 @@ func (h *OpenAIGatewayHandler) ChatCompletions(c *gin.Context) {
 			forwardBody = h.gatewayService.ReplaceModelInBody(forwardBody, channelMapping.MappedModel)
 		}
 		writerSizeBeforeForward := c.Writer.Size()
+		forwardModel := reqModel
+		if routingModel != reqModel {
+			forwardModel = routingModel
+		}
+		if channelMapping.Mapped {
+			forwardModel = channelMapping.MappedModel
+		}
+		logModelForwardStarted(reqLog, "openai_chat_completions.forward_started", account, reqModel, forwardModel, reqStream, len(failedAccountIDs), len(forwardBody))
 		result, err := func() (*service.OpenAIForwardResult, error) {
 			defer func() {
 				if accountReleaseFunc != nil {
@@ -247,6 +255,22 @@ func (h *OpenAIGatewayHandler) ChatCompletions(c *gin.Context) {
 		h.recordCyberPolicyIfMarked(c, apiKey, account, subscription, reqModel, err != nil, cyberBlockKeyChat, channelMapping.ToUsageFields(reqModel, ""), service.HashUsageRequestPayload(body))
 
 		forwardDurationMs := time.Since(forwardStart).Milliseconds()
+		forwardFinishedFields := []zap.Field{}
+		if result != nil {
+			forwardFinishedFields = append(forwardFinishedFields,
+				zap.String("upstream_request_id", result.RequestID),
+				zap.String("response_id", result.ResponseID),
+				zap.String("result_model", result.Model),
+				zap.String("result_upstream_model", result.UpstreamModel),
+				zap.String("billing_model", result.BillingModel),
+				zap.Bool("client_disconnect", result.ClientDisconnect),
+				zap.Int("image_count", result.ImageCount),
+			)
+			if result.FirstTokenMs != nil {
+				forwardFinishedFields = append(forwardFinishedFields, zap.Int("first_token_ms", *result.FirstTokenMs))
+			}
+		}
+		logModelForwardFinished(reqLog, "openai_chat_completions.forward_finished", c, forwardStart, account, reqModel, forwardModel, reqStream, len(failedAccountIDs), writerSizeBeforeForward, err, forwardFinishedFields...)
 		upstreamLatencyMs, _ := getContextInt64(c, service.OpsUpstreamLatencyMsKey)
 		responseLatencyMs := forwardDurationMs
 		if upstreamLatencyMs > 0 && forwardDurationMs > upstreamLatencyMs {
