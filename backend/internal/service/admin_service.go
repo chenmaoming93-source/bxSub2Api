@@ -564,8 +564,13 @@ type adminServiceImpl struct {
 	privacyClientFactory PrivacyClientFactory
 	runtimeBlocker       AccountRuntimeBlocker
 	tokenQuotaAdminRepo  UserModelTokenQuotaAdminRepository
+	userProvisioning     *UserProvisioningService
 
 	createGroupMu sync.Mutex
+}
+
+func (s *adminServiceImpl) SetUserProvisioningService(provisioning *UserProvisioningService) {
+	s.userProvisioning = provisioning
 }
 
 type userGroupRateBatchReader interface {
@@ -726,7 +731,17 @@ func (s *adminServiceImpl) CreateUser(ctx context.Context, input *CreateUserInpu
 	if err := user.SetPassword(input.Password); err != nil {
 		return nil, err
 	}
-	if err := s.userRepo.Create(ctx, user); err != nil {
+	if s.userProvisioning != nil {
+		provisioned, err := s.userProvisioning.Provision(ctx, UserProvisioningInput{
+			Email: input.Email, Username: input.Username, PasswordHash: user.PasswordHash,
+			Notes: input.Notes, AllowedGroups: input.AllowedGroups, Role: RoleUser, Balance: balance,
+			Concurrency: input.Concurrency, RPMLimit: input.RPMLimit, Status: StatusActive, SignupSource: "admin",
+		})
+		if err != nil {
+			return nil, err
+		}
+		user = provisioned.User
+	} else if err := s.userRepo.Create(ctx, user); err != nil {
 		return nil, err
 	}
 	s.assignDefaultSubscriptions(ctx, user.ID)

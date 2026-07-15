@@ -190,16 +190,14 @@ func (s *AuthService) createEmailOAuthUser(ctx context.Context, email, username,
 		Status:       StatusActive,
 		SignupSource: providerType,
 	}
-	if err := s.userRepo.Create(ctx, user); err != nil {
-		if errors.Is(err, ErrEmailExists) {
-			existing, loadErr := s.userRepo.GetByEmail(ctx, email)
-			if loadErr != nil {
-				return nil, ErrServiceUnavailable
-			}
-			return existing, nil
-		}
+	provisioned, created, err := s.provisionAuthUser(ctx, user)
+	if err != nil {
 		return nil, ErrServiceUnavailable
 	}
+	if !created {
+		return provisioned, nil
+	}
+	user = provisioned
 	s.postAuthUserBootstrap(ctx, user, providerType, false)
 	s.assignSubscriptions(ctx, user.ID, grantPlan.Subscriptions, "auto assigned by signup defaults")
 	// snapshot user × platform quota（fail-open）

@@ -144,6 +144,20 @@ func registerModelTokenQuotaRoutes(admin *gin.RouterGroup, h *handler.Handlers) 
 		quotas.GET("", h.Admin.ModelTokenQuota.List)
 		quotas.PUT("", h.Admin.ModelTokenQuota.Update)
 	}
+
+	tokenUsage := admin.Group("/token-usage")
+	{
+		tokenUsage.GET("/models", h.Admin.TokenUsageReport.GetModels)
+		tokenUsage.GET("/routes", h.Admin.TokenUsageReport.GetRoutes)
+		tokenUsage.GET("/users", h.Admin.TokenUsageReport.GetUsers)
+		tokenUsage.GET("/options/models", h.Admin.TokenUsageReport.ModelsOptions)
+		tokenUsage.GET("/options/groups", h.Admin.TokenUsageReport.GroupsOptions)
+		tokenUsage.GET("/options/groups/:group_id/routes", h.Admin.TokenUsageReport.RoutesOptions)
+		tokenUsage.GET("/options/groups/:group_id/routes/:route_alias/models", h.Admin.TokenUsageReport.RouteModelsOptions)
+		tokenUsage.GET("/options/users", h.Admin.TokenUsageReport.UsersOptions)
+		tokenUsage.GET("/options/users/:user_id/models", h.Admin.TokenUsageReport.UserModelsOptions)
+		tokenUsage.GET("/default-target", h.Admin.TokenUsageReport.GetDefaultTarget)
+	}
 }
 
 func registerOpsRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
@@ -307,6 +321,7 @@ func registerAccountRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
 	{
 		accounts.GET("", h.Admin.Account.List)
 		accounts.GET("/:id", h.Admin.Account.GetByID)
+		accounts.GET("/:id/credentials", h.Admin.Account.GetCredentials)
 		accounts.POST("", h.Admin.Account.Create)
 		accounts.POST("/check-mixed-channel", h.Admin.Account.CheckMixedChannel)
 		accounts.POST("/import/codex-session", h.Admin.Account.ImportCodexSession)
@@ -448,10 +463,12 @@ func registerPromoCodeRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
 }
 
 func registerSettingsRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
+	admin.GET("/default-group", h.Admin.Setting.GetDefaultGroup)
 	adminSettings := admin.Group("/settings")
 	{
 		adminSettings.GET("", h.Admin.Setting.GetSettings)
 		adminSettings.PUT("", h.Admin.Setting.UpdateSettings)
+		adminSettings.PUT("/default-group", h.Admin.Setting.UpdateDefaultGroup)
 		adminSettings.POST("/test-smtp", h.Admin.Setting.TestSMTPConnection)
 		adminSettings.POST("/send-test-email", h.Admin.Setting.SendTestEmail)
 		adminSettings.GET("/email-templates", h.Admin.Setting.ListEmailTemplates)

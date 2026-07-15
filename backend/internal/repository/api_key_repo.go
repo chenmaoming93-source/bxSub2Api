@@ -20,8 +20,9 @@ import (
 )
 
 type apiKeyRepository struct {
-	client *dbent.Client
-	sql    sqlExecutor
+	client      *dbent.Client
+	sql         sqlExecutor
+	lockUserRow bool
 }
 
 func NewAPIKeyRepository(client *dbent.Client, sqlDB *sql.DB) service.APIKeyRepository {
@@ -29,7 +30,7 @@ func NewAPIKeyRepository(client *dbent.Client, sqlDB *sql.DB) service.APIKeyRepo
 }
 
 func newAPIKeyRepositoryWithSQL(client *dbent.Client, sqlq sqlExecutor) *apiKeyRepository {
-	return &apiKeyRepository{client: client, sql: sqlq}
+	return &apiKeyRepository{client: client, sql: sqlq, lockUserRow: sqlq != nil}
 }
 
 func (r *apiKeyRepository) activeQuery() *dbent.APIKeyQuery {
@@ -37,10 +38,70 @@ func (r *apiKeyRepository) activeQuery() *dbent.APIKeyQuery {
 }
 
 func (r *apiKeyRepository) Create(ctx context.Context, key *service.APIKey) error {
-	builder := r.client.APIKey.Create().
+	if tx := dbent.TxFromContext(ctx); tx != nil {
+		return r.create(ctx, tx.Client(), key)
+	}
+
+	tx, err := r.client.Tx(ctx)
+	if err != nil {
+		// Integration tests and callers may construct the repository with an
+		// already transactional client without attaching the tx to the context.
+		if err == dbent.ErrTxStarted {
+			return r.create(ctx, r.client, key)
+		}
+		return err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	if err := r.create(ctx, tx.Client(), key); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
+func (r *apiKeyRepository) create(ctx context.Context, client *dbent.Client, key *service.APIKey) error {
+	requiresUniquenessCheck := (key.Platform != nil && strings.TrimSpace(*key.Platform) != "") || key.Purpose == "default"
+	if requiresUniquenessCheck && r.lockUserRow {
+		// The user row always exists before an API key can be created. Locking it
+		// serializes all uniqueness checks and writes for that user across app
+		// instances, including the case where no matching API key row exists yet.
+		if _, err := client.User.Query().Where(user.IDEQ(key.UserID)).ForUpdate().Only(ctx); err != nil {
+			return err
+		}
+	}
+
+	if key.Platform != nil && strings.TrimSpace(*key.Platform) != "" {
+		exists, err := client.APIKey.Query().Where(
+			apikey.UserIDEQ(key.UserID),
+			apikey.PlatformEQ(*key.Platform),
+			apikey.DeletedAtIsNil(),
+		).Exist(ctx)
+		if err != nil {
+			return err
+		}
+		if exists {
+			return service.ErrAPIKeyExists
+		}
+	}
+	if key.Purpose == "default" {
+		exists, err := client.APIKey.Query().Where(
+			apikey.UserIDEQ(key.UserID),
+			apikey.PurposeEQ("default"),
+			apikey.DeletedAtIsNil(),
+		).Exist(ctx)
+		if err != nil {
+			return err
+		}
+		if exists {
+			return service.ErrAPIKeyExists
+		}
+	}
+
+	builder := client.APIKey.Create().
 		SetUserID(key.UserID).
 		SetKey(key.Key).
 		SetName(key.Name).
+		SetNillablePlatform(key.Platform).
 		SetStatus(key.Status).
 		SetNillableGroupID(key.GroupID).
 		SetNillableLastUsedAt(key.LastUsedAt).
@@ -50,6 +111,9 @@ func (r *apiKeyRepository) Create(ctx context.Context, key *service.APIKey) erro
 		SetRateLimit5h(key.RateLimit5h).
 		SetRateLimit1d(key.RateLimit1d).
 		SetRateLimit7d(key.RateLimit7d)
+	if key.Purpose != "" {
+		builder.SetPurpose(key.Purpose)
+	}
 
 	if len(key.IPWhitelist) > 0 {
 		builder.SetIPWhitelist(key.IPWhitelist)
@@ -74,6 +138,34 @@ func (r *apiKeyRepository) GetByID(ctx context.Context, id int64) (*service.APIK
 		WithUser().
 		WithGroup().
 		Only(ctx)
+	if err != nil {
+		if dbent.IsNotFound(err) {
+			return nil, service.ErrAPIKeyNotFound
+		}
+		return nil, err
+	}
+	return apiKeyEntityToService(m), nil
+}
+
+
+func (r *apiKeyRepository) GetByUserIDAndPlatform(ctx context.Context, userID int64, platform string) (*service.APIKey, error) {
+	m, err := r.activeQuery().Where(
+		apikey.UserIDEQ(userID),
+		apikey.PlatformEQ(platform),
+	).Only(ctx)
+	if err != nil {
+		if dbent.IsNotFound(err) {
+			return nil, service.ErrAPIKeyNotFound
+		}
+		return nil, err
+	}
+	return apiKeyEntityToService(m), nil
+}
+func (r *apiKeyRepository) GetDefaultByUserID(ctx context.Context, userID int64) (*service.APIKey, error) {
+	m, err := r.activeQuery().Where(
+		apikey.UserIDEQ(userID),
+		apikey.PurposeEQ("default"),
+	).Only(ctx)
 	if err != nil {
 		if dbent.IsNotFound(err) {
 			return nil, service.ErrAPIKeyNotFound
@@ -205,6 +297,7 @@ func (r *apiKeyRepository) Update(ctx context.Context, key *service.APIKey) erro
 	builder := client.APIKey.Update().
 		Where(apikey.IDEQ(key.ID), apikey.DeletedAtIsNil()).
 		SetName(key.Name).
+		SetNillablePlatform(key.Platform).
 		SetStatus(key.Status).
 		SetQuota(key.Quota).
 		SetQuotaUsed(key.QuotaUsed).
@@ -215,6 +308,9 @@ func (r *apiKeyRepository) Update(ctx context.Context, key *service.APIKey) erro
 		SetUsage1d(key.Usage1d).
 		SetUsage7d(key.Usage7d).
 		SetUpdatedAt(now)
+	if key.Purpose != "" {
+		builder.SetPurpose(key.Purpose)
+	}
 	if key.GroupID != nil {
 		builder.SetGroupID(*key.GroupID)
 	} else {
@@ -674,6 +770,8 @@ func apiKeyEntityToService(m *dbent.APIKey) *service.APIKey {
 		UserID:        m.UserID,
 		Key:           m.Key,
 		Name:          m.Name,
+		Platform:      m.Platform,
+		Purpose:       m.Purpose,
 		Status:        m.Status,
 		IPWhitelist:   m.IPWhitelist,
 		IPBlacklist:   m.IPBlacklist,

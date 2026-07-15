@@ -351,7 +351,7 @@
     <BaseDialog
       :show="showCreateModal"
       :title="t('admin.groups.createGroup')"
-      width="normal"
+      width="wide"
       @close="closeCreateModal"
     >
       <form
@@ -396,7 +396,12 @@
 
 
         <!-- 模型路由配置 -->
-        <div class="border-t pt-4">
+        <GroupModelRoutingEditor
+          v-model:enabled="createForm.model_routing_enabled"
+          v-model:rules="createModelRoutingRules"
+          :platform="createForm.platform"
+        />
+        <div v-if="false" class="border-t pt-4">
           <div class="mb-1.5 flex items-center gap-1">
             <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
               {{ t("admin.groups.modelRouting.title") }}
@@ -491,26 +496,26 @@
                   <div
                     v-for="candidate in rule.candidates"
                     :key="getCreateCandidateRenderKey(candidate)"
-                    class="relative space-y-2 rounded-md bg-gray-50 p-3 dark:bg-dark-700/50"
+                    class="relative w-full min-w-0 space-y-2 rounded-md bg-gray-50 p-3 dark:bg-dark-700/50"
                   >
-                    <div class="grid gap-2 md:grid-cols-3">
-                      <div>
+                    <div class="grid min-w-0 gap-2 md:grid-cols-3">
+                      <div class="min-w-0">
                         <label class="input-label text-xs">{{
                           t("admin.groups.modelRouting.candidateModel", "Upstream model")
                         }}</label>
                         <input v-model="candidate.model" type="text" class="input text-sm" />
                       </div>
-                      <div>
+                      <div class="min-w-0">
                         <label class="input-label text-xs">{{
                           t("admin.groups.modelRouting.priority", "Priority")
                         }}</label>
                         <input v-model.number="candidate.priority" type="number" min="0" step="1" class="input text-sm" />
                       </div>
-                      <div>
+                      <div class="min-w-0">
                         <label class="input-label text-xs">{{
                           t("admin.groups.modelRouting.dailyTokenLimit", "Daily token limit")
                         }}</label>
-                        <input v-model.number="candidate.daily_token_limit" type="number" min="0" step="1" class="input text-sm" :placeholder="t('admin.groups.modelRouting.unlimited', 'Unlimited')" />
+                        <input v-model.number="candidate.daily_token_limit" type="number" min="0" step="1" class="input w-full min-w-0 max-w-full text-sm" :placeholder="t('admin.groups.modelRouting.unlimited')" />
                       </div>
                     </div>
                     <div v-if="candidate.accounts.length > 0" class="mb-2 flex flex-wrap gap-1.5">
@@ -1606,7 +1611,7 @@
     <BaseDialog
       :show="showEditModal"
       :title="t('admin.groups.editGroup')"
-      width="normal"
+      width="wide"
       @close="closeEditModal"
     >
       <form
@@ -1650,7 +1655,12 @@
 
 
         <!-- 模型路由配置 -->
-        <div class="border-t pt-4">
+        <GroupModelRoutingEditor
+          v-model:enabled="editForm.model_routing_enabled"
+          v-model:rules="editModelRoutingRules"
+          :platform="editForm.platform"
+        />
+        <div v-if="false" class="border-t pt-4">
           <div class="mb-1.5 flex items-center gap-1">
             <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
               {{ t("admin.groups.modelRouting.title") }}
@@ -1744,20 +1754,20 @@
                   <div
                     v-for="candidate in rule.candidates"
                     :key="getEditCandidateRenderKey(candidate)"
-                    class="relative space-y-2 rounded-md bg-gray-50 p-3 dark:bg-dark-700/50"
+                    class="relative w-full min-w-0 space-y-2 rounded-md bg-gray-50 p-3 dark:bg-dark-700/50"
                   >
-                    <div class="grid gap-2 md:grid-cols-3">
-                      <div>
+                    <div class="grid min-w-0 gap-2 md:grid-cols-3">
+                      <div class="min-w-0">
                         <label class="input-label text-xs">{{ t("admin.groups.modelRouting.candidateModel", "Upstream model") }}</label>
                         <input v-model="candidate.model" type="text" class="input text-sm" />
                       </div>
-                      <div>
+                      <div class="min-w-0">
                         <label class="input-label text-xs">{{ t("admin.groups.modelRouting.priority", "Priority") }}</label>
                         <input v-model.number="candidate.priority" type="number" min="0" step="1" class="input text-sm" />
                       </div>
-                      <div>
+                      <div class="min-w-0">
                         <label class="input-label text-xs">{{ t("admin.groups.modelRouting.dailyTokenLimit", "Daily token limit") }}</label>
-                        <input v-model.number="candidate.daily_token_limit" type="number" min="0" step="1" class="input text-sm" :placeholder="t('admin.groups.modelRouting.unlimited', 'Unlimited')" />
+                        <input v-model.number="candidate.daily_token_limit" type="number" min="0" step="1" class="input w-full min-w-0 max-w-full text-sm" :placeholder="t('admin.groups.modelRouting.unlimited')" />
                       </div>
                     </div>
                     <div v-if="candidate.accounts.length > 0" class="mb-2 flex flex-wrap gap-1.5">
@@ -2995,6 +3005,7 @@ import PlatformIcon from "@/components/common/PlatformIcon.vue";
 import Icon from "@/components/icons/Icon.vue";
 import GroupRateMultipliersModal from "@/components/admin/group/GroupRateMultipliersModal.vue";
 import GroupRPMOverridesModal from "@/components/admin/group/GroupRPMOverridesModal.vue";
+import GroupModelRoutingEditor from "@/components/admin/group/GroupModelRoutingEditor.vue";
 import GroupCapacityBadge from "@/components/common/GroupCapacityBadge.vue";
 import { VueDraggable } from "vue-draggable-plus";
 import { createStableObjectKeyResolver } from "@/utils/stableObjectKey";

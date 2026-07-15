@@ -23,6 +23,10 @@ type userModelTokenQuotaRepoStub struct {
 	}
 }
 
+func (s *userModelTokenQuotaRepoStub) DeleteUserModelTokenQuotaByModel(context.Context, int64, string) error {
+	return nil
+}
+
 func (s *userModelTokenQuotaRepoStub) ListUserModelDailyTokenQuotas(_ context.Context, userID int64, _ time.Time) ([]service.UserModelDailyTokenQuotaRecord, error) {
 	return s.recordsByUser[userID], nil
 }

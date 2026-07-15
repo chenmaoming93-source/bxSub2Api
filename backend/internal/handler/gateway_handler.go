@@ -421,6 +421,9 @@ func (h *GatewayHandler) Messages(c *gin.Context) {
 			}
 			// 记录 Forward 前已写入字节数，Forward 后若增加则说明 SSE 内容已发，禁止 failover
 			writerSizeBeforeForward := c.Writer.Size()
+			forwardModel := reqModel
+			forwardStart := time.Now()
+			logModelForwardStarted(reqLog, "gateway.forward_started", account, reqModel, forwardModel, reqStream, fs.SwitchCount, len(body))
 			if account.Platform == service.PlatformAntigravity {
 				result, err = h.antigravityGatewayService.ForwardGemini(
 					requestCtx,
@@ -436,6 +439,19 @@ func (h *GatewayHandler) Messages(c *gin.Context) {
 			} else {
 				result, err = h.geminiCompatService.Forward(requestCtx, c, account, body)
 			}
+			forwardFinishedFields := []zap.Field{}
+			if result != nil {
+				forwardFinishedFields = append(forwardFinishedFields,
+					zap.String("upstream_request_id", result.RequestID),
+					zap.String("result_model", result.Model),
+					zap.String("result_upstream_model", result.UpstreamModel),
+					zap.Bool("client_disconnect", result.ClientDisconnect),
+				)
+				if result.FirstTokenMs != nil {
+					forwardFinishedFields = append(forwardFinishedFields, zap.Int("first_token_ms", *result.FirstTokenMs))
+				}
+			}
+			logModelForwardFinished(reqLog, "gateway.forward_finished", c, forwardStart, account, reqModel, forwardModel, reqStream, fs.SwitchCount, writerSizeBeforeForward, err, forwardFinishedFields...)
 			if accountReleaseFunc != nil {
 				accountReleaseFunc()
 			}
@@ -792,11 +808,34 @@ func (h *GatewayHandler) Messages(c *gin.Context) {
 			}
 			// 记录 Forward 前已写入字节数，Forward 后若增加则说明 SSE 内容已发，禁止 failover
 			writerSizeBeforeForward := c.Writer.Size()
+			forwardModel := attemptParsedReq.Model
+			if attemptParsedReq.UpstreamModel != "" {
+				forwardModel = attemptParsedReq.UpstreamModel
+			}
+			forwardStart := time.Now()
+			logModelForwardStarted(reqLog, "gateway.forward_started", account, reqModel, forwardModel, reqStream, fs.SwitchCount, len(attemptBody),
+				zap.Bool("fallback_used", fallbackUsed),
+			)
 			if account.Platform == service.PlatformAntigravity && account.Type != service.AccountTypeAPIKey {
 				result, err = h.antigravityGatewayService.Forward(requestCtx, c, account, attemptBody, hasBoundSession)
 			} else {
 				result, err = h.gatewayService.Forward(requestCtx, c, account, attemptParsedReq)
 			}
+			forwardFinishedFields := []zap.Field{
+				zap.Bool("fallback_used", fallbackUsed),
+			}
+			if result != nil {
+				forwardFinishedFields = append(forwardFinishedFields,
+					zap.String("upstream_request_id", result.RequestID),
+					zap.String("result_model", result.Model),
+					zap.String("result_upstream_model", result.UpstreamModel),
+					zap.Bool("client_disconnect", result.ClientDisconnect),
+				)
+				if result.FirstTokenMs != nil {
+					forwardFinishedFields = append(forwardFinishedFields, zap.Int("first_token_ms", *result.FirstTokenMs))
+				}
+			}
+			logModelForwardFinished(reqLog, "gateway.forward_finished", c, forwardStart, account, reqModel, forwardModel, reqStream, fs.SwitchCount, writerSizeBeforeForward, err, forwardFinishedFields...)
 
 			// 兜底释放串行锁（正常情况已通过回调提前释放）
 			if queueRelease != nil {

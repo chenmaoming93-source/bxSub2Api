@@ -3,7 +3,7 @@
     <div class="space-y-4">
       <p class="text-sm text-gray-600 dark:text-gray-400">{{ t('admin.users.batchQuota.description') }}</p>
       <div class="space-y-3">
-        <div v-for="(row, index) in rows" :key="row.key" class="grid items-end gap-2 rounded-lg border border-gray-200 p-3 dark:border-dark-700 md:grid-cols-[140px_1fr_180px_auto]">
+        <div v-for="(row, index) in rows" :key="row.key" class="grid items-end gap-2 rounded-lg border border-gray-200 p-3 dark:border-dark-700 md:grid-cols-[140px_1fr_220px_auto]">
           <label class="block text-xs text-gray-500">
             {{ t('admin.users.batchQuota.action', 'Action') }}
             <select v-model="row.action" data-test="batch-quota-action" class="input mt-1 text-sm">
@@ -18,7 +18,7 @@
           </label>
           <label class="block text-xs text-gray-500">
             {{ t('admin.users.batchQuota.limit', 'Daily token limit') }}
-            <input v-model.number="row.daily_limit_tokens" data-test="batch-quota-limit" type="number" min="0" step="1" class="input mt-1 text-sm" :placeholder="t('admin.users.batchQuota.unlimited', 'Unlimited')" :disabled="row.action === 'delete'" />
+            <input v-model.number="row.daily_limit_tokens" data-test="batch-quota-limit" type="number" min="0" step="1" class="input mt-1 min-w-[200px] text-sm" :placeholder="t('admin.users.batchQuota.unlimited')" :disabled="row.action === 'delete'" />
             <p v-if="row.action === 'delete'" class="mt-1 text-xs text-gray-400">{{ t('admin.users.batchQuota.deleteHint', 'No token limit needed for delete') }}</p>
           </label>
           <button type="button" class="p-2 text-gray-400 hover:text-red-500" :title="t('common.delete')" @click="removeRow(index)"><Icon name="trash" size="sm" /></button>

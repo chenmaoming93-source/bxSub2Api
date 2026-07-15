@@ -110,6 +110,17 @@ export default {
     }
   },
 
+  tokenUsageReport: {
+    modelTitle: 'Global Model Token Usage', routeTitle: 'Route Token Usage', userTitle: 'User Model Token Usage',
+    model: 'Model', group: 'Group', routeAlias: 'Route Alias', upstreamModel: 'Upstream Model (optional)', upstreamModelName: 'Upstream Model', user: 'User', optionalModel: 'Model (optional)',
+    searchModel: 'Search model name...', searchGroups: 'Search groups...', searchRoutes: 'Search routes...', searchUsers: 'Search by email, username or ID...', optionalModelPlaceholder: 'Search or leave model empty...',
+    startDate: 'Start Date', endDate: 'End Date', start: 'Start', end: 'End', sortBy: 'Sort By', order: 'Order', sortRules: 'Sort rules (priority order)', addSort: 'Add sort field', removeSort: 'Remove sort field', date: 'Date', tokens: 'Tokens', descending: 'Desc', ascending: 'Asc', query: 'Query', retry: 'Retry',
+    empty: 'Select a target and click "Query" to view token usage data.', queryFailed: 'Query failed', loadFailed: 'Failed to load report',
+    totalTokens: 'Total Tokens', usageRate: 'Usage Rate', usedTokens: 'Used Tokens', dailyLimit: 'Daily Limit', status: 'Status', priority: 'Priority', route: 'Route',
+    normal: 'Normal', warning: 'Warning', exceeded: 'Exceeded', unlimited: 'Unlimited', deleted: 'Deleted', userId: 'User #{id}',
+    deletedUsers: 'Deleted Users', excludeDeletedUsers: 'Exclude deleted users', includeDeletedUsers: 'Include deleted users'
+  },
+
   // Key Usage Query Page
   keyUsage: {
     title: 'API Key Usage',
@@ -374,6 +385,7 @@ export default {
 
   // Navigation
   nav: {
+    defaultGroupRouting: 'Default model routing',
     dashboard: 'Dashboard',
     announcements: 'Announcements',
     apiKeys: 'API Keys',
@@ -415,6 +427,10 @@ export default {
     channelPricing: 'Channel Pricing',
     channelMonitor: 'Channel Monitor',
     channelStatus: 'Channel Status',
+    tokenUsage: 'Token Usage',
+    tokenUsageModels: 'Models',
+    tokenUsageRoutes: 'Routes',
+    tokenUsageUsers: 'Users',
     riskControl: 'Risk Control',
   },
 
@@ -2110,7 +2126,7 @@ export default {
         subtitle: 'Configure daily token limits by upstream model for user {email}',
         model: 'Upstream Model',
         limit: 'Daily Token Limit',
-        unlimited: 'Unlimited',
+        unlimited: '0=unlimited blank=delete',
         used: 'Used Today',
         add: 'Add Model',
         loadFailed: 'Failed to load model token limits',
@@ -2124,7 +2140,7 @@ export default {
         description: 'New users will automatically inherit these model token quota settings',
         model: 'Upstream Model',
         limit: 'Daily Token Limit',
-        unlimited: 'Unlimited',
+        unlimited: '0=unlimited blank=delete',
         add: 'Add Model',
         loadFailed: 'Failed to load default quotas',
         invalid: 'Models must be unique and limits must be non-negative integers',
@@ -2141,7 +2157,7 @@ export default {
         delete: 'Delete',
         model: 'Model',
         limit: 'Daily Token Limit',
-        unlimited: 'Unlimited',
+        unlimited: '0=unlimited blank=delete',
         addRow: 'Add Row',
         confirmTitle: 'Confirm Batch Operation',
         confirmMessage: 'This will execute {ops} operations on all active users. Continue?',
@@ -2374,7 +2390,7 @@ export default {
         candidateModel: 'Upstream Model',
         priority: 'Priority',
         dailyTokenLimit: 'Daily Token Limit',
-        unlimited: 'Unlimited',
+        unlimited: '0=unlimited blank=delete',
         candidateValidation: 'Model, account, and non-negative integer values are required',
         removeCandidate: 'Remove Candidate',
         addCandidate: 'Add Candidate',
@@ -2396,7 +2412,7 @@ export default {
         title: 'Global Model Daily Token Limits',
         model: 'Upstream Model',
         limit: 'Daily Token Limit',
-        unlimited: 'Unlimited',
+        unlimited: '0=unlimited blank=delete',
         used: 'Used Today',
         add: 'Add Model',
         loadFailed: 'Failed to load global model token limits',
@@ -5508,9 +5524,28 @@ export default {
     },
 
     // Settings
+    defaultGroupRouting: {
+      title: 'Default model routing',
+      description: 'Maintain model routing for the configured default group.',
+      unconfigured: 'Configure a default group name before editing model routing.',
+      goToSettings: 'Go to settings',
+      missing: 'The configured default group "{name}" does not exist.',
+      create: 'Create default group',
+      saved: 'Default group routing saved',
+    },
     settings: {
       title: 'System Settings',
       description: 'Manage registration, email verification, default values, and SMTP settings',
+      defaultGroup: {
+        title: 'Default group',
+        description: 'New API keys use this group when it exists. A missing group name can still be saved.',
+        name: 'Default group name',
+        placeholder: 'Enter an exact group name',
+        exists: 'The configured group exists.',
+        missing: 'The name is saved, but the group does not exist yet.',
+        unconfigured: 'No default group is configured.',
+        saved: 'Default group saved',
+      },
       tabs: {
         general: 'General',
         agreement: 'Agreement',

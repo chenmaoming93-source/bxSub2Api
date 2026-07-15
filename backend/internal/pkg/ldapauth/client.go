@@ -1,6 +1,7 @@
 package ldapauth
 
 import (
+	"context"
 	"crypto/tls"
 	"fmt"
 	"net"
@@ -21,7 +22,7 @@ type User struct {
 
 // Authenticator allows the login handler to remain independent of LDAP details.
 type Authenticator interface {
-	Authenticate(username, password string) (*User, error)
+	Authenticate(ctx context.Context, username, password string) (*User, error)
 }
 
 type Client struct {
@@ -32,7 +33,7 @@ func New(cfg config.LDAPConfig) *Client {
 	return &Client{cfg: cfg}
 }
 
-func (c *Client) Authenticate(username, password string) (*User, error) {
+func (c *Client) Authenticate(_ context.Context, username, password string) (*User, error) {
 	username = strings.TrimSpace(username)
 	if username == "" || password == "" {
 		return nil, fmt.Errorf("ldap: username and password are required")

@@ -236,6 +236,15 @@ func (h *GatewayHandler) ChatCompletions(c *gin.Context) {
 		} else {
 			parsedReq.UpstreamModel = ""
 		}
+		forwardModel := reqModel
+		if channelMapping.Mapped {
+			forwardModel = channelMapping.MappedModel
+		}
+		if selection.UpstreamModel != "" && selection.UpstreamModel != reqModel {
+			forwardModel = selection.UpstreamModel
+		}
+		forwardStart := time.Now()
+		logModelForwardStarted(reqLog, "gateway.cc.forward_started", account, reqModel, forwardModel, reqStream, fs.SwitchCount, len(forwardBody))
 		var result *service.ForwardResult
 		if account.Platform == service.PlatformGemini {
 			if h.geminiCompatService == nil {
@@ -249,6 +258,19 @@ func (h *GatewayHandler) ChatCompletions(c *gin.Context) {
 		} else {
 			result, err = h.gatewayService.ForwardAsChatCompletions(c.Request.Context(), c, account, forwardBody, parsedReq)
 		}
+		forwardFinishedFields := []zap.Field{}
+		if result != nil {
+			forwardFinishedFields = append(forwardFinishedFields,
+				zap.String("upstream_request_id", result.RequestID),
+				zap.String("result_model", result.Model),
+				zap.String("result_upstream_model", result.UpstreamModel),
+				zap.Bool("client_disconnect", result.ClientDisconnect),
+			)
+			if result.FirstTokenMs != nil {
+				forwardFinishedFields = append(forwardFinishedFields, zap.Int("first_token_ms", *result.FirstTokenMs))
+			}
+		}
+		logModelForwardFinished(reqLog, "gateway.cc.forward_finished", c, forwardStart, account, reqModel, forwardModel, reqStream, fs.SwitchCount, writerSizeBeforeForward, err, forwardFinishedFields...)
 
 		if accountReleaseFunc != nil {
 			accountReleaseFunc()

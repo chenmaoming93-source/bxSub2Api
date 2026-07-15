@@ -100,6 +100,40 @@ func (_u *APIKeyUpdate) SetNillableName(v *string) *APIKeyUpdate {
 	return _u
 }
 
+// SetPlatform sets the "platform" field.
+func (_u *APIKeyUpdate) SetPlatform(v string) *APIKeyUpdate {
+	_u.mutation.SetPlatform(v)
+	return _u
+}
+
+// SetNillablePlatform sets the "platform" field if the given value is not nil.
+func (_u *APIKeyUpdate) SetNillablePlatform(v *string) *APIKeyUpdate {
+	if v != nil {
+		_u.SetPlatform(*v)
+	}
+	return _u
+}
+
+// ClearPlatform clears the value of the "platform" field.
+func (_u *APIKeyUpdate) ClearPlatform() *APIKeyUpdate {
+	_u.mutation.ClearPlatform()
+	return _u
+}
+
+// SetPurpose sets the "purpose" field.
+func (_u *APIKeyUpdate) SetPurpose(v string) *APIKeyUpdate {
+	_u.mutation.SetPurpose(v)
+	return _u
+}
+
+// SetNillablePurpose sets the "purpose" field if the given value is not nil.
+func (_u *APIKeyUpdate) SetNillablePurpose(v *string) *APIKeyUpdate {
+	if v != nil {
+		_u.SetPurpose(*v)
+	}
+	return _u
+}
+
 // SetGroupID sets the "group_id" field.
 func (_u *APIKeyUpdate) SetGroupID(v int64) *APIKeyUpdate {
 	_u.mutation.SetGroupID(v)
@@ -555,6 +589,16 @@ func (_u *APIKeyUpdate) check() error {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "APIKey.name": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.Platform(); ok {
+		if err := apikey.PlatformValidator(v); err != nil {
+			return &ValidationError{Name: "platform", err: fmt.Errorf(`ent: validator failed for field "APIKey.platform": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.Purpose(); ok {
+		if err := apikey.PurposeValidator(v); err != nil {
+			return &ValidationError{Name: "purpose", err: fmt.Errorf(`ent: validator failed for field "APIKey.purpose": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.Status(); ok {
 		if err := apikey.StatusValidator(v); err != nil {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "APIKey.status": %w`, err)}
@@ -592,6 +636,15 @@ func (_u *APIKeyUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(apikey.FieldName, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.Platform(); ok {
+		_spec.SetField(apikey.FieldPlatform, field.TypeString, value)
+	}
+	if _u.mutation.PlatformCleared() {
+		_spec.ClearField(apikey.FieldPlatform, field.TypeString)
+	}
+	if value, ok := _u.mutation.Purpose(); ok {
+		_spec.SetField(apikey.FieldPurpose, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(apikey.FieldStatus, field.TypeString, value)
@@ -883,6 +936,40 @@ func (_u *APIKeyUpdateOne) SetName(v string) *APIKeyUpdateOne {
 func (_u *APIKeyUpdateOne) SetNillableName(v *string) *APIKeyUpdateOne {
 	if v != nil {
 		_u.SetName(*v)
+	}
+	return _u
+}
+
+// SetPlatform sets the "platform" field.
+func (_u *APIKeyUpdateOne) SetPlatform(v string) *APIKeyUpdateOne {
+	_u.mutation.SetPlatform(v)
+	return _u
+}
+
+// SetNillablePlatform sets the "platform" field if the given value is not nil.
+func (_u *APIKeyUpdateOne) SetNillablePlatform(v *string) *APIKeyUpdateOne {
+	if v != nil {
+		_u.SetPlatform(*v)
+	}
+	return _u
+}
+
+// ClearPlatform clears the value of the "platform" field.
+func (_u *APIKeyUpdateOne) ClearPlatform() *APIKeyUpdateOne {
+	_u.mutation.ClearPlatform()
+	return _u
+}
+
+// SetPurpose sets the "purpose" field.
+func (_u *APIKeyUpdateOne) SetPurpose(v string) *APIKeyUpdateOne {
+	_u.mutation.SetPurpose(v)
+	return _u
+}
+
+// SetNillablePurpose sets the "purpose" field if the given value is not nil.
+func (_u *APIKeyUpdateOne) SetNillablePurpose(v *string) *APIKeyUpdateOne {
+	if v != nil {
+		_u.SetPurpose(*v)
 	}
 	return _u
 }
@@ -1355,6 +1442,16 @@ func (_u *APIKeyUpdateOne) check() error {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "APIKey.name": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.Platform(); ok {
+		if err := apikey.PlatformValidator(v); err != nil {
+			return &ValidationError{Name: "platform", err: fmt.Errorf(`ent: validator failed for field "APIKey.platform": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.Purpose(); ok {
+		if err := apikey.PurposeValidator(v); err != nil {
+			return &ValidationError{Name: "purpose", err: fmt.Errorf(`ent: validator failed for field "APIKey.purpose": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.Status(); ok {
 		if err := apikey.StatusValidator(v); err != nil {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "APIKey.status": %w`, err)}
@@ -1409,6 +1506,15 @@ func (_u *APIKeyUpdateOne) sqlSave(ctx context.Context) (_node *APIKey, err erro
 	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(apikey.FieldName, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.Platform(); ok {
+		_spec.SetField(apikey.FieldPlatform, field.TypeString, value)
+	}
+	if _u.mutation.PlatformCleared() {
+		_spec.ClearField(apikey.FieldPlatform, field.TypeString)
+	}
+	if value, ok := _u.mutation.Purpose(); ok {
+		_spec.SetField(apikey.FieldPurpose, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.Status(); ok {
 		_spec.SetField(apikey.FieldStatus, field.TypeString, value)

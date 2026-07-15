@@ -42,7 +42,7 @@ func GetDataDir() string {
 	if dir := os.Getenv("DATA_DIR"); dir != "" {
 		return dir
 	}
-	return "/opt/iba/sub2api"
+	return "/opt/iba/sub2api/resource"
 }
 
 // GetConfigFilePath returns the full path to config.yaml

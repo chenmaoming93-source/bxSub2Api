@@ -385,6 +385,13 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 		service.SetOpsLatencyMs(c, service.OpsRoutingLatencyMsKey, time.Since(routingStart).Milliseconds())
 		forwardStart := time.Now()
 		writerSizeBeforeForward := c.Writer.Size()
+		forwardModel := reqModel
+		if channelMapping.Mapped {
+			forwardModel = channelMapping.MappedModel
+		}
+		logModelForwardStarted(reqLog, "openai.forward_started", account, reqModel, forwardModel, reqStream, switchCount, len(forwardBody),
+			zap.Bool("remote_compact", requireCompact),
+		)
 		result, err := func() (*service.OpenAIForwardResult, error) {
 			defer func() {
 				if accountReleaseFunc != nil {
@@ -399,6 +406,24 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 		}
 		h.recordCyberPolicyIfMarked(c, apiKey, account, subscription, reqModel, err != nil, cyberBlockKeyHTTP, channelMapping.ToUsageFields(reqModel, ""), service.HashUsageRequestPayload(body))
 		forwardDurationMs := time.Since(forwardStart).Milliseconds()
+		forwardFinishedFields := []zap.Field{
+			zap.Bool("remote_compact", requireCompact),
+		}
+		if result != nil {
+			forwardFinishedFields = append(forwardFinishedFields,
+				zap.String("upstream_request_id", result.RequestID),
+				zap.String("response_id", result.ResponseID),
+				zap.String("result_model", result.Model),
+				zap.String("result_upstream_model", result.UpstreamModel),
+				zap.String("billing_model", result.BillingModel),
+				zap.Bool("client_disconnect", result.ClientDisconnect),
+				zap.Int("image_count", result.ImageCount),
+			)
+			if result.FirstTokenMs != nil {
+				forwardFinishedFields = append(forwardFinishedFields, zap.Int("first_token_ms", *result.FirstTokenMs))
+			}
+		}
+		logModelForwardFinished(reqLog, "openai.forward_finished", c, forwardStart, account, reqModel, forwardModel, reqStream, switchCount, writerSizeBeforeForward, err, forwardFinishedFields...)
 		upstreamLatencyMs, _ := getContextInt64(c, service.OpsUpstreamLatencyMsKey)
 		responseLatencyMs := forwardDurationMs
 		if upstreamLatencyMs > 0 && forwardDurationMs > upstreamLatencyMs {
@@ -797,6 +822,14 @@ func (h *OpenAIGatewayHandler) Messages(c *gin.Context) {
 		// 应用渠道模型映射到请求体
 		forwardBody := mappedBodyForMessages(channelMappingMsg.Mapped, channelMappingMsg.MappedModel)
 		writerSizeBeforeForward := c.Writer.Size()
+		forwardModel := reqModel
+		if channelMappingMsg.Mapped {
+			forwardModel = channelMappingMsg.MappedModel
+		}
+		if defaultMappedModel != "" {
+			forwardModel = defaultMappedModel
+		}
+		logModelForwardStarted(reqLog, "openai_messages.forward_started", account, reqModel, forwardModel, reqStream, switchCount, len(forwardBody))
 		result, err := func() (*service.OpenAIForwardResult, error) {
 			defer func() {
 				if accountReleaseFunc != nil {
@@ -811,6 +844,22 @@ func (h *OpenAIGatewayHandler) Messages(c *gin.Context) {
 		}
 		h.recordCyberPolicyIfMarked(c, apiKey, account, subscription, reqModel, err != nil, cyberBlockKeyMsg, channelMappingMsg.ToUsageFields(reqModel, ""), service.HashUsageRequestPayload(body))
 		forwardDurationMs := time.Since(forwardStart).Milliseconds()
+		forwardFinishedFields := []zap.Field{}
+		if result != nil {
+			forwardFinishedFields = append(forwardFinishedFields,
+				zap.String("upstream_request_id", result.RequestID),
+				zap.String("response_id", result.ResponseID),
+				zap.String("result_model", result.Model),
+				zap.String("result_upstream_model", result.UpstreamModel),
+				zap.String("billing_model", result.BillingModel),
+				zap.Bool("client_disconnect", result.ClientDisconnect),
+				zap.Int("image_count", result.ImageCount),
+			)
+			if result.FirstTokenMs != nil {
+				forwardFinishedFields = append(forwardFinishedFields, zap.Int("first_token_ms", *result.FirstTokenMs))
+			}
+		}
+		logModelForwardFinished(reqLog, "openai_messages.forward_finished", c, forwardStart, account, reqModel, forwardModel, reqStream, switchCount, writerSizeBeforeForward, err, forwardFinishedFields...)
 		upstreamLatencyMs, _ := getContextInt64(c, service.OpsUpstreamLatencyMsKey)
 		responseLatencyMs := forwardDurationMs
 		if upstreamLatencyMs > 0 && forwardDurationMs > upstreamLatencyMs {

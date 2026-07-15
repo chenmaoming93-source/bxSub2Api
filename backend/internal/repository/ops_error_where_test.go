@@ -22,12 +22,12 @@ func TestBuildOpsErrorLogsWhere_UserScopedFilters(t *testing.T) {
 	where, args := buildOpsErrorLogsWhere(filter)
 
 	for _, want := range []string{
-		"e.user_id = $",
-		"e.api_key_id = $",
-		"COALESCE(e.requested_model, e.model, '') = $",
+		"e.user_id = ?",
+		"e.api_key_id = ?",
+		"COALESCE(e.requested_model, e.model, '') = ?",
 		"COALESCE(e.is_count_tokens, false) = false",
-		"e.error_phase = ANY($",
-		"e.error_type = ANY($",
+		"e.error_phase IN (?)",
+		"e.error_type IN (?)",
 	} {
 		if !strings.Contains(where, want) {
 			t.Fatalf("where missing %q\nfull: %s", want, where)
@@ -42,14 +42,14 @@ func TestBuildOpsErrorLogsWhere_ModelFuzzy(t *testing.T) {
 	// 默认（ModelFuzzy=false）保持精确匹配
 	exact := &service.OpsErrorLogFilter{Model: "claude"}
 	whereExact, _ := buildOpsErrorLogsWhere(exact)
-	if !strings.Contains(whereExact, "COALESCE(e.requested_model, e.model, '') = $") {
+	if !strings.Contains(whereExact, "COALESCE(e.requested_model, e.model, '') = ?") {
 		t.Fatalf("default should be exact match, got: %s", whereExact)
 	}
 
-	// ModelFuzzy=true → ILIKE
+	// ModelFuzzy=true → case-insensitive LIKE
 	fuzzy := &service.OpsErrorLogFilter{Model: "claude", ModelFuzzy: true}
 	whereFuzzy, args := buildOpsErrorLogsWhere(fuzzy)
-	if !strings.Contains(whereFuzzy, "COALESCE(e.requested_model, e.model, '') ILIKE $") {
+	if !strings.Contains(whereFuzzy, "LOWER(COALESCE(e.requested_model, e.model, '')) LIKE LOWER(?)") {
 		t.Fatalf("ModelFuzzy should use ILIKE, got: %s", whereFuzzy)
 	}
 	if len(args) != 1 || args[0] != "%claude%" {
@@ -98,17 +98,17 @@ func TestBuildOpsErrorLogsWhere_MatchDeletedKeyOwner(t *testing.T) {
 	// 开关开启 → 归属放宽为 OR(user_id 或 deleted_key_owner_user_id),且共用同一占位符
 	on := &service.OpsErrorLogFilter{UserID: &uid, MatchDeletedKeyOwner: true}
 	whereOn, argsOn := buildOpsErrorLogsWhere(on)
-	if !strings.Contains(whereOn, "(e.user_id = $1 OR e.deleted_key_owner_user_id = $1)") {
+	if !strings.Contains(whereOn, "(e.user_id = ? OR e.deleted_key_owner_user_id = ?)") {
 		t.Fatalf("MatchDeletedKeyOwner=true should widen to OR, got: %s", whereOn)
 	}
-	if len(argsOn) != 1 || argsOn[0] != uid {
-		t.Fatalf("expected single reused arg %d, got %v", uid, argsOn)
+	if len(argsOn) != 2 || argsOn[0] != uid || argsOn[1] != uid {
+		t.Fatalf("expected duplicated positional args %d, got %v", uid, argsOn)
 	}
 
 	// 开关关闭(默认)→ 仅精确 user_id,绝不出现 deleted_key_owner_user_id(admin 回归)
 	off := &service.OpsErrorLogFilter{UserID: &uid}
 	whereOff, _ := buildOpsErrorLogsWhere(off)
-	if !strings.Contains(whereOff, "e.user_id = $1") {
+	if !strings.Contains(whereOff, "e.user_id = ?") {
 		t.Fatalf("default should match user_id exactly, got: %s", whereOff)
 	}
 	if strings.Contains(whereOff, "deleted_key_owner_user_id") {

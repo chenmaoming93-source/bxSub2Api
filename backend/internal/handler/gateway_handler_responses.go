@@ -212,7 +212,26 @@ func (h *GatewayHandler) Responses(c *gin.Context) {
 		if channelMapping.Mapped {
 			forwardBody = h.gatewayService.ReplaceModelInBody(body, channelMapping.MappedModel)
 		}
+		forwardModel := reqModel
+		if channelMapping.Mapped {
+			forwardModel = channelMapping.MappedModel
+		}
+		forwardStart := time.Now()
+		logModelForwardStarted(reqLog, "gateway.responses.forward_started", account, reqModel, forwardModel, reqStream, fs.SwitchCount, len(forwardBody))
 		result, err := h.gatewayService.ForwardAsResponses(requestCtx, c, account, forwardBody, parsedReq)
+		forwardFinishedFields := []zap.Field{}
+		if result != nil {
+			forwardFinishedFields = append(forwardFinishedFields,
+				zap.String("upstream_request_id", result.RequestID),
+				zap.String("result_model", result.Model),
+				zap.String("result_upstream_model", result.UpstreamModel),
+				zap.Bool("client_disconnect", result.ClientDisconnect),
+			)
+			if result.FirstTokenMs != nil {
+				forwardFinishedFields = append(forwardFinishedFields, zap.Int("first_token_ms", *result.FirstTokenMs))
+			}
+		}
+		logModelForwardFinished(reqLog, "gateway.responses.forward_finished", c, forwardStart, account, reqModel, forwardModel, reqStream, fs.SwitchCount, writerSizeBeforeForward, err, forwardFinishedFields...)
 
 		if accountReleaseFunc != nil {
 			accountReleaseFunc()

@@ -636,5 +636,9 @@ func (s *stubAdminService) RevertAccountProxyFallback(ctx context.Context, id in
 	return nil
 }
 
+func (s *stubAdminService) BatchApplyModelTokenQuotasToAllUsers(context.Context, []service.BatchModelTokenQuotaOperation) (*service.BatchModelTokenQuotaResult, error) {
+	return &service.BatchModelTokenQuotaResult{}, nil
+}
+
 // Ensure stub implements interface.
 var _ service.AdminService = (*stubAdminService)(nil)

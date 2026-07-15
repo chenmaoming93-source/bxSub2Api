@@ -56,3 +56,19 @@ func TestUserModelTokenQuotaAdminRouteRequiresAdmin(t *testing.T) {
 
 	require.Equal(t, http.StatusUnauthorized, w.Code)
 }
+
+func TestTokenUsageReportAdminRouteRequiresAdmin(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	v1 := router.Group("/api/v1")
+	handlers := &handler.Handlers{Admin: &handler.AdminHandlers{
+		ModelTokenQuota:     adminhandler.NewModelTokenQuotaHandler(nil),
+		UserModelTokenQuota: adminhandler.NewUserModelTokenQuotaHandler(nil, nil),
+		TokenUsageReport:    adminhandler.NewTokenUsageReportHandler(nil),
+	}}
+	adminAuth := middleware.AdminAuthMiddleware(func(c *gin.Context) { c.AbortWithStatus(http.StatusUnauthorized) })
+	routes.RegisterAdminRoutes(v1, handlers, adminAuth, nil)
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/admin/token-usage/models?model=gpt", nil))
+	require.Equal(t, http.StatusUnauthorized, w.Code)
+}

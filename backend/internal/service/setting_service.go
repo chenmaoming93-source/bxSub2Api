@@ -191,6 +191,7 @@ type WebSearchManagerBuilder func(cfg *WebSearchEmulationConfig, proxyURLs map[i
 type SettingService struct {
 	settingRepo                 SettingRepository
 	defaultSubGroupReader       DefaultSubscriptionGroupReader
+	defaultGroupLookup          DefaultGroupNameLookup
 	proxyRepo                   ProxyRepository // for resolving websearch provider proxy URLs
 	cfg                         *config.Config
 	onUpdate                    func() // Callback when settings are updated (for cache invalidation)
@@ -667,6 +668,10 @@ func NewSettingService(settingRepo SettingRepository, cfg *config.Config) *Setti
 // SetDefaultSubscriptionGroupReader injects an optional group reader for default subscription validation.
 func (s *SettingService) SetDefaultSubscriptionGroupReader(reader DefaultSubscriptionGroupReader) {
 	s.defaultSubGroupReader = reader
+}
+
+func (s *SettingService) SetDefaultGroupNameLookup(lookup DefaultGroupNameLookup) {
+	s.defaultGroupLookup = lookup
 }
 
 // SetProxyRepository injects a proxy repo for resolving websearch provider proxy URLs.
@@ -2616,6 +2621,27 @@ func (s *SettingService) GetSiteName(ctx context.Context) string {
 		return "Sub2API"
 	}
 	return value
+}
+
+// GetDefaultGroupName 返回清理后的默认分组名；未配置或读取不到时返回空字符串。
+func (s *SettingService) GetDefaultGroupName(ctx context.Context) string {
+	value, err := s.settingRepo.GetValue(ctx, SettingKeyDefaultGroupName)
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(value)
+}
+
+// SetDefaultGroupName 保存清理后的默认分组名；空字符串表示取消配置。
+func (s *SettingService) SetDefaultGroupName(ctx context.Context, name string) error {
+	return s.settingRepo.Set(ctx, SettingKeyDefaultGroupName, strings.TrimSpace(name))
+}
+
+func (s *SettingService) ResolveDefaultGroup(ctx context.Context) (DefaultGroupResult, error) {
+	if s.defaultGroupLookup == nil {
+		return DefaultGroupResult{}, errors.New("default group lookup is not configured")
+	}
+	return NewDefaultGroupResolver(s, s.defaultGroupLookup).Resolve(ctx)
 }
 
 // GetDefaultConcurrency 获取默认并发量

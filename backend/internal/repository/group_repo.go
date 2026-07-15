@@ -134,6 +134,17 @@ func (r *groupRepository) GetByIDLite(ctx context.Context, id int64) (*service.G
 	return &groups[0], nil
 }
 
+// GetByNameExact 按清理后的名称精确查询未软删除分组。
+func (r *groupRepository) GetByNameExact(ctx context.Context, name string) (*service.Group, error) {
+	m, err := r.client.Group.Query().
+		Where(group.NameEQ(strings.TrimSpace(name)), group.DeletedAtIsNil()).
+		Only(ctx)
+	if err != nil {
+		return nil, translatePersistenceError(err, service.ErrGroupNotFound, nil)
+	}
+	return groupEntityToService(m), nil
+}
+
 func (r *groupRepository) Update(ctx context.Context, groupIn *service.Group) error {
 	routing, err := modelRoutingRaw(groupIn.ModelRouting)
 	if err != nil {

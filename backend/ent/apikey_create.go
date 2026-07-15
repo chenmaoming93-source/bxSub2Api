@@ -85,6 +85,34 @@ func (_c *APIKeyCreate) SetName(v string) *APIKeyCreate {
 	return _c
 }
 
+// SetPlatform sets the "platform" field.
+func (_c *APIKeyCreate) SetPlatform(v string) *APIKeyCreate {
+	_c.mutation.SetPlatform(v)
+	return _c
+}
+
+// SetNillablePlatform sets the "platform" field if the given value is not nil.
+func (_c *APIKeyCreate) SetNillablePlatform(v *string) *APIKeyCreate {
+	if v != nil {
+		_c.SetPlatform(*v)
+	}
+	return _c
+}
+
+// SetPurpose sets the "purpose" field.
+func (_c *APIKeyCreate) SetPurpose(v string) *APIKeyCreate {
+	_c.mutation.SetPurpose(v)
+	return _c
+}
+
+// SetNillablePurpose sets the "purpose" field if the given value is not nil.
+func (_c *APIKeyCreate) SetNillablePurpose(v *string) *APIKeyCreate {
+	if v != nil {
+		_c.SetPurpose(*v)
+	}
+	return _c
+}
+
 // SetGroupID sets the "group_id" field.
 func (_c *APIKeyCreate) SetGroupID(v int64) *APIKeyCreate {
 	_c.mutation.SetGroupID(v)
@@ -383,6 +411,10 @@ func (_c *APIKeyCreate) defaults() error {
 		v := apikey.DefaultUpdatedAt()
 		_c.mutation.SetUpdatedAt(v)
 	}
+	if _, ok := _c.mutation.Purpose(); !ok {
+		v := apikey.DefaultPurpose
+		_c.mutation.SetPurpose(v)
+	}
 	if _, ok := _c.mutation.Status(); !ok {
 		v := apikey.DefaultStatus
 		_c.mutation.SetStatus(v)
@@ -447,6 +479,19 @@ func (_c *APIKeyCreate) check() error {
 	if v, ok := _c.mutation.Name(); ok {
 		if err := apikey.NameValidator(v); err != nil {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "APIKey.name": %w`, err)}
+		}
+	}
+	if v, ok := _c.mutation.Platform(); ok {
+		if err := apikey.PlatformValidator(v); err != nil {
+			return &ValidationError{Name: "platform", err: fmt.Errorf(`ent: validator failed for field "APIKey.platform": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.Purpose(); !ok {
+		return &ValidationError{Name: "purpose", err: errors.New(`ent: missing required field "APIKey.purpose"`)}
+	}
+	if v, ok := _c.mutation.Purpose(); ok {
+		if err := apikey.PurposeValidator(v); err != nil {
+			return &ValidationError{Name: "purpose", err: fmt.Errorf(`ent: validator failed for field "APIKey.purpose": %w`, err)}
 		}
 	}
 	if _, ok := _c.mutation.Status(); !ok {
@@ -530,6 +575,14 @@ func (_c *APIKeyCreate) createSpec() (*APIKey, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.Name(); ok {
 		_spec.SetField(apikey.FieldName, field.TypeString, value)
 		_node.Name = value
+	}
+	if value, ok := _c.mutation.Platform(); ok {
+		_spec.SetField(apikey.FieldPlatform, field.TypeString, value)
+		_node.Platform = &value
+	}
+	if value, ok := _c.mutation.Purpose(); ok {
+		_spec.SetField(apikey.FieldPurpose, field.TypeString, value)
+		_node.Purpose = value
 	}
 	if value, ok := _c.mutation.Status(); ok {
 		_spec.SetField(apikey.FieldStatus, field.TypeString, value)
@@ -760,6 +813,36 @@ func (u *APIKeyUpsert) SetName(v string) *APIKeyUpsert {
 // UpdateName sets the "name" field to the value that was provided on create.
 func (u *APIKeyUpsert) UpdateName() *APIKeyUpsert {
 	u.SetExcluded(apikey.FieldName)
+	return u
+}
+
+// SetPlatform sets the "platform" field.
+func (u *APIKeyUpsert) SetPlatform(v string) *APIKeyUpsert {
+	u.Set(apikey.FieldPlatform, v)
+	return u
+}
+
+// UpdatePlatform sets the "platform" field to the value that was provided on create.
+func (u *APIKeyUpsert) UpdatePlatform() *APIKeyUpsert {
+	u.SetExcluded(apikey.FieldPlatform)
+	return u
+}
+
+// ClearPlatform clears the value of the "platform" field.
+func (u *APIKeyUpsert) ClearPlatform() *APIKeyUpsert {
+	u.SetNull(apikey.FieldPlatform)
+	return u
+}
+
+// SetPurpose sets the "purpose" field.
+func (u *APIKeyUpsert) SetPurpose(v string) *APIKeyUpsert {
+	u.Set(apikey.FieldPurpose, v)
+	return u
+}
+
+// UpdatePurpose sets the "purpose" field to the value that was provided on create.
+func (u *APIKeyUpsert) UpdatePurpose() *APIKeyUpsert {
+	u.SetExcluded(apikey.FieldPurpose)
 	return u
 }
 
@@ -1182,6 +1265,41 @@ func (u *APIKeyUpsertOne) SetName(v string) *APIKeyUpsertOne {
 func (u *APIKeyUpsertOne) UpdateName() *APIKeyUpsertOne {
 	return u.Update(func(s *APIKeyUpsert) {
 		s.UpdateName()
+	})
+}
+
+// SetPlatform sets the "platform" field.
+func (u *APIKeyUpsertOne) SetPlatform(v string) *APIKeyUpsertOne {
+	return u.Update(func(s *APIKeyUpsert) {
+		s.SetPlatform(v)
+	})
+}
+
+// UpdatePlatform sets the "platform" field to the value that was provided on create.
+func (u *APIKeyUpsertOne) UpdatePlatform() *APIKeyUpsertOne {
+	return u.Update(func(s *APIKeyUpsert) {
+		s.UpdatePlatform()
+	})
+}
+
+// ClearPlatform clears the value of the "platform" field.
+func (u *APIKeyUpsertOne) ClearPlatform() *APIKeyUpsertOne {
+	return u.Update(func(s *APIKeyUpsert) {
+		s.ClearPlatform()
+	})
+}
+
+// SetPurpose sets the "purpose" field.
+func (u *APIKeyUpsertOne) SetPurpose(v string) *APIKeyUpsertOne {
+	return u.Update(func(s *APIKeyUpsert) {
+		s.SetPurpose(v)
+	})
+}
+
+// UpdatePurpose sets the "purpose" field to the value that was provided on create.
+func (u *APIKeyUpsertOne) UpdatePurpose() *APIKeyUpsertOne {
+	return u.Update(func(s *APIKeyUpsert) {
+		s.UpdatePurpose()
 	})
 }
 
@@ -1820,6 +1938,41 @@ func (u *APIKeyUpsertBulk) SetName(v string) *APIKeyUpsertBulk {
 func (u *APIKeyUpsertBulk) UpdateName() *APIKeyUpsertBulk {
 	return u.Update(func(s *APIKeyUpsert) {
 		s.UpdateName()
+	})
+}
+
+// SetPlatform sets the "platform" field.
+func (u *APIKeyUpsertBulk) SetPlatform(v string) *APIKeyUpsertBulk {
+	return u.Update(func(s *APIKeyUpsert) {
+		s.SetPlatform(v)
+	})
+}
+
+// UpdatePlatform sets the "platform" field to the value that was provided on create.
+func (u *APIKeyUpsertBulk) UpdatePlatform() *APIKeyUpsertBulk {
+	return u.Update(func(s *APIKeyUpsert) {
+		s.UpdatePlatform()
+	})
+}
+
+// ClearPlatform clears the value of the "platform" field.
+func (u *APIKeyUpsertBulk) ClearPlatform() *APIKeyUpsertBulk {
+	return u.Update(func(s *APIKeyUpsert) {
+		s.ClearPlatform()
+	})
+}
+
+// SetPurpose sets the "purpose" field.
+func (u *APIKeyUpsertBulk) SetPurpose(v string) *APIKeyUpsertBulk {
+	return u.Update(func(s *APIKeyUpsert) {
+		s.SetPurpose(v)
+	})
+}
+
+// UpdatePurpose sets the "purpose" field to the value that was provided on create.
+func (u *APIKeyUpsertBulk) UpdatePurpose() *APIKeyUpsertBulk {
+	return u.Update(func(s *APIKeyUpsert) {
+		s.UpdatePurpose()
 	})
 }
 

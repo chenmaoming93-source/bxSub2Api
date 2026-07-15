@@ -473,6 +473,9 @@ func ProvideOpsService(
 func ProvideSettingService(settingRepo SettingRepository, groupRepo GroupRepository, proxyRepo ProxyRepository, cfg *config.Config) *SettingService {
 	svc := NewSettingService(settingRepo, cfg)
 	svc.SetDefaultSubscriptionGroupReader(groupRepo)
+	if lookup, ok := groupRepo.(DefaultGroupNameLookup); ok {
+		svc.SetDefaultGroupNameLookup(lookup)
+	}
 	svc.SetProxyRepository(proxyRepo)
 	if err := svc.LoadAPIKeyACLTrustForwardedIPSetting(context.Background()); err != nil {
 		logger.LegacyPrintf("service.setting", "Warning: load api key acl forwarded ip setting failed: %v", err)
@@ -505,16 +508,49 @@ func ProvideAPIKeyService(
 	cache APIKeyCache,
 	cfg *config.Config,
 	billingCacheService *BillingCacheService,
+	settingService *SettingService,
 ) *APIKeyService {
 	svc := NewAPIKeyService(apiKeyRepo, userRepo, groupRepo, userSubRepo, userGroupRateRepo, cache, cfg)
 	svc.SetRateLimitCacheInvalidator(billingCacheService)
+	svc.SetDefaultGroupResolver(settingService)
+	return svc
+}
+
+func ProvideAuthService(
+	entClient *dbent.Client, userRepo UserRepository, redeemRepo RedeemCodeRepository,
+	refreshTokenCache RefreshTokenCache, cfg *config.Config, settingService *SettingService,
+	emailService *EmailService, turnstileService *TurnstileService, emailQueueService *EmailQueueService,
+	promoService *PromoService, defaultSubAssigner DefaultSubscriptionAssigner,
+	affiliateService *AffiliateService, userPlatformQuotaRepo UserPlatformQuotaRepository,
+	apiKeyService *APIKeyService,
+) *AuthService {
+	svc := NewAuthService(entClient, userRepo, redeemRepo, refreshTokenCache, cfg, settingService, emailService, turnstileService, emailQueueService, promoService, defaultSubAssigner, affiliateService, userPlatformQuotaRepo)
+	svc.SetUserProvisioningService(NewEntUserProvisioningService(entClient, userRepo, apiKeyService))
+	return svc
+}
+
+func ProvideAdminService(
+	userRepo UserRepository, groupRepo GroupRepository, accountRepo AccountRepository,
+	proxyRepo ProxyRepository, apiKeyRepo APIKeyRepository, redeemCodeRepo RedeemCodeRepository,
+	userGroupRateRepo UserGroupRateRepository, userRPMCache UserRPMCache,
+	billingCacheService *BillingCacheService, proxyProber ProxyExitInfoProber,
+	proxyLatencyCache ProxyLatencyCache, authCacheInvalidator APIKeyAuthCacheInvalidator,
+	entClient *dbent.Client, settingService *SettingService, defaultSubAssigner DefaultSubscriptionAssigner,
+	userSubRepo UserSubscriptionRepository, privacyClientFactory PrivacyClientFactory,
+	runtimeBlocker AccountRuntimeBlocker, tokenQuotaAdminRepo UserModelTokenQuotaAdminRepository,
+	apiKeyService *APIKeyService,
+) AdminService {
+	svc := NewAdminService(userRepo, groupRepo, accountRepo, proxyRepo, apiKeyRepo, redeemCodeRepo, userGroupRateRepo, userRPMCache, billingCacheService, proxyProber, proxyLatencyCache, authCacheInvalidator, entClient, settingService, defaultSubAssigner, userSubRepo, privacyClientFactory, runtimeBlocker, tokenQuotaAdminRepo)
+	if impl, ok := svc.(*adminServiceImpl); ok {
+		impl.SetUserProvisioningService(NewEntUserProvisioningService(entClient, userRepo, apiKeyService))
+	}
 	return svc
 }
 
 // ProviderSet is the Wire provider set for all services
 var ProviderSet = wire.NewSet(
 	// Core services
-	NewAuthService,
+	ProvideAuthService,
 	NewUserService,
 	ProvideAPIKeyService,
 	ProvideAPIKeyAuthCacheInvalidator,
@@ -529,7 +565,7 @@ var ProviderSet = wire.NewSet(
 	NewBillingService,
 	ProvideBillingCacheService,
 	NewAnnouncementService,
-	NewAdminService,
+	ProvideAdminService,
 	NewGatewayService,
 	NewOpenAIGatewayService,
 	wire.Bind(new(AccountRuntimeBlocker), new(*OpenAIGatewayService)),
@@ -601,6 +637,7 @@ var ProviderSet = wire.NewSet(
 	NewAffiliateService,
 	NewModelTokenQuotaAdminService,
 	NewUserModelTokenQuotaAdminService,
+	NewTokenUsageReportService,
 	ProvidePaymentConfigService,
 	ProvidePaymentService,
 	ProvidePaymentOrderExpiryService,

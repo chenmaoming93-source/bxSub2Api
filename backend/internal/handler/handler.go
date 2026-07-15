@@ -39,6 +39,7 @@ type AdminHandlers struct {
 	Compliance             *admin.ComplianceHandler
 	ModelTokenQuota        *admin.ModelTokenQuotaHandler
 	UserModelTokenQuota    *admin.UserModelTokenQuotaHandler
+	TokenUsageReport       *admin.TokenUsageReportHandler
 }
 
 // Handlers contains all HTTP handlers
@@ -59,6 +60,7 @@ type Handlers struct {
 	Payment          *PaymentHandler
 	PaymentWebhook   *PaymentWebhookHandler
 	AvailableChannel *AvailableChannelHandler
+	ExternalProvisioning *ExternalProvisioningHandler
 }
 
 // BuildInfo contains build-time information

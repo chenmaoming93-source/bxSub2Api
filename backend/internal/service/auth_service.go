@@ -75,6 +75,34 @@ type AuthService struct {
 	affiliateService      *AffiliateService
 	defaultSubAssigner    DefaultSubscriptionAssigner
 	userPlatformQuotaRepo UserPlatformQuotaRepository
+	userProvisioning      *UserProvisioningService
+}
+
+func (s *AuthService) SetUserProvisioningService(provisioning *UserProvisioningService) {
+	s.userProvisioning = provisioning
+}
+
+func (s *AuthService) provisionAuthUser(ctx context.Context, user *User) (*User, bool, error) {
+	if s.userProvisioning != nil {
+		result, err := s.userProvisioning.Provision(ctx, UserProvisioningInput{
+			Email: user.Email, Username: user.Username, PasswordHash: user.PasswordHash,
+			Notes: user.Notes, AllowedGroups: user.AllowedGroups, SignupSource: user.SignupSource,
+			Balance: user.Balance, Concurrency: user.Concurrency, RPMLimit: user.RPMLimit,
+			Role: user.Role, Status: user.Status,
+		})
+		if err != nil {
+			return nil, false, err
+		}
+		return result.User, result.Created, nil
+	}
+	if err := s.userRepo.Create(ctx, user); err != nil {
+		if errors.Is(err, ErrEmailExists) {
+			existing, loadErr := s.userRepo.GetByEmail(ctx, user.Email)
+			return existing, false, loadErr
+		}
+		return nil, false, err
+	}
+	return user, true, nil
 }
 
 type DefaultSubscriptionAssigner interface {
@@ -221,7 +249,17 @@ func (s *AuthService) RegisterWithVerification(ctx context.Context, email, passw
 		Status:       StatusActive,
 	}
 
-	if err := s.userRepo.Create(ctx, user); err != nil {
+	if s.userProvisioning != nil {
+		provisioned, provisionErr := s.userProvisioning.Provision(ctx, UserProvisioningInput{
+			Email: email, PasswordHash: hashedPassword, Role: RoleUser, Balance: grantPlan.Balance,
+			Concurrency: grantPlan.Concurrency, RPMLimit: defaultRPMLimit, Status: StatusActive, SignupSource: "email",
+		})
+		if provisionErr != nil {
+			logger.LegacyPrintf("service.auth", "[Auth] User provisioning failed: %v", provisionErr)
+			return "", nil, ErrServiceUnavailable
+		}
+		user = provisioned.User
+	} else if err := s.userRepo.Create(ctx, user); err != nil {
 		// 优先检查邮箱冲突错误（竞态条件下可能发生）
 		if errors.Is(err, ErrEmailExists) {
 			return "", nil, ErrEmailExists
@@ -523,15 +561,13 @@ func (s *AuthService) LoginLDAP(ctx context.Context, account, displayName string
 			// an authentication route rather than a new business grant source.
 			SignupSource: "email",
 		}
-		if createErr := s.userRepo.Create(ctx, user); createErr != nil {
-			// A concurrent first login may have created the same email already.
-			if existing, loadErr := s.userRepo.GetByEmail(ctx, account); loadErr == nil {
-				user = existing
-			} else {
-				logger.LegacyPrintf("service.auth", "[LDAP] failed to create local user: %v", createErr)
-				return "", nil, ErrServiceUnavailable
-			}
-		} else {
+		provisioned, created, provisionErr := s.provisionAuthUser(ctx, user)
+		if provisionErr != nil {
+			logger.LegacyPrintf("service.auth", "[LDAP] failed to create local user: %v", provisionErr)
+			return "", nil, ErrServiceUnavailable
+		}
+		user = provisioned
+		if created {
 			s.postAuthUserBootstrap(ctx, user, "email", false)
 			s.assignSubscriptions(ctx, user.ID, grantPlan.Subscriptions, "auto assigned by LDAP signup defaults")
 			_ = s.snapshotPlatformQuotaDefaults(ctx, user.ID, &grantPlan)
@@ -606,20 +642,12 @@ func (s *AuthService) LoginOrRegisterOAuth(ctx context.Context, email, username 
 				SignupSource: signupSource,
 			}
 
-			if err := s.userRepo.Create(ctx, newUser); err != nil {
-				if errors.Is(err, ErrEmailExists) {
-					// 并发场景：GetByEmail 与 Create 之间用户被创建。
-					user, err = s.userRepo.GetByEmail(ctx, email)
-					if err != nil {
-						logger.LegacyPrintf("service.auth", "[Auth] Database error getting user after conflict: %v", err)
-						return "", nil, ErrServiceUnavailable
-					}
-				} else {
-					logger.LegacyPrintf("service.auth", "[Auth] Database error creating oauth user: %v", err)
-					return "", nil, ErrServiceUnavailable
-				}
-			} else {
-				user = newUser
+			user, created, provisionErr := s.provisionAuthUser(ctx, newUser)
+			if provisionErr != nil {
+				logger.LegacyPrintf("service.auth", "[Auth] Database error creating oauth user: %v", provisionErr)
+				return "", nil, ErrServiceUnavailable
+			}
+			if created {
 				s.postAuthUserBootstrap(ctx, user, signupSource, false)
 				s.assignSubscriptions(ctx, user.ID, grantPlan.Subscriptions, "auto assigned by signup defaults")
 				// snapshot user × platform quota（fail-open）
@@ -765,18 +793,13 @@ func (s *AuthService) loginOrRegisterOAuthWithTokenPair(ctx context.Context, ema
 				defer func() { _ = tx.Rollback() }()
 				txCtx := dbent.NewTxContext(ctx, tx)
 
-				if err := s.userRepo.Create(txCtx, newUser); err != nil {
-					if errors.Is(err, ErrEmailExists) {
-						user, err = s.userRepo.GetByEmail(ctx, email)
-						if err != nil {
-							logger.LegacyPrintf("service.auth", "[Auth] Database error getting user after conflict: %v", err)
-							return nil, nil, ErrServiceUnavailable
-						}
-					} else {
-						logger.LegacyPrintf("service.auth", "[Auth] Database error creating oauth user: %v", err)
-						return nil, nil, ErrServiceUnavailable
-					}
-				} else {
+				provisioned, wasCreated, provisionErr := s.provisionAuthUser(txCtx, newUser)
+				if provisionErr != nil {
+					logger.LegacyPrintf("service.auth", "[Auth] Database error creating oauth user: %v", provisionErr)
+					return nil, nil, ErrServiceUnavailable
+				}
+				user = provisioned
+				if wasCreated {
 					if err := s.redeemRepo.Use(txCtx, invitationRedeemCode.ID, newUser.ID); err != nil {
 						return nil, nil, ErrInvitationCodeInvalid
 					}
@@ -784,7 +807,6 @@ func (s *AuthService) loginOrRegisterOAuthWithTokenPair(ctx context.Context, ema
 						logger.LegacyPrintf("service.auth", "[Auth] Failed to commit oauth registration transaction: %v", err)
 						return nil, nil, ErrServiceUnavailable
 					}
-					user = newUser
 					created = true
 					s.postAuthUserBootstrap(ctx, user, signupSource, false)
 					s.assignSubscriptions(ctx, user.ID, grantPlan.Subscriptions, "auto assigned by signup defaults")
@@ -794,19 +816,13 @@ func (s *AuthService) loginOrRegisterOAuthWithTokenPair(ctx context.Context, ema
 					s.bindOAuthAffiliate(ctx, user.ID, affiliateCode)
 				}
 			} else {
-				if err := s.userRepo.Create(ctx, newUser); err != nil {
-					if errors.Is(err, ErrEmailExists) {
-						user, err = s.userRepo.GetByEmail(ctx, email)
-						if err != nil {
-							logger.LegacyPrintf("service.auth", "[Auth] Database error getting user after conflict: %v", err)
-							return nil, nil, ErrServiceUnavailable
-						}
-					} else {
-						logger.LegacyPrintf("service.auth", "[Auth] Database error creating oauth user: %v", err)
-						return nil, nil, ErrServiceUnavailable
-					}
-				} else {
-					user = newUser
+				provisioned, wasCreated, provisionErr := s.provisionAuthUser(ctx, newUser)
+				if provisionErr != nil {
+					logger.LegacyPrintf("service.auth", "[Auth] Database error creating oauth user: %v", provisionErr)
+					return nil, nil, ErrServiceUnavailable
+				}
+				user = provisioned
+				if wasCreated {
 					created = true
 					s.postAuthUserBootstrap(ctx, user, signupSource, false)
 					s.assignSubscriptions(ctx, user.ID, grantPlan.Subscriptions, "auto assigned by signup defaults")

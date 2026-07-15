@@ -1,4 +1,4 @@
-package handler
+﻿package handler
 
 import (
 	"context"
@@ -47,7 +47,8 @@ func NewAuthHandler(cfg *config.Config, authService *service.AuthService, userSe
 		userAttributeService: userAttributeService,
 	}
 	if cfg != nil && cfg.LDAP.Enabled {
-		h.ldapAuthenticator = ldapauth.New(cfg.LDAP)
+		directory := ldapauth.NewDefaultLDAPDirectory(cfg.LDAP)
+		h.ldapAuthenticator = ldapauth.NewLDAPAuthenticator(directory)
 	}
 	return h
 }
@@ -253,7 +254,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	var user *service.User
 	var err error
 	if h.shouldUseLDAP(req.Email) {
-		identity, ldapErr := h.ldapAuthenticator.Authenticate(req.Email, req.Password)
+		identity, ldapErr := h.ldapAuthenticator.Authenticate(c.Request.Context(), req.Email, req.Password)
 		if ldapErr != nil {
 			slog.Warn("LDAP authentication failed", "account", strings.TrimSpace(req.Email), "error", ldapErr)
 			response.ErrorFrom(c, service.ErrInvalidCredentials)

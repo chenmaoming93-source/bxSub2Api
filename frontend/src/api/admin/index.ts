@@ -33,6 +33,7 @@ import affiliatesAPI from './affiliates'
 import riskControlAPI from './riskControl'
 import adminComplianceAPI from './compliance'
 import modelTokenQuotasAPI from './modelTokenQuotas'
+import tokenUsageAPI from './tokenUsage'
 
 /**
  * Unified admin API object for convenient access
@@ -67,7 +68,8 @@ export const adminAPI = {
   affiliates: affiliatesAPI,
   riskControl: riskControlAPI,
   compliance: adminComplianceAPI,
-  modelTokenQuotas: modelTokenQuotasAPI
+  modelTokenQuotas: modelTokenQuotasAPI,
+  tokenUsage: tokenUsageAPI
 }
 
 export {
@@ -100,7 +102,8 @@ export {
   affiliatesAPI,
   riskControlAPI,
   adminComplianceAPI,
-  modelTokenQuotasAPI
+  modelTokenQuotasAPI,
+  tokenUsageAPI
 }
 
 export default adminAPI
@@ -118,3 +121,14 @@ export type {
   ModelTokenQuotasResponse,
   UserModelTokenQuotasResponse
 } from './modelTokenQuotas'
+export type {
+  ModelTokenUsageItem,
+  RouteTokenUsageItem,
+  UserModelTokenUsageItem,
+  TokenUsageReport,
+  TokenUsageOption,
+  TokenUsageQueryParams,
+  ModelReportParams,
+  RouteReportParams,
+  UserReportParams
+} from './tokenUsage'

@@ -114,4 +114,23 @@ func registerRoutes(
 	routes.RegisterPaymentRoutes(v1, h.Payment, h.PaymentWebhook, h.Admin.Payment, jwtAuth, adminAuth, settingService)
 
 	handler.RegisterPageRoutes(v1, cfg.Pricing.DataDir, gin.HandlerFunc(jwtAuth), gin.HandlerFunc(adminAuth), settingService)
+
+	// 外部供应接口
+	pc := cfg.ExternalAPIKeyProvisioning
+	bizLimit := pc.RateLimitBizPerMinute
+	authLimit := pc.RateLimitAuthPerMinute
+	var provLimiter *middleware2.ProvisioningRateLimiter
+	if bizLimit != -1 || authLimit != -1 {
+		if bizLimit <= 0 {
+			bizLimit = 60
+		}
+		if authLimit <= 0 {
+			authLimit = 10
+		}
+		provLimiter = middleware2.NewProvisioningRateLimiter(time.Minute, time.Minute, authLimit, bizLimit)
+		provLimiter.StartCleanup(5 * time.Minute)
+	}
+	provHardening := middleware2.NewProvisioningHardening(provLimiter, nil)
+	provAuth := middleware2.ExternalProvisioningAuth(pc)
+	routes.RegisterIntegrationRoutes(v1, h.ExternalProvisioning, provAuth, provHardening.Middleware())
 }

@@ -154,3 +154,37 @@ func TestAPIKeyRepository_CreateDuplicateKey(t *testing.T) {
 	err := repo.Create(ctx, second)
 	require.ErrorIs(t, err, service.ErrAPIKeyExists)
 }
+
+func TestAPIKeyRepository_ActivePlatformAndDefaultUniqueness(t *testing.T) {
+	repo, client := newAPIKeyRepoSQLite(t)
+	ctx := context.Background()
+	user := mustCreateAPIKeyRepoUser(t, ctx, client, "platform-default-unique@test.com")
+	platform := "cursor"
+
+	create := func(rawKey, purpose string, keyPlatform *string) *service.APIKey {
+		key := &service.APIKey{
+			UserID: user.ID, Key: rawKey, Name: rawKey,
+			Status: service.StatusActive, Purpose: purpose, Platform: keyPlatform,
+		}
+		require.NoError(t, repo.Create(ctx, key))
+		return key
+	}
+
+	platformKey := create("sk-platform-first", "platform", &platform)
+	err := repo.Create(ctx, &service.APIKey{
+		UserID: user.ID, Key: "sk-platform-duplicate", Name: "duplicate",
+		Status: service.StatusActive, Purpose: "platform", Platform: &platform,
+	})
+	require.ErrorIs(t, err, service.ErrAPIKeyExists)
+	require.NoError(t, repo.Delete(ctx, platformKey.ID))
+	create("sk-platform-replacement", "platform", &platform)
+
+	defaultKey := create("sk-default-first", "default", nil)
+	err = repo.Create(ctx, &service.APIKey{
+		UserID: user.ID, Key: "sk-default-duplicate", Name: "duplicate",
+		Status: service.StatusActive, Purpose: "default",
+	})
+	require.ErrorIs(t, err, service.ErrAPIKeyExists)
+	require.NoError(t, repo.Delete(ctx, defaultKey.ID))
+	create("sk-default-replacement", "default", nil)
+}
