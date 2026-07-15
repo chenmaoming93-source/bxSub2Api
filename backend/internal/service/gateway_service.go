@@ -666,6 +666,13 @@ type GatewayService struct {
 	balanceNotifyService  *BalanceNotifyService
 	userPlatformQuotaRepo UserPlatformQuotaRepository
 	dailyTokenQuotaRepo   DailyTokenQuotaRepository
+	tokenStatsAccumulator TokenStatisticsAccumulator
+}
+
+func (s *GatewayService) SetTokenStatisticsAccumulator(accumulator TokenStatisticsAccumulator) {
+	if s != nil {
+		s.tokenStatsAccumulator = accumulator
+	}
 }
 
 // NewGatewayService creates a new GatewayService
@@ -698,6 +705,7 @@ func NewGatewayService(
 	balanceNotifyService *BalanceNotifyService,
 	userPlatformQuotaRepo UserPlatformQuotaRepository,
 	dailyTokenQuotaRepo DailyTokenQuotaRepository,
+	tokenStatsAccumulator TokenStatisticsAccumulator,
 ) *GatewayService {
 	userGroupRateTTL := resolveUserGroupRateCacheTTL(cfg)
 	modelsListTTL := resolveModelsListCacheTTL(cfg)
@@ -735,6 +743,7 @@ func NewGatewayService(
 		balanceNotifyService:  balanceNotifyService,
 		userPlatformQuotaRepo: userPlatformQuotaRepo,
 		dailyTokenQuotaRepo:   dailyTokenQuotaRepo,
+		tokenStatsAccumulator: tokenStatsAccumulator,
 	}
 	svc.userGroupRateResolver = newUserGroupRateResolver(
 		userGroupRateRepo,
@@ -9746,23 +9755,15 @@ func (s *GatewayService) recordUsageCore(ctx context.Context, input *recordUsage
 	}
 	imageMultiplier := resolveImageRateMultiplier(apiKey, multiplier)
 
-	// 确定计费模型
-	billingModel := forwardResultBillingModel(result.Model, result.UpstreamModel)
-	if input.BillingModelSource == BillingModelSourceChannelMapped && input.ChannelMappedModel != "" {
-		billingModel = input.ChannelMappedModel
-	}
-	if input.BillingModelSource == BillingModelSourceRequested && input.OriginalModel != "" {
-		billingModel = input.OriginalModel
-	}
-
 	// 确定 RequestedModel（渠道映射前的原始模型）
 	requestedModel := result.Model
 	if input.OriginalModel != "" {
 		requestedModel = input.OriginalModel
 	}
 
-	// 计算费用
-	cost := s.calculateRecordUsageCost(ctx, result, apiKey, billingModel, multiplier, imageMultiplier, opts)
+	// Monetary pricing is disabled for token-statistics-only operation. Keep
+	// calculateRecordUsageCost and the underlying pricing implementation intact.
+	cost := &CostBreakdown{}
 
 	// 判断计费方式：订阅模式 vs 余额模式
 	isSubscriptionBilling := subscription != nil && apiKey.Group != nil && apiKey.Group.IsSubscriptionType()
@@ -9776,77 +9777,19 @@ func (s *GatewayService) recordUsageCore(ctx context.Context, input *recordUsage
 	usageLog := s.buildRecordUsageLog(ctx, input, result, apiKey, user, account, subscription,
 		requestedModel, multiplier, imageMultiplier, accountRateMultiplier, billingType, cacheTTLOverridden, cost, opts)
 
-	// 计算账号统计定价费用（使用最终上游模型匹配自定义规则）
-	if apiKey.GroupID != nil {
-		applyAccountStatsCost(ctx, usageLog, s.channelService, s.billingService,
-			account.ID, *apiKey.GroupID, result.UpstreamModel, result.Model,
-			// Anthropic's input_tokens excludes cache_read and cache_creation (billed separately);
-			// OpenAI gateway uses actualInputTokens which also excludes cache_read for the same reason.
-			UsageTokens{
-				InputTokens:         result.Usage.InputTokens,
-				OutputTokens:        result.Usage.OutputTokens,
-				CacheCreationTokens: result.Usage.CacheCreationInputTokens,
-				CacheReadTokens:     result.Usage.CacheReadInputTokens,
-				ImageOutputTokens:   result.Usage.ImageOutputTokens,
-			},
-			cost.TotalCost,
-		)
-	}
-
-	if s.cfg != nil && s.cfg.RunMode == config.RunModeSimple {
-		if s.dailyTokenQuotaRepo != nil {
-			inserted, err := createUsageLogForTokenQuota(ctx, s.usageLogRepo, usageLog)
-			if err != nil {
-				logger.LegacyPrintf("service.gateway", "Create usage log failed; token quota not incremented: %v", err)
-				return nil
-			}
-			if inserted {
-				if err := incrementDailyTokenQuotasForUsage(ctx, s.dailyTokenQuotaRepo, usageLog, apiKey); err != nil {
-					logger.LegacyPrintf("service.gateway", "Token quota accounting failed without retry: %v", err)
-					return err
-				}
-			}
-			s.deferredService.ScheduleLastUsedUpdate(account.ID)
-			return nil
-		}
-		writeUsageLogBestEffort(ctx, s.usageLogRepo, usageLog, "service.gateway")
-		logger.LegacyPrintf("service.gateway", "[SIMPLE MODE] Usage recorded (not billed): user=%d, tokens=%d", usageLog.UserID, usageLog.TotalTokens())
-		s.deferredService.ScheduleLastUsedUpdate(account.ID)
+	inserted, err := createUsageLogForTokenQuota(ctx, s.usageLogRepo, usageLog)
+	if err != nil {
+		logger.LegacyPrintf("service.gateway", "Create usage log failed; token statistics not accumulated: %v", err)
 		return nil
 	}
-
-	// 配额平台由 handler 在请求 ctx 内经 QuotaPlatform() 算定并通过 input 传入；
-	// 后扣运行在 worker 池的 background ctx 上，无法再从 ctx 取 ForcePlatform。
-	// 缺省（未设置）时回退到分组平台，保持对其它调用方的兼容。
-	quotaPlatform := input.QuotaPlatform
-	if quotaPlatform == "" {
-		quotaPlatform = PlatformFromAPIKey(apiKey)
-	}
-	requestID := usageLog.RequestID
-	billingApplied, billingErr := applyUsageBilling(ctx, requestID, usageLog, &postUsageBillingParams{
-		Cost:                  cost,
-		User:                  user,
-		APIKey:                apiKey,
-		Account:               account,
-		Subscription:          subscription,
-		RequestPayloadHash:    resolveUsageBillingPayloadFingerprint(ctx, input.RequestPayloadHash),
-		IsSubscriptionBill:    isSubscriptionBilling,
-		AccountRateMultiplier: accountRateMultiplier,
-		APIKeyService:         input.APIKeyService,
-		Platform:              quotaPlatform,
-	}, s.billingDeps(), s.usageBillingRepo)
-
-	if billingErr != nil {
-		return billingErr
-	}
-	writeUsageLogBestEffort(ctx, s.usageLogRepo, usageLog, "service.gateway")
-	if billingApplied {
-		if err := incrementDailyTokenQuotasForUsage(ctx, s.dailyTokenQuotaRepo, usageLog, apiKey); err != nil {
-			logger.LegacyPrintf("service.gateway", "Token quota accounting failed without retry: %v", err)
+	if inserted {
+		if err := accumulateTokenStatisticsForUsage(ctx, s.tokenStatsAccumulator, usageLog, apiKey); err != nil {
 			return err
 		}
 	}
-
+	if s.deferredService != nil {
+		s.deferredService.ScheduleLastUsedUpdate(account.ID)
+	}
 	return nil
 }
 

@@ -2,6 +2,7 @@ package admin
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -15,6 +16,45 @@ type handlerModelReportRepo struct{}
 
 func (handlerModelReportRepo) ListModelTokenUsage(context.Context, service.TokenUsageReportQuery) ([]service.ModelTokenUsageRow, int64, int64, error) {
 	return []service.ModelTokenUsageRow{}, 0, 0, nil
+}
+
+func TestTokenUsageReportAPIContractShapes(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	h := NewTokenUsageReportHandler(service.NewTokenUsageReportService(handlerModelReportRepo{}))
+	r := gin.New()
+	r.GET("/models", h.GetModels)
+	r.GET("/routes", h.GetRoutes)
+	r.GET("/users", h.GetUsers)
+	for _, path := range []string{"/models?start_date=2026-07-01&end_date=2026-07-01", "/routes?start_date=2026-07-01&end_date=2026-07-01", "/users?start_date=2026-07-01&end_date=2026-07-01"} {
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, path, nil))
+		if w.Code != 200 {
+			t.Fatalf("%s: %d %s", path, w.Code, w.Body.String())
+		}
+		var envelope map[string]any
+		if err := json.Unmarshal(w.Body.Bytes(), &envelope); err != nil {
+			t.Fatal(err)
+		}
+		data, ok := envelope["data"].(map[string]any)
+		if !ok {
+			t.Fatalf("%s data=%T", path, envelope["data"])
+		}
+		for _, key := range []string{"items", "summary", "pagination"} {
+			if _, ok := data[key]; !ok {
+				t.Fatalf("%s missing %s: %v", path, key, data)
+			}
+		}
+		summary := data["summary"].(map[string]any)
+		if _, ok := summary["used_tokens"]; !ok {
+			t.Fatalf("%s summary=%v", path, summary)
+		}
+		pagination := data["pagination"].(map[string]any)
+		for _, key := range []string{"page", "page_size", "total"} {
+			if _, ok := pagination[key]; !ok {
+				t.Fatalf("%s pagination missing %s", path, key)
+			}
+		}
+	}
 }
 
 func TestTokenUsageReportHandlerRouteAndUserValidation(t *testing.T) {

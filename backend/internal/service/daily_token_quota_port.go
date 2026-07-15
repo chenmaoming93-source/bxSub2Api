@@ -45,6 +45,33 @@ type DailyTokenQuotaRepository interface {
 	IncrementDailyTokenQuotas(context.Context, DailyTokenQuotaIncrement) error
 }
 
+type DailyTokenUsageAbsoluteRepository interface {
+	UpsertModelDailyTokenUsageAbsolute(context.Context, []ModelDailyTokenUsageAbsolute) error
+	UpsertUserModelDailyTokenUsageAbsolute(context.Context, []UserModelDailyTokenUsageAbsolute) error
+	UpsertGroupCandidateDailyTokenUsageAbsolute(context.Context, []GroupCandidateDailyTokenUsageAbsolute) error
+}
+
+type ModelDailyTokenUsageAbsolute struct {
+	Model      string
+	UsageDate  time.Time
+	UsedTokens int64
+}
+
+type UserModelDailyTokenUsageAbsolute struct {
+	UserID     int64
+	Model      string
+	UsageDate  time.Time
+	UsedTokens int64
+}
+
+type GroupCandidateDailyTokenUsageAbsolute struct {
+	GroupID       int64
+	RouteAlias    string
+	UpstreamModel string
+	UsageDate     time.Time
+	UsedTokens    int64
+}
+
 type DailyTokenQuotaIncrement struct {
 	ModelKey          ModelDailyTokenQuotaKey
 	UserModelKey      UserModelDailyTokenQuotaKey

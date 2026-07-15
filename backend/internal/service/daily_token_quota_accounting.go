@@ -59,6 +59,42 @@ func incrementDailyTokenQuotasForUsage(ctx context.Context, repo DailyTokenQuota
 	return nil
 }
 
+func accumulateTokenStatisticsForUsage(ctx context.Context, accumulator TokenStatisticsAccumulator, usageLog *UsageLog, apiKey *APIKey) error {
+	if accumulator == nil || usageLog == nil || usageLog.TotalTokens() <= 0 {
+		return nil
+	}
+	groupID := int64(0)
+	if usageLog.GroupID != nil {
+		groupID = *usageLog.GroupID
+	} else if apiKey != nil && apiKey.GroupID != nil {
+		groupID = *apiKey.GroupID
+	}
+	routeAlias := strings.TrimSpace(usageLog.RouteAlias)
+	if routeAlias == "" {
+		routeAlias = strings.TrimSpace(usageLog.RequestedModel)
+	}
+	if routeAlias == "" {
+		routeAlias = strings.TrimSpace(usageLog.Model)
+	}
+	upstreamModel := strings.TrimSpace(usageLog.Model)
+	if usageLog.UpstreamModel != nil && strings.TrimSpace(*usageLog.UpstreamModel) != "" {
+		upstreamModel = strings.TrimSpace(*usageLog.UpstreamModel)
+	}
+	at := usageLog.CreatedAt
+	if at.IsZero() {
+		at = time.Now()
+	}
+	if usageLog.UserID <= 0 || groupID <= 0 || routeAlias == "" || upstreamModel == "" {
+		return fmt.Errorf("token statistics accumulate after usage: incomplete identity")
+	}
+	quotaCtx, cancel := detachedBillingContext(ctx)
+	defer cancel()
+	if err := accumulator.Accumulate(quotaCtx, TokenStatisticsIncrement{UserID: usageLog.UserID, GroupID: groupID, RouteAlias: routeAlias, Model: upstreamModel, UpstreamModel: upstreamModel, UsageDate: at, TotalTokens: int64(usageLog.TotalTokens())}); err != nil {
+		return fmt.Errorf("token statistics accumulate after usage persisted: %w", err)
+	}
+	return nil
+}
+
 func createUsageLogForTokenQuota(ctx context.Context, repo UsageLogRepository, usageLog *UsageLog) (bool, error) {
 	if repo == nil || usageLog == nil {
 		return false, nil

@@ -710,36 +710,13 @@ func (s *BillingCacheService) CheckBillingEligibility(ctx context.Context, user 
 	if s.cfg.RunMode == config.RunModeSimple {
 		return nil
 	}
-	if s.circuitBreaker != nil && !s.circuitBreaker.Allow() {
-		return ErrBillingServiceUnavailable
-	}
-
-	// 判断计费模式
-	isSubscriptionMode := group != nil && group.IsSubscriptionType() && subscription != nil
-
-	if isSubscriptionMode {
-		if err := s.checkSubscriptionEligibility(ctx, user.ID, group, subscription); err != nil {
-			return err
-		}
-	} else {
-		if err := s.checkBalanceEligibility(ctx, user.ID); err != nil {
-			return err
-		}
-	}
-
-	// user × platform quota 仅在 standard（余额）模式生效；订阅模式豁免
-	if !isSubscriptionMode {
-		if err := s.checkUserPlatformQuotaEligibility(ctx, user.ID, platform); err != nil {
-			return err
-		}
-	}
-
-	// Check API Key rate limits (applies to both billing modes)
-	if apiKey != nil && apiKey.HasRateLimits() {
-		if err := s.checkAPIKeyRateLimits(ctx, apiKey); err != nil {
-			return err
-		}
-	}
+	// Monetary eligibility is disabled for token-statistics-only operation.
+	// Keep checkBalanceEligibility, checkSubscriptionEligibility,
+	// checkUserPlatformQuotaEligibility and checkAPIKeyRateLimits intact so the
+	// original behavior can be restored at this single call boundary.
+	_ = apiKey
+	_ = subscription
+	_ = platform
 
 	// RPM 限流：级联回落（Override → Group → User），放在最后以避免为注定失败的请求增加计数。
 	if err := s.checkRPM(ctx, user, group); err != nil {

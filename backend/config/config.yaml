@@ -72,6 +72,21 @@ external_api_key_provisioning:
 run_mode: "standard"
 timezone: "Asia/Shanghai"
 
+gateway:
+  token_statistics:
+    # 是否启用基于 Redis 的 Token 日统计及后台 MySQL 同步。
+    redis_enabled: true
+    # Redis 绝对累计值同步到 MySQL 的周期，单位：分钟。
+    sync_interval_minutes: 1
+    # 每次 HSCAN 建议 Redis 返回的 Field 数量；这是 COUNT 提示值，不保证精确数量。
+    hscan_count: 1000
+    # 每次向单张 MySQL Token 日统计表提交的最大记录数。
+    mysql_batch_size: 500
+    # 单批 MySQL 同步失败后的重试次数；0 表示失败后不重试。
+    sync_retry_count: 3
+    # 每日 Redis Hash 在业务日期结束后完整保留的天数；默认保留 2 天。
+    redis_retention_days: 2
+
 default:
   admin_email: "admin@example.com"
   admin_password: "admin123"

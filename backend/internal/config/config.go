@@ -100,10 +100,10 @@ type Config struct {
 
 // ExternalAPIKeyProvisioningConfig controls the private API used by trusted external provisioners.
 type ExternalAPIKeyProvisioningConfig struct {
-	Enabled               bool   `mapstructure:"enabled"`
-	AccessToken           string `mapstructure:"access_token"`
-	RateLimitBizPerMinute int    `mapstructure:"rate_limit_biz_per_minute"`
-	RateLimitAuthPerMinute int   `mapstructure:"rate_limit_auth_per_minute"`
+	Enabled                bool   `mapstructure:"enabled"`
+	AccessToken            string `mapstructure:"access_token"`
+	RateLimitBizPerMinute  int    `mapstructure:"rate_limit_biz_per_minute"`
+	RateLimitAuthPerMinute int    `mapstructure:"rate_limit_auth_per_minute"`
 }
 
 // LDAPConfig controls optional LDAP/Active Directory password authentication.
@@ -822,6 +822,8 @@ type GatewayConfig struct {
 
 	// UsageRecord: 使用量记录异步队列配置（有界队列 + 固定 worker）
 	UsageRecord GatewayUsageRecordConfig `mapstructure:"usage_record"`
+	// TokenStatistics: Redis Token 日统计与 MySQL 同步配置。
+	TokenStatistics GatewayTokenStatisticsConfig `mapstructure:"token_statistics"`
 
 	// UserGroupRateCacheTTLSeconds: 用户分组倍率热路径缓存 TTL（秒）
 	UserGroupRateCacheTTLSeconds int `mapstructure:"user_group_rate_cache_ttl_seconds"`
@@ -831,6 +833,16 @@ type GatewayConfig struct {
 	// UserMessageQueue: 用户消息串行队列配置
 	// 对 role:"user" 的真实用户消息实施账号级串行化 + RPM 自适应延迟
 	UserMessageQueue UserMessageQueueConfig `mapstructure:"user_message_queue"`
+}
+
+// GatewayTokenStatisticsConfig controls Redis-backed daily Token statistics.
+type GatewayTokenStatisticsConfig struct {
+	RedisEnabled        bool `mapstructure:"redis_enabled"`
+	SyncIntervalMinutes int  `mapstructure:"sync_interval_minutes"`
+	HScanCount          int  `mapstructure:"hscan_count"`
+	MySQLBatchSize      int  `mapstructure:"mysql_batch_size"`
+	SyncRetryCount      int  `mapstructure:"sync_retry_count"`
+	RedisRetentionDays  int  `mapstructure:"redis_retention_days"`
 }
 
 // GatewayOpenAIHTTP2Config OpenAI HTTP 上游协议配置。
@@ -1426,7 +1438,7 @@ func load(allowMissingJWTSecret bool) (*Config, error) {
 		viper.AddConfigPath(dataDir)
 	}
 	// 2. Primary data directory
-	viper.AddConfigPath("./config")
+	viper.AddConfigPath("/opt/iba/sub2api/resources")
 	// 3. Current directory
 	viper.AddConfigPath(".")
 	// 4. Config subdirectory
@@ -2012,6 +2024,12 @@ func setDefaults() {
 	viper.SetDefault("gateway.usage_record.auto_scale_down_step", 16)
 	viper.SetDefault("gateway.usage_record.auto_scale_check_interval_seconds", 3)
 	viper.SetDefault("gateway.usage_record.auto_scale_cooldown_seconds", 10)
+	viper.SetDefault("gateway.token_statistics.redis_enabled", true)
+	viper.SetDefault("gateway.token_statistics.sync_interval_minutes", 1)
+	viper.SetDefault("gateway.token_statistics.hscan_count", 1000)
+	viper.SetDefault("gateway.token_statistics.mysql_batch_size", 500)
+	viper.SetDefault("gateway.token_statistics.sync_retry_count", 3)
+	viper.SetDefault("gateway.token_statistics.redis_retention_days", 2)
 	viper.SetDefault("gateway.user_group_rate_cache_ttl_seconds", 30)
 	viper.SetDefault("gateway.models_list_cache_ttl_seconds", 15)
 	// TLS指纹伪装配置（默认关闭，需要账号级别单独启用）
@@ -2056,6 +2074,21 @@ func (c *Config) Validate() error {
 		if len([]byte(token)) < 32 || strings.IndexFunc(token, func(r rune) bool { return r == ' ' || r == '\t' || r == '\r' || r == '\n' }) >= 0 {
 			return fmt.Errorf("external_api_key_provisioning.access_token must be at least 32 bytes and contain no whitespace")
 		}
+	}
+	if c.Gateway.TokenStatistics.SyncIntervalMinutes <= 0 {
+		return fmt.Errorf("invalid gateway.token_statistics.sync_interval_minutes: value=%d, expected positive integer", c.Gateway.TokenStatistics.SyncIntervalMinutes)
+	}
+	if c.Gateway.TokenStatistics.HScanCount <= 0 {
+		return fmt.Errorf("invalid gateway.token_statistics.hscan_count: value=%d, expected positive integer", c.Gateway.TokenStatistics.HScanCount)
+	}
+	if c.Gateway.TokenStatistics.MySQLBatchSize <= 0 {
+		return fmt.Errorf("invalid gateway.token_statistics.mysql_batch_size: value=%d, expected positive integer", c.Gateway.TokenStatistics.MySQLBatchSize)
+	}
+	if c.Gateway.TokenStatistics.SyncRetryCount < 0 {
+		return fmt.Errorf("invalid gateway.token_statistics.sync_retry_count: value=%d, expected non-negative integer", c.Gateway.TokenStatistics.SyncRetryCount)
+	}
+	if c.Gateway.TokenStatistics.RedisRetentionDays <= 0 {
+		return fmt.Errorf("invalid gateway.token_statistics.redis_retention_days: value=%d, expected positive integer", c.Gateway.TokenStatistics.RedisRetentionDays)
 	}
 	if c.LDAP.Enabled {
 		serverURL := strings.TrimSpace(c.LDAP.ServerURL)

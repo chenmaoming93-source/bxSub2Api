@@ -124,6 +124,14 @@ security:
 # 网关配置
 # =============================================================================
 gateway:
+  # Redis-backed daily Token statistics and periodic MySQL synchronization.
+  token_statistics:
+    redis_enabled: true
+    sync_interval_minutes: 1
+    hscan_count: 1000
+    mysql_batch_size: 500
+    sync_retry_count: 3
+    redis_retention_days: 2
   # Timeout for waiting upstream response headers (seconds)
   # 等待上游响应头超时时间（秒）
   response_header_timeout: 600
