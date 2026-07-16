@@ -277,13 +277,13 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 	handlers := handler.ProvideHandlers(authHandler, userHandler, apiKeyHandler, usageHandler, redeemHandler, subscriptionHandler, announcementHandler, channelMonitorUserHandler, adminHandlers, gatewayHandler, openAIGatewayHandler, handlerSettingHandler, totpHandler, handlerPaymentHandler, paymentWebhookHandler, availableChannelHandler, idempotencyCoordinator, idempotencyCleanupService)
 
 	// External provisioning handler (manually wired).
-	platformKeySvc := service.NewPlatformAPIKeyService(apiKeyRepository, apiKeyService, settingService)
+	platformKeySvc := service.NewPlatformAPIKeyService(apiKeyRepository, apiKeyService)
 	var extLdapDir service.ExternalProvisioningLDAPDirectory
 	if configConfig.LDAP.Enabled {
 		extLdapDir = ldapauth.NewDefaultLDAPDirectory(configConfig.LDAP)
 	}
 	userProvisioningSvc := service.NewEntUserProvisioningService(client, userRepository, apiKeyService)
-	extProvSvc := service.NewExternalProvisioningService(userRepository, extLdapDir, userProvisioningSvc, platformKeySvc)
+	extProvSvc := service.NewExternalProvisioningService(userRepository, extLdapDir, userProvisioningSvc, platformKeySvc, groupRepository)
 	handlers.ExternalProvisioning = handler.NewExternalProvisioningHandler(extProvSvc)
 
 	jwtAuthMiddleware := middleware.NewJWTAuthMiddleware(authService, userService)

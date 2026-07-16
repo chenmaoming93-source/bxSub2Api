@@ -30,7 +30,7 @@ type groupRepository struct {
 	sql    sqlExecutor
 }
 
-func NewGroupRepository(client *dbent.Client, sqlDB *sql.DB) service.GroupRepository {
+func NewGroupRepository(client *dbent.Client, sqlDB *sql.DB) *groupRepository {
 	return newGroupRepositoryWithSQL(client, sqlDB)
 }
 

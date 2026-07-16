@@ -8,6 +8,7 @@ import (
 
 	dbent "github.com/Wei-Shaw/sub2api/ent"
 	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
+	"github.com/lib/pq"
 )
 
 // clientFromContext 从 context 中获取事务 client，如果不存在则返回默认 client。
@@ -77,6 +78,10 @@ func translatePersistenceError(err error, notFound, conflict *infraerrors.Applic
 func isUniqueConstraintViolation(err error) bool {
 	if err == nil {
 		return false
+	}
+	var pqErr *pq.Error
+	if errors.As(err, &pqErr) {
+		return pqErr != nil && pqErr.Code == "23505"
 	}
 
 	// GoldenDB custom drivers may not expose the same concrete error type

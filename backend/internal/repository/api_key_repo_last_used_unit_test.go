@@ -159,32 +159,40 @@ func TestAPIKeyRepository_ActivePlatformAndDefaultUniqueness(t *testing.T) {
 	repo, client := newAPIKeyRepoSQLite(t)
 	ctx := context.Background()
 	user := mustCreateAPIKeyRepoUser(t, ctx, client, "platform-default-unique@test.com")
+	group1, err := client.Group.Create().SetName("platform-group-1").SetPlatform(service.PlatformOpenAI).SetStatus(service.StatusActive).Save(ctx)
+	require.NoError(t, err)
+	group2, err := client.Group.Create().SetName("platform-group-2").SetPlatform(service.PlatformOpenAI).SetStatus(service.StatusActive).Save(ctx)
+	require.NoError(t, err)
 	platform := "cursor"
 
-	create := func(rawKey, purpose string, keyPlatform *string) *service.APIKey {
+	create := func(rawKey, purpose string, keyPlatform *string, groupID *int64) *service.APIKey {
 		key := &service.APIKey{
 			UserID: user.ID, Key: rawKey, Name: rawKey,
-			Status: service.StatusActive, Purpose: purpose, Platform: keyPlatform,
+			Status: service.StatusActive, Purpose: purpose, Platform: keyPlatform, GroupID: groupID,
 		}
 		require.NoError(t, repo.Create(ctx, key))
 		return key
 	}
 
-	platformKey := create("sk-platform-first", "platform", &platform)
-	err := repo.Create(ctx, &service.APIKey{
+	platformKey := create("sk-platform-first", "platform", &platform, &group1.ID)
+	err = repo.Create(ctx, &service.APIKey{
 		UserID: user.ID, Key: "sk-platform-duplicate", Name: "duplicate",
-		Status: service.StatusActive, Purpose: "platform", Platform: &platform,
+		Status: service.StatusActive, Purpose: "platform", Platform: &platform, GroupID: &group1.ID,
 	})
 	require.ErrorIs(t, err, service.ErrAPIKeyExists)
+	otherGroup := create("sk-platform-other-group", "platform", &platform, &group2.ID)
+	got, err := repo.GetByUserIDPlatformAndGroup(ctx, user.ID, platform, group2.ID)
+	require.NoError(t, err)
+	require.Equal(t, otherGroup.ID, got.ID)
 	require.NoError(t, repo.Delete(ctx, platformKey.ID))
-	create("sk-platform-replacement", "platform", &platform)
+	create("sk-platform-replacement", "platform", &platform, &group1.ID)
 
-	defaultKey := create("sk-default-first", "default", nil)
+	defaultKey := create("sk-default-first", "default", nil, nil)
 	err = repo.Create(ctx, &service.APIKey{
 		UserID: user.ID, Key: "sk-default-duplicate", Name: "duplicate",
 		Status: service.StatusActive, Purpose: "default",
 	})
 	require.ErrorIs(t, err, service.ErrAPIKeyExists)
 	require.NoError(t, repo.Delete(ctx, defaultKey.ID))
-	create("sk-default-replacement", "default", nil)
+	create("sk-default-replacement", "default", nil, nil)
 }

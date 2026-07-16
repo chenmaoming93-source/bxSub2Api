@@ -642,11 +642,12 @@ func (s *AuthService) LoginOrRegisterOAuth(ctx context.Context, email, username 
 				SignupSource: signupSource,
 			}
 
-			user, created, provisionErr := s.provisionAuthUser(ctx, newUser)
+			provisionedUser, created, provisionErr := s.provisionAuthUser(ctx, newUser)
 			if provisionErr != nil {
 				logger.LegacyPrintf("service.auth", "[Auth] Database error creating oauth user: %v", provisionErr)
 				return "", nil, ErrServiceUnavailable
 			}
+			user = provisionedUser
 			if created {
 				s.postAuthUserBootstrap(ctx, user, signupSource, false)
 				s.assignSubscriptions(ctx, user.ID, grantPlan.Subscriptions, "auto assigned by signup defaults")

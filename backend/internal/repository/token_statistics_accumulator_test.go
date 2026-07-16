@@ -40,9 +40,10 @@ func newTokenStatisticsAccumulatorTestClient(t *testing.T) (*miniredis.Miniredis
 }
 
 func tokenStatisticsTestIncrement() service.TokenStatisticsIncrement {
+	now := time.Now().In(tokenStatisticsLocation)
 	return service.TokenStatisticsIncrement{
 		UserID: 11, GroupID: 22, RouteAlias: "route|alias", Model: "client|model",
-		UpstreamModel: "upstream|model", UsageDate: time.Date(2026, 7, 13, 12, 0, 0, 0, tokenStatisticsLocation), TotalTokens: 7,
+		UpstreamModel: "upstream|model", UsageDate: time.Date(now.Year(), now.Month(), now.Day(), 12, 0, 0, 0, tokenStatisticsLocation), TotalTokens: 7,
 	}
 }
 

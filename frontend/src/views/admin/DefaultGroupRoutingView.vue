@@ -22,7 +22,7 @@
       </div>
       <div v-else-if="group" class="card p-6">
         <p class="mb-4 text-sm text-gray-500">{{ group.name }}</p>
-        <GroupModelRoutingEditor v-model:enabled="enabled" v-model:rules="rules" :platform="group.platform" />
+        <GroupModelRoutingEditor ref="routingEditor" v-model:enabled="enabled" v-model:rules="rules" :platform="group.platform" />
         <div class="mt-6 flex justify-end"><button class="btn btn-primary" :disabled="saving" @click="save">{{ t('common.save') }}</button></div>
       </div>
     </div>
@@ -52,6 +52,7 @@ const status = ref<DefaultGroupStatus | null>(null)
 const group = ref<AdminGroup | null>(null)
 const enabled = ref(false)
 const rules = ref<RoutingEditorRule[]>([])
+const routingEditor = ref<{ isValid: () => boolean } | null>(null)
 
 async function load() {
   loading.value = true
@@ -77,6 +78,10 @@ async function load() {
 
 async function save() {
   if (!group.value) return
+  if (routingEditor.value && !routingEditor.value.isValid()) {
+    appStore.showError(t('admin.groups.modelRouting.candidateValidation'))
+    return
+  }
   saving.value = true
   try {
     const rows: ModelRoutingRuleRow[] = rules.value.map(rule => ({ alias: rule.alias, candidates: rule.candidates.map((candidate): ModelRoutingCandidate => ({

@@ -397,6 +397,7 @@
 
         <!-- 模型路由配置 -->
         <GroupModelRoutingEditor
+          ref="createRoutingEditor"
           v-model:enabled="createForm.model_routing_enabled"
           v-model:rules="createModelRoutingRules"
           :platform="createForm.platform"
@@ -1656,6 +1657,7 @@
 
         <!-- 模型路由配置 -->
         <GroupModelRoutingEditor
+          ref="editRoutingEditor"
           v-model:enabled="editForm.model_routing_enabled"
           v-model:rules="editModelRoutingRules"
           :platform="editForm.platform"
@@ -3342,9 +3344,11 @@ interface ModelRoutingRule {
 
 // 创建表单的模型路由规则
 const createModelRoutingRules = ref<ModelRoutingRule[]>([]);
+const createRoutingEditor = ref<{ isValid: () => boolean } | null>(null);
 
 // 编辑表单的模型路由规则
 const editModelRoutingRules = ref<ModelRoutingRule[]>([]);
+const editRoutingEditor = ref<{ isValid: () => boolean } | null>(null);
 
 // 规则对象稳定 key（避免使用 index 导致状态错位）
 const resolveCreateRuleKey =
@@ -4028,7 +4032,7 @@ const handleCreateGroup = async () => {
   }
   if (
     createForm.model_routing_enabled &&
-    !validateRoutingForm(createModelRoutingRules.value)
+    (!validateRoutingForm(createModelRoutingRules.value) || createRoutingEditor.value?.isValid() === false)
   ) {
     return;
   }
@@ -4168,7 +4172,7 @@ const handleUpdateGroup = async () => {
   }
   if (
     editForm.model_routing_enabled &&
-    !validateRoutingForm(editModelRoutingRules.value)
+    (!validateRoutingForm(editModelRoutingRules.value) || editRoutingEditor.value?.isValid() === false)
   ) {
     return;
   }

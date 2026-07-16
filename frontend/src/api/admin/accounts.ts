@@ -478,8 +478,25 @@ export async function setSchedulable(id: number, schedulable: boolean): Promise<
  * @param id - Account ID
  * @returns List of available models for this account
  */
-export async function getAvailableModels(id: number): Promise<ClaudeModel[]> {
-  const { data } = await apiClient.get<ClaudeModel[]>(`/admin/accounts/${id}/models`)
+export interface AvailableAccountModel {
+  id: string
+  display_name?: string
+  type?: string
+  created_at?: string
+}
+
+export function getAvailableModels(id: number): Promise<ClaudeModel[]>
+export function getAvailableModels(
+  id: number,
+  options: { signal?: AbortSignal }
+): Promise<AvailableAccountModel[]>
+export async function getAvailableModels(
+  id: number,
+  options?: { signal?: AbortSignal }
+): Promise<AvailableAccountModel[]> {
+  const { data } = await apiClient.get<AvailableAccountModel[]>(`/admin/accounts/${id}/models`, {
+    signal: options?.signal
+  })
   return data
 }
 

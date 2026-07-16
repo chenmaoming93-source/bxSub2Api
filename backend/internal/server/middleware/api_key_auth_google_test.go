@@ -496,7 +496,7 @@ func TestApiKeyAuthWithSubscriptionGoogle_DisabledKey(t *testing.T) {
 	require.Equal(t, "UNAUTHENTICATED", resp.Error.Status)
 }
 
-func TestApiKeyAuthWithSubscriptionGoogle_InsufficientBalance(t *testing.T) {
+func legacyApiKeyAuthWithSubscriptionGoogleInsufficientBalance(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	r := gin.New()

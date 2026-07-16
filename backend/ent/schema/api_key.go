@@ -151,5 +151,6 @@ func (APIKey) Indexes() []ent.Index {
 		// Index for quota queries
 		index.Fields("quota", "quota_used"),
 		index.Fields("expires_at"),
+		index.Fields("user_id", "platform", "group_id", "deleted_at"),
 	}
 }

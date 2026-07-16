@@ -20,5 +20,6 @@ func RegisterIntegrationRoutes(
 	integration.Use(provAuth, provHardening)
 	{
 		integration.POST("/api-keys/getOrCreate", provHandler.EnsureAPIKey)
+		integration.POST("/model-routes/list", provHandler.ListGroupModelRoutes)
 	}
 }
