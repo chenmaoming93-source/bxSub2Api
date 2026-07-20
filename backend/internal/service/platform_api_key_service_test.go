@@ -20,16 +20,17 @@ func TestValidatePlatform(t *testing.T) {
 		{name: "valid simple", input: "github", wantErr: false},
 		{name: "valid with underscore", input: "git_lab", wantErr: false},
 		{name: "valid single char", input: "a", wantErr: false},
+		{name: "valid uppercase", input: "GitHub", wantErr: false},
+		{name: "valid uppercase first character", input: "Open_ai", wantErr: false},
 		{name: "valid long", input: strings.Repeat("a", 50), wantErr: false},
 		{name: "empty", input: "", wantErr: true, errMsg: "required"},
 		{name: "whitespace only", input: "   ", wantErr: true, errMsg: "required"},
 		{name: "too long", input: strings.Repeat("a", 51), wantErr: true, errMsg: "50 characters"},
-		{name: "starts with number", input: "123abc", wantErr: true, errMsg: "only lowercase letters"},
-		{name: "uppercase", input: "GitHub", wantErr: true, errMsg: "only lowercase letters"},
-		{name: "hyphen", input: "git-hub", wantErr: true, errMsg: "only lowercase letters"},
-		{name: "space inside", input: "git hub", wantErr: true, errMsg: "only lowercase letters"},
-		{name: "special chars", input: "github!", wantErr: true, errMsg: "only lowercase letters"},
-		{name: "underscore only not allowed", input: "_", wantErr: true, errMsg: "only lowercase letters"},
+		{name: "starts with number", input: "123abc", wantErr: true, errMsg: "only letters"},
+		{name: "hyphen", input: "git-hub", wantErr: true, errMsg: "only letters"},
+		{name: "space inside", input: "git hub", wantErr: true, errMsg: "only letters"},
+		{name: "special chars", input: "github!", wantErr: true, errMsg: "only letters"},
+		{name: "underscore only not allowed", input: "_", wantErr: true, errMsg: "only letters"},
 	}
 
 	for _, tt := range tests {

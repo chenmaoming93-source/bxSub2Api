@@ -8,8 +8,8 @@ import (
 	"strings"
 )
 
-// platformNamePattern allows lowercase letters and underscores only.
-var platformNamePattern = regexp.MustCompile(`^[a-z][a-z_]*$`)
+// platformNamePattern allows ASCII letters and underscores only.
+var platformNamePattern = regexp.MustCompile(`^[A-Za-z][A-Za-z_]*$`)
 
 // ValidatePlatform returns nil when name matches the platform naming rules.
 func ValidatePlatform(name string) error {
@@ -20,7 +20,7 @@ func ValidatePlatform(name string) error {
 		return fmt.Errorf("platform name must not exceed 50 characters")
 	}
 	if !platformNamePattern.MatchString(name) {
-		return fmt.Errorf("platform name must contain only lowercase letters and underscores, and start with a letter")
+		return fmt.Errorf("platform name must contain only letters and underscores, and start with a letter")
 	}
 	return nil
 }

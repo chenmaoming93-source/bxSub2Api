@@ -56,6 +56,20 @@ func TestExternalProvisioningHandlerRequiresGroupName(t *testing.T) {
 	}
 }
 
+func TestExternalProvisioningHandlerRejectsInvalidRequestFields(t *testing.T) {
+	for _, body := range []string{
+		`{"user":"   ","platform":"openai","group_name":"target"}`,
+		`{"user":"u@example.com","platform":"   ","group_name":"target"}`,
+		`{"user":"u@example.com","platform":"open-ai","group_name":"target"}`,
+	} {
+		svc := &externalProvisioningServiceStub{}
+		res := performEnsureAPIKey(t, svc, body)
+		if res.Code != http.StatusBadRequest || !strings.Contains(res.Body.String(), "INVALID_REQUEST") {
+			t.Fatalf("expected INVALID_REQUEST, status=%d body=%s", res.Code, res.Body.String())
+		}
+	}
+}
+
 func TestExternalProvisioningHandlerSuccessContract(t *testing.T) {
 	for _, tc := range []struct {
 		name       string
@@ -84,6 +98,17 @@ func TestExternalProvisioningHandlerSuccessContract(t *testing.T) {
 				t.Fatalf("unexpected group contract: response=%+v input=%+v", envelope.Data, svc.input)
 			}
 		})
+	}
+}
+
+func TestExternalProvisioningHandlerAllowsUppercasePlatform(t *testing.T) {
+	svc := &externalProvisioningServiceStub{result: &service.EnsurePlatformKeyResult{
+		User:   &service.User{ID: 7, Email: "u@example.com", Username: "user"},
+		APIKey: &service.APIKey{Key: "sk-secret"}, Group: &service.Group{ID: 9, Name: "target"},
+	}}
+	res := performEnsureAPIKey(t, svc, `{"user":"u@example.com","platform":"Open_AI","group_name":"target"}`)
+	if res.Code != http.StatusOK || svc.input.Platform != "Open_AI" {
+		t.Fatalf("unexpected response status=%d input=%+v body=%s", res.Code, svc.input, res.Body.String())
 	}
 }
 

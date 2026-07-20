@@ -118,7 +118,7 @@ func (h *ExternalProvisioningHandler) EnsureAPIKey(c *gin.Context) {
 	req.User = strings.TrimSpace(req.User)
 	req.Platform = strings.TrimSpace(req.Platform)
 	req.GroupName = strings.TrimSpace(req.GroupName)
-	if req.GroupName == "" {
+	if req.User == "" || req.GroupName == "" || service.ValidatePlatform(req.Platform) != nil {
 		response.Error(c, http.StatusBadRequest, "INVALID_REQUEST")
 		return
 	}
