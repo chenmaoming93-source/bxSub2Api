@@ -665,6 +665,14 @@ database:
   # SSL 模式：disable（禁用）, prefer（优先加密，默认�? require（要求）, verify-ca（验证CA�? verify-full（完全验证）
   # 默认值为 "prefer"，数据库支持 SSL 时自动使用加密连接，不支持时回退明文
   sslmode: "disable"
+  # Whether normal application startup may create schema_migrations and
+  # atlas_schema_revisions. Keep false for a DML-only runtime database account.
+  # 是否允许应用在正常启动时创建迁移元数据表；仅有增删改查权限时必须保持 false。
+  create_migration_tables: false
+  # Whether normal startup scans, validates, and executes backend/migrations.
+  # When false, migration SQL files and their checksums are not inspected.
+  # 是否在正常启动时扫描、校验并执行迁移；false 时连迁移文件检查也不会执行。
+  run_migrations: false
   # Max open connections (高并发场景建�?256+，需配合 GoldenDB max_connections 调整)
   # 最大打开连接�?  max_open_conns: 256
   # Max idle connections (建议�?max_open_conns �?50%，减少频繁建连开销)

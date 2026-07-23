@@ -13,7 +13,6 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent"
 	"github.com/Wei-Shaw/sub2api/internal/config"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/timezone"
-	"github.com/Wei-Shaw/sub2api/migrations"
 )
 
 // InitEnt initializes the Ent client and its underlying GoldenDB/MySQL sql.DB.
@@ -30,7 +29,10 @@ func InitEnt(cfg *config.Config) (*ent.Client, *sql.DB, error) {
 
 	migrationCtx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
 	defer cancel()
-	if err := applyMigrationsFS(migrationCtx, drv.DB(), migrations.FS); err != nil {
+	if err := ApplyMigrationsWithOptions(migrationCtx, drv.DB(), MigrationOptions{
+		CreateMetadataTables: cfg.Database.CreateMigrationTables,
+		Run:                  cfg.Database.RunMigrations,
+	}); err != nil {
 		_ = drv.Close()
 		return nil, nil, err
 	}

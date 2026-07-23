@@ -1155,6 +1155,13 @@ type DatabaseConfig struct {
 	Password string `mapstructure:"password"`
 	DBName   string `mapstructure:"dbname"`
 	SSLMode  string `mapstructure:"sslmode"`
+	// CreateMigrationTables 控制应用正常启动时是否允许创建迁移元数据表
+	// schema_migrations 和 atlas_schema_revisions。默认 false；数据库运行账号
+	// 只有 SELECT、INSERT、UPDATE、DELETE 权限时必须保持 false。
+	CreateMigrationTables bool `mapstructure:"create_migration_tables"`
+	// RunMigrations 控制应用正常启动时是否扫描、校验并执行 backend/migrations
+	// 中嵌入的 SQL。默认 false；为 false 时不会读取迁移文件或校验 checksum。
+	RunMigrations bool `mapstructure:"run_migrations"`
 	// 连接池配置（性能优化：可配置化连接池参数）
 	// MaxOpenConns: 最大打开连接数，控制数据库连接上限，防止资源耗尽
 	MaxOpenConns int `mapstructure:"max_open_conns"`

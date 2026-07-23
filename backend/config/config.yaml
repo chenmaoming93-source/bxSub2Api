@@ -19,6 +19,12 @@ database:
   password: "123456"
   dbname: "sub2api"
   sslmode: "disable"
+  # 是否允许应用在正常启动时创建 schema_migrations 和 atlas_schema_revisions。
+  # 默认关闭；数据库运行账号只有 SELECT、INSERT、UPDATE、DELETE 权限时必须保持 false。
+  create_migration_tables: false
+  # 是否在正常启动时扫描、校验并执行 backend/migrations 中的 SQL。
+  # 默认关闭；为 false 时不会读取迁移文件，也不会校验 migration checksum。
+  run_migrations: false
 
 redis:
   host: "8.154.40.173"
