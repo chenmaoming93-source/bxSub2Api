@@ -89,6 +89,23 @@ export const useAuthStore = defineStore('auth', () => {
   const isAdmin = computed(() => {
     return user.value?.role === 'admin'
   })
+  const roles = computed(() => user.value?.roles ?? (user.value ? [user.value.role] : []))
+  const permissions = computed(() => user.value?.permissions ?? [])
+  const permissionVersion = computed(() => user.value?.permission_version ?? 0)
+  const policyVersion = computed(() => user.value?.policy_version ?? 0)
+  const isSuperAdmin = computed(() => isAdmin.value || permissions.value.includes('*'))
+  const hasAdminAccess = computed(() =>
+    isSuperAdmin.value || permissions.value.some((permission) => !permission.includes('.self.'))
+  )
+  function can(permission: string): boolean {
+    return isSuperAdmin.value || permissions.value.includes(permission)
+  }
+  function canAny(required: string[]): boolean {
+    return required.length === 0 || isSuperAdmin.value || required.some(can)
+  }
+  function canAll(required: string[]): boolean {
+    return isSuperAdmin.value || required.every(can)
+  }
 
   const isSimpleMode = computed(() => runMode.value === 'simple')
   const hasPendingAuthSession = computed(() => pendingAuthSession.value !== null)
@@ -248,6 +265,11 @@ export const useAuthStore = defineStore('auth', () => {
 
       // Set auth state from the response
       setAuthFromResponse(response)
+      // Login responses keep the legacy compact user payload. Load the
+      // authoritative RBAC roles/permissions before the router chooses a page.
+      if (response.user.role !== 'admin' && !Array.isArray(response.user.permissions)) {
+        await refreshUser()
+      }
 
       return response
     } catch (error) {
@@ -268,6 +290,9 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const response = await authAPI.login2FA({ temp_token: tempToken, totp_code: totpCode })
       setAuthFromResponse(response)
+      if (response.user.role !== 'admin' && !Array.isArray(response.user.permissions)) {
+        await refreshUser()
+      }
       return user.value!
     } catch (error) {
       clearAuth({ preservePendingAuthSession: pendingAuthSession.value !== null })
@@ -323,6 +348,9 @@ export const useAuthStore = defineStore('auth', () => {
 
       // Use the common helper to set auth state
       setAuthFromResponse(response)
+      if (response.user.role !== 'admin' && !Array.isArray(response.user.permissions)) {
+        await refreshUser()
+      }
 
       return user.value!
     } catch (error) {
@@ -476,6 +504,12 @@ export const useAuthStore = defineStore('auth', () => {
     // Computed
     isAuthenticated,
     isAdmin,
+    roles,
+    permissions,
+    permissionVersion,
+    policyVersion,
+    isSuperAdmin,
+    hasAdminAccess,
     isSimpleMode,
     hasPendingAuthSession,
 
@@ -488,6 +522,9 @@ export const useAuthStore = defineStore('auth', () => {
     checkAuth,
     refreshUser,
     setPendingAuthSession,
-    clearPendingAuthSession
+    clearPendingAuthSession,
+    can,
+    canAny,
+    canAll
   }
 })

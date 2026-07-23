@@ -34,6 +34,7 @@ import riskControlAPI from './riskControl'
 import adminComplianceAPI from './compliance'
 import modelTokenQuotasAPI from './modelTokenQuotas'
 import tokenUsageAPI from './tokenUsage'
+import rbacAPI from './rbac'
 
 /**
  * Unified admin API object for convenient access
@@ -69,7 +70,8 @@ export const adminAPI = {
   riskControl: riskControlAPI,
   compliance: adminComplianceAPI,
   modelTokenQuotas: modelTokenQuotasAPI,
-  tokenUsage: tokenUsageAPI
+  tokenUsage: tokenUsageAPI,
+  rbac: rbacAPI
 }
 
 export {
@@ -103,7 +105,8 @@ export {
   riskControlAPI,
   adminComplianceAPI,
   modelTokenQuotasAPI,
-  tokenUsageAPI
+  tokenUsageAPI,
+  rbacAPI
 }
 
 export default adminAPI

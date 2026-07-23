@@ -41,6 +41,13 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/promocode"
 	"github.com/Wei-Shaw/sub2api/ent/promocodeusage"
 	"github.com/Wei-Shaw/sub2api/ent/proxy"
+	"github.com/Wei-Shaw/sub2api/ent/rbacauditlog"
+	"github.com/Wei-Shaw/sub2api/ent/rbacpermission"
+	"github.com/Wei-Shaw/sub2api/ent/rbacpolicystate"
+	"github.com/Wei-Shaw/sub2api/ent/rbacrole"
+	"github.com/Wei-Shaw/sub2api/ent/rbacrolepermission"
+	"github.com/Wei-Shaw/sub2api/ent/rbacuserrole"
+	"github.com/Wei-Shaw/sub2api/ent/rbacuserversion"
 	"github.com/Wei-Shaw/sub2api/ent/redeemcode"
 	"github.com/Wei-Shaw/sub2api/ent/securitysecret"
 	"github.com/Wei-Shaw/sub2api/ent/setting"
@@ -117,6 +124,20 @@ type Client struct {
 	PromoCodeUsage *PromoCodeUsageClient
 	// Proxy is the client for interacting with the Proxy builders.
 	Proxy *ProxyClient
+	// RBACAuditLog is the client for interacting with the RBACAuditLog builders.
+	RBACAuditLog *RBACAuditLogClient
+	// RBACPermission is the client for interacting with the RBACPermission builders.
+	RBACPermission *RBACPermissionClient
+	// RBACPolicyState is the client for interacting with the RBACPolicyState builders.
+	RBACPolicyState *RBACPolicyStateClient
+	// RBACRole is the client for interacting with the RBACRole builders.
+	RBACRole *RBACRoleClient
+	// RBACRolePermission is the client for interacting with the RBACRolePermission builders.
+	RBACRolePermission *RBACRolePermissionClient
+	// RBACUserRole is the client for interacting with the RBACUserRole builders.
+	RBACUserRole *RBACUserRoleClient
+	// RBACUserVersion is the client for interacting with the RBACUserVersion builders.
+	RBACUserVersion *RBACUserVersionClient
 	// RedeemCode is the client for interacting with the RedeemCode builders.
 	RedeemCode *RedeemCodeClient
 	// SecuritySecret is the client for interacting with the SecuritySecret builders.
@@ -184,6 +205,13 @@ func (c *Client) init() {
 	c.PromoCode = NewPromoCodeClient(c.config)
 	c.PromoCodeUsage = NewPromoCodeUsageClient(c.config)
 	c.Proxy = NewProxyClient(c.config)
+	c.RBACAuditLog = NewRBACAuditLogClient(c.config)
+	c.RBACPermission = NewRBACPermissionClient(c.config)
+	c.RBACPolicyState = NewRBACPolicyStateClient(c.config)
+	c.RBACRole = NewRBACRoleClient(c.config)
+	c.RBACRolePermission = NewRBACRolePermissionClient(c.config)
+	c.RBACUserRole = NewRBACUserRoleClient(c.config)
+	c.RBACUserVersion = NewRBACUserVersionClient(c.config)
 	c.RedeemCode = NewRedeemCodeClient(c.config)
 	c.SecuritySecret = NewSecuritySecretClient(c.config)
 	c.Setting = NewSettingClient(c.config)
@@ -317,6 +345,13 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		PromoCode:                           NewPromoCodeClient(cfg),
 		PromoCodeUsage:                      NewPromoCodeUsageClient(cfg),
 		Proxy:                               NewProxyClient(cfg),
+		RBACAuditLog:                        NewRBACAuditLogClient(cfg),
+		RBACPermission:                      NewRBACPermissionClient(cfg),
+		RBACPolicyState:                     NewRBACPolicyStateClient(cfg),
+		RBACRole:                            NewRBACRoleClient(cfg),
+		RBACRolePermission:                  NewRBACRolePermissionClient(cfg),
+		RBACUserRole:                        NewRBACUserRoleClient(cfg),
+		RBACUserVersion:                     NewRBACUserVersionClient(cfg),
 		RedeemCode:                          NewRedeemCodeClient(cfg),
 		SecuritySecret:                      NewSecuritySecretClient(cfg),
 		Setting:                             NewSettingClient(cfg),
@@ -377,6 +412,13 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		PromoCode:                           NewPromoCodeClient(cfg),
 		PromoCodeUsage:                      NewPromoCodeUsageClient(cfg),
 		Proxy:                               NewProxyClient(cfg),
+		RBACAuditLog:                        NewRBACAuditLogClient(cfg),
+		RBACPermission:                      NewRBACPermissionClient(cfg),
+		RBACPolicyState:                     NewRBACPolicyStateClient(cfg),
+		RBACRole:                            NewRBACRoleClient(cfg),
+		RBACRolePermission:                  NewRBACRolePermissionClient(cfg),
+		RBACUserRole:                        NewRBACUserRoleClient(cfg),
+		RBACUserVersion:                     NewRBACUserVersionClient(cfg),
 		RedeemCode:                          NewRedeemCodeClient(cfg),
 		SecuritySecret:                      NewSecuritySecretClient(cfg),
 		Setting:                             NewSettingClient(cfg),
@@ -429,9 +471,11 @@ func (c *Client) Use(hooks ...Hook) {
 		c.IdempotencyRecord, c.IdentityAdoptionDecision, c.ModelTokenDailyLimitConfig,
 		c.ModelTokenDailyUsage, c.PaymentAuditLog, c.PaymentOrder,
 		c.PaymentProviderInstance, c.PendingAuthSession, c.PromoCode, c.PromoCodeUsage,
-		c.Proxy, c.RedeemCode, c.SecuritySecret, c.Setting, c.SubscriptionPlan,
-		c.TLSFingerprintProfile, c.UsageCleanupTask, c.UsageLog, c.User,
-		c.UserAllowedGroup, c.UserAttributeDefinition, c.UserAttributeValue,
+		c.Proxy, c.RBACAuditLog, c.RBACPermission, c.RBACPolicyState, c.RBACRole,
+		c.RBACRolePermission, c.RBACUserRole, c.RBACUserVersion, c.RedeemCode,
+		c.SecuritySecret, c.Setting, c.SubscriptionPlan, c.TLSFingerprintProfile,
+		c.UsageCleanupTask, c.UsageLog, c.User, c.UserAllowedGroup,
+		c.UserAttributeDefinition, c.UserAttributeValue,
 		c.UserModelTokenDailyLimitConfig, c.UserModelTokenDailyUsage,
 		c.UserPlatformQuota, c.UserSubscription,
 	} {
@@ -451,9 +495,11 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 		c.IdempotencyRecord, c.IdentityAdoptionDecision, c.ModelTokenDailyLimitConfig,
 		c.ModelTokenDailyUsage, c.PaymentAuditLog, c.PaymentOrder,
 		c.PaymentProviderInstance, c.PendingAuthSession, c.PromoCode, c.PromoCodeUsage,
-		c.Proxy, c.RedeemCode, c.SecuritySecret, c.Setting, c.SubscriptionPlan,
-		c.TLSFingerprintProfile, c.UsageCleanupTask, c.UsageLog, c.User,
-		c.UserAllowedGroup, c.UserAttributeDefinition, c.UserAttributeValue,
+		c.Proxy, c.RBACAuditLog, c.RBACPermission, c.RBACPolicyState, c.RBACRole,
+		c.RBACRolePermission, c.RBACUserRole, c.RBACUserVersion, c.RedeemCode,
+		c.SecuritySecret, c.Setting, c.SubscriptionPlan, c.TLSFingerprintProfile,
+		c.UsageCleanupTask, c.UsageLog, c.User, c.UserAllowedGroup,
+		c.UserAttributeDefinition, c.UserAttributeValue,
 		c.UserModelTokenDailyLimitConfig, c.UserModelTokenDailyUsage,
 		c.UserPlatformQuota, c.UserSubscription,
 	} {
@@ -516,6 +562,20 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.PromoCodeUsage.mutate(ctx, m)
 	case *ProxyMutation:
 		return c.Proxy.mutate(ctx, m)
+	case *RBACAuditLogMutation:
+		return c.RBACAuditLog.mutate(ctx, m)
+	case *RBACPermissionMutation:
+		return c.RBACPermission.mutate(ctx, m)
+	case *RBACPolicyStateMutation:
+		return c.RBACPolicyState.mutate(ctx, m)
+	case *RBACRoleMutation:
+		return c.RBACRole.mutate(ctx, m)
+	case *RBACRolePermissionMutation:
+		return c.RBACRolePermission.mutate(ctx, m)
+	case *RBACUserRoleMutation:
+		return c.RBACUserRole.mutate(ctx, m)
+	case *RBACUserVersionMutation:
+		return c.RBACUserVersion.mutate(ctx, m)
 	case *RedeemCodeMutation:
 		return c.RedeemCode.mutate(ctx, m)
 	case *SecuritySecretMutation:
@@ -4672,6 +4732,1101 @@ func (c *ProxyClient) mutate(ctx context.Context, m *ProxyMutation) (Value, erro
 	}
 }
 
+// RBACAuditLogClient is a client for the RBACAuditLog schema.
+type RBACAuditLogClient struct {
+	config
+}
+
+// NewRBACAuditLogClient returns a client for the RBACAuditLog from the given config.
+func NewRBACAuditLogClient(c config) *RBACAuditLogClient {
+	return &RBACAuditLogClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `rbacauditlog.Hooks(f(g(h())))`.
+func (c *RBACAuditLogClient) Use(hooks ...Hook) {
+	c.hooks.RBACAuditLog = append(c.hooks.RBACAuditLog, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `rbacauditlog.Intercept(f(g(h())))`.
+func (c *RBACAuditLogClient) Intercept(interceptors ...Interceptor) {
+	c.inters.RBACAuditLog = append(c.inters.RBACAuditLog, interceptors...)
+}
+
+// Create returns a builder for creating a RBACAuditLog entity.
+func (c *RBACAuditLogClient) Create() *RBACAuditLogCreate {
+	mutation := newRBACAuditLogMutation(c.config, OpCreate)
+	return &RBACAuditLogCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of RBACAuditLog entities.
+func (c *RBACAuditLogClient) CreateBulk(builders ...*RBACAuditLogCreate) *RBACAuditLogCreateBulk {
+	return &RBACAuditLogCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *RBACAuditLogClient) MapCreateBulk(slice any, setFunc func(*RBACAuditLogCreate, int)) *RBACAuditLogCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &RBACAuditLogCreateBulk{err: fmt.Errorf("calling to RBACAuditLogClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*RBACAuditLogCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &RBACAuditLogCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for RBACAuditLog.
+func (c *RBACAuditLogClient) Update() *RBACAuditLogUpdate {
+	mutation := newRBACAuditLogMutation(c.config, OpUpdate)
+	return &RBACAuditLogUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *RBACAuditLogClient) UpdateOne(_m *RBACAuditLog) *RBACAuditLogUpdateOne {
+	mutation := newRBACAuditLogMutation(c.config, OpUpdateOne, withRBACAuditLog(_m))
+	return &RBACAuditLogUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *RBACAuditLogClient) UpdateOneID(id int64) *RBACAuditLogUpdateOne {
+	mutation := newRBACAuditLogMutation(c.config, OpUpdateOne, withRBACAuditLogID(id))
+	return &RBACAuditLogUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for RBACAuditLog.
+func (c *RBACAuditLogClient) Delete() *RBACAuditLogDelete {
+	mutation := newRBACAuditLogMutation(c.config, OpDelete)
+	return &RBACAuditLogDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *RBACAuditLogClient) DeleteOne(_m *RBACAuditLog) *RBACAuditLogDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *RBACAuditLogClient) DeleteOneID(id int64) *RBACAuditLogDeleteOne {
+	builder := c.Delete().Where(rbacauditlog.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &RBACAuditLogDeleteOne{builder}
+}
+
+// Query returns a query builder for RBACAuditLog.
+func (c *RBACAuditLogClient) Query() *RBACAuditLogQuery {
+	return &RBACAuditLogQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeRBACAuditLog},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a RBACAuditLog entity by its id.
+func (c *RBACAuditLogClient) Get(ctx context.Context, id int64) (*RBACAuditLog, error) {
+	return c.Query().Where(rbacauditlog.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *RBACAuditLogClient) GetX(ctx context.Context, id int64) *RBACAuditLog {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryActor queries the actor edge of a RBACAuditLog.
+func (c *RBACAuditLogClient) QueryActor(_m *RBACAuditLog) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(rbacauditlog.Table, rbacauditlog.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, rbacauditlog.ActorTable, rbacauditlog.ActorColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *RBACAuditLogClient) Hooks() []Hook {
+	return c.hooks.RBACAuditLog
+}
+
+// Interceptors returns the client interceptors.
+func (c *RBACAuditLogClient) Interceptors() []Interceptor {
+	return c.inters.RBACAuditLog
+}
+
+func (c *RBACAuditLogClient) mutate(ctx context.Context, m *RBACAuditLogMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&RBACAuditLogCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&RBACAuditLogUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&RBACAuditLogUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&RBACAuditLogDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown RBACAuditLog mutation op: %q", m.Op())
+	}
+}
+
+// RBACPermissionClient is a client for the RBACPermission schema.
+type RBACPermissionClient struct {
+	config
+}
+
+// NewRBACPermissionClient returns a client for the RBACPermission from the given config.
+func NewRBACPermissionClient(c config) *RBACPermissionClient {
+	return &RBACPermissionClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `rbacpermission.Hooks(f(g(h())))`.
+func (c *RBACPermissionClient) Use(hooks ...Hook) {
+	c.hooks.RBACPermission = append(c.hooks.RBACPermission, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `rbacpermission.Intercept(f(g(h())))`.
+func (c *RBACPermissionClient) Intercept(interceptors ...Interceptor) {
+	c.inters.RBACPermission = append(c.inters.RBACPermission, interceptors...)
+}
+
+// Create returns a builder for creating a RBACPermission entity.
+func (c *RBACPermissionClient) Create() *RBACPermissionCreate {
+	mutation := newRBACPermissionMutation(c.config, OpCreate)
+	return &RBACPermissionCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of RBACPermission entities.
+func (c *RBACPermissionClient) CreateBulk(builders ...*RBACPermissionCreate) *RBACPermissionCreateBulk {
+	return &RBACPermissionCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *RBACPermissionClient) MapCreateBulk(slice any, setFunc func(*RBACPermissionCreate, int)) *RBACPermissionCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &RBACPermissionCreateBulk{err: fmt.Errorf("calling to RBACPermissionClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*RBACPermissionCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &RBACPermissionCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for RBACPermission.
+func (c *RBACPermissionClient) Update() *RBACPermissionUpdate {
+	mutation := newRBACPermissionMutation(c.config, OpUpdate)
+	return &RBACPermissionUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *RBACPermissionClient) UpdateOne(_m *RBACPermission) *RBACPermissionUpdateOne {
+	mutation := newRBACPermissionMutation(c.config, OpUpdateOne, withRBACPermission(_m))
+	return &RBACPermissionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *RBACPermissionClient) UpdateOneID(id int64) *RBACPermissionUpdateOne {
+	mutation := newRBACPermissionMutation(c.config, OpUpdateOne, withRBACPermissionID(id))
+	return &RBACPermissionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for RBACPermission.
+func (c *RBACPermissionClient) Delete() *RBACPermissionDelete {
+	mutation := newRBACPermissionMutation(c.config, OpDelete)
+	return &RBACPermissionDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *RBACPermissionClient) DeleteOne(_m *RBACPermission) *RBACPermissionDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *RBACPermissionClient) DeleteOneID(id int64) *RBACPermissionDeleteOne {
+	builder := c.Delete().Where(rbacpermission.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &RBACPermissionDeleteOne{builder}
+}
+
+// Query returns a query builder for RBACPermission.
+func (c *RBACPermissionClient) Query() *RBACPermissionQuery {
+	return &RBACPermissionQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeRBACPermission},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a RBACPermission entity by its id.
+func (c *RBACPermissionClient) Get(ctx context.Context, id int64) (*RBACPermission, error) {
+	return c.Query().Where(rbacpermission.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *RBACPermissionClient) GetX(ctx context.Context, id int64) *RBACPermission {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryRolePermissions queries the role_permissions edge of a RBACPermission.
+func (c *RBACPermissionClient) QueryRolePermissions(_m *RBACPermission) *RBACRolePermissionQuery {
+	query := (&RBACRolePermissionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(rbacpermission.Table, rbacpermission.FieldID, id),
+			sqlgraph.To(rbacrolepermission.Table, rbacrolepermission.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, rbacpermission.RolePermissionsTable, rbacpermission.RolePermissionsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *RBACPermissionClient) Hooks() []Hook {
+	hooks := c.hooks.RBACPermission
+	return append(hooks[:len(hooks):len(hooks)], rbacpermission.Hooks[:]...)
+}
+
+// Interceptors returns the client interceptors.
+func (c *RBACPermissionClient) Interceptors() []Interceptor {
+	inters := c.inters.RBACPermission
+	return append(inters[:len(inters):len(inters)], rbacpermission.Interceptors[:]...)
+}
+
+func (c *RBACPermissionClient) mutate(ctx context.Context, m *RBACPermissionMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&RBACPermissionCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&RBACPermissionUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&RBACPermissionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&RBACPermissionDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown RBACPermission mutation op: %q", m.Op())
+	}
+}
+
+// RBACPolicyStateClient is a client for the RBACPolicyState schema.
+type RBACPolicyStateClient struct {
+	config
+}
+
+// NewRBACPolicyStateClient returns a client for the RBACPolicyState from the given config.
+func NewRBACPolicyStateClient(c config) *RBACPolicyStateClient {
+	return &RBACPolicyStateClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `rbacpolicystate.Hooks(f(g(h())))`.
+func (c *RBACPolicyStateClient) Use(hooks ...Hook) {
+	c.hooks.RBACPolicyState = append(c.hooks.RBACPolicyState, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `rbacpolicystate.Intercept(f(g(h())))`.
+func (c *RBACPolicyStateClient) Intercept(interceptors ...Interceptor) {
+	c.inters.RBACPolicyState = append(c.inters.RBACPolicyState, interceptors...)
+}
+
+// Create returns a builder for creating a RBACPolicyState entity.
+func (c *RBACPolicyStateClient) Create() *RBACPolicyStateCreate {
+	mutation := newRBACPolicyStateMutation(c.config, OpCreate)
+	return &RBACPolicyStateCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of RBACPolicyState entities.
+func (c *RBACPolicyStateClient) CreateBulk(builders ...*RBACPolicyStateCreate) *RBACPolicyStateCreateBulk {
+	return &RBACPolicyStateCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *RBACPolicyStateClient) MapCreateBulk(slice any, setFunc func(*RBACPolicyStateCreate, int)) *RBACPolicyStateCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &RBACPolicyStateCreateBulk{err: fmt.Errorf("calling to RBACPolicyStateClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*RBACPolicyStateCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &RBACPolicyStateCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for RBACPolicyState.
+func (c *RBACPolicyStateClient) Update() *RBACPolicyStateUpdate {
+	mutation := newRBACPolicyStateMutation(c.config, OpUpdate)
+	return &RBACPolicyStateUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *RBACPolicyStateClient) UpdateOne(_m *RBACPolicyState) *RBACPolicyStateUpdateOne {
+	mutation := newRBACPolicyStateMutation(c.config, OpUpdateOne, withRBACPolicyState(_m))
+	return &RBACPolicyStateUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *RBACPolicyStateClient) UpdateOneID(id int64) *RBACPolicyStateUpdateOne {
+	mutation := newRBACPolicyStateMutation(c.config, OpUpdateOne, withRBACPolicyStateID(id))
+	return &RBACPolicyStateUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for RBACPolicyState.
+func (c *RBACPolicyStateClient) Delete() *RBACPolicyStateDelete {
+	mutation := newRBACPolicyStateMutation(c.config, OpDelete)
+	return &RBACPolicyStateDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *RBACPolicyStateClient) DeleteOne(_m *RBACPolicyState) *RBACPolicyStateDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *RBACPolicyStateClient) DeleteOneID(id int64) *RBACPolicyStateDeleteOne {
+	builder := c.Delete().Where(rbacpolicystate.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &RBACPolicyStateDeleteOne{builder}
+}
+
+// Query returns a query builder for RBACPolicyState.
+func (c *RBACPolicyStateClient) Query() *RBACPolicyStateQuery {
+	return &RBACPolicyStateQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeRBACPolicyState},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a RBACPolicyState entity by its id.
+func (c *RBACPolicyStateClient) Get(ctx context.Context, id int64) (*RBACPolicyState, error) {
+	return c.Query().Where(rbacpolicystate.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *RBACPolicyStateClient) GetX(ctx context.Context, id int64) *RBACPolicyState {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *RBACPolicyStateClient) Hooks() []Hook {
+	return c.hooks.RBACPolicyState
+}
+
+// Interceptors returns the client interceptors.
+func (c *RBACPolicyStateClient) Interceptors() []Interceptor {
+	return c.inters.RBACPolicyState
+}
+
+func (c *RBACPolicyStateClient) mutate(ctx context.Context, m *RBACPolicyStateMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&RBACPolicyStateCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&RBACPolicyStateUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&RBACPolicyStateUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&RBACPolicyStateDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown RBACPolicyState mutation op: %q", m.Op())
+	}
+}
+
+// RBACRoleClient is a client for the RBACRole schema.
+type RBACRoleClient struct {
+	config
+}
+
+// NewRBACRoleClient returns a client for the RBACRole from the given config.
+func NewRBACRoleClient(c config) *RBACRoleClient {
+	return &RBACRoleClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `rbacrole.Hooks(f(g(h())))`.
+func (c *RBACRoleClient) Use(hooks ...Hook) {
+	c.hooks.RBACRole = append(c.hooks.RBACRole, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `rbacrole.Intercept(f(g(h())))`.
+func (c *RBACRoleClient) Intercept(interceptors ...Interceptor) {
+	c.inters.RBACRole = append(c.inters.RBACRole, interceptors...)
+}
+
+// Create returns a builder for creating a RBACRole entity.
+func (c *RBACRoleClient) Create() *RBACRoleCreate {
+	mutation := newRBACRoleMutation(c.config, OpCreate)
+	return &RBACRoleCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of RBACRole entities.
+func (c *RBACRoleClient) CreateBulk(builders ...*RBACRoleCreate) *RBACRoleCreateBulk {
+	return &RBACRoleCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *RBACRoleClient) MapCreateBulk(slice any, setFunc func(*RBACRoleCreate, int)) *RBACRoleCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &RBACRoleCreateBulk{err: fmt.Errorf("calling to RBACRoleClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*RBACRoleCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &RBACRoleCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for RBACRole.
+func (c *RBACRoleClient) Update() *RBACRoleUpdate {
+	mutation := newRBACRoleMutation(c.config, OpUpdate)
+	return &RBACRoleUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *RBACRoleClient) UpdateOne(_m *RBACRole) *RBACRoleUpdateOne {
+	mutation := newRBACRoleMutation(c.config, OpUpdateOne, withRBACRole(_m))
+	return &RBACRoleUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *RBACRoleClient) UpdateOneID(id int64) *RBACRoleUpdateOne {
+	mutation := newRBACRoleMutation(c.config, OpUpdateOne, withRBACRoleID(id))
+	return &RBACRoleUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for RBACRole.
+func (c *RBACRoleClient) Delete() *RBACRoleDelete {
+	mutation := newRBACRoleMutation(c.config, OpDelete)
+	return &RBACRoleDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *RBACRoleClient) DeleteOne(_m *RBACRole) *RBACRoleDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *RBACRoleClient) DeleteOneID(id int64) *RBACRoleDeleteOne {
+	builder := c.Delete().Where(rbacrole.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &RBACRoleDeleteOne{builder}
+}
+
+// Query returns a query builder for RBACRole.
+func (c *RBACRoleClient) Query() *RBACRoleQuery {
+	return &RBACRoleQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeRBACRole},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a RBACRole entity by its id.
+func (c *RBACRoleClient) Get(ctx context.Context, id int64) (*RBACRole, error) {
+	return c.Query().Where(rbacrole.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *RBACRoleClient) GetX(ctx context.Context, id int64) *RBACRole {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryUserRoles queries the user_roles edge of a RBACRole.
+func (c *RBACRoleClient) QueryUserRoles(_m *RBACRole) *RBACUserRoleQuery {
+	query := (&RBACUserRoleClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(rbacrole.Table, rbacrole.FieldID, id),
+			sqlgraph.To(rbacuserrole.Table, rbacuserrole.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, rbacrole.UserRolesTable, rbacrole.UserRolesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryRolePermissions queries the role_permissions edge of a RBACRole.
+func (c *RBACRoleClient) QueryRolePermissions(_m *RBACRole) *RBACRolePermissionQuery {
+	query := (&RBACRolePermissionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(rbacrole.Table, rbacrole.FieldID, id),
+			sqlgraph.To(rbacrolepermission.Table, rbacrolepermission.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, rbacrole.RolePermissionsTable, rbacrole.RolePermissionsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *RBACRoleClient) Hooks() []Hook {
+	hooks := c.hooks.RBACRole
+	return append(hooks[:len(hooks):len(hooks)], rbacrole.Hooks[:]...)
+}
+
+// Interceptors returns the client interceptors.
+func (c *RBACRoleClient) Interceptors() []Interceptor {
+	inters := c.inters.RBACRole
+	return append(inters[:len(inters):len(inters)], rbacrole.Interceptors[:]...)
+}
+
+func (c *RBACRoleClient) mutate(ctx context.Context, m *RBACRoleMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&RBACRoleCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&RBACRoleUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&RBACRoleUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&RBACRoleDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown RBACRole mutation op: %q", m.Op())
+	}
+}
+
+// RBACRolePermissionClient is a client for the RBACRolePermission schema.
+type RBACRolePermissionClient struct {
+	config
+}
+
+// NewRBACRolePermissionClient returns a client for the RBACRolePermission from the given config.
+func NewRBACRolePermissionClient(c config) *RBACRolePermissionClient {
+	return &RBACRolePermissionClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `rbacrolepermission.Hooks(f(g(h())))`.
+func (c *RBACRolePermissionClient) Use(hooks ...Hook) {
+	c.hooks.RBACRolePermission = append(c.hooks.RBACRolePermission, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `rbacrolepermission.Intercept(f(g(h())))`.
+func (c *RBACRolePermissionClient) Intercept(interceptors ...Interceptor) {
+	c.inters.RBACRolePermission = append(c.inters.RBACRolePermission, interceptors...)
+}
+
+// Create returns a builder for creating a RBACRolePermission entity.
+func (c *RBACRolePermissionClient) Create() *RBACRolePermissionCreate {
+	mutation := newRBACRolePermissionMutation(c.config, OpCreate)
+	return &RBACRolePermissionCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of RBACRolePermission entities.
+func (c *RBACRolePermissionClient) CreateBulk(builders ...*RBACRolePermissionCreate) *RBACRolePermissionCreateBulk {
+	return &RBACRolePermissionCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *RBACRolePermissionClient) MapCreateBulk(slice any, setFunc func(*RBACRolePermissionCreate, int)) *RBACRolePermissionCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &RBACRolePermissionCreateBulk{err: fmt.Errorf("calling to RBACRolePermissionClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*RBACRolePermissionCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &RBACRolePermissionCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for RBACRolePermission.
+func (c *RBACRolePermissionClient) Update() *RBACRolePermissionUpdate {
+	mutation := newRBACRolePermissionMutation(c.config, OpUpdate)
+	return &RBACRolePermissionUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *RBACRolePermissionClient) UpdateOne(_m *RBACRolePermission) *RBACRolePermissionUpdateOne {
+	mutation := newRBACRolePermissionMutation(c.config, OpUpdateOne, withRBACRolePermission(_m))
+	return &RBACRolePermissionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *RBACRolePermissionClient) UpdateOneID(id int64) *RBACRolePermissionUpdateOne {
+	mutation := newRBACRolePermissionMutation(c.config, OpUpdateOne, withRBACRolePermissionID(id))
+	return &RBACRolePermissionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for RBACRolePermission.
+func (c *RBACRolePermissionClient) Delete() *RBACRolePermissionDelete {
+	mutation := newRBACRolePermissionMutation(c.config, OpDelete)
+	return &RBACRolePermissionDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *RBACRolePermissionClient) DeleteOne(_m *RBACRolePermission) *RBACRolePermissionDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *RBACRolePermissionClient) DeleteOneID(id int64) *RBACRolePermissionDeleteOne {
+	builder := c.Delete().Where(rbacrolepermission.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &RBACRolePermissionDeleteOne{builder}
+}
+
+// Query returns a query builder for RBACRolePermission.
+func (c *RBACRolePermissionClient) Query() *RBACRolePermissionQuery {
+	return &RBACRolePermissionQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeRBACRolePermission},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a RBACRolePermission entity by its id.
+func (c *RBACRolePermissionClient) Get(ctx context.Context, id int64) (*RBACRolePermission, error) {
+	return c.Query().Where(rbacrolepermission.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *RBACRolePermissionClient) GetX(ctx context.Context, id int64) *RBACRolePermission {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryRole queries the role edge of a RBACRolePermission.
+func (c *RBACRolePermissionClient) QueryRole(_m *RBACRolePermission) *RBACRoleQuery {
+	query := (&RBACRoleClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(rbacrolepermission.Table, rbacrolepermission.FieldID, id),
+			sqlgraph.To(rbacrole.Table, rbacrole.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, rbacrolepermission.RoleTable, rbacrolepermission.RoleColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryPermission queries the permission edge of a RBACRolePermission.
+func (c *RBACRolePermissionClient) QueryPermission(_m *RBACRolePermission) *RBACPermissionQuery {
+	query := (&RBACPermissionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(rbacrolepermission.Table, rbacrolepermission.FieldID, id),
+			sqlgraph.To(rbacpermission.Table, rbacpermission.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, rbacrolepermission.PermissionTable, rbacrolepermission.PermissionColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *RBACRolePermissionClient) Hooks() []Hook {
+	return c.hooks.RBACRolePermission
+}
+
+// Interceptors returns the client interceptors.
+func (c *RBACRolePermissionClient) Interceptors() []Interceptor {
+	return c.inters.RBACRolePermission
+}
+
+func (c *RBACRolePermissionClient) mutate(ctx context.Context, m *RBACRolePermissionMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&RBACRolePermissionCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&RBACRolePermissionUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&RBACRolePermissionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&RBACRolePermissionDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown RBACRolePermission mutation op: %q", m.Op())
+	}
+}
+
+// RBACUserRoleClient is a client for the RBACUserRole schema.
+type RBACUserRoleClient struct {
+	config
+}
+
+// NewRBACUserRoleClient returns a client for the RBACUserRole from the given config.
+func NewRBACUserRoleClient(c config) *RBACUserRoleClient {
+	return &RBACUserRoleClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `rbacuserrole.Hooks(f(g(h())))`.
+func (c *RBACUserRoleClient) Use(hooks ...Hook) {
+	c.hooks.RBACUserRole = append(c.hooks.RBACUserRole, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `rbacuserrole.Intercept(f(g(h())))`.
+func (c *RBACUserRoleClient) Intercept(interceptors ...Interceptor) {
+	c.inters.RBACUserRole = append(c.inters.RBACUserRole, interceptors...)
+}
+
+// Create returns a builder for creating a RBACUserRole entity.
+func (c *RBACUserRoleClient) Create() *RBACUserRoleCreate {
+	mutation := newRBACUserRoleMutation(c.config, OpCreate)
+	return &RBACUserRoleCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of RBACUserRole entities.
+func (c *RBACUserRoleClient) CreateBulk(builders ...*RBACUserRoleCreate) *RBACUserRoleCreateBulk {
+	return &RBACUserRoleCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *RBACUserRoleClient) MapCreateBulk(slice any, setFunc func(*RBACUserRoleCreate, int)) *RBACUserRoleCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &RBACUserRoleCreateBulk{err: fmt.Errorf("calling to RBACUserRoleClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*RBACUserRoleCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &RBACUserRoleCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for RBACUserRole.
+func (c *RBACUserRoleClient) Update() *RBACUserRoleUpdate {
+	mutation := newRBACUserRoleMutation(c.config, OpUpdate)
+	return &RBACUserRoleUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *RBACUserRoleClient) UpdateOne(_m *RBACUserRole) *RBACUserRoleUpdateOne {
+	mutation := newRBACUserRoleMutation(c.config, OpUpdateOne, withRBACUserRole(_m))
+	return &RBACUserRoleUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *RBACUserRoleClient) UpdateOneID(id int64) *RBACUserRoleUpdateOne {
+	mutation := newRBACUserRoleMutation(c.config, OpUpdateOne, withRBACUserRoleID(id))
+	return &RBACUserRoleUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for RBACUserRole.
+func (c *RBACUserRoleClient) Delete() *RBACUserRoleDelete {
+	mutation := newRBACUserRoleMutation(c.config, OpDelete)
+	return &RBACUserRoleDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *RBACUserRoleClient) DeleteOne(_m *RBACUserRole) *RBACUserRoleDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *RBACUserRoleClient) DeleteOneID(id int64) *RBACUserRoleDeleteOne {
+	builder := c.Delete().Where(rbacuserrole.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &RBACUserRoleDeleteOne{builder}
+}
+
+// Query returns a query builder for RBACUserRole.
+func (c *RBACUserRoleClient) Query() *RBACUserRoleQuery {
+	return &RBACUserRoleQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeRBACUserRole},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a RBACUserRole entity by its id.
+func (c *RBACUserRoleClient) Get(ctx context.Context, id int64) (*RBACUserRole, error) {
+	return c.Query().Where(rbacuserrole.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *RBACUserRoleClient) GetX(ctx context.Context, id int64) *RBACUserRole {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryUser queries the user edge of a RBACUserRole.
+func (c *RBACUserRoleClient) QueryUser(_m *RBACUserRole) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(rbacuserrole.Table, rbacuserrole.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, rbacuserrole.UserTable, rbacuserrole.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryRole queries the role edge of a RBACUserRole.
+func (c *RBACUserRoleClient) QueryRole(_m *RBACUserRole) *RBACRoleQuery {
+	query := (&RBACRoleClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(rbacuserrole.Table, rbacuserrole.FieldID, id),
+			sqlgraph.To(rbacrole.Table, rbacrole.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, rbacuserrole.RoleTable, rbacuserrole.RoleColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryAssigner queries the assigner edge of a RBACUserRole.
+func (c *RBACUserRoleClient) QueryAssigner(_m *RBACUserRole) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(rbacuserrole.Table, rbacuserrole.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, rbacuserrole.AssignerTable, rbacuserrole.AssignerColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *RBACUserRoleClient) Hooks() []Hook {
+	return c.hooks.RBACUserRole
+}
+
+// Interceptors returns the client interceptors.
+func (c *RBACUserRoleClient) Interceptors() []Interceptor {
+	return c.inters.RBACUserRole
+}
+
+func (c *RBACUserRoleClient) mutate(ctx context.Context, m *RBACUserRoleMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&RBACUserRoleCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&RBACUserRoleUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&RBACUserRoleUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&RBACUserRoleDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown RBACUserRole mutation op: %q", m.Op())
+	}
+}
+
+// RBACUserVersionClient is a client for the RBACUserVersion schema.
+type RBACUserVersionClient struct {
+	config
+}
+
+// NewRBACUserVersionClient returns a client for the RBACUserVersion from the given config.
+func NewRBACUserVersionClient(c config) *RBACUserVersionClient {
+	return &RBACUserVersionClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `rbacuserversion.Hooks(f(g(h())))`.
+func (c *RBACUserVersionClient) Use(hooks ...Hook) {
+	c.hooks.RBACUserVersion = append(c.hooks.RBACUserVersion, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `rbacuserversion.Intercept(f(g(h())))`.
+func (c *RBACUserVersionClient) Intercept(interceptors ...Interceptor) {
+	c.inters.RBACUserVersion = append(c.inters.RBACUserVersion, interceptors...)
+}
+
+// Create returns a builder for creating a RBACUserVersion entity.
+func (c *RBACUserVersionClient) Create() *RBACUserVersionCreate {
+	mutation := newRBACUserVersionMutation(c.config, OpCreate)
+	return &RBACUserVersionCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of RBACUserVersion entities.
+func (c *RBACUserVersionClient) CreateBulk(builders ...*RBACUserVersionCreate) *RBACUserVersionCreateBulk {
+	return &RBACUserVersionCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *RBACUserVersionClient) MapCreateBulk(slice any, setFunc func(*RBACUserVersionCreate, int)) *RBACUserVersionCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &RBACUserVersionCreateBulk{err: fmt.Errorf("calling to RBACUserVersionClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*RBACUserVersionCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &RBACUserVersionCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for RBACUserVersion.
+func (c *RBACUserVersionClient) Update() *RBACUserVersionUpdate {
+	mutation := newRBACUserVersionMutation(c.config, OpUpdate)
+	return &RBACUserVersionUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *RBACUserVersionClient) UpdateOne(_m *RBACUserVersion) *RBACUserVersionUpdateOne {
+	mutation := newRBACUserVersionMutation(c.config, OpUpdateOne, withRBACUserVersion(_m))
+	return &RBACUserVersionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *RBACUserVersionClient) UpdateOneID(id int64) *RBACUserVersionUpdateOne {
+	mutation := newRBACUserVersionMutation(c.config, OpUpdateOne, withRBACUserVersionID(id))
+	return &RBACUserVersionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for RBACUserVersion.
+func (c *RBACUserVersionClient) Delete() *RBACUserVersionDelete {
+	mutation := newRBACUserVersionMutation(c.config, OpDelete)
+	return &RBACUserVersionDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *RBACUserVersionClient) DeleteOne(_m *RBACUserVersion) *RBACUserVersionDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *RBACUserVersionClient) DeleteOneID(id int64) *RBACUserVersionDeleteOne {
+	builder := c.Delete().Where(rbacuserversion.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &RBACUserVersionDeleteOne{builder}
+}
+
+// Query returns a query builder for RBACUserVersion.
+func (c *RBACUserVersionClient) Query() *RBACUserVersionQuery {
+	return &RBACUserVersionQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeRBACUserVersion},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a RBACUserVersion entity by its id.
+func (c *RBACUserVersionClient) Get(ctx context.Context, id int64) (*RBACUserVersion, error) {
+	return c.Query().Where(rbacuserversion.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *RBACUserVersionClient) GetX(ctx context.Context, id int64) *RBACUserVersion {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryUser queries the user edge of a RBACUserVersion.
+func (c *RBACUserVersionClient) QueryUser(_m *RBACUserVersion) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(rbacuserversion.Table, rbacuserversion.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, true, rbacuserversion.UserTable, rbacuserversion.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *RBACUserVersionClient) Hooks() []Hook {
+	return c.hooks.RBACUserVersion
+}
+
+// Interceptors returns the client interceptors.
+func (c *RBACUserVersionClient) Interceptors() []Interceptor {
+	return c.inters.RBACUserVersion
+}
+
+func (c *RBACUserVersionClient) mutate(ctx context.Context, m *RBACUserVersionMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&RBACUserVersionCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&RBACUserVersionUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&RBACUserVersionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&RBACUserVersionDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown RBACUserVersion mutation op: %q", m.Op())
+	}
+}
+
 // RedeemCodeClient is a client for the RedeemCode schema.
 type RedeemCodeClient struct {
 	config
@@ -6063,6 +7218,70 @@ func (c *UserClient) QueryUserModelTokenDailyLimitConfigs(_m *User) *UserModelTo
 	return query
 }
 
+// QueryRbacUserRoles queries the rbac_user_roles edge of a User.
+func (c *UserClient) QueryRbacUserRoles(_m *User) *RBACUserRoleQuery {
+	query := (&RBACUserRoleClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(rbacuserrole.Table, rbacuserrole.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.RbacUserRolesTable, user.RbacUserRolesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryAssignedRbacUserRoles queries the assigned_rbac_user_roles edge of a User.
+func (c *UserClient) QueryAssignedRbacUserRoles(_m *User) *RBACUserRoleQuery {
+	query := (&RBACUserRoleClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(rbacuserrole.Table, rbacuserrole.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.AssignedRbacUserRolesTable, user.AssignedRbacUserRolesColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryRbacUserVersion queries the rbac_user_version edge of a User.
+func (c *UserClient) QueryRbacUserVersion(_m *User) *RBACUserVersionQuery {
+	query := (&RBACUserVersionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(rbacuserversion.Table, rbacuserversion.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, user.RbacUserVersionTable, user.RbacUserVersionColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryRbacAuditLogs queries the rbac_audit_logs edge of a User.
+func (c *UserClient) QueryRbacAuditLogs(_m *User) *RBACAuditLogQuery {
+	query := (&RBACAuditLogClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(rbacauditlog.Table, rbacauditlog.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.RbacAuditLogsTable, user.RbacAuditLogsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryUserAllowedGroups queries the user_allowed_groups edge of a User.
 func (c *UserClient) QueryUserAllowedGroups(_m *User) *UserAllowedGroupQuery {
 	query := (&UserAllowedGroupClient{config: c.config}).Query()
@@ -7195,11 +8414,12 @@ type (
 		Group, GroupCandidateTokenDailyLimitConfig, GroupCandidateTokenDailyUsage,
 		IdempotencyRecord, IdentityAdoptionDecision, ModelTokenDailyLimitConfig,
 		ModelTokenDailyUsage, PaymentAuditLog, PaymentOrder, PaymentProviderInstance,
-		PendingAuthSession, PromoCode, PromoCodeUsage, Proxy, RedeemCode,
-		SecuritySecret, Setting, SubscriptionPlan, TLSFingerprintProfile,
-		UsageCleanupTask, UsageLog, User, UserAllowedGroup, UserAttributeDefinition,
-		UserAttributeValue, UserModelTokenDailyLimitConfig, UserModelTokenDailyUsage,
-		UserPlatformQuota, UserSubscription []ent.Hook
+		PendingAuthSession, PromoCode, PromoCodeUsage, Proxy, RBACAuditLog,
+		RBACPermission, RBACPolicyState, RBACRole, RBACRolePermission, RBACUserRole,
+		RBACUserVersion, RedeemCode, SecuritySecret, Setting, SubscriptionPlan,
+		TLSFingerprintProfile, UsageCleanupTask, UsageLog, User, UserAllowedGroup,
+		UserAttributeDefinition, UserAttributeValue, UserModelTokenDailyLimitConfig,
+		UserModelTokenDailyUsage, UserPlatformQuota, UserSubscription []ent.Hook
 	}
 	inters struct {
 		APIKey, Account, AccountGroup, Announcement, AnnouncementRead, AuthIdentity,
@@ -7208,11 +8428,12 @@ type (
 		Group, GroupCandidateTokenDailyLimitConfig, GroupCandidateTokenDailyUsage,
 		IdempotencyRecord, IdentityAdoptionDecision, ModelTokenDailyLimitConfig,
 		ModelTokenDailyUsage, PaymentAuditLog, PaymentOrder, PaymentProviderInstance,
-		PendingAuthSession, PromoCode, PromoCodeUsage, Proxy, RedeemCode,
-		SecuritySecret, Setting, SubscriptionPlan, TLSFingerprintProfile,
-		UsageCleanupTask, UsageLog, User, UserAllowedGroup, UserAttributeDefinition,
-		UserAttributeValue, UserModelTokenDailyLimitConfig, UserModelTokenDailyUsage,
-		UserPlatformQuota, UserSubscription []ent.Interceptor
+		PendingAuthSession, PromoCode, PromoCodeUsage, Proxy, RBACAuditLog,
+		RBACPermission, RBACPolicyState, RBACRole, RBACRolePermission, RBACUserRole,
+		RBACUserVersion, RedeemCode, SecuritySecret, Setting, SubscriptionPlan,
+		TLSFingerprintProfile, UsageCleanupTask, UsageLog, User, UserAllowedGroup,
+		UserAttributeDefinition, UserAttributeValue, UserModelTokenDailyLimitConfig,
+		UserModelTokenDailyUsage, UserPlatformQuota, UserSubscription []ent.Interceptor
 	}
 )
 

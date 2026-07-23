@@ -8,6 +8,7 @@ import (
 
 	"github.com/Wei-Shaw/sub2api/internal/config"
 	"github.com/Wei-Shaw/sub2api/internal/handler"
+	"github.com/Wei-Shaw/sub2api/internal/rbac"
 	middleware2 "github.com/Wei-Shaw/sub2api/internal/server/middleware"
 	"github.com/Wei-Shaw/sub2api/internal/server/routes"
 	"github.com/Wei-Shaw/sub2api/internal/service"
@@ -25,6 +26,7 @@ func SetupRouter(
 	handlers *handler.Handlers,
 	jwtAuth middleware2.JWTAuthMiddleware,
 	adminAuth middleware2.AdminAuthMiddleware,
+	adminIdentityAuth middleware2.AdminIdentityAuthMiddleware,
 	apiKeyAuth middleware2.APIKeyAuthMiddleware,
 	apiKeyService *service.APIKeyService,
 	subscriptionService *service.SubscriptionService,
@@ -32,6 +34,8 @@ func SetupRouter(
 	settingService *service.SettingService,
 	cfg *config.Config,
 	redisClient *redis.Client,
+	rbacPermissionService *rbac.PermissionService,
+	rbacRegistry *rbac.Registry,
 ) *gin.Engine {
 	// 缓存 iframe 页面的 origin 列表，用于动态注入 CSP frame-src
 	var cachedFrameOrigins atomic.Pointer[[]string]
@@ -81,7 +85,7 @@ func SetupRouter(
 	}
 
 	// 注册路由
-	registerRoutes(r, handlers, jwtAuth, adminAuth, apiKeyAuth, apiKeyService, subscriptionService, opsService, settingService, cfg, redisClient)
+	registerRoutes(r, handlers, jwtAuth, adminAuth, adminIdentityAuth, apiKeyAuth, apiKeyService, subscriptionService, opsService, settingService, cfg, redisClient, rbacPermissionService, rbacRegistry)
 
 	return r
 }
@@ -92,6 +96,7 @@ func registerRoutes(
 	h *handler.Handlers,
 	jwtAuth middleware2.JWTAuthMiddleware,
 	adminAuth middleware2.AdminAuthMiddleware,
+	adminIdentityAuth middleware2.AdminIdentityAuthMiddleware,
 	apiKeyAuth middleware2.APIKeyAuthMiddleware,
 	apiKeyService *service.APIKeyService,
 	subscriptionService *service.SubscriptionService,
@@ -99,21 +104,35 @@ func registerRoutes(
 	settingService *service.SettingService,
 	cfg *config.Config,
 	redisClient *redis.Client,
+	rbacPermissionService *rbac.PermissionService,
+	rbacRegistry *rbac.Registry,
 ) {
 	// 通用路由（健康检查、状态等）
 	routes.RegisterCommonRoutes(r)
 
 	// API v1
 	v1 := r.Group("/api/v1")
+	rbacRegistrar := rbac.NewRouteRegistrar(
+		rbacRegistry,
+		middleware2.RequirePermission(
+			rbacPermissionService,
+			middleware2.ParseRBACMode(cfg.RBAC.Mode),
+			middleware2.NewRBACAuthorizationAuditHook(cfg.RBAC.AuditDenials),
+		),
+	)
 
 	// 注册各模块路由
-	routes.RegisterAuthRoutes(v1, h, jwtAuth, redisClient, settingService)
-	routes.RegisterUserRoutes(v1, h, jwtAuth, settingService)
-	routes.RegisterAdminRoutes(v1, h, adminAuth, settingService)
+	routes.RegisterAuthRoutes(v1, h, jwtAuth, redisClient, settingService, rbacRegistrar)
+	routes.RegisterUserRoutes(v1, h, jwtAuth, settingService, rbacRegistrar)
+	routes.RegisterAdminRoutes(v1, h, adminAuth, settingService, routes.AdminRBACOptions{
+		IdentityAuth: adminIdentityAuth,
+		Registrar:    rbacRegistrar,
+		Registry:     rbacRegistry,
+	})
 	routes.RegisterGatewayRoutes(r, h, apiKeyAuth, apiKeyService, subscriptionService, opsService, settingService, cfg)
-	routes.RegisterPaymentRoutes(v1, h.Payment, h.PaymentWebhook, h.Admin.Payment, jwtAuth, adminAuth, settingService)
+	routes.RegisterPaymentRoutes(v1, h.Payment, h.PaymentWebhook, h.Admin.Payment, jwtAuth, adminIdentityAuth, settingService, rbacRegistrar, rbacRegistry)
 
-	handler.RegisterPageRoutes(v1, cfg.Pricing.DataDir, gin.HandlerFunc(jwtAuth), gin.HandlerFunc(adminAuth), settingService)
+	handler.RegisterPageRoutes(v1, cfg.Pricing.DataDir, gin.HandlerFunc(jwtAuth), gin.HandlerFunc(adminIdentityAuth), settingService, rbacRegistrar)
 
 	// 外部供应接口
 	pc := cfg.ExternalAPIKeyProvisioning
@@ -133,4 +152,11 @@ func registerRoutes(
 	provHardening := middleware2.NewProvisioningHardening(provLimiter, nil)
 	provAuth := middleware2.ExternalProvisioningAuth(pc)
 	routes.RegisterIntegrationRoutes(v1, h.ExternalProvisioning, provAuth, provHardening.Middleware())
+
+	if err := rbac.RegisterKnownExclusions(r.Routes(), rbacRegistry); err != nil {
+		panic(err)
+	}
+	if err := rbac.ValidateRouteCoverage(r.Routes(), rbacRegistry).Err(); err != nil {
+		panic(err)
+	}
 }

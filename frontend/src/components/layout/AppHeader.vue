@@ -42,7 +42,7 @@
         <LocaleSwitcher />
 
         <!-- Subscription Progress (for users with active subscriptions) -->
-        <SubscriptionProgressMini v-if="user" />
+        <SubscriptionProgressMini v-if="user && authStore.can('subscriptions.self.read')" />
 
         <!-- Balance Display -->
         <div
@@ -268,7 +268,7 @@ const pageTitle = computed(() => {
     const id = route.params.id as string
     const publicItems = appStore.cachedPublicSettings?.custom_menu_items ?? []
     const menuItem = publicItems.find((item) => item.id === id)
-      ?? (authStore.isAdmin ? adminSettingsStore.customMenuItems.find((item) => item.id === id) : undefined)
+      ?? (authStore.can('settings.read') ? adminSettingsStore.customMenuItems.find((item) => item.id === id) : undefined)
     if (menuItem?.label) return menuItem.label
   }
   const titleKey = route.meta.titleKey as string

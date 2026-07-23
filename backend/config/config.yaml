@@ -33,6 +33,13 @@ redis:
   db: 0
   enable_tls: false
 
+# RBAC authorization. Change mode to shadow for an immediate authorization rollback;
+# RBAC data remains intact and shadow denials are audited without blocking requests.
+rbac:
+  mode: "enforce"
+  cache_ttl_minutes: 20
+  audit_denials: true
+
 jwt:
   secret: "f78b5b9dfff6233d36060f7fa31537a7192848ba181fa3dd0ad35509112773b7"
   expire_hour: 24

@@ -91,6 +91,14 @@ const (
 	EdgeModelTokenDailyUsages = "model_token_daily_usages"
 	// EdgeUserModelTokenDailyLimitConfigs holds the string denoting the user_model_token_daily_limit_configs edge name in mutations.
 	EdgeUserModelTokenDailyLimitConfigs = "user_model_token_daily_limit_configs"
+	// EdgeRbacUserRoles holds the string denoting the rbac_user_roles edge name in mutations.
+	EdgeRbacUserRoles = "rbac_user_roles"
+	// EdgeAssignedRbacUserRoles holds the string denoting the assigned_rbac_user_roles edge name in mutations.
+	EdgeAssignedRbacUserRoles = "assigned_rbac_user_roles"
+	// EdgeRbacUserVersion holds the string denoting the rbac_user_version edge name in mutations.
+	EdgeRbacUserVersion = "rbac_user_version"
+	// EdgeRbacAuditLogs holds the string denoting the rbac_audit_logs edge name in mutations.
+	EdgeRbacAuditLogs = "rbac_audit_logs"
 	// EdgeUserAllowedGroups holds the string denoting the user_allowed_groups edge name in mutations.
 	EdgeUserAllowedGroups = "user_allowed_groups"
 	// Table holds the table name of the user in the database.
@@ -198,6 +206,34 @@ const (
 	UserModelTokenDailyLimitConfigsInverseTable = "user_model_token_daily_limit_configs"
 	// UserModelTokenDailyLimitConfigsColumn is the table column denoting the user_model_token_daily_limit_configs relation/edge.
 	UserModelTokenDailyLimitConfigsColumn = "user_id"
+	// RbacUserRolesTable is the table that holds the rbac_user_roles relation/edge.
+	RbacUserRolesTable = "rbac_user_roles"
+	// RbacUserRolesInverseTable is the table name for the RBACUserRole entity.
+	// It exists in this package in order to avoid circular dependency with the "rbacuserrole" package.
+	RbacUserRolesInverseTable = "rbac_user_roles"
+	// RbacUserRolesColumn is the table column denoting the rbac_user_roles relation/edge.
+	RbacUserRolesColumn = "user_id"
+	// AssignedRbacUserRolesTable is the table that holds the assigned_rbac_user_roles relation/edge.
+	AssignedRbacUserRolesTable = "rbac_user_roles"
+	// AssignedRbacUserRolesInverseTable is the table name for the RBACUserRole entity.
+	// It exists in this package in order to avoid circular dependency with the "rbacuserrole" package.
+	AssignedRbacUserRolesInverseTable = "rbac_user_roles"
+	// AssignedRbacUserRolesColumn is the table column denoting the assigned_rbac_user_roles relation/edge.
+	AssignedRbacUserRolesColumn = "assigned_by"
+	// RbacUserVersionTable is the table that holds the rbac_user_version relation/edge.
+	RbacUserVersionTable = "rbac_user_versions"
+	// RbacUserVersionInverseTable is the table name for the RBACUserVersion entity.
+	// It exists in this package in order to avoid circular dependency with the "rbacuserversion" package.
+	RbacUserVersionInverseTable = "rbac_user_versions"
+	// RbacUserVersionColumn is the table column denoting the rbac_user_version relation/edge.
+	RbacUserVersionColumn = "user_id"
+	// RbacAuditLogsTable is the table that holds the rbac_audit_logs relation/edge.
+	RbacAuditLogsTable = "rbac_audit_logs"
+	// RbacAuditLogsInverseTable is the table name for the RBACAuditLog entity.
+	// It exists in this package in order to avoid circular dependency with the "rbacauditlog" package.
+	RbacAuditLogsInverseTable = "rbac_audit_logs"
+	// RbacAuditLogsColumn is the table column denoting the rbac_audit_logs relation/edge.
+	RbacAuditLogsColumn = "actor_user_id"
 	// UserAllowedGroupsTable is the table that holds the user_allowed_groups relation/edge.
 	UserAllowedGroupsTable = "user_allowed_groups"
 	// UserAllowedGroupsInverseTable is the table name for the UserAllowedGroup entity.
@@ -638,6 +674,55 @@ func ByUserModelTokenDailyLimitConfigs(term sql.OrderTerm, terms ...sql.OrderTer
 	}
 }
 
+// ByRbacUserRolesCount orders the results by rbac_user_roles count.
+func ByRbacUserRolesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newRbacUserRolesStep(), opts...)
+	}
+}
+
+// ByRbacUserRoles orders the results by rbac_user_roles terms.
+func ByRbacUserRoles(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newRbacUserRolesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByAssignedRbacUserRolesCount orders the results by assigned_rbac_user_roles count.
+func ByAssignedRbacUserRolesCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newAssignedRbacUserRolesStep(), opts...)
+	}
+}
+
+// ByAssignedRbacUserRoles orders the results by assigned_rbac_user_roles terms.
+func ByAssignedRbacUserRoles(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newAssignedRbacUserRolesStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByRbacUserVersionField orders the results by rbac_user_version field.
+func ByRbacUserVersionField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newRbacUserVersionStep(), sql.OrderByField(field, opts...))
+	}
+}
+
+// ByRbacAuditLogsCount orders the results by rbac_audit_logs count.
+func ByRbacAuditLogsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newRbacAuditLogsStep(), opts...)
+	}
+}
+
+// ByRbacAuditLogs orders the results by rbac_audit_logs terms.
+func ByRbacAuditLogs(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newRbacAuditLogsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
 // ByUserAllowedGroupsCount orders the results by user_allowed_groups count.
 func ByUserAllowedGroupsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -754,6 +839,34 @@ func newUserModelTokenDailyLimitConfigsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(UserModelTokenDailyLimitConfigsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, UserModelTokenDailyLimitConfigsTable, UserModelTokenDailyLimitConfigsColumn),
+	)
+}
+func newRbacUserRolesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(RbacUserRolesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, RbacUserRolesTable, RbacUserRolesColumn),
+	)
+}
+func newAssignedRbacUserRolesStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(AssignedRbacUserRolesInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, AssignedRbacUserRolesTable, AssignedRbacUserRolesColumn),
+	)
+}
+func newRbacUserVersionStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(RbacUserVersionInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2O, false, RbacUserVersionTable, RbacUserVersionColumn),
+	)
+}
+func newRbacAuditLogsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(RbacAuditLogsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, RbacAuditLogsTable, RbacAuditLogsColumn),
 	)
 }
 func newUserAllowedGroupsStep() *sqlgraph.Step {

@@ -1,4 +1,4 @@
-﻿package handler
+package handler
 
 import (
 	"context"
@@ -12,6 +12,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/internal/pkg/ip"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/ldapauth"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/response"
+	"github.com/Wei-Shaw/sub2api/internal/rbac"
 	middleware2 "github.com/Wei-Shaw/sub2api/internal/server/middleware"
 	"github.com/Wei-Shaw/sub2api/internal/service"
 
@@ -20,15 +21,16 @@ import (
 
 // AuthHandler handles authentication-related requests
 type AuthHandler struct {
-	cfg                  *config.Config
-	authService          *service.AuthService
-	userService          *service.UserService
-	settingSvc           *service.SettingService
-	promoService         *service.PromoService
-	redeemService        *service.RedeemService
-	totpService          *service.TotpService
-	userAttributeService *service.UserAttributeService
-	ldapAuthenticator    ldapauth.Authenticator
+	cfg                   *config.Config
+	authService           *service.AuthService
+	userService           *service.UserService
+	settingSvc            *service.SettingService
+	promoService          *service.PromoService
+	redeemService         *service.RedeemService
+	totpService           *service.TotpService
+	userAttributeService  *service.UserAttributeService
+	rbacPermissionService *rbac.PermissionService
+	ldapAuthenticator     ldapauth.Authenticator
 
 	dingTalkClientInstance *DingTalkClient
 	dingTalkClientMu       sync.Mutex
@@ -456,7 +458,11 @@ func (h *AuthHandler) GetCurrentUser(c *gin.Context) {
 
 	type UserResponse struct {
 		userProfileResponse
-		RunMode string `json:"run_mode"`
+		RunMode           string   `json:"run_mode"`
+		Roles             []string `json:"roles"`
+		Permissions       []string `json:"permissions"`
+		PermissionVersion int64    `json:"permission_version"`
+		PolicyVersion     int64    `json:"policy_version"`
 	}
 
 	runMode := config.RunModeStandard
@@ -464,9 +470,21 @@ func (h *AuthHandler) GetCurrentUser(c *gin.Context) {
 		runMode = h.cfg.RunMode
 	}
 
+	effective := rbac.EffectivePermissions{Roles: []string{}, Permissions: []string{}}
+	if h.rbacPermissionService != nil {
+		effective, err = h.rbacPermissionService.GetEffectivePermissions(c.Request.Context(), subject.UserID)
+		if err != nil {
+			response.ErrorFrom(c, err)
+			return
+		}
+	}
 	response.Success(c, UserResponse{
 		userProfileResponse: userProfileResponseFromService(user, identities),
 		RunMode:             runMode,
+		Roles:               effective.Roles,
+		Permissions:         effective.Permissions,
+		PermissionVersion:   effective.UserVersion,
+		PolicyVersion:       effective.PolicyVersion,
 	})
 }
 

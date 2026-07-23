@@ -93,6 +93,11 @@ var (
 				Unique:  false,
 				Columns: []*schema.Column{APIKeysColumns[14]},
 			},
+			{
+				Name:    "apikey_user_id_platform_group_id_deleted_at",
+				Unique:  false,
+				Columns: []*schema.Column{APIKeysColumns[25], APIKeysColumns[6], APIKeysColumns[24], APIKeysColumns[3]},
+			},
 		},
 	}
 	// AccountsColumns holds the columns for the "accounts" table.
@@ -1265,6 +1270,254 @@ var (
 			},
 		},
 	}
+	// RbacAuditLogsColumns holds the columns for the "rbac_audit_logs" table.
+	RbacAuditLogsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "action", Type: field.TypeString, Size: 64},
+		{Name: "target_type", Type: field.TypeString, Size: 32},
+		{Name: "target_id", Type: field.TypeString, Size: 128},
+		{Name: "before_data", Type: field.TypeJSON, Nullable: true, SchemaType: map[string]string{"mysql": "json"}},
+		{Name: "after_data", Type: field.TypeJSON, Nullable: true, SchemaType: map[string]string{"mysql": "json"}},
+		{Name: "request_id", Type: field.TypeString, Size: 128, Default: ""},
+		{Name: "ip_address", Type: field.TypeString, Size: 64, Default: ""},
+		{Name: "created_at", Type: field.TypeTime},
+		{Name: "actor_user_id", Type: field.TypeInt64, Nullable: true},
+	}
+	// RbacAuditLogsTable holds the schema information for the "rbac_audit_logs" table.
+	RbacAuditLogsTable = &schema.Table{
+		Name:       "rbac_audit_logs",
+		Columns:    RbacAuditLogsColumns,
+		PrimaryKey: []*schema.Column{RbacAuditLogsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "rbac_audit_logs_users_rbac_audit_logs",
+				Columns:    []*schema.Column{RbacAuditLogsColumns[9]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "rbacauditlog_actor_user_id_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{RbacAuditLogsColumns[9], RbacAuditLogsColumns[8]},
+			},
+			{
+				Name:    "rbacauditlog_target_type_target_id_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{RbacAuditLogsColumns[2], RbacAuditLogsColumns[3], RbacAuditLogsColumns[8]},
+			},
+			{
+				Name:    "rbacauditlog_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{RbacAuditLogsColumns[8]},
+			},
+		},
+	}
+	// RbacPermissionsColumns holds the columns for the "rbac_permissions" table.
+	RbacPermissionsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "deleted_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "code", Type: field.TypeString, Size: 128},
+		{Name: "name", Type: field.TypeString, Size: 100},
+		{Name: "module", Type: field.TypeString, Size: 64},
+		{Name: "description", Type: field.TypeString, Size: 500, Default: ""},
+		{Name: "risk_level", Type: field.TypeString, Size: 16},
+		{Name: "is_system", Type: field.TypeBool, Default: true},
+		{Name: "status", Type: field.TypeString, Size: 20, Default: "active"},
+	}
+	// RbacPermissionsTable holds the schema information for the "rbac_permissions" table.
+	RbacPermissionsTable = &schema.Table{
+		Name:       "rbac_permissions",
+		Columns:    RbacPermissionsColumns,
+		PrimaryKey: []*schema.Column{RbacPermissionsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "rbacpermission_code",
+				Unique:  true,
+				Columns: []*schema.Column{RbacPermissionsColumns[4]},
+			},
+			{
+				Name:    "rbacpermission_module",
+				Unique:  false,
+				Columns: []*schema.Column{RbacPermissionsColumns[6]},
+			},
+			{
+				Name:    "rbacpermission_status",
+				Unique:  false,
+				Columns: []*schema.Column{RbacPermissionsColumns[10]},
+			},
+			{
+				Name:    "rbacpermission_deleted_at",
+				Unique:  false,
+				Columns: []*schema.Column{RbacPermissionsColumns[3]},
+			},
+		},
+	}
+	// RbacPolicyStateColumns holds the columns for the "rbac_policy_state" table.
+	RbacPolicyStateColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "policy_version", Type: field.TypeInt64, Default: 1},
+		{Name: "updated_at", Type: field.TypeTime},
+	}
+	// RbacPolicyStateTable holds the schema information for the "rbac_policy_state" table.
+	RbacPolicyStateTable = &schema.Table{
+		Name:       "rbac_policy_state",
+		Columns:    RbacPolicyStateColumns,
+		PrimaryKey: []*schema.Column{RbacPolicyStateColumns[0]},
+	}
+	// RbacRolesColumns holds the columns for the "rbac_roles" table.
+	RbacRolesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "deleted_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "code", Type: field.TypeString, Size: 64},
+		{Name: "name", Type: field.TypeString, Size: 100},
+		{Name: "description", Type: field.TypeString, Size: 500, Default: ""},
+		{Name: "is_system", Type: field.TypeBool, Default: false},
+		{Name: "status", Type: field.TypeString, Size: 20, Default: "active"},
+	}
+	// RbacRolesTable holds the schema information for the "rbac_roles" table.
+	RbacRolesTable = &schema.Table{
+		Name:       "rbac_roles",
+		Columns:    RbacRolesColumns,
+		PrimaryKey: []*schema.Column{RbacRolesColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "rbacrole_code",
+				Unique:  true,
+				Columns: []*schema.Column{RbacRolesColumns[4]},
+			},
+			{
+				Name:    "rbacrole_status",
+				Unique:  false,
+				Columns: []*schema.Column{RbacRolesColumns[8]},
+			},
+			{
+				Name:    "rbacrole_deleted_at",
+				Unique:  false,
+				Columns: []*schema.Column{RbacRolesColumns[3]},
+			},
+		},
+	}
+	// RbacRolePermissionsColumns holds the columns for the "rbac_role_permissions" table.
+	RbacRolePermissionsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "permission_id", Type: field.TypeInt64},
+		{Name: "role_id", Type: field.TypeInt64},
+	}
+	// RbacRolePermissionsTable holds the schema information for the "rbac_role_permissions" table.
+	RbacRolePermissionsTable = &schema.Table{
+		Name:       "rbac_role_permissions",
+		Columns:    RbacRolePermissionsColumns,
+		PrimaryKey: []*schema.Column{RbacRolePermissionsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "rbac_role_permissions_rbac_permissions_role_permissions",
+				Columns:    []*schema.Column{RbacRolePermissionsColumns[3]},
+				RefColumns: []*schema.Column{RbacPermissionsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "rbac_role_permissions_rbac_roles_role_permissions",
+				Columns:    []*schema.Column{RbacRolePermissionsColumns[4]},
+				RefColumns: []*schema.Column{RbacRolesColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "rbacrolepermission_role_id_permission_id",
+				Unique:  true,
+				Columns: []*schema.Column{RbacRolePermissionsColumns[4], RbacRolePermissionsColumns[3]},
+			},
+			{
+				Name:    "rbacrolepermission_permission_id",
+				Unique:  false,
+				Columns: []*schema.Column{RbacRolePermissionsColumns[3]},
+			},
+		},
+	}
+	// RbacUserRolesColumns holds the columns for the "rbac_user_roles" table.
+	RbacUserRolesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "role_id", Type: field.TypeInt64},
+		{Name: "user_id", Type: field.TypeInt64},
+		{Name: "assigned_by", Type: field.TypeInt64, Nullable: true},
+	}
+	// RbacUserRolesTable holds the schema information for the "rbac_user_roles" table.
+	RbacUserRolesTable = &schema.Table{
+		Name:       "rbac_user_roles",
+		Columns:    RbacUserRolesColumns,
+		PrimaryKey: []*schema.Column{RbacUserRolesColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "rbac_user_roles_rbac_roles_user_roles",
+				Columns:    []*schema.Column{RbacUserRolesColumns[3]},
+				RefColumns: []*schema.Column{RbacRolesColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "rbac_user_roles_users_rbac_user_roles",
+				Columns:    []*schema.Column{RbacUserRolesColumns[4]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "rbac_user_roles_users_assigned_rbac_user_roles",
+				Columns:    []*schema.Column{RbacUserRolesColumns[5]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "rbacuserrole_user_id_role_id",
+				Unique:  true,
+				Columns: []*schema.Column{RbacUserRolesColumns[4], RbacUserRolesColumns[3]},
+			},
+			{
+				Name:    "rbacuserrole_role_id",
+				Unique:  false,
+				Columns: []*schema.Column{RbacUserRolesColumns[3]},
+			},
+		},
+	}
+	// RbacUserVersionsColumns holds the columns for the "rbac_user_versions" table.
+	RbacUserVersionsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "authz_version", Type: field.TypeInt64, Default: 1},
+		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "user_id", Type: field.TypeInt64, Unique: true},
+	}
+	// RbacUserVersionsTable holds the schema information for the "rbac_user_versions" table.
+	RbacUserVersionsTable = &schema.Table{
+		Name:       "rbac_user_versions",
+		Columns:    RbacUserVersionsColumns,
+		PrimaryKey: []*schema.Column{RbacUserVersionsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "rbac_user_versions_users_rbac_user_version",
+				Columns:    []*schema.Column{RbacUserVersionsColumns[3]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "rbacuserversion_user_id",
+				Unique:  true,
+				Columns: []*schema.Column{RbacUserVersionsColumns[3]},
+			},
+		},
+	}
 	// RedeemCodesColumns holds the columns for the "redeem_codes" table.
 	RedeemCodesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt64, Increment: true},
@@ -1990,6 +2243,13 @@ var (
 		PromoCodesTable,
 		PromoCodeUsagesTable,
 		ProxiesTable,
+		RbacAuditLogsTable,
+		RbacPermissionsTable,
+		RbacPolicyStateTable,
+		RbacRolesTable,
+		RbacRolePermissionsTable,
+		RbacUserRolesTable,
+		RbacUserVersionsTable,
 		RedeemCodesTable,
 		SecuritySecretsTable,
 		SettingsTable,
@@ -2107,6 +2367,34 @@ func init() {
 	ProxiesTable.ForeignKeys[0].RefTable = ProxiesTable
 	ProxiesTable.Annotation = &entsql.Annotation{
 		Table: "proxies",
+	}
+	RbacAuditLogsTable.ForeignKeys[0].RefTable = UsersTable
+	RbacAuditLogsTable.Annotation = &entsql.Annotation{
+		Table: "rbac_audit_logs",
+	}
+	RbacPermissionsTable.Annotation = &entsql.Annotation{
+		Table: "rbac_permissions",
+	}
+	RbacPolicyStateTable.Annotation = &entsql.Annotation{
+		Table: "rbac_policy_state",
+	}
+	RbacRolesTable.Annotation = &entsql.Annotation{
+		Table: "rbac_roles",
+	}
+	RbacRolePermissionsTable.ForeignKeys[0].RefTable = RbacPermissionsTable
+	RbacRolePermissionsTable.ForeignKeys[1].RefTable = RbacRolesTable
+	RbacRolePermissionsTable.Annotation = &entsql.Annotation{
+		Table: "rbac_role_permissions",
+	}
+	RbacUserRolesTable.ForeignKeys[0].RefTable = RbacRolesTable
+	RbacUserRolesTable.ForeignKeys[1].RefTable = UsersTable
+	RbacUserRolesTable.ForeignKeys[2].RefTable = UsersTable
+	RbacUserRolesTable.Annotation = &entsql.Annotation{
+		Table: "rbac_user_roles",
+	}
+	RbacUserVersionsTable.ForeignKeys[0].RefTable = UsersTable
+	RbacUserVersionsTable.Annotation = &entsql.Annotation{
+		Table: "rbac_user_versions",
 	}
 	RedeemCodesTable.ForeignKeys[0].RefTable = GroupsTable
 	RedeemCodesTable.ForeignKeys[1].RefTable = UsersTable

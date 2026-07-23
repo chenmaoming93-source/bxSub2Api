@@ -21,7 +21,7 @@ const adminSettingsStore = useAdminSettingsStore()
 function updateDocumentTitle() {
   const customMenuItems = [
     ...(appStore.cachedPublicSettings?.custom_menu_items ?? []),
-    ...(authStore.isAdmin ? adminSettingsStore.customMenuItems : []),
+    ...(authStore.can('settings.read') ? adminSettingsStore.customMenuItems : []),
   ]
   document.title = resolveRouteDocumentTitle(route, appStore.siteName, customMenuItems)
 }
@@ -60,7 +60,7 @@ watch(
     () => route.meta.titleKey,
     () => appStore.siteName,
     () => appStore.cachedPublicSettings?.custom_menu_items,
-    () => authStore.isAdmin,
+    () => authStore.can('settings.read'),
     () => adminSettingsStore.customMenuItems,
   ],
   updateDocumentTitle,
@@ -70,7 +70,9 @@ watch(
 // Watch for authentication state and manage subscription data + announcements
 function onVisibilityChange() {
   if (document.visibilityState === 'visible' && authStore.isAuthenticated) {
-    announcementStore.fetchAnnouncements()
+    if (authStore.can('announcements.self.read')) {
+      announcementStore.fetchAnnouncements()
+    }
   }
 }
 
@@ -80,8 +82,13 @@ function onAdminComplianceRequired(event: Event) {
 }
 
 watch(
-  () => authStore.isAuthenticated,
-  (isAuthenticated, oldValue) => {
+  [
+    () => authStore.isAuthenticated,
+    () => authStore.can('subscriptions.self.read'),
+    () => authStore.can('announcements.self.read'),
+  ],
+  ([isAuthenticated, canReadSubscriptions, canReadAnnouncements], oldValues) => {
+    const wasAuthenticated = oldValues?.[0]
     if (isAuthenticated) {
       if (authStore.isAdmin) {
         adminComplianceStore.fetchStatus().catch((error) => {
@@ -89,22 +96,29 @@ watch(
         })
       }
 
-      // User logged in: preload subscriptions and start polling
-      subscriptionStore.fetchActiveSubscriptions().catch((error) => {
-        console.error('Failed to preload subscriptions:', error)
-      })
-      subscriptionStore.startPolling()
-
-      // Announcements: new login vs page refresh restore
-      if (oldValue === false) {
-        // New login: delay 3s then force fetch
-        setTimeout(() => announcementStore.fetchAnnouncements(true), 3000)
+      if (canReadSubscriptions) {
+        subscriptionStore.fetchActiveSubscriptions().catch((error) => {
+          console.error('Failed to preload subscriptions:', error)
+        })
+        subscriptionStore.startPolling()
       } else {
-        // Page refresh restore (oldValue was undefined)
-        announcementStore.fetchAnnouncements()
+        subscriptionStore.clear()
       }
 
-      // Register visibility change listener
+      if (canReadAnnouncements) {
+        if (wasAuthenticated === false) {
+          setTimeout(() => {
+            if (authStore.can('announcements.self.read')) {
+              announcementStore.fetchAnnouncements(true)
+            }
+          }, 3000)
+        } else {
+          announcementStore.fetchAnnouncements()
+        }
+      } else {
+        announcementStore.reset()
+      }
+
       document.addEventListener('visibilitychange', onVisibilityChange)
     } else {
       // User logged out: clear data and stop polling
@@ -119,7 +133,7 @@ watch(
 
 // Route change trigger (throttled by store)
 router.afterEach(() => {
-  if (authStore.isAuthenticated) {
+  if (authStore.isAuthenticated && authStore.can('announcements.self.read')) {
     announcementStore.fetchAnnouncements()
   }
 })

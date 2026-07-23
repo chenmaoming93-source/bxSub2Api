@@ -68,42 +68,42 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true, title: 'Profile Settings' }
   },
 
-  // Admin routes (use AppLayout, admin only)
+  // Admin-surface routes (access is decided by the centralized RBAC page matrix)
   {
     path: '/admin/dashboard',
     name: 'AdminDashboard',
     component: () => import('@/views/admin/DashboardView.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, title: 'Admin Dashboard' }
+    meta: { requiresAuth: true, title: 'Admin Dashboard' }
   },
   {
     path: '/admin/users',
     name: 'AdminUsers',
     component: () => import('@/views/admin/UsersView.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, title: 'User Management' }
+    meta: { requiresAuth: true, title: 'User Management' }
   },
   {
     path: '/admin/groups',
     name: 'AdminGroups',
     component: () => import('@/views/admin/GroupsView.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, title: 'Groups' }
+    meta: { requiresAuth: true, title: 'Groups' }
   },
   {
     path: '/admin/accounts',
     name: 'AdminAccounts',
     component: () => import('@/views/admin/AccountsView.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, title: 'Accounts' }
+    meta: { requiresAuth: true, title: 'Accounts' }
   },
   {
     path: '/admin/proxies',
     name: 'AdminProxies',
     component: () => import('@/views/admin/ProxiesView.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, title: 'Proxies' }
+    meta: { requiresAuth: true, title: 'Proxies' }
   },
   {
     path: '/admin/redeem-codes',
     name: 'AdminRedeemCodes',
     component: () => import('@/views/admin/RedeemCodesView.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, title: 'Redeem Codes' }
+    meta: { requiresAuth: true, title: 'Redeem Codes' }
   },
 
   // Default redirect
@@ -125,8 +125,8 @@ router.beforeEach((to, from, next) => {
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
     // Redirect to login if not authenticated
     next('/login')
-  } else if (to.meta.requiresAdmin && !authStore.isAdmin) {
-    // Redirect to dashboard if not admin
+  } else if (to.meta.requiredPermission && !authStore.can(to.meta.requiredPermission)) {
+    // Redirect when the authenticated user lacks the declared permission
     next('/dashboard')
   } else {
     next()
@@ -334,9 +334,9 @@ if (authStore.isAuthenticated) {
   // User is logged in
 }
 
-// Check if user is admin
-if (authStore.isAdmin) {
-  // User has admin role
+// Check the capability required by the current feature
+if (authStore.can('token_usage.read')) {
+  // User may access token usage statistics
 }
 
 // Get current user

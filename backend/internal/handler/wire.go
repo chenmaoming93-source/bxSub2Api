@@ -1,11 +1,19 @@
 package handler
 
 import (
+	"github.com/Wei-Shaw/sub2api/internal/config"
 	"github.com/Wei-Shaw/sub2api/internal/handler/admin"
+	"github.com/Wei-Shaw/sub2api/internal/rbac"
 	"github.com/Wei-Shaw/sub2api/internal/service"
 
 	"github.com/google/wire"
 )
+
+func ProvideAuthHandler(cfg *config.Config, authService *service.AuthService, userService *service.UserService, settingService *service.SettingService, promoService *service.PromoService, redeemService *service.RedeemService, totpService *service.TotpService, userAttributeService *service.UserAttributeService, permissionService *rbac.PermissionService) *AuthHandler {
+	h := NewAuthHandler(cfg, authService, userService, settingService, promoService, redeemService, totpService, userAttributeService)
+	h.rbacPermissionService = permissionService
+	return h
+}
 
 // ProvideAdminHandlers creates the AdminHandlers struct
 func ProvideAdminHandlers(
@@ -43,6 +51,7 @@ func ProvideAdminHandlers(
 	modelTokenQuotaHandler *admin.ModelTokenQuotaHandler,
 	userModelTokenQuotaHandler *admin.UserModelTokenQuotaHandler,
 	tokenUsageReportHandler *admin.TokenUsageReportHandler,
+	rbacHandler *admin.RBACHandler,
 ) *AdminHandlers {
 	return &AdminHandlers{
 		Dashboard:              dashboardHandler,
@@ -79,6 +88,7 @@ func ProvideAdminHandlers(
 		ModelTokenQuota:        modelTokenQuotaHandler,
 		UserModelTokenQuota:    userModelTokenQuotaHandler,
 		TokenUsageReport:       tokenUsageReportHandler,
+		RBAC:                   rbacHandler,
 	}
 }
 
@@ -145,7 +155,7 @@ func ProvideHandlers(
 // ProviderSet is the Wire provider set for all handlers
 var ProviderSet = wire.NewSet(
 	// Top-level handlers
-	NewAuthHandler,
+	ProvideAuthHandler,
 	NewUserHandler,
 	NewAPIKeyHandler,
 	NewUsageHandler,
@@ -188,6 +198,7 @@ var ProviderSet = wire.NewSet(
 	admin.NewScheduledTestHandler,
 	admin.NewChannelHandler,
 	admin.NewChannelMonitorHandler,
+	admin.NewRBACHandler,
 	admin.NewChannelMonitorRequestTemplateHandler,
 	admin.NewContentModerationHandler,
 	admin.NewPaymentHandler,

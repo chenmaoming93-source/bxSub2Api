@@ -5,6 +5,7 @@ import (
 
 	"github.com/Wei-Shaw/sub2api/internal/handler"
 	"github.com/Wei-Shaw/sub2api/internal/middleware"
+	"github.com/Wei-Shaw/sub2api/internal/rbac"
 	servermiddleware "github.com/Wei-Shaw/sub2api/internal/server/middleware"
 	"github.com/Wei-Shaw/sub2api/internal/service"
 
@@ -19,6 +20,7 @@ func RegisterAuthRoutes(
 	jwtAuth servermiddleware.JWTAuthMiddleware,
 	redisClient *redis.Client,
 	settingService *service.SettingService,
+	rbacRegistrars ...*rbac.RouteRegistrar,
 ) {
 	// 创建速率限制器
 	rateLimiter := middleware.NewRateLimiter(redisClient)
@@ -221,10 +223,20 @@ func RegisterAuthRoutes(
 	authenticated := v1.Group("")
 	authenticated.Use(gin.HandlerFunc(jwtAuth))
 	authenticated.Use(servermiddleware.BackendModeUserGuard(settingService))
+	authenticated.Use(servermiddleware.PrincipalFromAuthenticatedSubject())
 	{
-		authenticated.GET("/auth/me", h.Auth.GetCurrentUser)
-		// 撤销所有会话（需要认证）
-		authenticated.POST("/auth/revoke-all-sessions", h.Auth.RevokeAllSessions)
-		authenticated.POST("/auth/oauth/bind-token", h.Auth.PrepareOAuthBindAccessTokenCookie)
+		if len(rbacRegistrars) == 0 || rbacRegistrars[0] == nil {
+			authenticated.GET("/auth/me", h.Auth.GetCurrentUser)
+			authenticated.POST("/auth/revoke-all-sessions", h.Auth.RevokeAllSessions)
+			authenticated.POST("/auth/oauth/bind-token", h.Auth.PrepareOAuthBindAccessTokenCookie)
+		} else {
+			rbacRoutes := rbacRegistrars[0]
+			// Bootstrap endpoint: an authenticated user must be able to load
+			// their RBAC snapshot before any permission can be evaluated.
+			// The /auth/* coverage exclusion still requires JWT identity here.
+			authenticated.GET("/auth/me", h.Auth.GetCurrentUser)
+			rbacRoutes.POST(authenticated, "/auth/revoke-all-sessions", rbac.PermissionProfileSelfSecure, h.Auth.RevokeAllSessions)
+			rbacRoutes.POST(authenticated, "/auth/oauth/bind-token", rbac.PermissionProfileSelfSecure, h.Auth.PrepareOAuthBindAccessTokenCookie)
+		}
 	}
 }

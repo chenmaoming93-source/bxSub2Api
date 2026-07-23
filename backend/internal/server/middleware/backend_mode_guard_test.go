@@ -154,6 +154,23 @@ func TestBackendModeUserGuard(t *testing.T) {
 	}
 }
 
+func TestBackendModeUserGuardAllowsRBACBootstrapForUser(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	r.Use(func(c *gin.Context) {
+		c.Set(string(ContextKeyUserRole), "user")
+		c.Next()
+	})
+	r.Use(BackendModeUserGuard(newBackendModeSettingService(t, "true")))
+	r.GET("/api/v1/auth/me", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"ok": true})
+	})
+
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, httptest.NewRequest(http.MethodGet, "/api/v1/auth/me", nil))
+	require.Equal(t, http.StatusOK, w.Code)
+}
+
 func TestBackendModeAuthGuard(t *testing.T) {
 	tests := []struct {
 		name       string

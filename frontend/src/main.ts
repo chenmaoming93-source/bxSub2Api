@@ -5,6 +5,7 @@ import router from './router'
 import i18n, { initI18n } from './i18n'
 import { useAppStore } from '@/stores/app'
 import './style.css'
+import { permissionDirective } from '@/directives/permission'
 
 function initThemeClass() {
   const savedTheme = localStorage.getItem('theme')
@@ -21,6 +22,7 @@ async function bootstrap() {
   const app = createApp(App)
   const pinia = createPinia()
   app.use(pinia)
+  app.directive('permission', permissionDirective)
 
   // Initialize settings from injected config BEFORE mounting (prevents flash)
   // This must happen after pinia is installed but before router and i18n

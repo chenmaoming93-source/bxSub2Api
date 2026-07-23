@@ -35,6 +35,13 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/promocode"
 	"github.com/Wei-Shaw/sub2api/ent/promocodeusage"
 	"github.com/Wei-Shaw/sub2api/ent/proxy"
+	"github.com/Wei-Shaw/sub2api/ent/rbacauditlog"
+	"github.com/Wei-Shaw/sub2api/ent/rbacpermission"
+	"github.com/Wei-Shaw/sub2api/ent/rbacpolicystate"
+	"github.com/Wei-Shaw/sub2api/ent/rbacrole"
+	"github.com/Wei-Shaw/sub2api/ent/rbacrolepermission"
+	"github.com/Wei-Shaw/sub2api/ent/rbacuserrole"
+	"github.com/Wei-Shaw/sub2api/ent/rbacuserversion"
 	"github.com/Wei-Shaw/sub2api/ent/redeemcode"
 	"github.com/Wei-Shaw/sub2api/ent/securitysecret"
 	"github.com/Wei-Shaw/sub2api/ent/setting"
@@ -810,6 +817,195 @@ func (f TraverseProxy) Traverse(ctx context.Context, q ent.Query) error {
 	return fmt.Errorf("unexpected query type %T. expect *ent.ProxyQuery", q)
 }
 
+// The RBACAuditLogFunc type is an adapter to allow the use of ordinary function as a Querier.
+type RBACAuditLogFunc func(context.Context, *ent.RBACAuditLogQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f RBACAuditLogFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.RBACAuditLogQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.RBACAuditLogQuery", q)
+}
+
+// The TraverseRBACAuditLog type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseRBACAuditLog func(context.Context, *ent.RBACAuditLogQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseRBACAuditLog) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseRBACAuditLog) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.RBACAuditLogQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.RBACAuditLogQuery", q)
+}
+
+// The RBACPermissionFunc type is an adapter to allow the use of ordinary function as a Querier.
+type RBACPermissionFunc func(context.Context, *ent.RBACPermissionQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f RBACPermissionFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.RBACPermissionQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.RBACPermissionQuery", q)
+}
+
+// The TraverseRBACPermission type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseRBACPermission func(context.Context, *ent.RBACPermissionQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseRBACPermission) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseRBACPermission) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.RBACPermissionQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.RBACPermissionQuery", q)
+}
+
+// The RBACPolicyStateFunc type is an adapter to allow the use of ordinary function as a Querier.
+type RBACPolicyStateFunc func(context.Context, *ent.RBACPolicyStateQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f RBACPolicyStateFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.RBACPolicyStateQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.RBACPolicyStateQuery", q)
+}
+
+// The TraverseRBACPolicyState type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseRBACPolicyState func(context.Context, *ent.RBACPolicyStateQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseRBACPolicyState) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseRBACPolicyState) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.RBACPolicyStateQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.RBACPolicyStateQuery", q)
+}
+
+// The RBACRoleFunc type is an adapter to allow the use of ordinary function as a Querier.
+type RBACRoleFunc func(context.Context, *ent.RBACRoleQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f RBACRoleFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.RBACRoleQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.RBACRoleQuery", q)
+}
+
+// The TraverseRBACRole type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseRBACRole func(context.Context, *ent.RBACRoleQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseRBACRole) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseRBACRole) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.RBACRoleQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.RBACRoleQuery", q)
+}
+
+// The RBACRolePermissionFunc type is an adapter to allow the use of ordinary function as a Querier.
+type RBACRolePermissionFunc func(context.Context, *ent.RBACRolePermissionQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f RBACRolePermissionFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.RBACRolePermissionQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.RBACRolePermissionQuery", q)
+}
+
+// The TraverseRBACRolePermission type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseRBACRolePermission func(context.Context, *ent.RBACRolePermissionQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseRBACRolePermission) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseRBACRolePermission) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.RBACRolePermissionQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.RBACRolePermissionQuery", q)
+}
+
+// The RBACUserRoleFunc type is an adapter to allow the use of ordinary function as a Querier.
+type RBACUserRoleFunc func(context.Context, *ent.RBACUserRoleQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f RBACUserRoleFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.RBACUserRoleQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.RBACUserRoleQuery", q)
+}
+
+// The TraverseRBACUserRole type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseRBACUserRole func(context.Context, *ent.RBACUserRoleQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseRBACUserRole) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseRBACUserRole) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.RBACUserRoleQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.RBACUserRoleQuery", q)
+}
+
+// The RBACUserVersionFunc type is an adapter to allow the use of ordinary function as a Querier.
+type RBACUserVersionFunc func(context.Context, *ent.RBACUserVersionQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f RBACUserVersionFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.RBACUserVersionQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.RBACUserVersionQuery", q)
+}
+
+// The TraverseRBACUserVersion type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseRBACUserVersion func(context.Context, *ent.RBACUserVersionQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseRBACUserVersion) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseRBACUserVersion) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.RBACUserVersionQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.RBACUserVersionQuery", q)
+}
+
 // The RedeemCodeFunc type is an adapter to allow the use of ordinary function as a Querier.
 type RedeemCodeFunc func(context.Context, *ent.RedeemCodeQuery) (ent.Value, error)
 
@@ -1270,6 +1466,20 @@ func NewQuery(q ent.Query) (Query, error) {
 		return &query[*ent.PromoCodeUsageQuery, predicate.PromoCodeUsage, promocodeusage.OrderOption]{typ: ent.TypePromoCodeUsage, tq: q}, nil
 	case *ent.ProxyQuery:
 		return &query[*ent.ProxyQuery, predicate.Proxy, proxy.OrderOption]{typ: ent.TypeProxy, tq: q}, nil
+	case *ent.RBACAuditLogQuery:
+		return &query[*ent.RBACAuditLogQuery, predicate.RBACAuditLog, rbacauditlog.OrderOption]{typ: ent.TypeRBACAuditLog, tq: q}, nil
+	case *ent.RBACPermissionQuery:
+		return &query[*ent.RBACPermissionQuery, predicate.RBACPermission, rbacpermission.OrderOption]{typ: ent.TypeRBACPermission, tq: q}, nil
+	case *ent.RBACPolicyStateQuery:
+		return &query[*ent.RBACPolicyStateQuery, predicate.RBACPolicyState, rbacpolicystate.OrderOption]{typ: ent.TypeRBACPolicyState, tq: q}, nil
+	case *ent.RBACRoleQuery:
+		return &query[*ent.RBACRoleQuery, predicate.RBACRole, rbacrole.OrderOption]{typ: ent.TypeRBACRole, tq: q}, nil
+	case *ent.RBACRolePermissionQuery:
+		return &query[*ent.RBACRolePermissionQuery, predicate.RBACRolePermission, rbacrolepermission.OrderOption]{typ: ent.TypeRBACRolePermission, tq: q}, nil
+	case *ent.RBACUserRoleQuery:
+		return &query[*ent.RBACUserRoleQuery, predicate.RBACUserRole, rbacuserrole.OrderOption]{typ: ent.TypeRBACUserRole, tq: q}, nil
+	case *ent.RBACUserVersionQuery:
+		return &query[*ent.RBACUserVersionQuery, predicate.RBACUserVersion, rbacuserversion.OrderOption]{typ: ent.TypeRBACUserVersion, tq: q}, nil
 	case *ent.RedeemCodeQuery:
 		return &query[*ent.RedeemCodeQuery, predicate.RedeemCode, redeemcode.OrderOption]{typ: ent.TypeRedeemCode, tq: q}, nil
 	case *ent.SecuritySecretQuery:

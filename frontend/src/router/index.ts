@@ -13,11 +13,12 @@ import { useRoutePrefetch } from '@/composables/useRoutePrefetch'
 import { getSetupStatus } from '@/api/setup'
 import { resolveCompletedSetupRedirectPath } from './setupRedirect'
 import { resolveRouteDocumentTitle } from './title'
+import { permissionForPage } from '@/rbac/permissionMatrix'
 
 /**
  * Route definitions with lazy loading
  */
-const routes: RouteRecordRaw[] = [
+const rawRoutes: RouteRecordRaw[] = [
   // ==================== Setup Routes ====================
   {
     path: '/setup',
@@ -182,12 +183,20 @@ const routes: RouteRecordRaw[] = [
     redirect: '/home'
   },
   {
+    path: '/welcome',
+    name: 'Welcome',
+    component: () => import('@/views/WelcomeView.vue'),
+    meta: {
+      requiresAuth: true,
+      title: 'Welcome'
+    }
+  },
+  {
     path: '/dashboard',
     name: 'Dashboard',
     component: () => import('@/views/user/DashboardView.vue'),
     meta: {
       requiresAuth: true,
-      requiresAdmin: false,
       title: 'Dashboard',
       titleKey: 'dashboard.title',
       descriptionKey: 'dashboard.welcomeMessage'
@@ -199,7 +208,6 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/user/KeysView.vue'),
     meta: {
       requiresAuth: true,
-      requiresAdmin: false,
       title: 'API Keys',
       titleKey: 'keys.title',
       descriptionKey: 'keys.description'
@@ -211,7 +219,6 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/user/UsageView.vue'),
     meta: {
       requiresAuth: true,
-      requiresAdmin: false,
       title: 'Usage Records',
       titleKey: 'usage.title',
       descriptionKey: 'usage.description'
@@ -223,7 +230,6 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/user/RedeemView.vue'),
     meta: {
       requiresAuth: true,
-      requiresAdmin: false,
       title: 'Redeem Code',
       titleKey: 'redeem.title',
       descriptionKey: 'redeem.description'
@@ -235,7 +241,6 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/user/AffiliateView.vue'),
     meta: {
       requiresAuth: true,
-      requiresAdmin: false,
       title: 'Affiliate',
       titleKey: 'affiliate.title',
       descriptionKey: 'affiliate.description'
@@ -247,7 +252,6 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/user/AvailableChannelsView.vue'),
     meta: {
       requiresAuth: true,
-      requiresAdmin: false,
       title: 'Available Channels',
       titleKey: 'availableChannels.title',
       descriptionKey: 'availableChannels.description'
@@ -259,7 +263,6 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/user/ProfileView.vue'),
     meta: {
       requiresAuth: true,
-      requiresAdmin: false,
       title: 'Profile',
       titleKey: 'profile.title',
       descriptionKey: 'profile.description'
@@ -271,7 +274,6 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/user/SubscriptionsView.vue'),
     meta: {
       requiresAuth: true,
-      requiresAdmin: false,
       title: 'My Subscriptions',
       titleKey: 'userSubscriptions.title',
       descriptionKey: 'userSubscriptions.description'
@@ -283,7 +285,6 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/user/PaymentView.vue'),
     meta: {
       requiresAuth: true,
-      requiresAdmin: false,
       title: 'Purchase Subscription',
       titleKey: 'nav.buySubscription',
       descriptionKey: 'purchase.description',
@@ -296,7 +297,6 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/user/UserOrdersView.vue'),
     meta: {
       requiresAuth: true,
-      requiresAdmin: false,
       title: 'My Orders',
       titleKey: 'nav.myOrders',
       requiresPayment: true
@@ -308,7 +308,6 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/user/PaymentQRCodeView.vue'),
     meta: {
       requiresAuth: true,
-      requiresAdmin: false,
       title: 'Payment',
       titleKey: 'payment.qr.scanToPay',
       requiresPayment: true
@@ -320,7 +319,6 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/user/PaymentResultView.vue'),
     meta: {
       requiresAuth: false,
-      requiresAdmin: false,
       title: 'Payment Result',
       titleKey: 'payment.result.success',
       requiresPayment: false
@@ -332,7 +330,6 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/user/StripePaymentView.vue'),
     meta: {
       requiresAuth: false,
-      requiresAdmin: false,
       title: 'Stripe Payment',
       titleKey: 'payment.stripePay',
       requiresPayment: false
@@ -344,7 +341,6 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/user/AirwallexPaymentView.vue'),
     meta: {
       requiresAuth: false,
-      requiresAdmin: false,
       title: 'Airwallex Payment',
       titleKey: 'payment.airwallexPay',
       requiresPayment: false
@@ -356,7 +352,6 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/user/StripePopupView.vue'),
     meta: {
       requiresAuth: false,
-      requiresAdmin: false,
       title: 'Payment',
       requiresPayment: false
     }
@@ -367,7 +362,6 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/user/CustomPageView.vue'),
     meta: {
       requiresAuth: true,
-      requiresAdmin: false,
       title: 'Custom Page',
       titleKey: 'customPage.title',
     }
@@ -384,7 +378,6 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/admin/DashboardView.vue'),
     meta: {
       requiresAuth: true,
-      requiresAdmin: true,
       title: 'Admin Dashboard',
       titleKey: 'admin.dashboard.title',
       descriptionKey: 'admin.dashboard.description'
@@ -396,7 +389,6 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/admin/ops/OpsDashboard.vue'),
     meta: {
       requiresAuth: true,
-      requiresAdmin: true,
       title: 'Ops Monitoring',
       titleKey: 'admin.ops.title',
       descriptionKey: 'admin.ops.description'
@@ -408,10 +400,18 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/admin/UsersView.vue'),
     meta: {
       requiresAuth: true,
-      requiresAdmin: true,
       title: 'User Management',
       titleKey: 'admin.users.title',
       descriptionKey: 'admin.users.description'
+    }
+  },
+  {
+    path: '/admin/roles',
+    name: 'AdminRoles',
+    component: () => import('@/views/admin/RolesView.vue'),
+    meta: {
+      requiresAuth: true,
+      title: 'Roles'
     }
   },
   {
@@ -420,7 +420,6 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/admin/GroupsView.vue'),
     meta: {
       requiresAuth: true,
-      requiresAdmin: true,
       title: 'Group Management',
       titleKey: 'admin.groups.title',
       descriptionKey: 'admin.groups.description'
@@ -432,7 +431,6 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/admin/DefaultGroupRoutingView.vue'),
     meta: {
       requiresAuth: true,
-      requiresAdmin: true,
       titleKey: 'admin.defaultGroupRouting.title',
       descriptionKey: 'admin.defaultGroupRouting.description'
     }
@@ -447,7 +445,6 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/admin/ChannelsView.vue'),
     meta: {
       requiresAuth: true,
-      requiresAdmin: true,
       title: 'Channel Management',
       titleKey: 'admin.channels.title',
       descriptionKey: 'admin.channels.description'
@@ -459,7 +456,6 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/admin/ChannelMonitorView.vue'),
     meta: {
       requiresAuth: true,
-      requiresAdmin: true,
       title: 'Channel Monitor',
       titleKey: 'admin.channelMonitor.title',
       descriptionKey: 'admin.channelMonitor.description'
@@ -471,7 +467,6 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/user/ChannelStatusView.vue'),
     meta: {
       requiresAuth: true,
-      requiresAdmin: false,
       title: 'Channel Status',
       titleKey: 'nav.channelStatus'
     }
@@ -482,7 +477,6 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/admin/SubscriptionsView.vue'),
     meta: {
       requiresAuth: true,
-      requiresAdmin: true,
       title: 'Subscription Management',
       titleKey: 'admin.subscriptions.title',
       descriptionKey: 'admin.subscriptions.description'
@@ -494,7 +488,6 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/admin/AccountsView.vue'),
     meta: {
       requiresAuth: true,
-      requiresAdmin: true,
       title: 'Account Management',
       titleKey: 'admin.accounts.title',
       descriptionKey: 'admin.accounts.description'
@@ -506,7 +499,6 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/admin/AnnouncementsView.vue'),
     meta: {
       requiresAuth: true,
-      requiresAdmin: true,
       title: 'Announcements',
       titleKey: 'admin.announcements.title',
       descriptionKey: 'admin.announcements.description'
@@ -518,7 +510,6 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/admin/ProxiesView.vue'),
     meta: {
       requiresAuth: true,
-      requiresAdmin: true,
       title: 'Proxy Management',
       titleKey: 'admin.proxies.title',
       descriptionKey: 'admin.proxies.description'
@@ -530,7 +521,6 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/admin/RedeemView.vue'),
     meta: {
       requiresAuth: true,
-      requiresAdmin: true,
       title: 'Redeem Code Management',
       titleKey: 'admin.redeem.title',
       descriptionKey: 'admin.redeem.description'
@@ -542,7 +532,6 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/admin/PromoCodesView.vue'),
     meta: {
       requiresAuth: true,
-      requiresAdmin: true,
       title: 'Promo Code Management',
       titleKey: 'admin.promo.title',
       descriptionKey: 'admin.promo.description'
@@ -554,7 +543,6 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/admin/SettingsView.vue'),
     meta: {
       requiresAuth: true,
-      requiresAdmin: true,
       title: 'System Settings',
       titleKey: 'admin.settings.title',
       descriptionKey: 'admin.settings.description'
@@ -566,7 +554,6 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/admin/RiskControlView.vue'),
     meta: {
       requiresAuth: true,
-      requiresAdmin: true,
       title: 'Risk Control',
       titleKey: 'admin.riskControl.title',
       descriptionKey: 'admin.riskControl.description',
@@ -579,7 +566,6 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/admin/UsageView.vue'),
     meta: {
       requiresAuth: true,
-      requiresAdmin: true,
       title: 'Usage Records',
       titleKey: 'admin.usage.title',
       descriptionKey: 'admin.usage.description'
@@ -591,7 +577,6 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/admin/token-usage/ModelTokenUsageView.vue'),
     meta: {
       requiresAuth: true,
-      requiresAdmin: true,
       title: 'Token Usage - Models',
       titleKey: 'admin.tokenUsage.models'
     }
@@ -602,7 +587,6 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/admin/token-usage/RouteTokenUsageView.vue'),
     meta: {
       requiresAuth: true,
-      requiresAdmin: true,
       title: 'Token Usage - Routes',
       titleKey: 'admin.tokenUsage.routes'
     }
@@ -613,7 +597,6 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/admin/token-usage/UserModelTokenUsageView.vue'),
     meta: {
       requiresAuth: true,
-      requiresAdmin: true,
       title: 'Token Usage - Users',
       titleKey: 'admin.tokenUsage.users'
     }
@@ -628,7 +611,6 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/admin/affiliates/AdminAffiliateInvitesView.vue'),
     meta: {
       requiresAuth: true,
-      requiresAdmin: true,
       title: 'Affiliate Invite Records',
       titleKey: 'nav.affiliateInviteRecords',
       descriptionKey: 'admin.affiliates.invitesDescription'
@@ -640,7 +622,6 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/admin/affiliates/AdminAffiliateRebatesView.vue'),
     meta: {
       requiresAuth: true,
-      requiresAdmin: true,
       title: 'Affiliate Rebate Records',
       titleKey: 'nav.affiliateRebateRecords',
       descriptionKey: 'admin.affiliates.rebatesDescription'
@@ -652,7 +633,6 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/admin/affiliates/AdminAffiliateTransfersView.vue'),
     meta: {
       requiresAuth: true,
-      requiresAdmin: true,
       title: 'Affiliate Transfer Records',
       titleKey: 'nav.affiliateTransferRecords',
       descriptionKey: 'admin.affiliates.transfersDescription'
@@ -667,7 +647,6 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/admin/orders/AdminPaymentDashboardView.vue'),
     meta: {
       requiresAuth: true,
-      requiresAdmin: true,
       title: 'Payment Dashboard',
       titleKey: 'nav.paymentDashboard',
       requiresPayment: true
@@ -679,7 +658,6 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/admin/orders/AdminOrdersView.vue'),
     meta: {
       requiresAuth: true,
-      requiresAdmin: true,
       title: 'Order Management',
       titleKey: 'nav.orderManagement',
       requiresPayment: true
@@ -691,7 +669,6 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/admin/orders/AdminPaymentPlansView.vue'),
     meta: {
       requiresAuth: true,
-      requiresAdmin: true,
       title: 'Subscription Plans',
       titleKey: 'nav.paymentPlans',
       requiresPayment: true
@@ -708,6 +685,12 @@ const routes: RouteRecordRaw[] = [
     }
   }
 ]
+
+const routes: RouteRecordRaw[] = rawRoutes.map((route) => {
+  const permission = permissionForPage(route.path)
+  if (!permission) return route
+  return { ...route, meta: { ...route.meta, requiredPermission: permission } }
+})
 
 /**
  * Create router instance
@@ -779,19 +762,17 @@ router.beforeEach(async (to, _from, next) => {
   const adminSettingsStore = useAdminSettingsStore()
   const customMenuItems = [
     ...(appStore.cachedPublicSettings?.custom_menu_items ?? []),
-    ...(authStore.isAdmin ? adminSettingsStore.customMenuItems : []),
+    ...(authStore.can('settings.read') ? adminSettingsStore.customMenuItems : []),
   ]
   document.title = resolveRouteDocumentTitle(to, appStore.siteName, customMenuItems)
 
   // Check if route requires authentication
   const requiresAuth = to.meta.requiresAuth !== false // Default to true
-  const requiresAdmin = to.meta.requiresAdmin === true
-
   if (to.path === '/setup') {
     try {
       const status = await getSetupStatus()
       if (!status.needs_setup) {
-        next(resolveCompletedSetupRedirectPath(authStore.isAuthenticated, authStore.isAdmin))
+        next(resolveCompletedSetupRedirectPath(authStore.isAuthenticated, authStore.hasAdminAccess))
         return
       }
     } catch {
@@ -805,12 +786,12 @@ router.beforeEach(async (to, _from, next) => {
     if (authStore.isAuthenticated && (to.path === '/login' || to.path === '/register')) {
       // In backend mode, non-admin users should NOT be redirected away from login
       // (they are blocked from all protected routes, so redirecting would cause a loop)
-      if (appStore.backendModeEnabled && !authStore.isAdmin) {
+      if (appStore.backendModeEnabled && !authStore.hasAdminAccess) {
         next()
         return
       }
       // Admin users go to admin dashboard, regular users go to user dashboard
-      next(authStore.isAdmin ? '/admin/dashboard' : '/dashboard')
+      next('/welcome')
       return
     }
     // Backend mode: block public pages for unauthenticated users (except login, key-usage, setup)
@@ -835,14 +816,19 @@ router.beforeEach(async (to, _from, next) => {
     return
   }
 
-  // Check admin requirement
-  if (requiresAdmin && !authStore.isAdmin) {
-    // User is authenticated but not admin, redirect to user dashboard
-    next('/dashboard')
+  const requiredPermissions = [
+    ...(typeof to.meta.requiredPermission === 'string' ? [to.meta.requiredPermission] : []),
+    ...(Array.isArray(to.meta.requiredPermissions) ? to.meta.requiredPermissions : []),
+  ]
+  const permissionAllowed = to.meta.permissionMode === 'all'
+    ? authStore.canAll(requiredPermissions)
+    : authStore.canAny(requiredPermissions)
+  if (requiredPermissions.length > 0 && !permissionAllowed) {
+    next('/welcome')
     return
   }
 
-  if (requiresAdmin && authStore.isAdmin) {
+  if (to.path.startsWith('/admin/') && authStore.isAdmin) {
     const adminComplianceStore = useAdminComplianceStore()
     if (!adminComplianceStore.initialized) {
       try {
@@ -861,7 +847,7 @@ router.beforeEach(async (to, _from, next) => {
   if (to.meta.requiresPayment) {
     const paymentEnabled = appStore.cachedPublicSettings?.payment_enabled
     if (!paymentEnabled) {
-      next(authStore.isAdmin ? '/admin/dashboard' : '/dashboard')
+      next('/welcome')
       return
     }
   }
@@ -869,7 +855,7 @@ router.beforeEach(async (to, _from, next) => {
   if (to.meta.requiresRiskControl) {
     const riskControlEnabled = appStore.cachedPublicSettings?.risk_control_enabled === true
     if (!riskControlEnabled) {
-      next(authStore.isAdmin ? '/admin/settings' : '/dashboard')
+      next(authStore.can('settings.read') ? '/admin/settings' : '/welcome')
       return
     }
   }
@@ -886,14 +872,14 @@ router.beforeEach(async (to, _from, next) => {
 
     if (restrictedPaths.some((path) => to.path.startsWith(path))) {
       // 简易模式下访问受限页面,重定向到仪表板
-      next(authStore.isAdmin ? '/admin/dashboard' : '/dashboard')
+      next('/welcome')
       return
     }
   }
 
   // Backend mode: admin gets full access, non-admin blocked
   if (appStore.backendModeEnabled) {
-    if (authStore.isAuthenticated && authStore.isAdmin) {
+    if (authStore.isAuthenticated && authStore.hasAdminAccess) {
       next()
       return
     }

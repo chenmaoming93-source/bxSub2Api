@@ -21,6 +21,9 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/pendingauthsession"
 	"github.com/Wei-Shaw/sub2api/ent/predicate"
 	"github.com/Wei-Shaw/sub2api/ent/promocodeusage"
+	"github.com/Wei-Shaw/sub2api/ent/rbacauditlog"
+	"github.com/Wei-Shaw/sub2api/ent/rbacuserrole"
+	"github.com/Wei-Shaw/sub2api/ent/rbacuserversion"
 	"github.com/Wei-Shaw/sub2api/ent/redeemcode"
 	"github.com/Wei-Shaw/sub2api/ent/usagelog"
 	"github.com/Wei-Shaw/sub2api/ent/user"
@@ -54,6 +57,10 @@ type UserQuery struct {
 	withPlatformQuotas                  *UserPlatformQuotaQuery
 	withModelTokenDailyUsages           *UserModelTokenDailyUsageQuery
 	withUserModelTokenDailyLimitConfigs *UserModelTokenDailyLimitConfigQuery
+	withRbacUserRoles                   *RBACUserRoleQuery
+	withAssignedRbacUserRoles           *RBACUserRoleQuery
+	withRbacUserVersion                 *RBACUserVersionQuery
+	withRbacAuditLogs                   *RBACAuditLogQuery
 	withUserAllowedGroups               *UserAllowedGroupQuery
 	modifiers                           []func(*sql.Selector)
 	// intermediate query (i.e. traversal path).
@@ -422,6 +429,94 @@ func (_q *UserQuery) QueryUserModelTokenDailyLimitConfigs() *UserModelTokenDaily
 	return query
 }
 
+// QueryRbacUserRoles chains the current query on the "rbac_user_roles" edge.
+func (_q *UserQuery) QueryRbacUserRoles() *RBACUserRoleQuery {
+	query := (&RBACUserRoleClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(rbacuserrole.Table, rbacuserrole.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.RbacUserRolesTable, user.RbacUserRolesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryAssignedRbacUserRoles chains the current query on the "assigned_rbac_user_roles" edge.
+func (_q *UserQuery) QueryAssignedRbacUserRoles() *RBACUserRoleQuery {
+	query := (&RBACUserRoleClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(rbacuserrole.Table, rbacuserrole.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.AssignedRbacUserRolesTable, user.AssignedRbacUserRolesColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryRbacUserVersion chains the current query on the "rbac_user_version" edge.
+func (_q *UserQuery) QueryRbacUserVersion() *RBACUserVersionQuery {
+	query := (&RBACUserVersionClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(rbacuserversion.Table, rbacuserversion.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, user.RbacUserVersionTable, user.RbacUserVersionColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryRbacAuditLogs chains the current query on the "rbac_audit_logs" edge.
+func (_q *UserQuery) QueryRbacAuditLogs() *RBACAuditLogQuery {
+	query := (&RBACAuditLogClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(rbacauditlog.Table, rbacauditlog.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.RbacAuditLogsTable, user.RbacAuditLogsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
 // QueryUserAllowedGroups chains the current query on the "user_allowed_groups" edge.
 func (_q *UserQuery) QueryUserAllowedGroups() *UserAllowedGroupQuery {
 	query := (&UserAllowedGroupClient{config: _q.config}).Query()
@@ -651,6 +746,10 @@ func (_q *UserQuery) Clone() *UserQuery {
 		withPlatformQuotas:                  _q.withPlatformQuotas.Clone(),
 		withModelTokenDailyUsages:           _q.withModelTokenDailyUsages.Clone(),
 		withUserModelTokenDailyLimitConfigs: _q.withUserModelTokenDailyLimitConfigs.Clone(),
+		withRbacUserRoles:                   _q.withRbacUserRoles.Clone(),
+		withAssignedRbacUserRoles:           _q.withAssignedRbacUserRoles.Clone(),
+		withRbacUserVersion:                 _q.withRbacUserVersion.Clone(),
+		withRbacAuditLogs:                   _q.withRbacAuditLogs.Clone(),
 		withUserAllowedGroups:               _q.withUserAllowedGroups.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
@@ -823,6 +922,50 @@ func (_q *UserQuery) WithUserModelTokenDailyLimitConfigs(opts ...func(*UserModel
 	return _q
 }
 
+// WithRbacUserRoles tells the query-builder to eager-load the nodes that are connected to
+// the "rbac_user_roles" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithRbacUserRoles(opts ...func(*RBACUserRoleQuery)) *UserQuery {
+	query := (&RBACUserRoleClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withRbacUserRoles = query
+	return _q
+}
+
+// WithAssignedRbacUserRoles tells the query-builder to eager-load the nodes that are connected to
+// the "assigned_rbac_user_roles" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithAssignedRbacUserRoles(opts ...func(*RBACUserRoleQuery)) *UserQuery {
+	query := (&RBACUserRoleClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withAssignedRbacUserRoles = query
+	return _q
+}
+
+// WithRbacUserVersion tells the query-builder to eager-load the nodes that are connected to
+// the "rbac_user_version" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithRbacUserVersion(opts ...func(*RBACUserVersionQuery)) *UserQuery {
+	query := (&RBACUserVersionClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withRbacUserVersion = query
+	return _q
+}
+
+// WithRbacAuditLogs tells the query-builder to eager-load the nodes that are connected to
+// the "rbac_audit_logs" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithRbacAuditLogs(opts ...func(*RBACAuditLogQuery)) *UserQuery {
+	query := (&RBACAuditLogClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withRbacAuditLogs = query
+	return _q
+}
+
 // WithUserAllowedGroups tells the query-builder to eager-load the nodes that are connected to
 // the "user_allowed_groups" edge. The optional arguments are used to configure the query builder of the edge.
 func (_q *UserQuery) WithUserAllowedGroups(opts ...func(*UserAllowedGroupQuery)) *UserQuery {
@@ -912,7 +1055,7 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	var (
 		nodes       = []*User{}
 		_spec       = _q.querySpec()
-		loadedTypes = [16]bool{
+		loadedTypes = [20]bool{
 			_q.withAPIKeys != nil,
 			_q.withRedeemCodes != nil,
 			_q.withSubscriptions != nil,
@@ -928,6 +1071,10 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 			_q.withPlatformQuotas != nil,
 			_q.withModelTokenDailyUsages != nil,
 			_q.withUserModelTokenDailyLimitConfigs != nil,
+			_q.withRbacUserRoles != nil,
+			_q.withAssignedRbacUserRoles != nil,
+			_q.withRbacUserVersion != nil,
+			_q.withRbacAuditLogs != nil,
 			_q.withUserAllowedGroups != nil,
 		}
 	)
@@ -1062,6 +1209,35 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 			func(n *User, e *UserModelTokenDailyLimitConfig) {
 				n.Edges.UserModelTokenDailyLimitConfigs = append(n.Edges.UserModelTokenDailyLimitConfigs, e)
 			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withRbacUserRoles; query != nil {
+		if err := _q.loadRbacUserRoles(ctx, query, nodes,
+			func(n *User) { n.Edges.RbacUserRoles = []*RBACUserRole{} },
+			func(n *User, e *RBACUserRole) { n.Edges.RbacUserRoles = append(n.Edges.RbacUserRoles, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withAssignedRbacUserRoles; query != nil {
+		if err := _q.loadAssignedRbacUserRoles(ctx, query, nodes,
+			func(n *User) { n.Edges.AssignedRbacUserRoles = []*RBACUserRole{} },
+			func(n *User, e *RBACUserRole) {
+				n.Edges.AssignedRbacUserRoles = append(n.Edges.AssignedRbacUserRoles, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withRbacUserVersion; query != nil {
+		if err := _q.loadRbacUserVersion(ctx, query, nodes, nil,
+			func(n *User, e *RBACUserVersion) { n.Edges.RbacUserVersion = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withRbacAuditLogs; query != nil {
+		if err := _q.loadRbacAuditLogs(ctx, query, nodes,
+			func(n *User) { n.Edges.RbacAuditLogs = []*RBACAuditLog{} },
+			func(n *User, e *RBACAuditLog) { n.Edges.RbacAuditLogs = append(n.Edges.RbacAuditLogs, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -1560,6 +1736,129 @@ func (_q *UserQuery) loadUserModelTokenDailyLimitConfigs(ctx context.Context, qu
 		node, ok := nodeids[fk]
 		if !ok {
 			return fmt.Errorf(`unexpected referenced foreign-key "user_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadRbacUserRoles(ctx context.Context, query *RBACUserRoleQuery, nodes []*User, init func(*User), assign func(*User, *RBACUserRole)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int64]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(rbacuserrole.FieldUserID)
+	}
+	query.Where(predicate.RBACUserRole(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.RbacUserRolesColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.UserID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadAssignedRbacUserRoles(ctx context.Context, query *RBACUserRoleQuery, nodes []*User, init func(*User), assign func(*User, *RBACUserRole)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int64]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(rbacuserrole.FieldAssignedBy)
+	}
+	query.Where(predicate.RBACUserRole(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.AssignedRbacUserRolesColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.AssignedBy
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "assigned_by" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "assigned_by" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadRbacUserVersion(ctx context.Context, query *RBACUserVersionQuery, nodes []*User, init func(*User), assign func(*User, *RBACUserVersion)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int64]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(rbacuserversion.FieldUserID)
+	}
+	query.Where(predicate.RBACUserVersion(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.RbacUserVersionColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.UserID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadRbacAuditLogs(ctx context.Context, query *RBACAuditLogQuery, nodes []*User, init func(*User), assign func(*User, *RBACAuditLog)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int64]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(rbacauditlog.FieldActorUserID)
+	}
+	query.Where(predicate.RBACAuditLog(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.RbacAuditLogsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.ActorUserID
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "actor_user_id" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "actor_user_id" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}

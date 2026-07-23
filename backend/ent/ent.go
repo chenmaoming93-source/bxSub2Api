@@ -38,6 +38,13 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/promocode"
 	"github.com/Wei-Shaw/sub2api/ent/promocodeusage"
 	"github.com/Wei-Shaw/sub2api/ent/proxy"
+	"github.com/Wei-Shaw/sub2api/ent/rbacauditlog"
+	"github.com/Wei-Shaw/sub2api/ent/rbacpermission"
+	"github.com/Wei-Shaw/sub2api/ent/rbacpolicystate"
+	"github.com/Wei-Shaw/sub2api/ent/rbacrole"
+	"github.com/Wei-Shaw/sub2api/ent/rbacrolepermission"
+	"github.com/Wei-Shaw/sub2api/ent/rbacuserrole"
+	"github.com/Wei-Shaw/sub2api/ent/rbacuserversion"
 	"github.com/Wei-Shaw/sub2api/ent/redeemcode"
 	"github.com/Wei-Shaw/sub2api/ent/securitysecret"
 	"github.com/Wei-Shaw/sub2api/ent/setting"
@@ -139,6 +146,13 @@ func checkColumn(t, c string) error {
 			promocode.Table:                           promocode.ValidColumn,
 			promocodeusage.Table:                      promocodeusage.ValidColumn,
 			proxy.Table:                               proxy.ValidColumn,
+			rbacauditlog.Table:                        rbacauditlog.ValidColumn,
+			rbacpermission.Table:                      rbacpermission.ValidColumn,
+			rbacpolicystate.Table:                     rbacpolicystate.ValidColumn,
+			rbacrole.Table:                            rbacrole.ValidColumn,
+			rbacrolepermission.Table:                  rbacrolepermission.ValidColumn,
+			rbacuserrole.Table:                        rbacuserrole.ValidColumn,
+			rbacuserversion.Table:                     rbacuserversion.ValidColumn,
 			redeemcode.Table:                          redeemcode.ValidColumn,
 			securitysecret.Table:                      securitysecret.ValidColumn,
 			setting.Table:                             setting.ValidColumn,

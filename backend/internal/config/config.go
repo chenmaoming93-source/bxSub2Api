@@ -96,6 +96,14 @@ type Config struct {
 	Update                     UpdateConfig                     `mapstructure:"update"`
 	Idempotency                IdempotencyConfig                `mapstructure:"idempotency"`
 	ExternalAPIKeyProvisioning ExternalAPIKeyProvisioningConfig `mapstructure:"external_api_key_provisioning"`
+	RBAC                       RBACConfig                       `mapstructure:"rbac"`
+}
+
+// RBACConfig controls authorization rollout and distributed permission caching.
+type RBACConfig struct {
+	Mode            string `mapstructure:"mode"`
+	CacheTTLMinutes int    `mapstructure:"cache_ttl_minutes"`
+	AuditDenials    bool   `mapstructure:"audit_denials"`
 }
 
 // ExternalAPIKeyProvisioningConfig controls the private API used by trusted external provisioners.
@@ -1805,6 +1813,9 @@ func setDefaults() {
 	viper.SetDefault("redis.pool_size", 1024)
 	viper.SetDefault("redis.min_idle_conns", 128)
 	viper.SetDefault("redis.enable_tls", false)
+	viper.SetDefault("rbac.mode", "enforce")
+	viper.SetDefault("rbac.cache_ttl_minutes", 20)
+	viper.SetDefault("rbac.audit_denials", true)
 
 	// Ops (vNext)
 	viper.SetDefault("ops.enabled", true)
@@ -2073,6 +2084,9 @@ func setDefaults() {
 }
 
 func (c *Config) Validate() error {
+	if err := ValidateRBACConfig(c.RBAC); err != nil {
+		return err
+	}
 	if c.ExternalAPIKeyProvisioning.Enabled {
 		token := strings.TrimSpace(c.ExternalAPIKeyProvisioning.AccessToken)
 		if token == "" {
@@ -2957,6 +2971,16 @@ func (c *Config) Validate() error {
 	}
 	if err := ValidateDingTalkConfig(c.DingTalk); err != nil {
 		return fmt.Errorf("dingtalk_connect: %w", err)
+	}
+	return nil
+}
+
+func ValidateRBACConfig(cfg RBACConfig) error {
+	if cfg.Mode != "" && cfg.Mode != "shadow" && cfg.Mode != "enforce" {
+		return fmt.Errorf("rbac.mode must be shadow or enforce")
+	}
+	if cfg.CacheTTLMinutes < 0 {
+		return fmt.Errorf("rbac.cache_ttl_minutes must be greater than 0")
 	}
 	return nil
 }

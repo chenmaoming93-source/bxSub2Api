@@ -255,7 +255,7 @@
             </button>
 
             <!-- Create User Button (full width on mobile, auto width on desktop) -->
-            <button @click="showCreateModal = true" class="btn btn-primary flex-1 md:flex-initial">
+            <button v-permission="'users.create'" @click="showCreateModal = true" class="btn btn-primary flex-1 md:flex-initial">
               <Icon name="plus" size="md" class="mr-2" />
               {{ t('admin.users.createUser') }}
             </button>
@@ -605,6 +605,15 @@
                 <span class="text-xs">{{ t('common.edit') }}</span>
               </button>
 
+              <button
+                v-permission="'users.roles.assign'"
+                @click="openRolesModal(row)"
+                class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-primary-600 dark:hover:bg-dark-700 dark:hover:text-primary-400"
+              >
+                <Icon name="users" size="sm" />
+                <span class="text-xs">角色</span>
+              </button>
+
               <!-- Toggle Status Button (not for admin) -->
               <button
                 v-if="row.role !== 'admin'"
@@ -738,6 +747,7 @@
               <!-- Delete (not for admin) -->
               <button
                 v-if="user.role !== 'admin'"
+                v-permission="'users.delete'"
                 @click="handleDelete(user); closeActionMenu()"
                 class="flex w-full items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
               >
@@ -779,6 +789,7 @@
     <UserBalanceHistoryModal :show="showBalanceHistoryModal" :user="balanceHistoryUser" @close="closeBalanceHistoryModal" @deposit="handleDepositFromHistory" @withdraw="handleWithdrawFromHistory" />
     <GroupReplaceModal :show="showGroupReplaceModal" :user="groupReplaceUser" :old-group="groupReplaceOldGroup" :all-groups="allGroups" @close="closeGroupReplaceModal" @success="loadUsers" />
     <UserAttributesConfigModal :show="showAttributesModal" @close="handleAttributesModalClose" />
+    <UserRolesModal :show="showRolesModal" :user="rolesUser" @close="showRolesModal = false; rolesUser = null" @success="loadUsers" />
   </AppLayout>
 </template>
 
@@ -822,6 +833,7 @@ import UserAllowedGroupsModal from '@/components/admin/user/UserAllowedGroupsMod
 import UserBalanceModal from '@/components/admin/user/UserBalanceModal.vue'
 import UserBalanceHistoryModal from '@/components/admin/user/UserBalanceHistoryModal.vue'
 import GroupReplaceModal from '@/components/admin/user/GroupReplaceModal.vue'
+import UserRolesModal from '@/components/admin/user/UserRolesModal.vue'
 
 const appStore = useAppStore()
 
@@ -1316,6 +1328,13 @@ const showPlatformQuotaModal = ref(false)
 const showModelTokenQuotaModal = ref(false)
 const showDefaultQuotaModal = ref(false)
 const showBatchQuotaModal = ref(false)
+const showRolesModal = ref(false)
+const rolesUser = ref<AdminUser | null>(null)
+function openRolesModal(user: AdminUser) {
+  rolesUser.value = user
+  showRolesModal.value = true
+  closeActionMenu()
+}
 const editingUser = ref<AdminUser | null>(null)
 const deletingUser = ref<AdminUser | null>(null)
 const viewingUser = ref<AdminUser | null>(null)

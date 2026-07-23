@@ -11,6 +11,10 @@ type JWTAuthMiddleware gin.HandlerFunc
 // AdminAuthMiddleware 管理员认证中间件类型
 type AdminAuthMiddleware gin.HandlerFunc
 
+// AdminIdentityAuthMiddleware authenticates an admin-surface caller without
+// hard-coding an admin role requirement; RBAC performs authorization later.
+type AdminIdentityAuthMiddleware gin.HandlerFunc
+
 // APIKeyAuthMiddleware API Key 认证中间件类型
 type APIKeyAuthMiddleware gin.HandlerFunc
 
@@ -18,5 +22,6 @@ type APIKeyAuthMiddleware gin.HandlerFunc
 var ProviderSet = wire.NewSet(
 	NewJWTAuthMiddleware,
 	NewAdminAuthMiddleware,
+	NewAdminIdentityAuthMiddleware,
 	NewAPIKeyAuthMiddleware,
 )

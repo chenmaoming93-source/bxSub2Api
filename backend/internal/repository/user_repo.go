@@ -110,6 +110,23 @@ func (r *userRepository) Create(ctx context.Context, userIn *service.User) error
 	if err := ensureEmailAuthIdentityWithClient(txCtx, txClient, created.ID, created.Email, "user_repo_create"); err != nil {
 		return err
 	}
+	legacyRole := "user"
+	if userIn.Role == service.RoleAdmin {
+		legacyRole = "admin"
+	}
+	executor := txAwareSQLExecutor(txCtx, r.sql, r.client)
+	if _, err := executor.ExecContext(txCtx, `
+		INSERT INTO rbac_user_roles (user_id, role_id, created_at)
+		SELECT ?, id, CURRENT_TIMESTAMP FROM rbac_roles
+		WHERE code = ? AND status = 'active' AND deleted_at IS NULL
+		`, created.ID, legacyRole); err != nil {
+		return fmt.Errorf("bind default RBAC role: %w", err)
+	}
+	if _, err := executor.ExecContext(txCtx, `
+		INSERT INTO rbac_user_versions (user_id, authz_version, updated_at)
+		VALUES (?, 1, CURRENT_TIMESTAMP)`, created.ID); err != nil {
+		return fmt.Errorf("initialize RBAC user version: %w", err)
+	}
 
 	if tx != nil {
 		if err := tx.Commit(); err != nil {

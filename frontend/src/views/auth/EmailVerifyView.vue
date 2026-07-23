@@ -506,10 +506,14 @@ async function handleVerify(): Promise<void> {
           email: email.value,
           password: password.value,
           verify_code: verifyCode.value.trim(),
-          invitation_code: invitationCode.value || undefined,
+          ...(invitationCode.value ? { invitation_code: invitationCode.value } : {}),
           ...oauthAffiliatePayload(affCode.value || loadAffiliateReferralCode()),
-          adopt_display_name: pendingAdoptionDecision.value?.adoptDisplayName,
-          adopt_avatar: pendingAdoptionDecision.value?.adoptAvatar
+          ...(pendingAdoptionDecision.value
+            ? {
+                adopt_display_name: pendingAdoptionDecision.value.adoptDisplayName,
+                adopt_avatar: pendingAdoptionDecision.value.adoptAvatar
+              }
+            : {})
         }
       )
       if (isPendingOAuthSessionResponse(data)) {
@@ -546,7 +550,7 @@ async function handleVerify(): Promise<void> {
     appStore.showSuccess(t('auth.accountCreatedSuccess', { siteName: siteName.value }))
 
     // Redirect to dashboard
-    await router.push(pendingRedirect.value || '/dashboard')
+    await router.push('/welcome')
   } catch (error: unknown) {
     errorMessage.value = buildAuthErrorMessage(error, {
       fallback: t('auth.verifyFailed')

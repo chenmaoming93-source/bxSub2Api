@@ -66,6 +66,20 @@ type Tx struct {
 	PromoCodeUsage *PromoCodeUsageClient
 	// Proxy is the client for interacting with the Proxy builders.
 	Proxy *ProxyClient
+	// RBACAuditLog is the client for interacting with the RBACAuditLog builders.
+	RBACAuditLog *RBACAuditLogClient
+	// RBACPermission is the client for interacting with the RBACPermission builders.
+	RBACPermission *RBACPermissionClient
+	// RBACPolicyState is the client for interacting with the RBACPolicyState builders.
+	RBACPolicyState *RBACPolicyStateClient
+	// RBACRole is the client for interacting with the RBACRole builders.
+	RBACRole *RBACRoleClient
+	// RBACRolePermission is the client for interacting with the RBACRolePermission builders.
+	RBACRolePermission *RBACRolePermissionClient
+	// RBACUserRole is the client for interacting with the RBACUserRole builders.
+	RBACUserRole *RBACUserRoleClient
+	// RBACUserVersion is the client for interacting with the RBACUserVersion builders.
+	RBACUserVersion *RBACUserVersionClient
 	// RedeemCode is the client for interacting with the RedeemCode builders.
 	RedeemCode *RedeemCodeClient
 	// SecuritySecret is the client for interacting with the SecuritySecret builders.
@@ -253,6 +267,13 @@ func (tx *Tx) init() {
 	tx.PromoCode = NewPromoCodeClient(tx.config)
 	tx.PromoCodeUsage = NewPromoCodeUsageClient(tx.config)
 	tx.Proxy = NewProxyClient(tx.config)
+	tx.RBACAuditLog = NewRBACAuditLogClient(tx.config)
+	tx.RBACPermission = NewRBACPermissionClient(tx.config)
+	tx.RBACPolicyState = NewRBACPolicyStateClient(tx.config)
+	tx.RBACRole = NewRBACRoleClient(tx.config)
+	tx.RBACRolePermission = NewRBACRolePermissionClient(tx.config)
+	tx.RBACUserRole = NewRBACUserRoleClient(tx.config)
+	tx.RBACUserVersion = NewRBACUserVersionClient(tx.config)
 	tx.RedeemCode = NewRedeemCodeClient(tx.config)
 	tx.SecuritySecret = NewSecuritySecretClient(tx.config)
 	tx.Setting = NewSettingClient(tx.config)

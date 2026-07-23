@@ -3,10 +3,12 @@ package repository
 import (
 	"database/sql"
 	"errors"
+	"time"
 
 	entsql "entgo.io/ent/dialect/sql"
 	"github.com/Wei-Shaw/sub2api/ent"
 	"github.com/Wei-Shaw/sub2api/internal/config"
+	"github.com/Wei-Shaw/sub2api/internal/rbac"
 	"github.com/Wei-Shaw/sub2api/internal/service"
 	"github.com/google/wire"
 	"github.com/redis/go-redis/v9"
@@ -101,8 +103,13 @@ func ProvideTodayTokenUsageRepository(db *sql.DB) service.TodayTokenUsageReposit
 	return &tokenUsageReportRepository{db: db}
 }
 
+func ProvideRBACPermissionService(db *sql.DB, rdb *redis.Client, cfg *config.Config) *rbac.PermissionService {
+	return rbac.NewPermissionService(NewRBACRepository(db), rdb, time.Duration(cfg.RBAC.CacheTTLMinutes)*time.Minute)
+}
+
 // ProviderSet is the Wire provider set for all repositories
 var ProviderSet = wire.NewSet(
+	wire.Bind(new(service.RBACRoleRepository), new(*RBACRepository)),
 	NewUserRepository,
 	NewAPIKeyRepository,
 	NewGroupRepository,
@@ -145,6 +152,8 @@ var ProviderSet = wire.NewSet(
 	NewTokenUsageReportRepository,
 	ProvideModelTokenQuotaAdminRepository,
 	ProvideUserModelTokenQuotaAdminRepository,
+	NewRBACRepository,
+	ProvideRBACPermissionService,
 
 	// Cache implementations
 	NewGatewayCache,

@@ -60,9 +60,9 @@ The router implements a comprehensive navigation guard that:
    - Redirects to `/login` if not authenticated
 3. **Prevents Double Login**:
    - Redirects authenticated users away from login/register pages
-4. **Role-Based Access Control**:
-   - Admin routes (`requiresAdmin: true`) require admin role
-   - Non-admin users are redirected to `/dashboard`
+4. **Permission-Based Access Control**:
+   - RBAC routes declare `requiredPermission` from the centralized page matrix
+   - Any authenticated user with that permission may enter, regardless of legacy role
 5. **Preserves Intended Destination**:
    - Saves original URL in query parameter for post-login redirect
 
@@ -80,10 +80,10 @@ Is route public? ──Yes──→ Already authenticated? ──Yes──→ Re
 Is user authenticated? ──No──→ Redirect to /login with redirect query
         ↓ Yes
         ↓
-Requires admin role? ──Yes──→ Is user admin? ──No──→ Redirect to /dashboard
-        ↓ No                                  ↓ Yes
-        ↓                                     ↓
-Allow access ←────────────────────────────────┘
+Has required permission? ──No──→ Redirect to an authorized fallback page
+        ↓ Yes
+        ↓
+Allow access
 ```
 
 ## Route Meta Fields
@@ -93,7 +93,7 @@ Each route can define the following meta fields:
 ```typescript
 interface RouteMeta {
   requiresAuth?: boolean // Default: true (requires authentication)
-  requiresAdmin?: boolean // Default: false (admin access only)
+  requiredPermission?: string // Injected from the centralized page permission matrix
   title?: string // Page title
   breadcrumbs?: Array<{
     // Breadcrumb navigation
@@ -130,8 +130,8 @@ const authStore = useAuthStore()
 // Check authentication status
 authStore.isAuthenticated
 
-// Check admin role
-authStore.isAdmin
+// Check a concrete permission (admin remains a wildcard super-admin)
+authStore.can('token_usage.read')
 ```
 
 ## Usage Examples
@@ -181,8 +181,8 @@ const route = useRoute()
 // Check if on admin page
 const isAdminPage = route.path.startsWith('/admin')
 
-// Get route meta
-const requiresAdmin = route.meta.requiresAdmin
+// Get the RBAC requirement
+const requiredPermission = route.meta.requiredPermission
 ```
 
 ## Scroll Behavior
@@ -209,8 +209,8 @@ To test navigation guards and route access:
 
 1. **Public Route Access**: Visit `/login` without authentication
 2. **Protected Route**: Try accessing `/dashboard` without login (should redirect)
-3. **Admin Access**: Login as regular user, try `/admin/users` (should redirect to dashboard)
-4. **Admin Success**: Login as admin, access `/admin/users` (should succeed)
+3. **Delegated Access**: Grant `users.read`, then access `/admin/users`
+4. **Permission Denial**: Remove `users.read`, then verify the route redirects
 5. **404 Handling**: Visit non-existent route (should show 404 page)
 
 ## Development Tips
@@ -219,7 +219,7 @@ To test navigation guards and route access:
 
 1. Add route definition in `routes` array
 2. Create corresponding view component
-3. Set appropriate meta fields (`requiresAuth`, `requiresAdmin`)
+3. Register the page permission in `src/rbac/permissionMatrix.ts`
 4. Use lazy loading with `() => import()`
 5. Update this README with route documentation
 

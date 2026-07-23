@@ -1685,6 +1685,98 @@ func HasUserModelTokenDailyLimitConfigsWith(preds ...predicate.UserModelTokenDai
 	})
 }
 
+// HasRbacUserRoles applies the HasEdge predicate on the "rbac_user_roles" edge.
+func HasRbacUserRoles() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, RbacUserRolesTable, RbacUserRolesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasRbacUserRolesWith applies the HasEdge predicate on the "rbac_user_roles" edge with a given conditions (other predicates).
+func HasRbacUserRolesWith(preds ...predicate.RBACUserRole) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newRbacUserRolesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasAssignedRbacUserRoles applies the HasEdge predicate on the "assigned_rbac_user_roles" edge.
+func HasAssignedRbacUserRoles() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, AssignedRbacUserRolesTable, AssignedRbacUserRolesColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasAssignedRbacUserRolesWith applies the HasEdge predicate on the "assigned_rbac_user_roles" edge with a given conditions (other predicates).
+func HasAssignedRbacUserRolesWith(preds ...predicate.RBACUserRole) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newAssignedRbacUserRolesStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasRbacUserVersion applies the HasEdge predicate on the "rbac_user_version" edge.
+func HasRbacUserVersion() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, RbacUserVersionTable, RbacUserVersionColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasRbacUserVersionWith applies the HasEdge predicate on the "rbac_user_version" edge with a given conditions (other predicates).
+func HasRbacUserVersionWith(preds ...predicate.RBACUserVersion) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newRbacUserVersionStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasRbacAuditLogs applies the HasEdge predicate on the "rbac_audit_logs" edge.
+func HasRbacAuditLogs() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, RbacAuditLogsTable, RbacAuditLogsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasRbacAuditLogsWith applies the HasEdge predicate on the "rbac_audit_logs" edge with a given conditions (other predicates).
+func HasRbacAuditLogsWith(preds ...predicate.RBACAuditLog) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newRbacAuditLogsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasUserAllowedGroups applies the HasEdge predicate on the "user_allowed_groups" edge.
 func HasUserAllowedGroups() predicate.User {
 	return predicate.User(func(s *sql.Selector) {
