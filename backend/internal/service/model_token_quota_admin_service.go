@@ -12,6 +12,13 @@ type ModelTokenQuotaAdminService struct {
 	cache     ModelDailyTokenQuotaCacheInvalidator
 	now       func() time.Time
 	maxModels int
+	reader    CurrentTokenUsageReader
+	repairer  CurrentTokenUsageRepairer
+}
+
+func (s *ModelTokenQuotaAdminService) ConfigureCurrentTokenUsage(reader CurrentTokenUsageReader, repairer CurrentTokenUsageRepairer) *ModelTokenQuotaAdminService {
+	s.reader, s.repairer = reader, repairer
+	return s
 }
 
 func NewModelTokenQuotaAdminService(repo ModelTokenQuotaAdminRepository, cache ModelDailyTokenQuotaCacheInvalidator) *ModelTokenQuotaAdminService {
@@ -27,7 +34,12 @@ func (s *ModelTokenQuotaAdminService) List(ctx context.Context) ([]ModelDailyTok
 	if s == nil || s.repo == nil {
 		return nil, fmt.Errorf("model token quota service unavailable")
 	}
-	return s.repo.ListModelDailyTokenQuotas(ctx, s.now())
+	at := s.now()
+	records, err := s.repo.ListModelDailyTokenQuotas(ctx, at)
+	if err != nil {
+		return nil, err
+	}
+	return s.realtime(ctx, at, records)
 }
 
 func (s *ModelTokenQuotaAdminService) Set(ctx context.Context, model string, limit *int64) (ModelDailyTokenQuotaRecord, error) {
@@ -54,5 +66,42 @@ func (s *ModelTokenQuotaAdminService) Set(ctx context.Context, model string, lim
 			return ModelDailyTokenQuotaRecord{}, err
 		}
 	}
-	return record, nil
+	records, err := s.realtime(ctx, at, []ModelDailyTokenQuotaRecord{record})
+	if err != nil {
+		return ModelDailyTokenQuotaRecord{}, err
+	}
+	return records[0], nil
+}
+
+func (s *ModelTokenQuotaAdminService) realtime(ctx context.Context, at time.Time, records []ModelDailyTokenQuotaRecord) ([]ModelDailyTokenQuotaRecord, error) {
+	if s.reader == nil || len(records) == 0 {
+		return records, nil
+	}
+	models := make([]string, 0, len(records))
+	mysql := make([]ModelTokenUsageRow, 0, len(records))
+	for _, record := range records {
+		models = append(models, record.Model)
+		mysql = append(mysql, ModelTokenUsageRow{UsageDate: record.UsageDate, Model: record.Model, UsedTokens: record.UsedTokens, DailyLimitTokens: record.DailyLimitTokens})
+	}
+	result, err := s.reader.ReadModelUsage(ctx, at, models)
+	if err != nil {
+		return records, nil
+	}
+	merged, repair := MergeModelTokenUsage(mysql, result.Rows)
+	byKey := indexRows(merged, modelUsageKey)
+	for i := range records {
+		if row, ok := byKey[modelUsageKey(ModelTokenUsageRow{UsageDate: records[i].UsageDate, Model: records[i].Model})]; ok {
+			records[i].UsedTokens = row.UsedTokens
+		}
+	}
+	positive := repair[:0]
+	for _, row := range repair {
+		if row.UsedTokens > 0 {
+			positive = append(positive, row)
+		}
+	}
+	if len(positive) > 0 && s.repairer != nil {
+		_ = s.repairer.RepairModelUsage(ctx, at, positive)
+	}
+	return records, nil
 }

@@ -1,12 +1,14 @@
 package migrations
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 )
 
 func TestTokenUsageReportIndexesArePurposeBuilt(t *testing.T) {
-	content, err := FS.ReadFile("159_token_usage_report_indexes.sql")
+	content, err := os.ReadFile(filepath.Join("..", "sqlArchiving", "159_token_usage_report_indexes.sql"))
 	if err != nil {
 		t.Fatal(err)
 	}

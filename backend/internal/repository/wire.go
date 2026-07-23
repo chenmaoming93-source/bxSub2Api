@@ -70,6 +70,37 @@ func ProvideUserModelTokenQuotaAdminRepository(client *ent.Client) service.UserM
 	return &dailyTokenQuotaRepository{client: client}
 }
 
+func ProvideDailyTokenQuotaRepository(client *ent.Client, rdb *redis.Client, cfg *config.Config) service.DailyTokenQuotaRepository {
+	c := cfg.Gateway.TokenStatistics
+	return NewRedisFirstDailyTokenQuotaRepositoryWithRepair(NewDailyTokenQuotaRepository(client), rdb, NewRedisTokenUsageReadRepairer(rdb, c.RedisRetentionDays, c.MySQLBatchSize))
+}
+
+func ProvideDailyTokenUsageAbsoluteRepository(client *ent.Client) service.DailyTokenUsageAbsoluteRepository {
+	return NewDailyTokenUsageAbsoluteRepository(client)
+}
+
+func ProvideTokenStatisticsAccumulator(rdb *redis.Client, cfg *config.Config) service.TokenStatisticsAccumulator {
+	return NewRedisTokenStatisticsAccumulator(rdb, cfg.Gateway.TokenStatistics.RedisRetentionDays)
+}
+
+func ProvideTokenStatisticsSyncEngine(rdb *redis.Client, target service.DailyTokenUsageAbsoluteRepository, cfg *config.Config) *TokenStatisticsSyncEngine {
+	c := cfg.Gateway.TokenStatistics
+	return NewTokenStatisticsSyncEngine(rdb, target, c.HScanCount, c.MySQLBatchSize, c.SyncRetryCount)
+}
+
+func ProvideCurrentTokenUsageReader(rdb *redis.Client, cfg *config.Config) service.CurrentTokenUsageReader {
+	return NewRedisCurrentTokenUsageReader(rdb, cfg.Gateway.TokenStatistics.HScanCount)
+}
+
+func ProvideCurrentTokenUsageRepairer(rdb *redis.Client, cfg *config.Config) service.CurrentTokenUsageRepairer {
+	c := cfg.Gateway.TokenStatistics
+	return NewCurrentTokenUsageRepairer(rdb, c.RedisRetentionDays, c.MySQLBatchSize)
+}
+
+func ProvideTodayTokenUsageRepository(db *sql.DB) service.TodayTokenUsageRepository {
+	return &tokenUsageReportRepository{db: db}
+}
+
 // ProviderSet is the Wire provider set for all repositories
 var ProviderSet = wire.NewSet(
 	NewUserRepository,
@@ -103,7 +134,14 @@ var ProviderSet = wire.NewSet(
 	NewAffiliateRepository,
 	NewUserPlatformQuotaRepository,     // T14: user × platform quota
 	NewUserPlatformQuotaServiceAdapter, // T14: adapter → service.UserPlatformQuotaRepository
-	NewDailyTokenQuotaRepository,
+	ProvideDailyTokenQuotaRepository,
+	ProvideDailyTokenUsageAbsoluteRepository,
+	ProvideTokenStatisticsAccumulator,
+	ProvideTokenStatisticsSyncEngine,
+	ProvideCurrentTokenUsageReader,
+	ProvideCurrentTokenUsageRepairer,
+	ProvideTodayTokenUsageRepository,
+	wire.Bind(new(service.TokenStatisticsDateSyncer), new(*TokenStatisticsSyncEngine)),
 	NewTokenUsageReportRepository,
 	ProvideModelTokenQuotaAdminRepository,
 	ProvideUserModelTokenQuotaAdminRepository,

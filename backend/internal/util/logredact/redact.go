@@ -99,9 +99,9 @@ func RedactText(input string, extraKeys ...string) string {
 	out := input
 	out = reGOCSPX.ReplaceAllString(out, "GOCSPX-***")
 	out = reAIza.ReplaceAllString(out, "AIza***")
-	out = patterns.reJSONLike.ReplaceAllString(out, `?***?`)
-	out = patterns.reQueryLike.ReplaceAllString(out, `?=***`)
-	out = patterns.rePlain.ReplaceAllString(out, `??***`)
+	out = patterns.reJSONLike.ReplaceAllString(out, `${1}***${3}`)
+	out = patterns.reQueryLike.ReplaceAllString(out, `${1}=***`)
+	out = patterns.rePlain.ReplaceAllString(out, `${1}${2}***`)
 	return out
 }
 

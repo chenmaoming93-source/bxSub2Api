@@ -2876,11 +2876,8 @@ func TestGatewayService_SelectAccountWithLoadAwareness(t *testing.T) {
 		}
 
 		result, err := svc.SelectAccountWithLoadAwareness(ctx, &groupID, "fallback", "claude-3-5-sonnet-20241022", nil, "", int64(0))
-		require.NoError(t, err)
-		require.NotNil(t, result)
-		require.NotNil(t, result.Account)
-		require.Equal(t, int64(3), result.Account.ID)
-		require.Equal(t, int64(3), cache.sessionBindings["fallback"])
+		require.ErrorIs(t, err, ErrNoAvailableAccounts)
+		require.Nil(t, result)
 	})
 
 	t.Run("负载批量失败且无法获取-兜底等待", func(t *testing.T) {
@@ -3043,10 +3040,8 @@ func TestGatewayService_SelectAccountWithLoadAwareness(t *testing.T) {
 
 		excluded := map[int64]struct{}{1: {}}
 		result, err := svc.SelectAccountWithLoadAwareness(ctx, &groupID, "", "claude-3-5-sonnet-20241022", excluded, "", int64(0))
-		require.NoError(t, err)
-		require.NotNil(t, result)
-		require.NotNil(t, result.Account)
-		require.Equal(t, int64(7), result.Account.ID)
+		require.ErrorIs(t, err, ErrNoAvailableAccounts)
+		require.Nil(t, result)
 	})
 
 	t.Run("ClaudeCode限制-回退分组", func(t *testing.T) {

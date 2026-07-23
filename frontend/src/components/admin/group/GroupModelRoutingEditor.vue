@@ -25,14 +25,9 @@
               <input v-model="rule.alias" type="text" class="input text-sm" :placeholder="t('admin.groups.modelRouting.routeAliasPlaceholder', 'e.g. coding-fast')" />
             </div>
             <div v-for="candidate in rule.candidates" :key="candidateKey(candidate)" class="relative w-full min-w-0 space-y-2 rounded-md bg-gray-50 p-3 dark:bg-dark-700/50">
-              <div class="grid min-w-0 gap-2 md:grid-cols-3">
-                <div><label class="input-label text-xs">{{ t('admin.groups.modelRouting.candidateModel', 'Upstream model') }}</label><input v-model="candidate.model" type="text" class="input text-sm" /></div>
-                <div><label class="input-label text-xs">{{ t('admin.groups.modelRouting.priority', 'Priority') }}</label><input v-model.number="candidate.priority" type="number" min="0" step="1" class="input text-sm" /></div>
-                <div><label class="input-label text-xs">{{ t('admin.groups.modelRouting.dailyTokenLimit', 'Daily token limit') }}</label><input v-model.number="candidate.daily_token_limit" type="number" min="0" step="1" class="input text-sm" :placeholder="t('admin.groups.modelRouting.unlimited')" /></div>
-              </div>
               <div v-if="candidate.accounts.length" class="flex flex-wrap gap-1.5">
                 <span v-for="account in candidate.accounts" :key="account.id" class="inline-flex items-center gap-1 rounded-full bg-primary-100 px-2.5 py-1 text-xs text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">
-                  {{ account.name }}<button type="button" @click="removeAccount(candidate, account.id)"><Icon name="x" size="xs" /></button>
+                  {{ account.name }}<button type="button" data-test="remove-account" :data-account-id="account.id" @click="removeAccount(candidate, account.id)"><Icon name="x" size="xs" /></button>
                 </span>
               </div>
               <div class="relative account-search-container">
@@ -41,6 +36,29 @@
                   <button v-for="account in results[candidateKey(candidate)]" :key="account.id" type="button" class="w-full px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-dark-700" :disabled="candidate.accounts.some(item => item.id === account.id)" @click="select(candidate, account)">{{ account.name }} <span class="text-xs text-gray-400">#{{ account.id }}</span></button>
                 </div>
               </div>
+              <div class="grid min-w-0 gap-2 md:grid-cols-3">
+                <div>
+                  <label class="input-label text-xs">{{ t('admin.groups.modelRouting.candidateModel', 'Upstream model') }}</label>
+                  <Select
+                    v-model="candidate.model"
+                    data-test="candidate-model"
+                    :options="modelOptions(candidate)"
+                    :placeholder="t('admin.groups.modelRouting.selectModel', 'Select an upstream model')"
+                    :searchable="false"
+                    :disabled="!candidate.accounts.length || modelLoading[candidateKey(candidate)] || modelErrors[candidateKey(candidate)] || !(candidateModels[candidateKey(candidate)] || []).length"
+                    @change="modelInvalidated[candidateKey(candidate)] = false"
+                  />
+                  <p v-if="modelLoading[candidateKey(candidate)]" data-test="model-loading" class="mt-1 text-xs text-gray-500">{{ t('admin.groups.modelRouting.modelsLoading', 'Loading models...') }}</p>
+                  <p v-else-if="modelErrors[candidateKey(candidate)]" data-test="model-error" class="mt-1 text-xs text-red-500">
+                    {{ t('admin.groups.modelRouting.modelsLoadFailed', 'Failed to load models.') }}
+                    <button type="button" class="underline" @click="loadCandidateModels(candidate)">{{ t('admin.groups.modelRouting.retryModels', 'Retry') }}</button>
+                  </p>
+                  <p v-else-if="candidate.accounts.length && !(candidateModels[candidateKey(candidate)] || []).length" data-test="model-empty" class="mt-1 text-xs text-amber-600">{{ t('admin.groups.modelRouting.noCommonModels', 'No common models are available.') }}</p>
+                </div>
+                <div><label class="input-label text-xs">{{ t('admin.groups.modelRouting.priority', 'Priority') }}</label><input v-model.number="candidate.priority" type="number" min="0" step="1" class="input text-sm" /></div>
+                <div><label class="input-label text-xs">{{ t('admin.groups.modelRouting.dailyTokenLimit', 'Daily token limit') }}</label><input v-model.number="candidate.daily_token_limit" type="number" min="0" step="1" class="input text-sm" :placeholder="t('admin.groups.modelRouting.unlimited')" /></div>
+              </div>
+              <p v-if="modelInvalidated[candidateKey(candidate)] || (candidate.model && modelReady(candidate) && !modelAvailable(candidate))" data-test="model-invalid" class="text-xs text-red-500">{{ t('admin.groups.modelRouting.modelInvalid', 'The selected model is no longer available. Select another model.') }}</p>
               <p v-if="invalid(candidate)" class="text-xs text-red-500">{{ t('admin.groups.modelRouting.candidateValidation', 'Model, account, and non-negative integer values are required') }}</p>
               <button type="button" class="absolute right-2 top-2 text-gray-400 hover:text-red-500" @click="removeCandidate(rule, candidate)"><Icon name="x" size="xs" /></button>
             </div>
@@ -59,9 +77,10 @@ import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { adminAPI } from '@/api/admin'
 import Icon from '@/components/icons/Icon.vue'
+import Select, { type SelectOption } from '@/components/common/Select.vue'
 import { createStableObjectKeyResolver } from '@/utils/stableObjectKey'
 import { useKeyedDebouncedSearch } from '@/composables/useKeyedDebouncedSearch'
-import { addRoutingCandidate, createEmptyRoutingCandidate, type RoutingEditorAccount, type RoutingEditorCandidate, type RoutingEditorRule } from './groupModelRoutingEditor'
+import { addRoutingCandidate, createEmptyRoutingCandidate, intersectAccountModels, type RoutingEditorAccount, type RoutingEditorCandidate, type RoutingEditorModel, type RoutingEditorRule } from './groupModelRoutingEditor'
 
 const props = defineProps<{ platform: string }>()
 const enabled = defineModel<boolean>('enabled', { required: true })
@@ -74,19 +93,117 @@ const candidateKey = (candidate: RoutingEditorCandidate) => resolveCandidateKey(
 const keywords = ref<Record<string, string>>({})
 const results = ref<Record<string, RoutingEditorAccount[]>>({})
 const dropdowns = ref<Record<string, boolean>>({})
+const candidateModels = ref<Record<string, RoutingEditorModel[]>>({})
+const modelLoading = ref<Record<string, boolean>>({})
+const modelErrors = ref<Record<string, boolean>>({})
+const modelInvalidated = ref<Record<string, boolean>>({})
+const accountModelCache = new Map<number, RoutingEditorModel[]>()
+const accountModelRequests = new Map<number, Promise<RoutingEditorModel[]>>()
+const accountModelControllers = new Map<number, AbortController>()
+const candidateLoadVersions = new Map<string, number>()
 const runner = useKeyedDebouncedSearch<RoutingEditorAccount[]>({ delay: 300, search: async (keyword, { signal }) => {
   const response = await adminAPI.accounts.list(1, 20, { search: keyword, platform: props.platform as never }, { signal })
   return response.items.map(account => ({ id: account.id, name: account.name }))
 }, onSuccess: (key, value) => { results.value[key] = value }, onError: key => { results.value[key] = [] } })
 const search = (candidate: RoutingEditorCandidate) => runner.trigger(candidateKey(candidate), keywords.value[candidateKey(candidate)] || '')
 const focus = (candidate: RoutingEditorCandidate) => { dropdowns.value[candidateKey(candidate)] = true; if (!results.value[candidateKey(candidate)]?.length) search(candidate) }
-const select = (candidate: RoutingEditorCandidate, account: RoutingEditorAccount) => { if (!candidate.accounts.some(item => item.id === account.id)) candidate.accounts.push(account); keywords.value[candidateKey(candidate)] = ''; dropdowns.value[candidateKey(candidate)] = false }
-const removeAccount = (candidate: RoutingEditorCandidate, id: number) => { candidate.accounts = candidate.accounts.filter(item => item.id !== id) }
-const removeCandidate = (rule: RoutingEditorRule, candidate: RoutingEditorCandidate) => { rule.candidates.splice(rule.candidates.indexOf(candidate), 1); runner.clearKey(candidateKey(candidate)) }
+const loadAccountModels = (accountID: number): Promise<RoutingEditorModel[]> => {
+  const cached = accountModelCache.get(accountID)
+  if (cached) return Promise.resolve(cached)
+  const pending = accountModelRequests.get(accountID)
+  if (pending) return pending
+
+  const controller = new AbortController()
+  accountModelControllers.set(accountID, controller)
+  const request = adminAPI.accounts.getAvailableModels(accountID, { signal: controller.signal })
+    .then(models => {
+      accountModelCache.set(accountID, models)
+      return models
+    })
+    .finally(() => {
+      accountModelRequests.delete(accountID)
+      accountModelControllers.delete(accountID)
+    })
+  accountModelRequests.set(accountID, request)
+  return request
+}
+const loadCandidateModels = async (candidate: RoutingEditorCandidate) => {
+  const key = candidateKey(candidate)
+  const version = (candidateLoadVersions.get(key) || 0) + 1
+  candidateLoadVersions.set(key, version)
+  const accountIDs = [...new Set(candidate.accounts.map(account => account.id))]
+  if (accountIDs.length === 0) {
+    candidateModels.value[key] = []
+    modelErrors.value[key] = false
+    modelLoading.value[key] = false
+    candidate.model = ''
+    return
+  }
+  modelLoading.value[key] = true
+  modelErrors.value[key] = false
+  try {
+    const modelLists = await Promise.all(accountIDs.map(loadAccountModels))
+    if (candidateLoadVersions.get(key) !== version) return
+    const currentIDs = [...new Set(candidate.accounts.map(account => account.id))]
+    if (currentIDs.length !== accountIDs.length || currentIDs.some((id, index) => id !== accountIDs[index])) return
+    const models = intersectAccountModels(modelLists)
+    candidateModels.value[key] = models
+    if (candidate.model && !models.some(model => model.id === candidate.model)) {
+      candidate.model = ''
+      modelInvalidated.value[key] = true
+    }
+  } catch {
+    if (candidateLoadVersions.get(key) === version) {
+      candidateModels.value[key] = []
+      modelErrors.value[key] = true
+    }
+  } finally {
+    if (candidateLoadVersions.get(key) === version) modelLoading.value[key] = false
+  }
+}
+const select = (candidate: RoutingEditorCandidate, account: RoutingEditorAccount) => {
+  if (!candidate.accounts.some(item => item.id === account.id)) candidate.accounts.push(account)
+  keywords.value[candidateKey(candidate)] = ''
+  dropdowns.value[candidateKey(candidate)] = false
+  void loadCandidateModels(candidate)
+}
+const removeAccount = (candidate: RoutingEditorCandidate, id: number) => {
+  candidate.accounts = candidate.accounts.filter(item => item.id !== id)
+  void loadCandidateModels(candidate)
+}
+const removeCandidate = (rule: RoutingEditorRule, candidate: RoutingEditorCandidate) => {
+  const key = candidateKey(candidate)
+  candidateLoadVersions.set(key, (candidateLoadVersions.get(key) || 0) + 1)
+  rule.candidates.splice(rule.candidates.indexOf(candidate), 1)
+  runner.clearKey(key)
+}
 const addRule = () => rules.value.push({ alias: '', candidates: [createEmptyRoutingCandidate()] })
 const removeRule = (rule: RoutingEditorRule) => { rules.value.splice(rules.value.indexOf(rule), 1) }
-const invalid = (candidate: RoutingEditorCandidate) => !candidate.model.trim() || !candidate.accounts.length || !Number.isInteger(Number(candidate.priority)) || Number(candidate.priority) < 0 || (candidate.daily_token_limit !== null && candidate.daily_token_limit !== '' && (!Number.isInteger(Number(candidate.daily_token_limit)) || Number(candidate.daily_token_limit) < 0))
+const modelReady = (candidate: RoutingEditorCandidate) => {
+  const key = candidateKey(candidate)
+  return !modelLoading.value[key] && !modelErrors.value[key]
+}
+const modelAvailable = (candidate: RoutingEditorCandidate) => candidateModels.value[candidateKey(candidate)]?.some(model => model.id === candidate.model) === true
+const modelOptions = (candidate: RoutingEditorCandidate): SelectOption[] => (candidateModels.value[candidateKey(candidate)] || []).map(model => ({
+  value: model.id,
+  label: model.display_name || model.id
+}))
+const invalid = (candidate: RoutingEditorCandidate) => {
+  const key = candidateKey(candidate)
+  return !candidate.model.trim() || !candidate.accounts.length || modelLoading.value[key] || modelErrors.value[key] || !modelAvailable(candidate) || !Number.isInteger(Number(candidate.priority)) || Number(candidate.priority) < 0 || (candidate.daily_token_limit !== null && candidate.daily_token_limit !== '' && (!Number.isInteger(Number(candidate.daily_token_limit)) || Number(candidate.daily_token_limit) < 0))
+}
+const isValid = () => !enabled.value || (rules.value.length > 0 && rules.value.every(rule => rule.alias.trim() && rule.candidates.length > 0 && rule.candidates.every(candidate => !invalid(candidate))))
+defineExpose({ isValid })
 const closeDropdowns = (event: MouseEvent) => { if (!(event.target as HTMLElement).closest('.account-search-container')) dropdowns.value = {} }
-onMounted(() => document.addEventListener('click', closeDropdowns))
-onBeforeUnmount(() => { document.removeEventListener('click', closeDropdowns); runner.clearAll() })
+onMounted(() => {
+  document.addEventListener('click', closeDropdowns)
+  for (const rule of rules.value) for (const candidate of rule.candidates) void loadCandidateModels(candidate)
+})
+onBeforeUnmount(() => {
+  document.removeEventListener('click', closeDropdowns)
+  runner.clearAll()
+  for (const controller of accountModelControllers.values()) controller.abort()
+  accountModelControllers.clear()
+  accountModelRequests.clear()
+})
 </script>

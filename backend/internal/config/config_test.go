@@ -14,11 +14,21 @@ import (
 func resetViperWithJWTSecret(t *testing.T) {
 	t.Helper()
 	viper.Reset()
+	t.Cleanup(viper.Reset)
+	dataDir := t.TempDir()
+	require.NoError(t, os.WriteFile(filepath.Join(dataDir, "config.yaml"), []byte("{}\n"), 0o600))
+	t.Setenv("DATA_DIR", dataDir)
 	t.Setenv("JWT_SECRET", strings.Repeat("x", 32))
 }
 
 func TestLoadForBootstrapAllowsMissingJWTSecret(t *testing.T) {
 	viper.Reset()
+	t.Cleanup(viper.Reset)
+	dataDir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dataDir, "config.yaml"), []byte("{}\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("DATA_DIR", dataDir)
 	t.Setenv("JWT_SECRET", "")
 
 	cfg, err := LoadForBootstrap()
@@ -1892,6 +1902,66 @@ func TestLoad_DefaultGatewayUsageRecordConfig(t *testing.T) {
 	}
 	if cfg.Gateway.UsageRecord.AutoScaleCooldownSeconds != 10 {
 		t.Fatalf("auto_scale_cooldown_seconds = %d, want 10", cfg.Gateway.UsageRecord.AutoScaleCooldownSeconds)
+	}
+}
+
+func TestLoad_DefaultGatewayTokenStatisticsConfig(t *testing.T) {
+	resetViperWithJWTSecret(t)
+	cfg, err := Load()
+	require.NoError(t, err)
+
+	require.True(t, cfg.Gateway.TokenStatistics.RedisEnabled)
+	require.Equal(t, 1, cfg.Gateway.TokenStatistics.SyncIntervalMinutes)
+	require.Equal(t, 1000, cfg.Gateway.TokenStatistics.HScanCount)
+	require.Equal(t, 500, cfg.Gateway.TokenStatistics.MySQLBatchSize)
+	require.Equal(t, 3, cfg.Gateway.TokenStatistics.SyncRetryCount)
+	require.Equal(t, 2, cfg.Gateway.TokenStatistics.RedisRetentionDays)
+}
+
+func TestLoad_GatewayTokenStatisticsConfigOverrides(t *testing.T) {
+	resetViperWithJWTSecret(t)
+	viper.Set("gateway.token_statistics.redis_enabled", false)
+	viper.Set("gateway.token_statistics.sync_interval_minutes", 2)
+	viper.Set("gateway.token_statistics.hscan_count", 200)
+	viper.Set("gateway.token_statistics.mysql_batch_size", 100)
+	viper.Set("gateway.token_statistics.sync_retry_count", 5)
+	viper.Set("gateway.token_statistics.redis_retention_days", 4)
+
+	cfg, err := Load()
+	require.NoError(t, err)
+	require.False(t, cfg.Gateway.TokenStatistics.RedisEnabled)
+	require.Equal(t, 2, cfg.Gateway.TokenStatistics.SyncIntervalMinutes)
+	require.Equal(t, 200, cfg.Gateway.TokenStatistics.HScanCount)
+	require.Equal(t, 100, cfg.Gateway.TokenStatistics.MySQLBatchSize)
+	require.Equal(t, 5, cfg.Gateway.TokenStatistics.SyncRetryCount)
+	require.Equal(t, 4, cfg.Gateway.TokenStatistics.RedisRetentionDays)
+}
+
+func TestValidateConfig_GatewayTokenStatistics(t *testing.T) {
+	resetViperWithJWTSecret(t)
+	cfg, err := Load()
+	require.NoError(t, err)
+
+	cases := []struct {
+		name    string
+		mutate  func(*GatewayTokenStatisticsConfig)
+		wantErr string
+	}{
+		{"sync interval", func(c *GatewayTokenStatisticsConfig) { c.SyncIntervalMinutes = 0 }, "gateway.token_statistics.sync_interval_minutes: value=0, expected positive integer"},
+		{"hscan count", func(c *GatewayTokenStatisticsConfig) { c.HScanCount = -1 }, "gateway.token_statistics.hscan_count: value=-1, expected positive integer"},
+		{"mysql batch size", func(c *GatewayTokenStatisticsConfig) { c.MySQLBatchSize = 0 }, "gateway.token_statistics.mysql_batch_size: value=0, expected positive integer"},
+		{"sync retry count", func(c *GatewayTokenStatisticsConfig) { c.SyncRetryCount = -1 }, "gateway.token_statistics.sync_retry_count: value=-1, expected non-negative integer"},
+		{"redis retention days", func(c *GatewayTokenStatisticsConfig) { c.RedisRetentionDays = 0 }, "gateway.token_statistics.redis_retention_days: value=0, expected positive integer"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			candidate := *cfg
+			candidate.Gateway = cfg.Gateway
+			tc.mutate(&candidate.Gateway.TokenStatistics)
+			err := candidate.Validate()
+			require.Error(t, err)
+			require.Contains(t, err.Error(), tc.wantErr)
+		})
 	}
 }
 

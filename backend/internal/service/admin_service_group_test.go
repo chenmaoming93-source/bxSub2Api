@@ -697,7 +697,7 @@ func (s *groupRepoStubForInvalidRequestFallback) ListActiveByPlatform(_ context.
 }
 
 func (s *groupRepoStubForInvalidRequestFallback) ExistsByName(_ context.Context, _ string) (bool, error) {
-	panic("unexpected ExistsByName call")
+	return false, nil
 }
 
 func (s *groupRepoStubForInvalidRequestFallback) GetAccountCount(_ context.Context, _ int64) (int64, int64, error) {

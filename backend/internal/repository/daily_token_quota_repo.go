@@ -6,13 +6,15 @@ import (
 	"sort"
 	"time"
 
+	"entgo.io/ent/dialect"
+	entsql "entgo.io/ent/dialect/sql"
 	dbent "github.com/Wei-Shaw/sub2api/ent"
-	"github.com/Wei-Shaw/sub2api/ent/groupcandidatetokendailyusage"
 	"github.com/Wei-Shaw/sub2api/ent/groupcandidatetokendailylimitconfig"
-	"github.com/Wei-Shaw/sub2api/ent/modeltokendailyusage"
+	"github.com/Wei-Shaw/sub2api/ent/groupcandidatetokendailyusage"
 	"github.com/Wei-Shaw/sub2api/ent/modeltokendailylimitconfig"
-	"github.com/Wei-Shaw/sub2api/ent/usermodeltokendailyusage"
+	"github.com/Wei-Shaw/sub2api/ent/modeltokendailyusage"
 	"github.com/Wei-Shaw/sub2api/ent/usermodeltokendailylimitconfig"
+	"github.com/Wei-Shaw/sub2api/ent/usermodeltokendailyusage"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/timezone"
 	"github.com/Wei-Shaw/sub2api/internal/service"
 )
@@ -20,6 +22,10 @@ import (
 type dailyTokenQuotaRepository struct{ client *dbent.Client }
 
 func NewDailyTokenQuotaRepository(client *dbent.Client) service.DailyTokenQuotaRepository {
+	return &dailyTokenQuotaRepository{client: client}
+}
+
+func NewDailyTokenUsageAbsoluteRepository(client *dbent.Client) service.DailyTokenUsageAbsoluteRepository {
 	return &dailyTokenQuotaRepository{client: client}
 }
 
@@ -358,6 +364,101 @@ func (r *dailyTokenQuotaRepository) IncrementDailyTokenQuotas(ctx context.Contex
 	}
 	if err := tx.Commit(); err != nil {
 		return fmt.Errorf("increment daily token quotas: commit: %w", err)
+	}
+	return nil
+}
+
+func absoluteUsageConflict(columns ...string) []entsql.ConflictOption {
+	return []entsql.ConflictOption{
+		entsql.ConflictColumns(columns...),
+		entsql.ResolveWith(func(update *entsql.UpdateSet) {
+			field := modeltokendailyusage.FieldUsedTokens
+			function := "GREATEST"
+			if update.UpdateBuilder.Dialect() == dialect.SQLite {
+				function = "MAX"
+			}
+			update.Set(field, entsql.ExprFunc(func(builder *entsql.Builder) {
+				builder.WriteString(function).WriteByte('(').Ident(update.Table().C(field)).Comma()
+				if update.UpdateBuilder.Dialect() == dialect.MySQL {
+					builder.WriteString("VALUES(").Ident(field).WriteByte(')')
+				} else {
+					builder.Ident(entsql.Dialect(update.UpdateBuilder.Dialect()).Table("excluded").C(field))
+				}
+				builder.WriteByte(')')
+			}))
+			update.SetExcluded(modeltokendailyusage.FieldUpdatedAt)
+		}),
+	}
+}
+
+func (r *dailyTokenQuotaRepository) UpsertModelDailyTokenUsageAbsolute(ctx context.Context, records []service.ModelDailyTokenUsageAbsolute) error {
+	if len(records) == 0 {
+		return nil
+	}
+	tx, err := r.client.Tx(ctx)
+	if err != nil {
+		return fmt.Errorf("absolute upsert model daily token usage: begin transaction: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+	for _, record := range records {
+		if record.Model == "" || record.UsageDate.IsZero() || record.UsedTokens < 0 {
+			return fmt.Errorf("absolute upsert model daily token usage: invalid record model=%q used_tokens=%d", record.Model, record.UsedTokens)
+		}
+		if err := tx.ModelTokenDailyUsage.Create().SetModel(record.Model).SetUsageDate(timezone.StartOfDay(record.UsageDate)).SetUsedTokens(record.UsedTokens).
+			OnConflict(absoluteUsageConflict(modeltokendailyusage.FieldModel, modeltokendailyusage.FieldUsageDate)...).Exec(ctx); err != nil {
+			return fmt.Errorf("absolute upsert model daily token usage: %w", err)
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("absolute upsert model daily token usage: commit: %w", err)
+	}
+	return nil
+}
+
+func (r *dailyTokenQuotaRepository) UpsertUserModelDailyTokenUsageAbsolute(ctx context.Context, records []service.UserModelDailyTokenUsageAbsolute) error {
+	if len(records) == 0 {
+		return nil
+	}
+	tx, err := r.client.Tx(ctx)
+	if err != nil {
+		return fmt.Errorf("absolute upsert user model daily token usage: begin transaction: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+	for _, record := range records {
+		if record.UserID <= 0 || record.Model == "" || record.UsageDate.IsZero() || record.UsedTokens < 0 {
+			return fmt.Errorf("absolute upsert user model daily token usage: invalid record user_id=%d model=%q used_tokens=%d", record.UserID, record.Model, record.UsedTokens)
+		}
+		if err := tx.UserModelTokenDailyUsage.Create().SetUserID(record.UserID).SetModel(record.Model).SetUsageDate(timezone.StartOfDay(record.UsageDate)).SetUsedTokens(record.UsedTokens).
+			OnConflict(absoluteUsageConflict(usermodeltokendailyusage.FieldUserID, usermodeltokendailyusage.FieldModel, usermodeltokendailyusage.FieldUsageDate)...).Exec(ctx); err != nil {
+			return fmt.Errorf("absolute upsert user model daily token usage: %w", err)
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("absolute upsert user model daily token usage: commit: %w", err)
+	}
+	return nil
+}
+
+func (r *dailyTokenQuotaRepository) UpsertGroupCandidateDailyTokenUsageAbsolute(ctx context.Context, records []service.GroupCandidateDailyTokenUsageAbsolute) error {
+	if len(records) == 0 {
+		return nil
+	}
+	tx, err := r.client.Tx(ctx)
+	if err != nil {
+		return fmt.Errorf("absolute upsert group candidate daily token usage: begin transaction: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+	for _, record := range records {
+		if record.GroupID <= 0 || record.RouteAlias == "" || record.UpstreamModel == "" || record.UsageDate.IsZero() || record.UsedTokens < 0 {
+			return fmt.Errorf("absolute upsert group candidate daily token usage: invalid record group_id=%d route=%q model=%q used_tokens=%d", record.GroupID, record.RouteAlias, record.UpstreamModel, record.UsedTokens)
+		}
+		if err := tx.GroupCandidateTokenDailyUsage.Create().SetGroupID(record.GroupID).SetRouteAlias(record.RouteAlias).SetUpstreamModel(record.UpstreamModel).SetUsageDate(timezone.StartOfDay(record.UsageDate)).SetUsedTokens(record.UsedTokens).
+			OnConflict(absoluteUsageConflict(groupcandidatetokendailyusage.FieldGroupID, groupcandidatetokendailyusage.FieldRouteAlias, groupcandidatetokendailyusage.FieldUpstreamModel, groupcandidatetokendailyusage.FieldUsageDate)...).Exec(ctx); err != nil {
+			return fmt.Errorf("absolute upsert group candidate daily token usage: %w", err)
+		}
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("absolute upsert group candidate daily token usage: commit: %w", err)
 	}
 	return nil
 }

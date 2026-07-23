@@ -16,6 +16,131 @@ func NewTokenUsageReportRepository(db *sql.DB) service.ModelTokenUsageRepository
 	return &tokenUsageReportRepository{db: db}
 }
 
+func (r *tokenUsageReportRepository) ListTodayModelTokenUsage(ctx context.Context, q service.TokenUsageReportQuery, day time.Time) ([]service.ModelTokenUsageRow, error) {
+	filter, args := "", []any{}
+	if q.Model != "" {
+		filter = " WHERE model = ?"
+		args = append(args, q.Model)
+	}
+	query := `WITH targets AS (SELECT model FROM model_token_daily_limit_configs` + filter + ` UNION SELECT model FROM model_token_daily_usages WHERE usage_date = ?`
+	usageArgs := []any{day}
+	if q.Model != "" {
+		query += ` AND model = ?`
+		usageArgs = append(usageArgs, q.Model)
+	}
+	query += `) SELECT t.model,COALESCE(u.used_tokens,0),c.daily_limit_tokens FROM targets t LEFT JOIN model_token_daily_usages u ON u.model=t.model AND u.usage_date=? LEFT JOIN model_token_daily_limit_configs c ON c.model=t.model`
+	all := append(args, usageArgs...)
+	all = append(all, day)
+	rows, err := r.db.QueryContext(ctx, query, all...)
+	if err != nil {
+		return nil, fmt.Errorf("list today model token usage: %w", err)
+	}
+	defer rows.Close()
+	out := []service.ModelTokenUsageRow{}
+	for rows.Next() {
+		var x service.ModelTokenUsageRow
+		var limit sql.NullInt64
+		x.UsageDate = day
+		if err := rows.Scan(&x.Model, &x.UsedTokens, &limit); err != nil {
+			return nil, err
+		}
+		if limit.Valid {
+			v := limit.Int64
+			x.DailyLimitTokens = &v
+		}
+		out = append(out, x)
+	}
+	return out, rows.Err()
+}
+
+func (r *tokenUsageReportRepository) ListTodayRouteTokenUsage(ctx context.Context, q service.RouteTokenUsageReportQuery, day time.Time) ([]service.RouteTokenUsageRow, error) {
+	filters := []string{"1=1"}
+	configArgs := []any{}
+	usageArgs := []any{day}
+	add := func(column string, value any, active bool) {
+		if active {
+			filters = append(filters, column+" = ?")
+			configArgs = append(configArgs, value)
+			usageArgs = append(usageArgs, value)
+		}
+	}
+	add("group_id", q.GroupID, q.GroupID > 0)
+	add("route_alias", q.RouteAlias, q.RouteAlias != "")
+	add("upstream_model", q.UpstreamModel, q.UpstreamModel != "")
+	f := strings.Join(filters, " AND ")
+	query := `WITH targets AS (SELECT group_id,route_alias,upstream_model FROM group_candidate_token_daily_limit_configs WHERE ` + f + ` UNION SELECT group_id,route_alias,upstream_model FROM group_candidate_token_daily_usages WHERE usage_date = ? AND ` + f + `) SELECT t.group_id,COALESCE(g.name,''),t.route_alias,t.upstream_model,COALESCE(u.used_tokens,0),c.daily_limit_tokens,rc.priority FROM targets t LEFT JOIN group_candidate_token_daily_usages u ON u.group_id=t.group_id AND u.route_alias=t.route_alias AND u.upstream_model=t.upstream_model AND u.usage_date=? LEFT JOIN group_candidate_token_daily_limit_configs c ON c.group_id=t.group_id AND c.route_alias=t.route_alias AND c.upstream_model=t.upstream_model LEFT JOIN ` + "`groups`" + ` g ON g.id=t.group_id LEFT JOIN JSON_TABLE(JSON_EXTRACT(g.model_routing,CONCAT('$."',t.route_alias,'"')),'$[*]' COLUMNS(model VARCHAR(255) PATH '$.model',priority INT PATH '$.priority')) rc ON rc.model=t.upstream_model`
+	args := append([]any{}, configArgs...)
+	args = append(args, usageArgs...)
+	args = append(args, day)
+	rows, err := r.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("list today route token usage: %w", err)
+	}
+	defer rows.Close()
+	out := []service.RouteTokenUsageRow{}
+	for rows.Next() {
+		var x service.RouteTokenUsageRow
+		var limit, priority sql.NullInt64
+		x.UsageDate = day
+		if err := rows.Scan(&x.GroupID, &x.GroupName, &x.RouteAlias, &x.UpstreamModel, &x.UsedTokens, &limit, &priority); err != nil {
+			return nil, err
+		}
+		if limit.Valid {
+			v := limit.Int64
+			x.DailyLimitTokens = &v
+		}
+		if priority.Valid {
+			v := int(priority.Int64)
+			x.Priority = &v
+		}
+		out = append(out, x)
+	}
+	return out, rows.Err()
+}
+
+func (r *tokenUsageReportRepository) ListTodayUserTokenUsage(ctx context.Context, q service.UserTokenUsageReportQuery, day time.Time) ([]service.UserTokenUsageRow, error) {
+	filters := []string{"1=1"}
+	configArgs := []any{}
+	usageArgs := []any{day}
+	add := func(column string, value any, active bool) {
+		if active {
+			filters = append(filters, column+" = ?")
+			configArgs = append(configArgs, value)
+			usageArgs = append(usageArgs, value)
+		}
+	}
+	add("user_id", q.UserID, q.UserID > 0)
+	add("model", q.Model, q.Model != "")
+	f := strings.Join(filters, " AND ")
+	query := `WITH targets AS (SELECT user_id,model FROM user_model_token_daily_limit_configs WHERE ` + f + ` UNION SELECT user_id,model FROM user_model_token_daily_usages WHERE usage_date = ? AND ` + f + `) SELECT t.user_id,COALESCE(us.email,''),COALESCE(us.username,''),us.deleted_at IS NOT NULL,t.model,COALESCE(u.used_tokens,0),c.daily_limit_tokens FROM targets t LEFT JOIN user_model_token_daily_usages u ON u.user_id=t.user_id AND u.model=t.model AND u.usage_date=? LEFT JOIN user_model_token_daily_limit_configs c ON c.user_id=t.user_id AND c.model=t.model LEFT JOIN users us ON us.id=t.user_id`
+	if !q.IncludeDeleted {
+		query += ` WHERE us.deleted_at IS NULL`
+	}
+	args := append([]any{}, configArgs...)
+	args = append(args, usageArgs...)
+	args = append(args, day)
+	rows, err := r.db.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("list today user token usage: %w", err)
+	}
+	defer rows.Close()
+	out := []service.UserTokenUsageRow{}
+	for rows.Next() {
+		var x service.UserTokenUsageRow
+		var limit sql.NullInt64
+		x.UsageDate = day
+		if err := rows.Scan(&x.UserID, &x.Email, &x.Username, &x.UserDeleted, &x.Model, &x.UsedTokens, &limit); err != nil {
+			return nil, err
+		}
+		if limit.Valid {
+			v := limit.Int64
+			x.DailyLimitTokens = &v
+		}
+		out = append(out, x)
+	}
+	return out, rows.Err()
+}
+
 func (r *tokenUsageReportRepository) ListModelTokenUsage(ctx context.Context, q service.TokenUsageReportQuery) ([]service.ModelTokenUsageRow, int64, int64, error) {
 	configFilter, usageFilter := "1=1", "usage_date BETWEEN ? AND ?"
 	baseArgs := []any{q.StartDate, q.EndDate}

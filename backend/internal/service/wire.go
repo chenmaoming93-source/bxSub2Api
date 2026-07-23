@@ -498,6 +498,28 @@ func ProvideBillingCacheService(
 	return NewBillingCacheService(cache, userRepo, subRepo, apiKeyRepo, rpmCache, rateRepo, cfg, userPlatformQuotaRepo)
 }
 
+func ProvideTokenStatisticsScheduler(rdb *redis.Client, syncer TokenStatisticsDateSyncer, cfg *config.Config) *TokenStatisticsScheduler {
+	scheduler := NewTokenStatisticsScheduler(rdb, syncer, time.Duration(cfg.Gateway.TokenStatistics.SyncIntervalMinutes)*time.Minute)
+	if cfg.Gateway.TokenStatistics.RedisEnabled {
+		_ = scheduler.Start(context.Background())
+	}
+	return scheduler
+}
+
+func ProvideTokenUsageReportService(repo ModelTokenUsageRepository, today TodayTokenUsageRepository, reader CurrentTokenUsageReader, repairer CurrentTokenUsageRepairer) *TokenUsageReportService {
+	service := NewTokenUsageReportService(repo)
+	service.todayRepo = today
+	return service.ConfigureCurrentTokenUsage(reader, repairer)
+}
+
+func ProvideModelTokenQuotaAdminService(repo ModelTokenQuotaAdminRepository, cache ModelDailyTokenQuotaCacheInvalidator, reader CurrentTokenUsageReader, repairer CurrentTokenUsageRepairer) *ModelTokenQuotaAdminService {
+	return NewModelTokenQuotaAdminService(repo, cache).ConfigureCurrentTokenUsage(reader, repairer)
+}
+
+func ProvideUserModelTokenQuotaAdminService(repo UserModelTokenQuotaAdminRepository, cache UserModelDailyTokenQuotaCacheInvalidator, reader CurrentTokenUsageReader, repairer CurrentTokenUsageRepairer) *UserModelTokenQuotaAdminService {
+	return NewUserModelTokenQuotaAdminService(repo, cache).ConfigureCurrentTokenUsage(reader, repairer)
+}
+
 // ProvideAPIKeyService wires APIKeyService and connects rate-limit cache invalidation.
 func ProvideAPIKeyService(
 	apiKeyRepo APIKeyRepository,
@@ -635,9 +657,9 @@ var ProviderSet = wire.NewSet(
 	NewModelPricingResolver,
 	NewContentModerationService,
 	NewAffiliateService,
-	NewModelTokenQuotaAdminService,
-	NewUserModelTokenQuotaAdminService,
-	NewTokenUsageReportService,
+	ProvideModelTokenQuotaAdminService,
+	ProvideUserModelTokenQuotaAdminService,
+	ProvideTokenUsageReportService,
 	ProvidePaymentConfigService,
 	ProvidePaymentService,
 	ProvidePaymentOrderExpiryService,
@@ -646,6 +668,7 @@ var ProviderSet = wire.NewSet(
 	ProvideChannelMonitorRunner,
 	NewChannelMonitorRequestTemplateService,
 	ProvideUserPlatformQuotaUsageFlusher,
+	ProvideTokenStatisticsScheduler,
 )
 
 // ProvideUserPlatformQuotaUsageFlusher 创建并启动 UserPlatformQuotaUsageFlusher。

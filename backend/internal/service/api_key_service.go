@@ -91,7 +91,7 @@ type DefaultAPIKeyRepository interface {
 
 // PlatformAPIKeyRepository is the narrow extension for platform-key lookups.
 type PlatformAPIKeyRepository interface {
-	GetByUserIDAndPlatform(ctx context.Context, userID int64, platform string) (*APIKey, error)
+	GetByUserIDPlatformAndGroup(ctx context.Context, userID int64, platform string, groupID int64) (*APIKey, error)
 }
 
 // APIKeyRateLimitData holds rate limit usage and window state for an API key.

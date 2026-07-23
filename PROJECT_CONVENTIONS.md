@@ -102,7 +102,31 @@ ALTER TABLE api_keys ADD COLUMN purpose <TYPE>;
 
 ---
 
-## 3. 后续规约
+## 3. 配置文件更新规约
+
+### 3.1 适用范围
+
+本规约适用于新增、删除、重命名或修改后端运行配置项及其默认值、示例值和说明。
+
+### 3.2 强制规则
+
+- 后端配置发生变化时，**必须**同步更新实际开发配置文件 `backend/config/config.yaml`。
+- 不得只更新 `deploy/config.example.yaml`、Viper 默认值或配置结构体而遗漏 `backend/config/config.yaml`。
+- `backend/config/config.yaml` 中的配置层级、字段名和数据类型必须与后端配置结构及 `mapstructure` 标签一致。
+- 涉及敏感配置时，只能写入适合开发环境的安全占位值，不得提交真实密钥、Token、密码或生产连接信息。
+
+### 3.3 验证方式
+
+配置变更交付前必须确认：
+
+1. `backend/config/config.yaml` 包含新增或调整后的配置项。
+2. 配置能够被 Viper/mapstructure 正确加载。
+3. 配置默认值、开发配置和示例配置之间不存在非预期差异。
+4. 相关配置校验与测试通过。
+
+---
+
+## 4. 后续规约
 
 后续项目规约从本节之后按主题追加，例如：
 
@@ -121,3 +145,4 @@ ALTER TABLE api_keys ADD COLUMN purpose <TYPE>;
 | 日期 | 变更内容 |
 |---|---|
 | 2026-07-08 | 建立项目开发规约；新增数据库表结构变更 SQL 归档规则。 |
+| 2026-07-14 | 新增配置文件更新规约：后端配置变化必须同步更新 `backend/config/config.yaml`。 |

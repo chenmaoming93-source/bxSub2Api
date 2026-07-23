@@ -1,0 +1,96 @@
+server:
+  host: "0.0.0.0"
+  port: 8080
+  mode: "release"
+  frontend_url: "http://127.0.0.1:3000"
+
+cors:
+  allowed_origins:
+    - "http://127.0.0.1:3000"
+    - "http://localhost:3000"
+  allow_credentials: true
+
+
+
+database:
+  host: "8.154.40.173"
+  port: 4306
+  user: "root"
+  password: "123456"
+  dbname: "sub2api"
+  sslmode: "disable"
+
+redis:
+  host: "8.154.40.173"
+  port: 3976
+  password: "fdsfdsaf6h3h434232h3i"
+  db: 0
+  enable_tls: false
+
+jwt:
+  secret: "f78b5b9dfff6233d36060f7fa31537a7192848ba181fa3dd0ad35509112773b7"
+  expire_hour: 24
+
+totp:
+  encryption_key: "20a12a8d267e3e521804db8ae453bccf209107d04fbbdd747c06ea42c1b74969"
+
+# LDAP / Active Directory login. Disabled by default, so existing login behavior is unchanged.
+ldap:
+  enabled: true
+  server_url: "ldap://8.154.40.173:489"
+
+  base_dn: "DC=qa,DC=bx"
+  # Set user_dn for direct bind, otherwise bind_dn/bind_password are used to search the user first.
+  user_dn: ""
+  bind_dn: "cn=admin,dc=qa,dc=bx"
+  bind_password: "P@ssw0rd"
+  user_filter: "(cn=%s)"
+  username_attribute: "cn"
+  email_attribute: "mail"
+  display_name_attribute: "displayName"
+  # Set domain to use AD NTLM bind; leave empty for simple bind.
+  domain: ""
+  start_tls: false
+  insecure_skip_verify: false
+  auto_create_user: true
+  connect_timeout_seconds: 10
+  # These accounts always use the original local password login path (for example, administrators).
+  local_login_accounts:
+    - "admin@example.com"
+
+
+# External API key provisioning. Provides a Bearer-protected endpoint for
+# trusted internal services to obtain platform-scoped API keys for users.
+# Set rate_limit_*_per_minute to -1 to disable rate limiting (recommended for intranet).
+external_api_key_provisioning:
+  enabled: true
+  access_token: "iy8MCojtQzVKSc6vAhwdU0lOL3TE4DbN"
+  rate_limit_biz_per_minute: -1
+  rate_limit_auth_per_minute: -1
+
+
+run_mode: "standard"
+timezone: "Asia/Shanghai"
+
+gateway:
+  token_statistics:
+    # 是否启用基于 Redis 的 Token 日统计及后台 MySQL 同步。
+    redis_enabled: true
+    # Redis 绝对累计值同步到 MySQL 的周期，单位：分钟。
+    sync_interval_minutes: 5
+    # 每次 HSCAN 建议 Redis 返回的 Field 数量；这是 COUNT 提示值，不保证精确数量。
+    hscan_count: 1000
+    # 每次向单张 MySQL Token 日统计表提交的最大记录数。
+    mysql_batch_size: 500
+    # 单批 MySQL 同步失败后的重试次数；0 表示失败后不重试。
+    sync_retry_count: 3
+    # 每日 Redis Hash 在业务日期结束后完整保留的天数；默认保留 2 天。
+    redis_retention_days: 2
+
+default:
+  admin_email: "admin@example.com"
+  admin_password: "admin123"
+  user_concurrency: 5
+  user_balance: 0
+  api_key_prefix: "sk-"
+  rate_multiplier: 1.0

@@ -358,6 +358,7 @@ type OpenAIGatewayService struct {
 	settingService        *SettingService
 	userPlatformQuotaRepo UserPlatformQuotaRepository
 	dailyTokenQuotaRepo   DailyTokenQuotaRepository
+	tokenStatsAccumulator TokenStatisticsAccumulator
 
 	openaiWSPoolOnce              sync.Once
 	openaiWSStateStoreOnce        sync.Once
@@ -404,6 +405,7 @@ func NewOpenAIGatewayService(
 	settingService *SettingService,
 	userPlatformQuotaRepo UserPlatformQuotaRepository,
 	dailyTokenQuotaRepo DailyTokenQuotaRepository,
+	tokenStatsAccumulator TokenStatisticsAccumulator,
 ) *OpenAIGatewayService {
 	svc := &OpenAIGatewayService{
 		accountRepo:         accountRepo,
@@ -437,6 +439,7 @@ func NewOpenAIGatewayService(
 		settingService:        settingService,
 		userPlatformQuotaRepo: userPlatformQuotaRepo,
 		dailyTokenQuotaRepo:   dailyTokenQuotaRepo,
+		tokenStatsAccumulator: tokenStatsAccumulator,
 		responseHeaderFilter:  compileResponseHeaderFilter(cfg),
 		codexSnapshotThrottle: newAccountWriteThrottle(openAICodexSnapshotPersistMinInterval),
 	}
@@ -5960,17 +5963,7 @@ func (s *OpenAIGatewayService) RecordUsage(ctx context.Context, input *OpenAIRec
 		actualInputTokens = 0
 	}
 
-	// Calculate cost
-	tokens := UsageTokens{
-		InputTokens:         actualInputTokens,
-		ImageInputTokens:    result.Usage.ImageInputTokens,
-		OutputTokens:        result.Usage.OutputTokens,
-		CacheCreationTokens: result.Usage.CacheCreationInputTokens,
-		CacheReadTokens:     result.Usage.CacheReadInputTokens,
-		ImageOutputTokens:   result.Usage.ImageOutputTokens,
-	}
-
-	// Get rate multiplier
+	tokens := UsageTokens{InputTokens: actualInputTokens, ImageInputTokens: result.Usage.ImageInputTokens, OutputTokens: result.Usage.OutputTokens, CacheCreationTokens: result.Usage.CacheCreationInputTokens, CacheReadTokens: result.Usage.CacheReadInputTokens, ImageOutputTokens: result.Usage.ImageOutputTokens}
 	multiplier := 1.0
 	if s.cfg != nil {
 		multiplier = s.cfg.Default.RateMultiplier
@@ -5983,46 +5976,34 @@ func (s *OpenAIGatewayService) RecordUsage(ctx context.Context, input *OpenAIRec
 		multiplier = resolver.Resolve(ctx, user.ID, *apiKey.GroupID, apiKey.Group.RateMultiplier)
 	}
 	imageMultiplier := resolveImageRateMultiplier(apiKey, multiplier)
-
 	var cost *CostBreakdown
-	var err error
-	billingModel := forwardResultBillingModel(result.Model, result.UpstreamModel)
-	if result.BillingModel != "" {
-		billingModel = strings.TrimSpace(result.BillingModel)
-	}
-	if input.BillingModelSource == BillingModelSourceChannelMapped && input.ChannelMappedModel != "" && input.ChannelMappedModel != input.OriginalModel {
-		billingModel = input.ChannelMappedModel
-	}
-	if input.BillingModelSource == BillingModelSourceRequested && input.OriginalModel != "" {
-		billingModel = input.OriginalModel
-	}
-	billingModels := usageBillingModelCandidates(
-		billingModel,
-		result.BillingModel,
-		input.ChannelMappedModel,
-		input.OriginalModel,
-		result.UpstreamModel,
-		result.Model,
-	)
-	serviceTier := ""
-	if result.ServiceTier != nil {
-		serviceTier = strings.TrimSpace(*result.ServiceTier)
-	}
-	cost, err = s.calculateOpenAIRecordUsageCost(ctx, result, apiKey, billingModels, multiplier, imageMultiplier, tokens, serviceTier)
-	if err != nil {
-		if !isUsagePricingUnavailableError(err) {
-			return err
-		}
-		logger.L().With(
-			zap.String("component", "service.openai_gateway"),
-			zap.Strings("billing_models", billingModels),
-			zap.String("requested_model", input.OriginalModel),
-			zap.String("mapped_model", input.ChannelMappedModel),
-			zap.String("upstream_model", result.UpstreamModel),
-			zap.Int64("api_key_id", apiKey.ID),
-			zap.Int64("account_id", account.ID),
-		).Warn("openai_usage.pricing_missing_record_zero_cost", zap.Error(err))
+	if s.tokenStatsAccumulator != nil {
+		// Monetary pricing is disabled when the token-statistics runtime is wired.
 		cost = &CostBreakdown{BillingMode: string(BillingModeToken)}
+	} else {
+		billingModel := forwardResultBillingModel(result.Model, result.UpstreamModel)
+		if result.BillingModel != "" {
+			billingModel = strings.TrimSpace(result.BillingModel)
+		}
+		if input.BillingModelSource == BillingModelSourceChannelMapped && input.ChannelMappedModel != "" && input.ChannelMappedModel != input.OriginalModel {
+			billingModel = input.ChannelMappedModel
+		}
+		if input.BillingModelSource == BillingModelSourceRequested && input.OriginalModel != "" {
+			billingModel = input.OriginalModel
+		}
+		billingModels := usageBillingModelCandidates(billingModel, result.BillingModel, input.ChannelMappedModel, input.OriginalModel, result.UpstreamModel, result.Model)
+		serviceTier := ""
+		if result.ServiceTier != nil {
+			serviceTier = strings.TrimSpace(*result.ServiceTier)
+		}
+		var err error
+		cost, err = s.calculateOpenAIRecordUsageCost(ctx, result, apiKey, billingModels, multiplier, imageMultiplier, tokens, serviceTier)
+		if err != nil {
+			if !isUsagePricingUnavailableError(err) {
+				return err
+			}
+			cost = &CostBreakdown{BillingMode: string(BillingModeToken)}
+		}
 	}
 
 	// Determine billing type
@@ -6128,63 +6109,65 @@ func (s *OpenAIGatewayService) RecordUsage(ctx context.Context, input *OpenAIRec
 		usageLog.SubscriptionID = &subscription.ID
 	}
 
-	// 计算账号统计定价费用（使用最终上游模型匹配自定义规则）
-	if apiKey.GroupID != nil {
-		applyAccountStatsCost(ctx, usageLog, s.channelService, s.billingService,
-			account.ID, *apiKey.GroupID, result.UpstreamModel, result.Model,
-			tokens, cost.TotalCost,
-		)
-	}
-
-	if s.cfg != nil && s.cfg.RunMode == config.RunModeSimple {
-		if s.dailyTokenQuotaRepo != nil {
-			inserted, err := createUsageLogForTokenQuota(ctx, s.usageLogRepo, usageLog)
-			if err != nil {
-				logger.LegacyPrintf("service.openai_gateway", "Create usage log failed; token quota not incremented: %v", err)
+	if s.tokenStatsAccumulator == nil {
+		if apiKey.GroupID != nil {
+			applyAccountStatsCost(ctx, usageLog, s.channelService, s.billingService, account.ID, *apiKey.GroupID, result.UpstreamModel, result.Model, tokens, cost.TotalCost)
+		}
+		if s.cfg != nil && s.cfg.RunMode == config.RunModeSimple {
+			if s.dailyTokenQuotaRepo != nil {
+				inserted, err := createUsageLogForTokenQuota(ctx, s.usageLogRepo, usageLog)
+				if err != nil {
+					return nil
+				}
+				if inserted {
+					if err := incrementDailyTokenQuotasForUsage(ctx, s.dailyTokenQuotaRepo, usageLog, apiKey); err != nil {
+						return err
+					}
+				}
+				if s.deferredService != nil {
+					s.deferredService.ScheduleLastUsedUpdate(account.ID)
+				}
 				return nil
 			}
-			if inserted {
-				if err := incrementDailyTokenQuotasForUsage(ctx, s.dailyTokenQuotaRepo, usageLog, apiKey); err != nil {
-					logger.LegacyPrintf("service.openai_gateway", "Token quota accounting failed without retry: %v", err)
-					return err
-				}
+			writeUsageLogBestEffort(ctx, s.usageLogRepo, usageLog, "service.openai_gateway")
+			if s.deferredService != nil {
+				s.deferredService.ScheduleLastUsedUpdate(account.ID)
 			}
-			s.deferredService.ScheduleLastUsedUpdate(account.ID)
 			return nil
 		}
+		billingApplied, billingErr := applyUsageBilling(ctx, requestID, usageLog, &postUsageBillingParams{Cost: cost, User: user, APIKey: apiKey, Account: account, Subscription: subscription, RequestPayloadHash: resolveUsageBillingPayloadFingerprint(ctx, input.RequestPayloadHash), IsSubscriptionBill: isSubscriptionBilling, AccountRateMultiplier: accountRateMultiplier, APIKeyService: input.APIKeyService, Platform: PlatformFromAPIKey(apiKey)}, s.billingDeps(), s.usageBillingRepo)
+		if billingErr != nil {
+			return billingErr
+		}
 		writeUsageLogBestEffort(ctx, s.usageLogRepo, usageLog, "service.openai_gateway")
-		logger.LegacyPrintf("service.openai_gateway", "[SIMPLE MODE] Usage recorded (not billed): user=%d, tokens=%d", usageLog.UserID, usageLog.TotalTokens())
-		s.deferredService.ScheduleLastUsedUpdate(account.ID)
+		if billingApplied {
+			if err := incrementDailyTokenQuotasForUsage(ctx, s.dailyTokenQuotaRepo, usageLog, apiKey); err != nil {
+				return err
+			}
+		}
 		return nil
 	}
 
-	billingApplied, billingErr := func() (bool, error) {
-		return applyUsageBilling(ctx, requestID, usageLog, &postUsageBillingParams{
-			Cost:                  cost,
-			User:                  user,
-			APIKey:                apiKey,
-			Account:               account,
-			Subscription:          subscription,
-			RequestPayloadHash:    resolveUsageBillingPayloadFingerprint(ctx, input.RequestPayloadHash),
-			IsSubscriptionBill:    isSubscriptionBilling,
-			AccountRateMultiplier: accountRateMultiplier,
-			APIKeyService:         input.APIKeyService,
-			Platform:              PlatformFromAPIKey(apiKey),
-		}, s.billingDeps(), s.usageBillingRepo)
-	}()
-
-	if billingErr != nil {
-		return billingErr
+	inserted, err := createUsageLogForTokenQuota(ctx, s.usageLogRepo, usageLog)
+	if err != nil {
+		logger.LegacyPrintf("service.openai_gateway", "Create usage log failed; token statistics not accumulated: %v", err)
+		return nil
 	}
-	writeUsageLogBestEffort(ctx, s.usageLogRepo, usageLog, "service.openai_gateway")
-	if billingApplied {
-		if err := incrementDailyTokenQuotasForUsage(ctx, s.dailyTokenQuotaRepo, usageLog, apiKey); err != nil {
-			logger.LegacyPrintf("service.openai_gateway", "Token quota accounting failed without retry: %v", err)
+	if inserted {
+		if err := accumulateTokenStatisticsForUsage(ctx, s.tokenStatsAccumulator, usageLog, apiKey); err != nil {
 			return err
 		}
 	}
-
+	if s.deferredService != nil {
+		s.deferredService.ScheduleLastUsedUpdate(account.ID)
+	}
 	return nil
+}
+
+func (s *OpenAIGatewayService) SetTokenStatisticsAccumulator(accumulator TokenStatisticsAccumulator) {
+	if s != nil {
+		s.tokenStatsAccumulator = accumulator
+	}
 }
 
 func (s *OpenAIGatewayService) calculateOpenAIRecordUsageCost(

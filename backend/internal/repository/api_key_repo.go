@@ -10,6 +10,7 @@ import (
 	dbent "github.com/Wei-Shaw/sub2api/ent"
 	"github.com/Wei-Shaw/sub2api/ent/apikey"
 	"github.com/Wei-Shaw/sub2api/ent/group"
+	"github.com/Wei-Shaw/sub2api/ent/predicate"
 	"github.com/Wei-Shaw/sub2api/ent/schema/mixins"
 	"github.com/Wei-Shaw/sub2api/ent/user"
 	"github.com/Wei-Shaw/sub2api/internal/service"
@@ -71,11 +72,17 @@ func (r *apiKeyRepository) create(ctx context.Context, client *dbent.Client, key
 	}
 
 	if key.Platform != nil && strings.TrimSpace(*key.Platform) != "" {
-		exists, err := client.APIKey.Query().Where(
+		predicates := []predicate.APIKey{
 			apikey.UserIDEQ(key.UserID),
 			apikey.PlatformEQ(*key.Platform),
 			apikey.DeletedAtIsNil(),
-		).Exist(ctx)
+		}
+		if key.GroupID != nil {
+			predicates = append(predicates, apikey.GroupIDEQ(*key.GroupID))
+		} else {
+			predicates = append(predicates, apikey.GroupIDIsNil())
+		}
+		exists, err := client.APIKey.Query().Where(predicates...).Exist(ctx)
 		if err != nil {
 			return err
 		}
@@ -147,11 +154,11 @@ func (r *apiKeyRepository) GetByID(ctx context.Context, id int64) (*service.APIK
 	return apiKeyEntityToService(m), nil
 }
 
-
-func (r *apiKeyRepository) GetByUserIDAndPlatform(ctx context.Context, userID int64, platform string) (*service.APIKey, error) {
+func (r *apiKeyRepository) GetByUserIDPlatformAndGroup(ctx context.Context, userID int64, platform string, groupID int64) (*service.APIKey, error) {
 	m, err := r.activeQuery().Where(
 		apikey.UserIDEQ(userID),
 		apikey.PlatformEQ(platform),
+		apikey.GroupIDEQ(groupID),
 	).Only(ctx)
 	if err != nil {
 		if dbent.IsNotFound(err) {

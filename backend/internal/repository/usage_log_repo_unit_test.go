@@ -18,21 +18,21 @@ func TestSafeDateFormat(t *testing.T) {
 		expected    string
 	}{
 		// 合法值
-		{"hour", "hour", "YYYY-MM-DD HH24:00"},
-		{"day", "day", "YYYY-MM-DD"},
-		{"week", "week", "IYYY-IW"},
-		{"month", "month", "YYYY-MM"},
+		{"hour", "hour", "%Y-%m-%d %H:00"},
+		{"day", "day", "%Y-%m-%d"},
+		{"week", "week", "%x-%v"},
+		{"month", "month", "%Y-%m"},
 
 		// 非法值回退到默认
-		{"空字符串", "", "YYYY-MM-DD"},
-		{"未知粒度 year", "year", "YYYY-MM-DD"},
-		{"未知粒度 minute", "minute", "YYYY-MM-DD"},
+		{"空字符串", "", "%Y-%m-%d"},
+		{"未知粒度 year", "year", "%Y-%m-%d"},
+		{"未知粒度 minute", "minute", "%Y-%m-%d"},
 
 		// 恶意字符串
-		{"SQL 注入尝试", "'; DROP TABLE users; --", "YYYY-MM-DD"},
-		{"带引号", "day'", "YYYY-MM-DD"},
-		{"带括号", "day)", "YYYY-MM-DD"},
-		{"Unicode", "日", "YYYY-MM-DD"},
+		{"SQL 注入尝试", "'; DROP TABLE users; --", "%Y-%m-%d"},
+		{"带引号", "day'", "%Y-%m-%d"},
+		{"带括号", "day)", "%Y-%m-%d"},
+		{"Unicode", "日", "%Y-%m-%d"},
 	}
 
 	for _, tc := range tests {
@@ -43,7 +43,7 @@ func TestSafeDateFormat(t *testing.T) {
 	}
 }
 
-func TestBuildUsageLogBatchInsertQuery_UsesConflictDoNothing(t *testing.T) {
+func TestBuildUsageLogBestEffortInsertQuery_UsesInsertIgnore(t *testing.T) {
 	log := &service.UsageLog{
 		UserID:       1,
 		APIKeyID:     2,
@@ -58,10 +58,8 @@ func TestBuildUsageLogBatchInsertQuery_UsesConflictDoNothing(t *testing.T) {
 	}
 	prepared := prepareUsageLogInsert(log)
 
-	query, _ := buildUsageLogBatchInsertQuery([]string{usageLogBatchKey(log.RequestID, log.APIKeyID)}, map[string]usageLogInsertPrepared{
-		usageLogBatchKey(log.RequestID, log.APIKeyID): prepared,
-	})
+	query, _ := buildUsageLogBestEffortInsertQuery([]usageLogInsertPrepared{prepared})
 
-	require.Contains(t, query, "ON CONFLICT (request_id, api_key_id) DO NOTHING")
+	require.Contains(t, query, "INSERT IGNORE INTO usage_logs")
 	require.NotContains(t, strings.ToUpper(query), "DO UPDATE")
 }

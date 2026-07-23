@@ -146,3 +146,60 @@ func TestIncrement_RollbackOnFailure(t *testing.T) {
 		t.Fatalf("model rows=%d want=0", c)
 	}
 }
+
+func TestDailyTokenQuotaAbsoluteUpsertBatch(t *testing.T) {
+	client := newDailyTokenQuotaRepoTestClient(t)
+	repo := NewDailyTokenUsageAbsoluteRepository(client)
+	ctx := context.Background()
+	at := time.Date(2026, 7, 14, 12, 0, 0, 0, time.UTC)
+	day := timezone.StartOfDay(at)
+	user, err := client.User.Create().SetEmail("absolute@test.com").SetPasswordHash("h").Save(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	group, err := client.Group.Create().SetName("absolute").Save(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := client.ModelTokenDailyLimitConfig.Create().SetModel("gpt-5").SetDailyLimitTokens(999).Save(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := client.UserModelTokenDailyLimitConfig.Create().SetUserID(user.ID).SetModel("gpt-5").SetDailyLimitTokens(888).Save(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := client.GroupCandidateTokenDailyLimitConfig.Create().SetGroupID(group.ID).SetRouteAlias("chat").SetUpstreamModel("gpt-5").SetDailyLimitTokens(777).Save(ctx); err != nil {
+		t.Fatal(err)
+	}
+
+	write := func(tokens int64) {
+		if err := repo.UpsertModelDailyTokenUsageAbsolute(ctx, []service.ModelDailyTokenUsageAbsolute{{Model: "gpt-5", UsageDate: at, UsedTokens: tokens}}); err != nil {
+			t.Fatal(err)
+		}
+		if err := repo.UpsertUserModelDailyTokenUsageAbsolute(ctx, []service.UserModelDailyTokenUsageAbsolute{{UserID: user.ID, Model: "gpt-5", UsageDate: at, UsedTokens: tokens}}); err != nil {
+			t.Fatal(err)
+		}
+		if err := repo.UpsertGroupCandidateDailyTokenUsageAbsolute(ctx, []service.GroupCandidateDailyTokenUsageAbsolute{{GroupID: group.ID, RouteAlias: "chat", UpstreamModel: "gpt-5", UsageDate: at, UsedTokens: tokens}}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	write(100)
+	write(100)
+	write(50)
+
+	m := client.ModelTokenDailyUsage.Query().Where(modeltokendailyusage.ModelEQ("gpt-5"), modeltokendailyusage.UsageDateEQ(day)).OnlyX(ctx)
+	u := client.UserModelTokenDailyUsage.Query().Where(usermodeltokendailyusage.UserIDEQ(user.ID), usermodeltokendailyusage.ModelEQ("gpt-5"), usermodeltokendailyusage.UsageDateEQ(day)).OnlyX(ctx)
+	g := client.GroupCandidateTokenDailyUsage.Query().Where(groupcandidatetokendailyusage.GroupIDEQ(group.ID), groupcandidatetokendailyusage.RouteAliasEQ("chat"), groupcandidatetokendailyusage.UpstreamModelEQ("gpt-5"), groupcandidatetokendailyusage.UsageDateEQ(day)).OnlyX(ctx)
+	if m.UsedTokens != 100 || u.UsedTokens != 100 || g.UsedTokens != 100 {
+		t.Fatalf("absolute values m=%d u=%d g=%d", m.UsedTokens, u.UsedTokens, g.UsedTokens)
+	}
+	if client.ModelTokenDailyLimitConfig.Query().OnlyX(ctx).DailyLimitTokens == nil || *client.ModelTokenDailyLimitConfig.Query().OnlyX(ctx).DailyLimitTokens != 999 {
+		t.Fatal("model limit changed")
+	}
+	if client.UserModelTokenDailyLimitConfig.Query().OnlyX(ctx).DailyLimitTokens == nil || *client.UserModelTokenDailyLimitConfig.Query().OnlyX(ctx).DailyLimitTokens != 888 {
+		t.Fatal("user limit changed")
+	}
+	if client.GroupCandidateTokenDailyLimitConfig.Query().OnlyX(ctx).DailyLimitTokens == nil || *client.GroupCandidateTokenDailyLimitConfig.Query().OnlyX(ctx).DailyLimitTokens != 777 {
+		t.Fatal("group limit changed")
+	}
+}

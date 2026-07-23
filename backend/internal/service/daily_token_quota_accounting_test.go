@@ -67,10 +67,12 @@ func tokenQuotaTestAPIKey(groupID int64, routeAlias, upstreamModel string, limit
 }
 
 func TestRecordUsageTokenQuotaAccountingCountsAllClaudeTokensOnce(t *testing.T) {
-	usageRepo := &openAIRecordUsageLogRepoStub{inserted: false}
+	usageRepo := &openAIRecordUsageLogRepoStub{inserted: true}
 	billingRepo := &openAIRecordUsageBillingRepoStub{result: &UsageBillingApplyResult{Applied: true}}
 	quotaRepo := &tokenQuotaAccountingRepoStub{}
 	svc := newTokenQuotaGatewayService(usageRepo, billingRepo, quotaRepo)
+	accumulator := &tokenStatisticsAccumulatorStub{}
+	svc.SetTokenStatisticsAccumulator(accumulator)
 	apiKey := tokenQuotaTestAPIKey(20, "claude-route", "claude-sonnet-4", 500)
 
 	err := svc.RecordUsage(context.Background(), &RecordUsageInput{
@@ -94,14 +96,14 @@ func TestRecordUsageTokenQuotaAccountingCountsAllClaudeTokensOnce(t *testing.T) 
 	})
 
 	require.NoError(t, err)
-	require.Len(t, quotaRepo.increments, 1)
-	increment := quotaRepo.increments[0]
-	require.Equal(t, int64(60), increment.Tokens)
-	require.Equal(t, "claude-sonnet-4", increment.ModelKey.Model)
-	require.Equal(t, int64(40), increment.UserModelKey.UserID)
-	require.Equal(t, int64(20), increment.GroupCandidateKey.GroupID)
-	require.Equal(t, "claude-route", increment.GroupCandidateKey.RouteAlias)
-	require.Equal(t, "claude-sonnet-4", increment.GroupCandidateKey.UpstreamModel)
+	require.Empty(t, quotaRepo.increments)
+	require.Equal(t, 1, accumulator.calls)
+	require.Equal(t, int64(60), accumulator.last.TotalTokens)
+	require.Equal(t, "claude-sonnet-4", accumulator.last.Model)
+	require.Equal(t, int64(40), accumulator.last.UserID)
+	require.Equal(t, int64(20), accumulator.last.GroupID)
+	require.Equal(t, "claude-route", accumulator.last.RouteAlias)
+	require.Equal(t, "claude-sonnet-4", accumulator.last.UpstreamModel)
 }
 
 func TestRecordUsageTokenQuotaAccountingCountsAllOpenAITokensOnce(t *testing.T) {
@@ -153,15 +155,18 @@ func TestTokenQuotaAccountingSkipsFailedOrDuplicateUsagePersistence(t *testing.T
 		Account: &Account{ID: 32},
 	}
 
-	billingFailure := &openAIRecordUsageBillingRepoStub{err: errors.New("usage transaction failed")}
-	svc := newTokenQuotaGatewayService(&openAIRecordUsageLogRepoStub{}, billingFailure, quotaRepo)
-	require.Error(t, svc.RecordUsage(context.Background(), input))
-	require.Empty(t, quotaRepo.increments)
-
-	duplicate := &openAIRecordUsageBillingRepoStub{result: &UsageBillingApplyResult{Applied: false}}
-	svc = newTokenQuotaGatewayService(&openAIRecordUsageLogRepoStub{}, duplicate, quotaRepo)
+	accumulator := &tokenStatisticsAccumulatorStub{}
+	svc := newTokenQuotaGatewayService(&openAIRecordUsageLogRepoStub{err: errors.New("usage transaction failed")}, nil, quotaRepo)
+	svc.SetTokenStatisticsAccumulator(accumulator)
 	require.NoError(t, svc.RecordUsage(context.Background(), input))
 	require.Empty(t, quotaRepo.increments)
+	require.Zero(t, accumulator.calls)
+
+	svc = newTokenQuotaGatewayService(&openAIRecordUsageLogRepoStub{inserted: false}, nil, quotaRepo)
+	svc.SetTokenStatisticsAccumulator(accumulator)
+	require.NoError(t, svc.RecordUsage(context.Background(), input))
+	require.Empty(t, quotaRepo.increments)
+	require.Zero(t, accumulator.calls)
 }
 
 func TestTokenQuotaAccountingSimpleModeRequiresUsageInsert(t *testing.T) {
@@ -183,9 +188,10 @@ func TestTokenQuotaAccountingSimpleModeRequiresUsageInsert(t *testing.T) {
 }
 
 func TestTokenQuotaAccountingReturnsIncrementFailureWithoutRetry(t *testing.T) {
-	quotaRepo := &tokenQuotaAccountingRepoStub{err: errors.New("quota database unavailable")}
-	billingRepo := &openAIRecordUsageBillingRepoStub{result: &UsageBillingApplyResult{Applied: true}}
-	svc := newTokenQuotaGatewayService(&openAIRecordUsageLogRepoStub{}, billingRepo, quotaRepo)
+	quotaRepo := &tokenQuotaAccountingRepoStub{}
+	accumulator := &tokenStatisticsAccumulatorStub{err: errors.New("redis unavailable")}
+	svc := newTokenQuotaGatewayService(&openAIRecordUsageLogRepoStub{inserted: true}, nil, quotaRepo)
+	svc.SetTokenStatisticsAccumulator(accumulator)
 	apiKey := tokenQuotaTestAPIKey(24, "route", "model", 100)
 
 	err := svc.RecordUsage(context.Background(), &RecordUsageInput{
@@ -195,6 +201,7 @@ func TestTokenQuotaAccountingReturnsIncrementFailureWithoutRetry(t *testing.T) {
 		Account: &Account{ID: 34},
 	})
 
-	require.ErrorContains(t, err, "increment daily token quotas after usage persisted")
-	require.Len(t, quotaRepo.increments, 1)
+	require.ErrorContains(t, err, "token statistics accumulate after usage persisted")
+	require.Empty(t, quotaRepo.increments)
+	require.Equal(t, 1, accumulator.calls)
 }
