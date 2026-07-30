@@ -51,11 +51,11 @@ const accountActionError = ref('')
 const initialEmail = (route.query.email as string | undefined) || ''
 
 function sanitizeRedirectPath(path: string | null | undefined): string {
-  if (!path) return '/dashboard'
-  if (!path.startsWith('/')) return '/dashboard'
-  if (path.startsWith('//')) return '/dashboard'
-  if (path.includes('://')) return '/dashboard'
-  if (path.includes('\n') || path.includes('\r')) return '/dashboard'
+  if (!path) return '/welcome'
+  if (!path.startsWith('/')) return '/welcome'
+  if (path.startsWith('//')) return '/welcome'
+  if (path.includes('://')) return '/welcome'
+  if (path.includes('\n') || path.includes('\r')) return '/welcome'
   return path
 }
 

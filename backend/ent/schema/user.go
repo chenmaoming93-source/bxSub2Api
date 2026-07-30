@@ -136,6 +136,13 @@ func (User) Edges() []ent.Edge {
 			Annotations(entsql.OnDelete(entsql.Cascade)),
 		edge.To("user_model_token_daily_limit_configs", UserModelTokenDailyLimitConfig.Type).
 			Annotations(entsql.OnDelete(entsql.Cascade)),
+		edge.To("rbac_user_roles", RBACUserRole.Type).
+			Annotations(entsql.OnDelete(entsql.Cascade)),
+		edge.To("assigned_rbac_user_roles", RBACUserRole.Type),
+		edge.To("rbac_user_version", RBACUserVersion.Type).
+			Unique().
+			Annotations(entsql.OnDelete(entsql.Cascade)),
+		edge.To("rbac_audit_logs", RBACAuditLog.Type),
 	}
 }
 

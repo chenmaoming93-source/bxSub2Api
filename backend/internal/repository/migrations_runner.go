@@ -114,7 +114,19 @@ func ApplyMigrations(ctx context.Context, db *sql.DB) error {
 	if db == nil {
 		return errors.New("nil sql db")
 	}
-	return applyMigrationsFS(ctx, db, migrations.FS)
+	return ApplyMigrationsWithOptions(ctx, db, MigrationOptions{CreateMetadataTables: true, Run: true})
+}
+
+type MigrationOptions struct {
+	CreateMetadataTables bool
+	Run                  bool
+}
+
+func ApplyMigrationsWithOptions(ctx context.Context, db *sql.DB, opts MigrationOptions) error {
+	if db == nil {
+		return errors.New("nil sql db")
+	}
+	return applyMigrationsFSWithOptions(ctx, db, migrations.FS, opts)
 }
 
 // applyMigrationsFS 是迁移执行的核心实现。
@@ -136,8 +148,15 @@ func ApplyMigrations(ctx context.Context, db *sql.DB) error {
 //   - db: 数据库连接
 //   - fsys: 包含迁移文件的文件系统（通常是 embed.FS）
 func applyMigrationsFS(ctx context.Context, db *sql.DB, fsys fs.FS) error {
+	return applyMigrationsFSWithOptions(ctx, db, fsys, MigrationOptions{CreateMetadataTables: true, Run: true})
+}
+
+func applyMigrationsFSWithOptions(ctx context.Context, db *sql.DB, fsys fs.FS, opts MigrationOptions) error {
 	if db == nil {
 		return errors.New("nil sql db")
+	}
+	if !opts.CreateMetadataTables && !opts.Run {
+		return nil
 	}
 
 	// 获取分布式锁，确保多实例部署时只有一个实例执行迁移。
@@ -153,12 +172,29 @@ func applyMigrationsFS(ctx context.Context, db *sql.DB, fsys fs.FS) error {
 
 	// 创建迁移记录表（如果不存在）。
 	// 该表记录所有已应用的迁移及其校验和。
-	if _, err := db.ExecContext(ctx, schemaMigrationsTableDDL); err != nil {
-		return fmt.Errorf("create schema_migrations: %w", err)
+	if opts.CreateMetadataTables {
+		if _, err := db.ExecContext(ctx, schemaMigrationsTableDDL); err != nil {
+			return fmt.Errorf("create schema_migrations: %w", err)
+		}
+		if !opts.Run {
+			hasAtlas, err := tableExists(ctx, db, "atlas_schema_revisions")
+			if err != nil {
+				return fmt.Errorf("check atlas_schema_revisions: %w", err)
+			}
+			if !hasAtlas {
+				if _, err := db.ExecContext(ctx, atlasSchemaRevisionsTableDDL); err != nil {
+					return fmt.Errorf("create atlas_schema_revisions: %w", err)
+				}
+			}
+		}
+	}
+
+	if !opts.Run {
+		return nil
 	}
 
 	// 自动对齐 Atlas 基线（如果检测到 legacy schema_migrations 且缺失 atlas_schema_revisions）。
-	if err := ensureAtlasBaselineAligned(ctx, db, fsys); err != nil {
+	if err := ensureAtlasBaselineAlignedWithOptions(ctx, db, fsys, opts.CreateMetadataTables); err != nil {
 		return err
 	}
 
@@ -356,6 +392,10 @@ func indexIsInvalid(ctx context.Context, db *sql.DB, indexName string) (bool, er
 }
 
 func ensureAtlasBaselineAligned(ctx context.Context, db *sql.DB, fsys fs.FS) error {
+	return ensureAtlasBaselineAlignedWithOptions(ctx, db, fsys, true)
+}
+
+func ensureAtlasBaselineAlignedWithOptions(ctx context.Context, db *sql.DB, fsys fs.FS, allowCreate bool) error {
 	hasLegacy, err := tableExists(ctx, db, "schema_migrations")
 	if err != nil {
 		return fmt.Errorf("check schema_migrations: %w", err)
@@ -369,6 +409,9 @@ func ensureAtlasBaselineAligned(ctx context.Context, db *sql.DB, fsys fs.FS) err
 		return fmt.Errorf("check atlas_schema_revisions: %w", err)
 	}
 	if !hasAtlas {
+		if !allowCreate {
+			return nil
+		}
 		if _, err := db.ExecContext(ctx, atlasSchemaRevisionsTableDDL); err != nil {
 			return fmt.Errorf("create atlas_schema_revisions: %w", err)
 		}

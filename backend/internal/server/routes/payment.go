@@ -3,6 +3,7 @@ package routes
 import (
 	"github.com/Wei-Shaw/sub2api/internal/handler"
 	"github.com/Wei-Shaw/sub2api/internal/handler/admin"
+	"github.com/Wei-Shaw/sub2api/internal/rbac"
 	"github.com/Wei-Shaw/sub2api/internal/server/middleware"
 	"github.com/Wei-Shaw/sub2api/internal/service"
 
@@ -17,29 +18,32 @@ func RegisterPaymentRoutes(
 	webhookHandler *handler.PaymentWebhookHandler,
 	adminPaymentHandler *admin.PaymentHandler,
 	jwtAuth middleware.JWTAuthMiddleware,
-	adminAuth middleware.AdminAuthMiddleware,
+	adminIdentityAuth middleware.AdminIdentityAuthMiddleware,
 	settingService *service.SettingService,
+	rbacRoutes *rbac.RouteRegistrar,
+	rbacRegistry *rbac.Registry,
 ) {
 	// --- User-facing payment endpoints (authenticated) ---
 	authenticated := v1.Group("/payment")
 	authenticated.Use(gin.HandlerFunc(jwtAuth))
 	authenticated.Use(middleware.BackendModeUserGuard(settingService))
+	authenticated.Use(middleware.PrincipalFromAuthenticatedSubject())
 	{
-		authenticated.GET("/config", paymentHandler.GetPaymentConfig)
-		authenticated.GET("/checkout-info", paymentHandler.GetCheckoutInfo)
-		authenticated.GET("/plans", paymentHandler.GetPlans)
-		authenticated.GET("/channels", paymentHandler.GetChannels)
-		authenticated.GET("/limits", paymentHandler.GetLimits)
+		rbacRoutes.GET(authenticated, "/config", rbac.PermissionPaymentsSelfRead, paymentHandler.GetPaymentConfig)
+		rbacRoutes.GET(authenticated, "/checkout-info", rbac.PermissionPaymentsSelfRead, paymentHandler.GetCheckoutInfo)
+		rbacRoutes.GET(authenticated, "/plans", rbac.PermissionPaymentsSelfRead, paymentHandler.GetPlans)
+		rbacRoutes.GET(authenticated, "/channels", rbac.PermissionPaymentsSelfRead, paymentHandler.GetChannels)
+		rbacRoutes.GET(authenticated, "/limits", rbac.PermissionPaymentsSelfRead, paymentHandler.GetLimits)
 
 		orders := authenticated.Group("/orders")
 		{
-			orders.POST("", paymentHandler.CreateOrder)
-			orders.POST("/verify", paymentHandler.VerifyOrder)
-			orders.GET("/my", paymentHandler.GetMyOrders)
-			orders.GET("/:id", paymentHandler.GetOrder)
-			orders.POST("/:id/cancel", paymentHandler.CancelOrder)
-			orders.POST("/:id/refund-request", paymentHandler.RequestRefund)
-			orders.GET("/refund-eligible-providers", paymentHandler.GetRefundEligibleProviders)
+			rbacRoutes.POST(orders, "", rbac.PermissionPaymentsSelfCreate, paymentHandler.CreateOrder)
+			rbacRoutes.POST(orders, "/verify", rbac.PermissionPaymentsSelfUpdate, paymentHandler.VerifyOrder)
+			rbacRoutes.GET(orders, "/my", rbac.PermissionPaymentsSelfRead, paymentHandler.GetMyOrders)
+			rbacRoutes.GET(orders, "/:id", rbac.PermissionPaymentsSelfRead, paymentHandler.GetOrder)
+			rbacRoutes.POST(orders, "/:id/cancel", rbac.PermissionPaymentsSelfUpdate, paymentHandler.CancelOrder)
+			rbacRoutes.POST(orders, "/:id/refund-request", rbac.PermissionPaymentsSelfUpdate, paymentHandler.RequestRefund)
+			rbacRoutes.GET(orders, "/refund-eligible-providers", rbac.PermissionPaymentsSelfRead, paymentHandler.GetRefundEligibleProviders)
 		}
 	}
 
@@ -67,42 +71,44 @@ func RegisterPaymentRoutes(
 
 	// --- Admin payment endpoints (admin auth) ---
 	adminGroup := v1.Group("/admin/payment")
-	adminGroup.Use(gin.HandlerFunc(adminAuth))
+	adminGroup.Use(gin.HandlerFunc(adminIdentityAuth))
+	adminGroup.Use(middleware.PrincipalFromAuthenticatedSubject())
+	adminGroup.Use(middleware.RequireLegacyAdminForUnregistered(rbacRegistry))
 	adminGroup.Use(middleware.AdminComplianceGuard(settingService))
 	{
 		// Dashboard
-		adminGroup.GET("/dashboard", adminPaymentHandler.GetDashboard)
+		rbacRoutes.GET(adminGroup, "/dashboard", rbac.PermissionBillingRead, adminPaymentHandler.GetDashboard)
 
 		// Config
-		adminGroup.GET("/config", adminPaymentHandler.GetConfig)
-		adminGroup.PUT("/config", adminPaymentHandler.UpdateConfig)
+		rbacRoutes.GET(adminGroup, "/config", rbac.PermissionBillingRead, adminPaymentHandler.GetConfig)
+		rbacRoutes.PUT(adminGroup, "/config", rbac.PermissionBillingProvidersManage, adminPaymentHandler.UpdateConfig)
 
 		// Orders
 		adminOrders := adminGroup.Group("/orders")
 		{
-			adminOrders.GET("", adminPaymentHandler.ListOrders)
-			adminOrders.GET("/:id", adminPaymentHandler.GetOrderDetail)
-			adminOrders.POST("/:id/cancel", adminPaymentHandler.CancelOrder)
-			adminOrders.POST("/:id/retry", adminPaymentHandler.RetryFulfillment)
-			adminOrders.POST("/:id/refund", adminPaymentHandler.ProcessRefund)
+			rbacRoutes.GET(adminOrders, "", rbac.PermissionBillingRead, adminPaymentHandler.ListOrders)
+			rbacRoutes.GET(adminOrders, "/:id", rbac.PermissionBillingRead, adminPaymentHandler.GetOrderDetail)
+			rbacRoutes.POST(adminOrders, "/:id/cancel", rbac.PermissionBillingOrdersManage, adminPaymentHandler.CancelOrder)
+			rbacRoutes.POST(adminOrders, "/:id/retry", rbac.PermissionBillingOrdersManage, adminPaymentHandler.RetryFulfillment)
+			rbacRoutes.POST(adminOrders, "/:id/refund", rbac.PermissionBillingOrdersManage, adminPaymentHandler.ProcessRefund)
 		}
 
 		// Subscription Plans
 		plans := adminGroup.Group("/plans")
 		{
-			plans.GET("", adminPaymentHandler.ListPlans)
-			plans.POST("", adminPaymentHandler.CreatePlan)
-			plans.PUT("/:id", adminPaymentHandler.UpdatePlan)
-			plans.DELETE("/:id", adminPaymentHandler.DeletePlan)
+			rbacRoutes.GET(plans, "", rbac.PermissionBillingRead, adminPaymentHandler.ListPlans)
+			rbacRoutes.POST(plans, "", rbac.PermissionBillingPlansManage, adminPaymentHandler.CreatePlan)
+			rbacRoutes.PUT(plans, "/:id", rbac.PermissionBillingPlansManage, adminPaymentHandler.UpdatePlan)
+			rbacRoutes.DELETE(plans, "/:id", rbac.PermissionBillingPlansManage, adminPaymentHandler.DeletePlan)
 		}
 
 		// Provider Instances
 		providers := adminGroup.Group("/providers")
 		{
-			providers.GET("", adminPaymentHandler.ListProviders)
-			providers.POST("", adminPaymentHandler.CreateProvider)
-			providers.PUT("/:id", adminPaymentHandler.UpdateProvider)
-			providers.DELETE("/:id", adminPaymentHandler.DeleteProvider)
+			rbacRoutes.GET(providers, "", rbac.PermissionBillingRead, adminPaymentHandler.ListProviders)
+			rbacRoutes.POST(providers, "", rbac.PermissionBillingProvidersManage, adminPaymentHandler.CreateProvider)
+			rbacRoutes.PUT(providers, "/:id", rbac.PermissionBillingProvidersManage, adminPaymentHandler.UpdateProvider)
+			rbacRoutes.DELETE(providers, "/:id", rbac.PermissionBillingProvidersManage, adminPaymentHandler.DeleteProvider)
 		}
 	}
 }

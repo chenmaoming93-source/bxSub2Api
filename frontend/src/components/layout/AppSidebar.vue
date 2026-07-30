@@ -24,7 +24,7 @@
     <!-- Navigation -->
     <nav class="sidebar-nav scrollbar-hide">
       <!-- Admin View: Admin menu first, then personal menu -->
-      <template v-if="isAdmin">
+      <template v-if="hasAdminAccess">
         <!-- Admin Section -->
         <div class="sidebar-section">
           <template v-for="item in adminNavItems" :key="item.path">
@@ -187,6 +187,7 @@ import { useAdminSettingsStore, useAppStore, useAuthStore, useOnboardingStore } 
 import VersionBadge from '@/components/common/VersionBadge.vue'
 import { sanitizeSvg } from '@/utils/sanitize'
 import { FeatureFlags, makeSidebarFlag } from '@/utils/featureFlags'
+import { permissionForPage } from '@/rbac/permissionMatrix'
 
 interface NavItem {
   path: string
@@ -224,6 +225,18 @@ function applyFeatureFlags(items: NavItem[]): NavItem[] {
   return out
 }
 
+function applyPermissions(items: NavItem[]): NavItem[] {
+  const output: NavItem[] = []
+  for (const item of items) {
+    const permission = permissionForPage(item.path)
+    if (permission && !authStore.can(permission)) continue
+    const children = item.children ? applyPermissions(item.children) : undefined
+    if (item.children && children?.length === 0) continue
+    output.push(children ? { ...item, children } : item)
+  }
+  return output
+}
+
 const { t } = useI18n()
 
 const route = useRoute()
@@ -235,7 +248,7 @@ const adminSettingsStore = useAdminSettingsStore()
 
 const sidebarCollapsed = computed(() => appStore.sidebarCollapsed)
 const mobileOpen = computed(() => appStore.mobileOpen)
-const isAdmin = computed(() => authStore.isAdmin)
+const hasAdminAccess = computed(() => authStore.hasAdminAccess)
 const isDark = ref(document.documentElement.classList.contains('dark'))
 
 // Track which parent nav groups are expanded
@@ -687,7 +700,7 @@ function buildSelfNavItems(withDashboard: boolean): NavItem[] {
 
 // finalizeNav 合并三重过滤：featureFlag 过滤 + simple 模式过滤。
 function finalizeNav(items: NavItem[]): NavItem[] {
-  const visible = applyFeatureFlags(items)
+  const visible = applyPermissions(applyFeatureFlags(items))
   return authStore.isSimpleMode ? visible.filter(item => !item.hideInSimpleMode) : visible
 }
 
@@ -721,6 +734,7 @@ const adminNavItems = computed((): NavItem[] => {
     { path: '/admin/accounts', label: t('nav.accounts'), icon: GlobeIcon },
     { path: '/admin/groups', label: t('nav.groups'), icon: FolderIcon, hideInSimpleMode: true },
     { path: '/admin/users', label: t('nav.users'), icon: UsersIcon, hideInSimpleMode: true },
+    { path: '/admin/roles', label: '角色权限', icon: ShieldIcon, hideInSimpleMode: true },
     {
       path: '/admin/token-usage/models',
       label: t('nav.tokenUsage'),
@@ -780,7 +794,7 @@ const adminNavItems = computed((): NavItem[] => {
     { path: '/admin/usage', label: t('nav.usage'), icon: ChartIcon },
   ]
 
-  const visible = applyFeatureFlags(baseItems)
+  const visible = applyPermissions(applyFeatureFlags(baseItems))
 
   // 简单模式下，在系统设置前插入 API密钥
   if (authStore.isSimpleMode) {
@@ -887,9 +901,9 @@ if (
 
 // Fetch admin settings (for feature-gated nav items like Ops).
 watch(
-  isAdmin,
-  (v) => {
-    if (v) {
+  () => authStore.can('settings.read'),
+  (canReadSettings) => {
+    if (canReadSettings) {
       adminSettingsStore.fetch()
     }
   },
@@ -897,7 +911,7 @@ watch(
 )
 
 onMounted(() => {
-  if (isAdmin.value) {
+  if (authStore.can('settings.read')) {
     adminSettingsStore.fetch()
   }
 })

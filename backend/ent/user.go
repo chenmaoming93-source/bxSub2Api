@@ -9,6 +9,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/Wei-Shaw/sub2api/ent/rbacuserversion"
 	"github.com/Wei-Shaw/sub2api/ent/user"
 )
 
@@ -101,11 +102,19 @@ type UserEdges struct {
 	ModelTokenDailyUsages []*UserModelTokenDailyUsage `json:"model_token_daily_usages,omitempty"`
 	// UserModelTokenDailyLimitConfigs holds the value of the user_model_token_daily_limit_configs edge.
 	UserModelTokenDailyLimitConfigs []*UserModelTokenDailyLimitConfig `json:"user_model_token_daily_limit_configs,omitempty"`
+	// RbacUserRoles holds the value of the rbac_user_roles edge.
+	RbacUserRoles []*RBACUserRole `json:"rbac_user_roles,omitempty"`
+	// AssignedRbacUserRoles holds the value of the assigned_rbac_user_roles edge.
+	AssignedRbacUserRoles []*RBACUserRole `json:"assigned_rbac_user_roles,omitempty"`
+	// RbacUserVersion holds the value of the rbac_user_version edge.
+	RbacUserVersion *RBACUserVersion `json:"rbac_user_version,omitempty"`
+	// RbacAuditLogs holds the value of the rbac_audit_logs edge.
+	RbacAuditLogs []*RBACAuditLog `json:"rbac_audit_logs,omitempty"`
 	// UserAllowedGroups holds the value of the user_allowed_groups edge.
 	UserAllowedGroups []*UserAllowedGroup `json:"user_allowed_groups,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [16]bool
+	loadedTypes [20]bool
 }
 
 // APIKeysOrErr returns the APIKeys value or an error if the edge
@@ -243,10 +252,48 @@ func (e UserEdges) UserModelTokenDailyLimitConfigsOrErr() ([]*UserModelTokenDail
 	return nil, &NotLoadedError{edge: "user_model_token_daily_limit_configs"}
 }
 
+// RbacUserRolesOrErr returns the RbacUserRoles value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) RbacUserRolesOrErr() ([]*RBACUserRole, error) {
+	if e.loadedTypes[15] {
+		return e.RbacUserRoles, nil
+	}
+	return nil, &NotLoadedError{edge: "rbac_user_roles"}
+}
+
+// AssignedRbacUserRolesOrErr returns the AssignedRbacUserRoles value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) AssignedRbacUserRolesOrErr() ([]*RBACUserRole, error) {
+	if e.loadedTypes[16] {
+		return e.AssignedRbacUserRoles, nil
+	}
+	return nil, &NotLoadedError{edge: "assigned_rbac_user_roles"}
+}
+
+// RbacUserVersionOrErr returns the RbacUserVersion value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e UserEdges) RbacUserVersionOrErr() (*RBACUserVersion, error) {
+	if e.RbacUserVersion != nil {
+		return e.RbacUserVersion, nil
+	} else if e.loadedTypes[17] {
+		return nil, &NotFoundError{label: rbacuserversion.Label}
+	}
+	return nil, &NotLoadedError{edge: "rbac_user_version"}
+}
+
+// RbacAuditLogsOrErr returns the RbacAuditLogs value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) RbacAuditLogsOrErr() ([]*RBACAuditLog, error) {
+	if e.loadedTypes[18] {
+		return e.RbacAuditLogs, nil
+	}
+	return nil, &NotLoadedError{edge: "rbac_audit_logs"}
+}
+
 // UserAllowedGroupsOrErr returns the UserAllowedGroups value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) UserAllowedGroupsOrErr() ([]*UserAllowedGroup, error) {
-	if e.loadedTypes[15] {
+	if e.loadedTypes[19] {
 		return e.UserAllowedGroups, nil
 	}
 	return nil, &NotLoadedError{edge: "user_allowed_groups"}
@@ -518,6 +565,26 @@ func (_m *User) QueryModelTokenDailyUsages() *UserModelTokenDailyUsageQuery {
 // QueryUserModelTokenDailyLimitConfigs queries the "user_model_token_daily_limit_configs" edge of the User entity.
 func (_m *User) QueryUserModelTokenDailyLimitConfigs() *UserModelTokenDailyLimitConfigQuery {
 	return NewUserClient(_m.config).QueryUserModelTokenDailyLimitConfigs(_m)
+}
+
+// QueryRbacUserRoles queries the "rbac_user_roles" edge of the User entity.
+func (_m *User) QueryRbacUserRoles() *RBACUserRoleQuery {
+	return NewUserClient(_m.config).QueryRbacUserRoles(_m)
+}
+
+// QueryAssignedRbacUserRoles queries the "assigned_rbac_user_roles" edge of the User entity.
+func (_m *User) QueryAssignedRbacUserRoles() *RBACUserRoleQuery {
+	return NewUserClient(_m.config).QueryAssignedRbacUserRoles(_m)
+}
+
+// QueryRbacUserVersion queries the "rbac_user_version" edge of the User entity.
+func (_m *User) QueryRbacUserVersion() *RBACUserVersionQuery {
+	return NewUserClient(_m.config).QueryRbacUserVersion(_m)
+}
+
+// QueryRbacAuditLogs queries the "rbac_audit_logs" edge of the User entity.
+func (_m *User) QueryRbacAuditLogs() *RBACAuditLogQuery {
+	return NewUserClient(_m.config).QueryRbacAuditLogs(_m)
 }
 
 // QueryUserAllowedGroups queries the "user_allowed_groups" edge of the User entity.

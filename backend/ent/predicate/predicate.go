@@ -84,6 +84,27 @@ type PromoCodeUsage func(*sql.Selector)
 // Proxy is the predicate function for proxy builders.
 type Proxy func(*sql.Selector)
 
+// RBACAuditLog is the predicate function for rbacauditlog builders.
+type RBACAuditLog func(*sql.Selector)
+
+// RBACPermission is the predicate function for rbacpermission builders.
+type RBACPermission func(*sql.Selector)
+
+// RBACPolicyState is the predicate function for rbacpolicystate builders.
+type RBACPolicyState func(*sql.Selector)
+
+// RBACRole is the predicate function for rbacrole builders.
+type RBACRole func(*sql.Selector)
+
+// RBACRolePermission is the predicate function for rbacrolepermission builders.
+type RBACRolePermission func(*sql.Selector)
+
+// RBACUserRole is the predicate function for rbacuserrole builders.
+type RBACUserRole func(*sql.Selector)
+
+// RBACUserVersion is the predicate function for rbacuserversion builders.
+type RBACUserVersion func(*sql.Selector)
+
 // RedeemCode is the predicate function for redeemcode builders.
 type RedeemCode func(*sql.Selector)
 

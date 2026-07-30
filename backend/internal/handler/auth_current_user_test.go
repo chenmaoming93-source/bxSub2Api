@@ -65,6 +65,10 @@ func TestAuthHandlerGetCurrentUserReturnsProfileCompatibilityFields(t *testing.T
 	require.Equal(t, true, resp.Data["email_bound"])
 	require.Equal(t, true, resp.Data["linuxdo_bound"])
 	require.Equal(t, "https://cdn.example.com/linuxdo.png", resp.Data["avatar_url"])
+	require.Contains(t, resp.Data, "roles")
+	require.Contains(t, resp.Data, "permissions")
+	require.Equal(t, float64(0), resp.Data["permission_version"])
+	require.Equal(t, float64(0), resp.Data["policy_version"])
 
 	authBindings, ok := resp.Data["auth_bindings"].(map[string]any)
 	require.True(t, ok)

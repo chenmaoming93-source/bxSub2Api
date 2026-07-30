@@ -57,6 +57,7 @@ describe('useAuthStore', () => {
     localStorage.clear()
     vi.useFakeTimers()
     vi.clearAllMocks()
+    mockGetCurrentUser.mockResolvedValue({ data: fakeUser })
   })
 
   afterEach(() => {
@@ -339,6 +340,34 @@ describe('useAuthStore', () => {
     it('未登录时返回 false', () => {
       const store = useAuthStore()
       expect(store.isAdmin).toBe(false)
+    })
+  })
+
+  describe('RBAC permission helpers', () => {
+    it('supports single, any and all permission checks', async () => {
+      mockLogin.mockResolvedValue({
+        ...fakeAuthResponse,
+        user: { ...fakeUser, roles: ['user', 'auditor'], permissions: ['users.read', 'usage.admin.read'] },
+      })
+      const store = useAuthStore()
+      await store.login({ email: 'test@example.com', password: '123456' })
+      expect(store.can('users.read')).toBe(true)
+      expect(store.canAny(['missing', 'usage.admin.read'])).toBe(true)
+      expect(store.canAll(['users.read', 'usage.admin.read'])).toBe(true)
+      expect(store.canAll(['users.read', 'users.update'])).toBe(false)
+    })
+
+    it('treats wildcard and legacy admin as super administrator', async () => {
+      mockLogin.mockResolvedValue({
+        ...fakeAuthResponse,
+        user: { ...fakeAdminUser, roles: ['admin'], permissions: ['*'], permission_version: 3 },
+      })
+      const store = useAuthStore()
+      await store.login({ email: 'admin@example.com', password: '123456' })
+      expect(store.isSuperAdmin).toBe(true)
+      expect(store.can('future.permission')).toBe(true)
+      expect(store.permissionVersion).toBe(3)
+      expect(store.isAdmin).toBe(true)
     })
   })
 

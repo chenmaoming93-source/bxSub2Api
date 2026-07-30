@@ -10,7 +10,12 @@ vi.mock('@/api/admin', () => ({ adminAPI: { groups: { getById: getGroup, create:
 vi.mock('@/stores', () => ({ useAppStore: () => ({ showSuccess, showError }) }))
 vi.mock('vue-i18n', () => ({ useI18n: () => ({ t: (key: string) => key }) }))
 vi.mock('@/components/layout/AppLayout.vue', () => ({ default: { template: '<div><slot /></div>' } }))
-vi.mock('@/components/admin/group/GroupModelRoutingEditor.vue', () => ({ default: { template: '<div data-test="routing-editor" />' } }))
+vi.mock('@/components/admin/group/GroupModelRoutingEditor.vue', () => ({
+  default: {
+    template: '<div data-test="routing-editor" />',
+    methods: { isValid: () => true }
+  }
+}))
 
 const mountPage = () => mount(DefaultGroupRoutingView, { global: { stubs: { RouterLink: { template: '<a><slot /></a>' } } } })
 

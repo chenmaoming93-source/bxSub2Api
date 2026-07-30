@@ -17,6 +17,13 @@ func BackendModeUserGuard(settingService *service.SettingService) gin.HandlerFun
 			c.Next()
 			return
 		}
+		// /auth/me is the RBAC bootstrap endpoint. Delegated non-admin users
+		// must be able to load their effective permissions even when legacy
+		// self-service routes are disabled by backend mode.
+		if strings.TrimSpace(c.Request.URL.Path) == "/api/v1/auth/me" {
+			c.Next()
+			return
+		}
 		role, _ := GetUserRoleFromContext(c)
 		if role == "admin" {
 			c.Next()

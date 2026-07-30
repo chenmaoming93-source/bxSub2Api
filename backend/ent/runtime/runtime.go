@@ -31,6 +31,13 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/promocode"
 	"github.com/Wei-Shaw/sub2api/ent/promocodeusage"
 	"github.com/Wei-Shaw/sub2api/ent/proxy"
+	"github.com/Wei-Shaw/sub2api/ent/rbacauditlog"
+	"github.com/Wei-Shaw/sub2api/ent/rbacpermission"
+	"github.com/Wei-Shaw/sub2api/ent/rbacpolicystate"
+	"github.com/Wei-Shaw/sub2api/ent/rbacrole"
+	"github.com/Wei-Shaw/sub2api/ent/rbacrolepermission"
+	"github.com/Wei-Shaw/sub2api/ent/rbacuserrole"
+	"github.com/Wei-Shaw/sub2api/ent/rbacuserversion"
 	"github.com/Wei-Shaw/sub2api/ent/redeemcode"
 	"github.com/Wei-Shaw/sub2api/ent/schema"
 	"github.com/Wei-Shaw/sub2api/ent/securitysecret"
@@ -1582,6 +1589,310 @@ func init() {
 	proxyDescExpiryWarnDays := proxyFields[10].Descriptor()
 	// proxy.DefaultExpiryWarnDays holds the default value on creation for the expiry_warn_days field.
 	proxy.DefaultExpiryWarnDays = proxyDescExpiryWarnDays.Default.(int)
+	rbacauditlogFields := schema.RBACAuditLog{}.Fields()
+	_ = rbacauditlogFields
+	// rbacauditlogDescAction is the schema descriptor for action field.
+	rbacauditlogDescAction := rbacauditlogFields[1].Descriptor()
+	// rbacauditlog.ActionValidator is a validator for the "action" field. It is called by the builders before save.
+	rbacauditlog.ActionValidator = func() func(string) error {
+		validators := rbacauditlogDescAction.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(action string) error {
+			for _, fn := range fns {
+				if err := fn(action); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// rbacauditlogDescTargetType is the schema descriptor for target_type field.
+	rbacauditlogDescTargetType := rbacauditlogFields[2].Descriptor()
+	// rbacauditlog.TargetTypeValidator is a validator for the "target_type" field. It is called by the builders before save.
+	rbacauditlog.TargetTypeValidator = func() func(string) error {
+		validators := rbacauditlogDescTargetType.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(target_type string) error {
+			for _, fn := range fns {
+				if err := fn(target_type); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// rbacauditlogDescTargetID is the schema descriptor for target_id field.
+	rbacauditlogDescTargetID := rbacauditlogFields[3].Descriptor()
+	// rbacauditlog.TargetIDValidator is a validator for the "target_id" field. It is called by the builders before save.
+	rbacauditlog.TargetIDValidator = func() func(string) error {
+		validators := rbacauditlogDescTargetID.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(target_id string) error {
+			for _, fn := range fns {
+				if err := fn(target_id); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// rbacauditlogDescRequestID is the schema descriptor for request_id field.
+	rbacauditlogDescRequestID := rbacauditlogFields[6].Descriptor()
+	// rbacauditlog.DefaultRequestID holds the default value on creation for the request_id field.
+	rbacauditlog.DefaultRequestID = rbacauditlogDescRequestID.Default.(string)
+	// rbacauditlog.RequestIDValidator is a validator for the "request_id" field. It is called by the builders before save.
+	rbacauditlog.RequestIDValidator = rbacauditlogDescRequestID.Validators[0].(func(string) error)
+	// rbacauditlogDescIPAddress is the schema descriptor for ip_address field.
+	rbacauditlogDescIPAddress := rbacauditlogFields[7].Descriptor()
+	// rbacauditlog.DefaultIPAddress holds the default value on creation for the ip_address field.
+	rbacauditlog.DefaultIPAddress = rbacauditlogDescIPAddress.Default.(string)
+	// rbacauditlog.IPAddressValidator is a validator for the "ip_address" field. It is called by the builders before save.
+	rbacauditlog.IPAddressValidator = rbacauditlogDescIPAddress.Validators[0].(func(string) error)
+	// rbacauditlogDescCreatedAt is the schema descriptor for created_at field.
+	rbacauditlogDescCreatedAt := rbacauditlogFields[8].Descriptor()
+	// rbacauditlog.DefaultCreatedAt holds the default value on creation for the created_at field.
+	rbacauditlog.DefaultCreatedAt = rbacauditlogDescCreatedAt.Default.(func() time.Time)
+	rbacpermissionMixin := schema.RBACPermission{}.Mixin()
+	rbacpermissionMixinHooks1 := rbacpermissionMixin[1].Hooks()
+	rbacpermission.Hooks[0] = rbacpermissionMixinHooks1[0]
+	rbacpermissionMixinInters1 := rbacpermissionMixin[1].Interceptors()
+	rbacpermission.Interceptors[0] = rbacpermissionMixinInters1[0]
+	rbacpermissionMixinFields0 := rbacpermissionMixin[0].Fields()
+	_ = rbacpermissionMixinFields0
+	rbacpermissionFields := schema.RBACPermission{}.Fields()
+	_ = rbacpermissionFields
+	// rbacpermissionDescCreatedAt is the schema descriptor for created_at field.
+	rbacpermissionDescCreatedAt := rbacpermissionMixinFields0[0].Descriptor()
+	// rbacpermission.DefaultCreatedAt holds the default value on creation for the created_at field.
+	rbacpermission.DefaultCreatedAt = rbacpermissionDescCreatedAt.Default.(func() time.Time)
+	// rbacpermissionDescUpdatedAt is the schema descriptor for updated_at field.
+	rbacpermissionDescUpdatedAt := rbacpermissionMixinFields0[1].Descriptor()
+	// rbacpermission.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	rbacpermission.DefaultUpdatedAt = rbacpermissionDescUpdatedAt.Default.(func() time.Time)
+	// rbacpermission.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	rbacpermission.UpdateDefaultUpdatedAt = rbacpermissionDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// rbacpermissionDescCode is the schema descriptor for code field.
+	rbacpermissionDescCode := rbacpermissionFields[0].Descriptor()
+	// rbacpermission.CodeValidator is a validator for the "code" field. It is called by the builders before save.
+	rbacpermission.CodeValidator = func() func(string) error {
+		validators := rbacpermissionDescCode.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(code string) error {
+			for _, fn := range fns {
+				if err := fn(code); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// rbacpermissionDescName is the schema descriptor for name field.
+	rbacpermissionDescName := rbacpermissionFields[1].Descriptor()
+	// rbacpermission.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	rbacpermission.NameValidator = func() func(string) error {
+		validators := rbacpermissionDescName.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(name string) error {
+			for _, fn := range fns {
+				if err := fn(name); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// rbacpermissionDescModule is the schema descriptor for module field.
+	rbacpermissionDescModule := rbacpermissionFields[2].Descriptor()
+	// rbacpermission.ModuleValidator is a validator for the "module" field. It is called by the builders before save.
+	rbacpermission.ModuleValidator = func() func(string) error {
+		validators := rbacpermissionDescModule.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(module string) error {
+			for _, fn := range fns {
+				if err := fn(module); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// rbacpermissionDescDescription is the schema descriptor for description field.
+	rbacpermissionDescDescription := rbacpermissionFields[3].Descriptor()
+	// rbacpermission.DefaultDescription holds the default value on creation for the description field.
+	rbacpermission.DefaultDescription = rbacpermissionDescDescription.Default.(string)
+	// rbacpermission.DescriptionValidator is a validator for the "description" field. It is called by the builders before save.
+	rbacpermission.DescriptionValidator = rbacpermissionDescDescription.Validators[0].(func(string) error)
+	// rbacpermissionDescRiskLevel is the schema descriptor for risk_level field.
+	rbacpermissionDescRiskLevel := rbacpermissionFields[4].Descriptor()
+	// rbacpermission.RiskLevelValidator is a validator for the "risk_level" field. It is called by the builders before save.
+	rbacpermission.RiskLevelValidator = func() func(string) error {
+		validators := rbacpermissionDescRiskLevel.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(risk_level string) error {
+			for _, fn := range fns {
+				if err := fn(risk_level); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// rbacpermissionDescIsSystem is the schema descriptor for is_system field.
+	rbacpermissionDescIsSystem := rbacpermissionFields[5].Descriptor()
+	// rbacpermission.DefaultIsSystem holds the default value on creation for the is_system field.
+	rbacpermission.DefaultIsSystem = rbacpermissionDescIsSystem.Default.(bool)
+	// rbacpermissionDescStatus is the schema descriptor for status field.
+	rbacpermissionDescStatus := rbacpermissionFields[6].Descriptor()
+	// rbacpermission.DefaultStatus holds the default value on creation for the status field.
+	rbacpermission.DefaultStatus = rbacpermissionDescStatus.Default.(string)
+	// rbacpermission.StatusValidator is a validator for the "status" field. It is called by the builders before save.
+	rbacpermission.StatusValidator = rbacpermissionDescStatus.Validators[0].(func(string) error)
+	rbacpolicystateFields := schema.RBACPolicyState{}.Fields()
+	_ = rbacpolicystateFields
+	// rbacpolicystateDescPolicyVersion is the schema descriptor for policy_version field.
+	rbacpolicystateDescPolicyVersion := rbacpolicystateFields[0].Descriptor()
+	// rbacpolicystate.DefaultPolicyVersion holds the default value on creation for the policy_version field.
+	rbacpolicystate.DefaultPolicyVersion = rbacpolicystateDescPolicyVersion.Default.(int64)
+	// rbacpolicystateDescUpdatedAt is the schema descriptor for updated_at field.
+	rbacpolicystateDescUpdatedAt := rbacpolicystateFields[1].Descriptor()
+	// rbacpolicystate.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	rbacpolicystate.DefaultUpdatedAt = rbacpolicystateDescUpdatedAt.Default.(func() time.Time)
+	// rbacpolicystate.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	rbacpolicystate.UpdateDefaultUpdatedAt = rbacpolicystateDescUpdatedAt.UpdateDefault.(func() time.Time)
+	rbacroleMixin := schema.RBACRole{}.Mixin()
+	rbacroleMixinHooks1 := rbacroleMixin[1].Hooks()
+	rbacrole.Hooks[0] = rbacroleMixinHooks1[0]
+	rbacroleMixinInters1 := rbacroleMixin[1].Interceptors()
+	rbacrole.Interceptors[0] = rbacroleMixinInters1[0]
+	rbacroleMixinFields0 := rbacroleMixin[0].Fields()
+	_ = rbacroleMixinFields0
+	rbacroleFields := schema.RBACRole{}.Fields()
+	_ = rbacroleFields
+	// rbacroleDescCreatedAt is the schema descriptor for created_at field.
+	rbacroleDescCreatedAt := rbacroleMixinFields0[0].Descriptor()
+	// rbacrole.DefaultCreatedAt holds the default value on creation for the created_at field.
+	rbacrole.DefaultCreatedAt = rbacroleDescCreatedAt.Default.(func() time.Time)
+	// rbacroleDescUpdatedAt is the schema descriptor for updated_at field.
+	rbacroleDescUpdatedAt := rbacroleMixinFields0[1].Descriptor()
+	// rbacrole.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	rbacrole.DefaultUpdatedAt = rbacroleDescUpdatedAt.Default.(func() time.Time)
+	// rbacrole.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	rbacrole.UpdateDefaultUpdatedAt = rbacroleDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// rbacroleDescCode is the schema descriptor for code field.
+	rbacroleDescCode := rbacroleFields[0].Descriptor()
+	// rbacrole.CodeValidator is a validator for the "code" field. It is called by the builders before save.
+	rbacrole.CodeValidator = func() func(string) error {
+		validators := rbacroleDescCode.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(code string) error {
+			for _, fn := range fns {
+				if err := fn(code); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// rbacroleDescName is the schema descriptor for name field.
+	rbacroleDescName := rbacroleFields[1].Descriptor()
+	// rbacrole.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	rbacrole.NameValidator = func() func(string) error {
+		validators := rbacroleDescName.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(name string) error {
+			for _, fn := range fns {
+				if err := fn(name); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// rbacroleDescDescription is the schema descriptor for description field.
+	rbacroleDescDescription := rbacroleFields[2].Descriptor()
+	// rbacrole.DefaultDescription holds the default value on creation for the description field.
+	rbacrole.DefaultDescription = rbacroleDescDescription.Default.(string)
+	// rbacrole.DescriptionValidator is a validator for the "description" field. It is called by the builders before save.
+	rbacrole.DescriptionValidator = rbacroleDescDescription.Validators[0].(func(string) error)
+	// rbacroleDescIsSystem is the schema descriptor for is_system field.
+	rbacroleDescIsSystem := rbacroleFields[3].Descriptor()
+	// rbacrole.DefaultIsSystem holds the default value on creation for the is_system field.
+	rbacrole.DefaultIsSystem = rbacroleDescIsSystem.Default.(bool)
+	// rbacroleDescStatus is the schema descriptor for status field.
+	rbacroleDescStatus := rbacroleFields[4].Descriptor()
+	// rbacrole.DefaultStatus holds the default value on creation for the status field.
+	rbacrole.DefaultStatus = rbacroleDescStatus.Default.(string)
+	// rbacrole.StatusValidator is a validator for the "status" field. It is called by the builders before save.
+	rbacrole.StatusValidator = rbacroleDescStatus.Validators[0].(func(string) error)
+	rbacrolepermissionMixin := schema.RBACRolePermission{}.Mixin()
+	rbacrolepermissionMixinFields0 := rbacrolepermissionMixin[0].Fields()
+	_ = rbacrolepermissionMixinFields0
+	rbacrolepermissionFields := schema.RBACRolePermission{}.Fields()
+	_ = rbacrolepermissionFields
+	// rbacrolepermissionDescCreatedAt is the schema descriptor for created_at field.
+	rbacrolepermissionDescCreatedAt := rbacrolepermissionMixinFields0[0].Descriptor()
+	// rbacrolepermission.DefaultCreatedAt holds the default value on creation for the created_at field.
+	rbacrolepermission.DefaultCreatedAt = rbacrolepermissionDescCreatedAt.Default.(func() time.Time)
+	// rbacrolepermissionDescUpdatedAt is the schema descriptor for updated_at field.
+	rbacrolepermissionDescUpdatedAt := rbacrolepermissionMixinFields0[1].Descriptor()
+	// rbacrolepermission.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	rbacrolepermission.DefaultUpdatedAt = rbacrolepermissionDescUpdatedAt.Default.(func() time.Time)
+	// rbacrolepermission.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	rbacrolepermission.UpdateDefaultUpdatedAt = rbacrolepermissionDescUpdatedAt.UpdateDefault.(func() time.Time)
+	rbacuserroleMixin := schema.RBACUserRole{}.Mixin()
+	rbacuserroleMixinFields0 := rbacuserroleMixin[0].Fields()
+	_ = rbacuserroleMixinFields0
+	rbacuserroleFields := schema.RBACUserRole{}.Fields()
+	_ = rbacuserroleFields
+	// rbacuserroleDescCreatedAt is the schema descriptor for created_at field.
+	rbacuserroleDescCreatedAt := rbacuserroleMixinFields0[0].Descriptor()
+	// rbacuserrole.DefaultCreatedAt holds the default value on creation for the created_at field.
+	rbacuserrole.DefaultCreatedAt = rbacuserroleDescCreatedAt.Default.(func() time.Time)
+	// rbacuserroleDescUpdatedAt is the schema descriptor for updated_at field.
+	rbacuserroleDescUpdatedAt := rbacuserroleMixinFields0[1].Descriptor()
+	// rbacuserrole.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	rbacuserrole.DefaultUpdatedAt = rbacuserroleDescUpdatedAt.Default.(func() time.Time)
+	// rbacuserrole.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	rbacuserrole.UpdateDefaultUpdatedAt = rbacuserroleDescUpdatedAt.UpdateDefault.(func() time.Time)
+	rbacuserversionFields := schema.RBACUserVersion{}.Fields()
+	_ = rbacuserversionFields
+	// rbacuserversionDescAuthzVersion is the schema descriptor for authz_version field.
+	rbacuserversionDescAuthzVersion := rbacuserversionFields[1].Descriptor()
+	// rbacuserversion.DefaultAuthzVersion holds the default value on creation for the authz_version field.
+	rbacuserversion.DefaultAuthzVersion = rbacuserversionDescAuthzVersion.Default.(int64)
+	// rbacuserversionDescUpdatedAt is the schema descriptor for updated_at field.
+	rbacuserversionDescUpdatedAt := rbacuserversionFields[2].Descriptor()
+	// rbacuserversion.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	rbacuserversion.DefaultUpdatedAt = rbacuserversionDescUpdatedAt.Default.(func() time.Time)
+	// rbacuserversion.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	rbacuserversion.UpdateDefaultUpdatedAt = rbacuserversionDescUpdatedAt.UpdateDefault.(func() time.Time)
 	redeemcodeFields := schema.RedeemCode{}.Fields()
 	_ = redeemcodeFields
 	// redeemcodeDescCode is the schema descriptor for code field.

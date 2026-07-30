@@ -60,7 +60,10 @@ backend/sqlArchiving/161_add_example_column.sql
 
 ### 2.4 SQL 内容要求
 
-- SQL **必须**使用项目当前数据库支持的语法，并能够作为独立文件直接执行。
+- 本项目数据库方言固定为 **MySQL 8 / GoldenDB（MySQL 兼容模式）**。所有新增 SQL **必须**使用该方言支持的语法，并能够作为独立文件直接执行。
+- 编写 SQL 前**必须**先核对 `backend/migrations/001_init.sql`、`backend/internal/repository/ent.go` 和 `backend/internal/config` 中的实际驱动与 DSN；不得凭经验假设为 PostgreSQL、SQLite 或其他方言。
+- **禁止**在交付 SQL 中使用 PostgreSQL 专属语法，包括但不限于 `BIGSERIAL`、`TIMESTAMPTZ`、`JSONB`、`ON CONFLICT` 和 PostgreSQL 部分索引。
+- MySQL 8 不支持的幂等写法（例如 `CREATE INDEX IF NOT EXISTS`）不得直接使用；新表索引应优先写入 `CREATE TABLE IF NOT EXISTS` 定义，其他情况必须在注释中明确重复执行前置条件。
 - 文件中不得包含伪代码、模板占位符或需要人工补全的变量。
 - 每条 SQL 语句必须以分号结尾。
 - 同一个文件应只包含一个内聚的表结构变更主题。
@@ -90,9 +93,11 @@ ALTER TABLE api_keys ADD COLUMN purpose <TYPE>;
 
 1. 检查两个 SQL 目录中的已有编号，确定下一个可用编号。
 2. 在 `backend/sqlArchiving/` 新建 SQL 文件。
-3. 检查 SQL 方言、字段定义、默认值以及现有数据兼容性。
-4. 确认文件可脱离应用程序和运行时迁移器直接执行。
-5. 更新相关任务或 MVP 文档中的 SQL 路径与验证证据。
+3. 根据现有驱动、DSN 和初始化 SQL 再次确认方言为 MySQL 8 / GoldenDB。
+4. 检查 SQL 中不存在 PostgreSQL 等其他数据库的专属语法，并核对字段定义、默认值以及现有数据兼容性。
+5. 在 MySQL 8 / GoldenDB 测试库中实际执行；声明可重复执行的文件必须至少连续执行两次。
+6. 确认文件可脱离应用程序和运行时迁移器直接执行。
+7. 更新相关任务或 MVP 文档中的 SQL 路径与验证证据。
 
 ### 2.6 当前编号基线
 
@@ -146,3 +151,4 @@ ALTER TABLE api_keys ADD COLUMN purpose <TYPE>;
 |---|---|
 | 2026-07-08 | 建立项目开发规约；新增数据库表结构变更 SQL 归档规则。 |
 | 2026-07-14 | 新增配置文件更新规约：后端配置变化必须同步更新 `backend/config/config.yaml`。 |
+| 2026-07-23 | 固化数据库方言为 MySQL 8 / GoldenDB；新增编写前方言核验、禁止 PostgreSQL 专属语法和测试库双次执行要求。 |

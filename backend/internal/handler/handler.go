@@ -40,6 +40,7 @@ type AdminHandlers struct {
 	ModelTokenQuota        *admin.ModelTokenQuotaHandler
 	UserModelTokenQuota    *admin.UserModelTokenQuotaHandler
 	TokenUsageReport       *admin.TokenUsageReportHandler
+	RBAC                   *admin.RBACHandler
 }
 
 // Handlers contains all HTTP handlers

@@ -19,6 +19,9 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/pendingauthsession"
 	"github.com/Wei-Shaw/sub2api/ent/predicate"
 	"github.com/Wei-Shaw/sub2api/ent/promocodeusage"
+	"github.com/Wei-Shaw/sub2api/ent/rbacauditlog"
+	"github.com/Wei-Shaw/sub2api/ent/rbacuserrole"
+	"github.com/Wei-Shaw/sub2api/ent/rbacuserversion"
 	"github.com/Wei-Shaw/sub2api/ent/redeemcode"
 	"github.com/Wei-Shaw/sub2api/ent/usagelog"
 	"github.com/Wei-Shaw/sub2api/ent/user"
@@ -638,6 +641,70 @@ func (_u *UserUpdate) AddUserModelTokenDailyLimitConfigs(v ...*UserModelTokenDai
 	return _u.AddUserModelTokenDailyLimitConfigIDs(ids...)
 }
 
+// AddRbacUserRoleIDs adds the "rbac_user_roles" edge to the RBACUserRole entity by IDs.
+func (_u *UserUpdate) AddRbacUserRoleIDs(ids ...int64) *UserUpdate {
+	_u.mutation.AddRbacUserRoleIDs(ids...)
+	return _u
+}
+
+// AddRbacUserRoles adds the "rbac_user_roles" edges to the RBACUserRole entity.
+func (_u *UserUpdate) AddRbacUserRoles(v ...*RBACUserRole) *UserUpdate {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddRbacUserRoleIDs(ids...)
+}
+
+// AddAssignedRbacUserRoleIDs adds the "assigned_rbac_user_roles" edge to the RBACUserRole entity by IDs.
+func (_u *UserUpdate) AddAssignedRbacUserRoleIDs(ids ...int64) *UserUpdate {
+	_u.mutation.AddAssignedRbacUserRoleIDs(ids...)
+	return _u
+}
+
+// AddAssignedRbacUserRoles adds the "assigned_rbac_user_roles" edges to the RBACUserRole entity.
+func (_u *UserUpdate) AddAssignedRbacUserRoles(v ...*RBACUserRole) *UserUpdate {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddAssignedRbacUserRoleIDs(ids...)
+}
+
+// SetRbacUserVersionID sets the "rbac_user_version" edge to the RBACUserVersion entity by ID.
+func (_u *UserUpdate) SetRbacUserVersionID(id int64) *UserUpdate {
+	_u.mutation.SetRbacUserVersionID(id)
+	return _u
+}
+
+// SetNillableRbacUserVersionID sets the "rbac_user_version" edge to the RBACUserVersion entity by ID if the given value is not nil.
+func (_u *UserUpdate) SetNillableRbacUserVersionID(id *int64) *UserUpdate {
+	if id != nil {
+		_u = _u.SetRbacUserVersionID(*id)
+	}
+	return _u
+}
+
+// SetRbacUserVersion sets the "rbac_user_version" edge to the RBACUserVersion entity.
+func (_u *UserUpdate) SetRbacUserVersion(v *RBACUserVersion) *UserUpdate {
+	return _u.SetRbacUserVersionID(v.ID)
+}
+
+// AddRbacAuditLogIDs adds the "rbac_audit_logs" edge to the RBACAuditLog entity by IDs.
+func (_u *UserUpdate) AddRbacAuditLogIDs(ids ...int64) *UserUpdate {
+	_u.mutation.AddRbacAuditLogIDs(ids...)
+	return _u
+}
+
+// AddRbacAuditLogs adds the "rbac_audit_logs" edges to the RBACAuditLog entity.
+func (_u *UserUpdate) AddRbacAuditLogs(v ...*RBACAuditLog) *UserUpdate {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddRbacAuditLogIDs(ids...)
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (_u *UserUpdate) Mutation() *UserMutation {
 	return _u.mutation
@@ -956,6 +1023,75 @@ func (_u *UserUpdate) RemoveUserModelTokenDailyLimitConfigs(v ...*UserModelToken
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveUserModelTokenDailyLimitConfigIDs(ids...)
+}
+
+// ClearRbacUserRoles clears all "rbac_user_roles" edges to the RBACUserRole entity.
+func (_u *UserUpdate) ClearRbacUserRoles() *UserUpdate {
+	_u.mutation.ClearRbacUserRoles()
+	return _u
+}
+
+// RemoveRbacUserRoleIDs removes the "rbac_user_roles" edge to RBACUserRole entities by IDs.
+func (_u *UserUpdate) RemoveRbacUserRoleIDs(ids ...int64) *UserUpdate {
+	_u.mutation.RemoveRbacUserRoleIDs(ids...)
+	return _u
+}
+
+// RemoveRbacUserRoles removes "rbac_user_roles" edges to RBACUserRole entities.
+func (_u *UserUpdate) RemoveRbacUserRoles(v ...*RBACUserRole) *UserUpdate {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveRbacUserRoleIDs(ids...)
+}
+
+// ClearAssignedRbacUserRoles clears all "assigned_rbac_user_roles" edges to the RBACUserRole entity.
+func (_u *UserUpdate) ClearAssignedRbacUserRoles() *UserUpdate {
+	_u.mutation.ClearAssignedRbacUserRoles()
+	return _u
+}
+
+// RemoveAssignedRbacUserRoleIDs removes the "assigned_rbac_user_roles" edge to RBACUserRole entities by IDs.
+func (_u *UserUpdate) RemoveAssignedRbacUserRoleIDs(ids ...int64) *UserUpdate {
+	_u.mutation.RemoveAssignedRbacUserRoleIDs(ids...)
+	return _u
+}
+
+// RemoveAssignedRbacUserRoles removes "assigned_rbac_user_roles" edges to RBACUserRole entities.
+func (_u *UserUpdate) RemoveAssignedRbacUserRoles(v ...*RBACUserRole) *UserUpdate {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveAssignedRbacUserRoleIDs(ids...)
+}
+
+// ClearRbacUserVersion clears the "rbac_user_version" edge to the RBACUserVersion entity.
+func (_u *UserUpdate) ClearRbacUserVersion() *UserUpdate {
+	_u.mutation.ClearRbacUserVersion()
+	return _u
+}
+
+// ClearRbacAuditLogs clears all "rbac_audit_logs" edges to the RBACAuditLog entity.
+func (_u *UserUpdate) ClearRbacAuditLogs() *UserUpdate {
+	_u.mutation.ClearRbacAuditLogs()
+	return _u
+}
+
+// RemoveRbacAuditLogIDs removes the "rbac_audit_logs" edge to RBACAuditLog entities by IDs.
+func (_u *UserUpdate) RemoveRbacAuditLogIDs(ids ...int64) *UserUpdate {
+	_u.mutation.RemoveRbacAuditLogIDs(ids...)
+	return _u
+}
+
+// RemoveRbacAuditLogs removes "rbac_audit_logs" edges to RBACAuditLog entities.
+func (_u *UserUpdate) RemoveRbacAuditLogs(v ...*RBACAuditLog) *UserUpdate {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveRbacAuditLogIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -1833,6 +1969,170 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.RbacUserRolesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RbacUserRolesTable,
+			Columns: []string{user.RbacUserRolesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(rbacuserrole.FieldID, field.TypeInt64),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedRbacUserRolesIDs(); len(nodes) > 0 && !_u.mutation.RbacUserRolesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RbacUserRolesTable,
+			Columns: []string{user.RbacUserRolesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(rbacuserrole.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RbacUserRolesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RbacUserRolesTable,
+			Columns: []string{user.RbacUserRolesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(rbacuserrole.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.AssignedRbacUserRolesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.AssignedRbacUserRolesTable,
+			Columns: []string{user.AssignedRbacUserRolesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(rbacuserrole.FieldID, field.TypeInt64),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedAssignedRbacUserRolesIDs(); len(nodes) > 0 && !_u.mutation.AssignedRbacUserRolesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.AssignedRbacUserRolesTable,
+			Columns: []string{user.AssignedRbacUserRolesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(rbacuserrole.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.AssignedRbacUserRolesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.AssignedRbacUserRolesTable,
+			Columns: []string{user.AssignedRbacUserRolesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(rbacuserrole.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.RbacUserVersionCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   user.RbacUserVersionTable,
+			Columns: []string{user.RbacUserVersionColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(rbacuserversion.FieldID, field.TypeInt64),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RbacUserVersionIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   user.RbacUserVersionTable,
+			Columns: []string{user.RbacUserVersionColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(rbacuserversion.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.RbacAuditLogsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RbacAuditLogsTable,
+			Columns: []string{user.RbacAuditLogsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(rbacauditlog.FieldID, field.TypeInt64),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedRbacAuditLogsIDs(); len(nodes) > 0 && !_u.mutation.RbacAuditLogsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RbacAuditLogsTable,
+			Columns: []string{user.RbacAuditLogsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(rbacauditlog.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RbacAuditLogsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RbacAuditLogsTable,
+			Columns: []string{user.RbacAuditLogsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(rbacauditlog.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{user.Label}
@@ -2449,6 +2749,70 @@ func (_u *UserUpdateOne) AddUserModelTokenDailyLimitConfigs(v ...*UserModelToken
 	return _u.AddUserModelTokenDailyLimitConfigIDs(ids...)
 }
 
+// AddRbacUserRoleIDs adds the "rbac_user_roles" edge to the RBACUserRole entity by IDs.
+func (_u *UserUpdateOne) AddRbacUserRoleIDs(ids ...int64) *UserUpdateOne {
+	_u.mutation.AddRbacUserRoleIDs(ids...)
+	return _u
+}
+
+// AddRbacUserRoles adds the "rbac_user_roles" edges to the RBACUserRole entity.
+func (_u *UserUpdateOne) AddRbacUserRoles(v ...*RBACUserRole) *UserUpdateOne {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddRbacUserRoleIDs(ids...)
+}
+
+// AddAssignedRbacUserRoleIDs adds the "assigned_rbac_user_roles" edge to the RBACUserRole entity by IDs.
+func (_u *UserUpdateOne) AddAssignedRbacUserRoleIDs(ids ...int64) *UserUpdateOne {
+	_u.mutation.AddAssignedRbacUserRoleIDs(ids...)
+	return _u
+}
+
+// AddAssignedRbacUserRoles adds the "assigned_rbac_user_roles" edges to the RBACUserRole entity.
+func (_u *UserUpdateOne) AddAssignedRbacUserRoles(v ...*RBACUserRole) *UserUpdateOne {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddAssignedRbacUserRoleIDs(ids...)
+}
+
+// SetRbacUserVersionID sets the "rbac_user_version" edge to the RBACUserVersion entity by ID.
+func (_u *UserUpdateOne) SetRbacUserVersionID(id int64) *UserUpdateOne {
+	_u.mutation.SetRbacUserVersionID(id)
+	return _u
+}
+
+// SetNillableRbacUserVersionID sets the "rbac_user_version" edge to the RBACUserVersion entity by ID if the given value is not nil.
+func (_u *UserUpdateOne) SetNillableRbacUserVersionID(id *int64) *UserUpdateOne {
+	if id != nil {
+		_u = _u.SetRbacUserVersionID(*id)
+	}
+	return _u
+}
+
+// SetRbacUserVersion sets the "rbac_user_version" edge to the RBACUserVersion entity.
+func (_u *UserUpdateOne) SetRbacUserVersion(v *RBACUserVersion) *UserUpdateOne {
+	return _u.SetRbacUserVersionID(v.ID)
+}
+
+// AddRbacAuditLogIDs adds the "rbac_audit_logs" edge to the RBACAuditLog entity by IDs.
+func (_u *UserUpdateOne) AddRbacAuditLogIDs(ids ...int64) *UserUpdateOne {
+	_u.mutation.AddRbacAuditLogIDs(ids...)
+	return _u
+}
+
+// AddRbacAuditLogs adds the "rbac_audit_logs" edges to the RBACAuditLog entity.
+func (_u *UserUpdateOne) AddRbacAuditLogs(v ...*RBACAuditLog) *UserUpdateOne {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddRbacAuditLogIDs(ids...)
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (_u *UserUpdateOne) Mutation() *UserMutation {
 	return _u.mutation
@@ -2767,6 +3131,75 @@ func (_u *UserUpdateOne) RemoveUserModelTokenDailyLimitConfigs(v ...*UserModelTo
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveUserModelTokenDailyLimitConfigIDs(ids...)
+}
+
+// ClearRbacUserRoles clears all "rbac_user_roles" edges to the RBACUserRole entity.
+func (_u *UserUpdateOne) ClearRbacUserRoles() *UserUpdateOne {
+	_u.mutation.ClearRbacUserRoles()
+	return _u
+}
+
+// RemoveRbacUserRoleIDs removes the "rbac_user_roles" edge to RBACUserRole entities by IDs.
+func (_u *UserUpdateOne) RemoveRbacUserRoleIDs(ids ...int64) *UserUpdateOne {
+	_u.mutation.RemoveRbacUserRoleIDs(ids...)
+	return _u
+}
+
+// RemoveRbacUserRoles removes "rbac_user_roles" edges to RBACUserRole entities.
+func (_u *UserUpdateOne) RemoveRbacUserRoles(v ...*RBACUserRole) *UserUpdateOne {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveRbacUserRoleIDs(ids...)
+}
+
+// ClearAssignedRbacUserRoles clears all "assigned_rbac_user_roles" edges to the RBACUserRole entity.
+func (_u *UserUpdateOne) ClearAssignedRbacUserRoles() *UserUpdateOne {
+	_u.mutation.ClearAssignedRbacUserRoles()
+	return _u
+}
+
+// RemoveAssignedRbacUserRoleIDs removes the "assigned_rbac_user_roles" edge to RBACUserRole entities by IDs.
+func (_u *UserUpdateOne) RemoveAssignedRbacUserRoleIDs(ids ...int64) *UserUpdateOne {
+	_u.mutation.RemoveAssignedRbacUserRoleIDs(ids...)
+	return _u
+}
+
+// RemoveAssignedRbacUserRoles removes "assigned_rbac_user_roles" edges to RBACUserRole entities.
+func (_u *UserUpdateOne) RemoveAssignedRbacUserRoles(v ...*RBACUserRole) *UserUpdateOne {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveAssignedRbacUserRoleIDs(ids...)
+}
+
+// ClearRbacUserVersion clears the "rbac_user_version" edge to the RBACUserVersion entity.
+func (_u *UserUpdateOne) ClearRbacUserVersion() *UserUpdateOne {
+	_u.mutation.ClearRbacUserVersion()
+	return _u
+}
+
+// ClearRbacAuditLogs clears all "rbac_audit_logs" edges to the RBACAuditLog entity.
+func (_u *UserUpdateOne) ClearRbacAuditLogs() *UserUpdateOne {
+	_u.mutation.ClearRbacAuditLogs()
+	return _u
+}
+
+// RemoveRbacAuditLogIDs removes the "rbac_audit_logs" edge to RBACAuditLog entities by IDs.
+func (_u *UserUpdateOne) RemoveRbacAuditLogIDs(ids ...int64) *UserUpdateOne {
+	_u.mutation.RemoveRbacAuditLogIDs(ids...)
+	return _u
+}
+
+// RemoveRbacAuditLogs removes "rbac_audit_logs" edges to RBACAuditLog entities.
+func (_u *UserUpdateOne) RemoveRbacAuditLogs(v ...*RBACAuditLog) *UserUpdateOne {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveRbacAuditLogIDs(ids...)
 }
 
 // Where appends a list predicates to the UserUpdate builder.
@@ -3667,6 +4100,170 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(usermodeltokendailylimitconfig.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.RbacUserRolesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RbacUserRolesTable,
+			Columns: []string{user.RbacUserRolesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(rbacuserrole.FieldID, field.TypeInt64),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedRbacUserRolesIDs(); len(nodes) > 0 && !_u.mutation.RbacUserRolesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RbacUserRolesTable,
+			Columns: []string{user.RbacUserRolesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(rbacuserrole.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RbacUserRolesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RbacUserRolesTable,
+			Columns: []string{user.RbacUserRolesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(rbacuserrole.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.AssignedRbacUserRolesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.AssignedRbacUserRolesTable,
+			Columns: []string{user.AssignedRbacUserRolesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(rbacuserrole.FieldID, field.TypeInt64),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedAssignedRbacUserRolesIDs(); len(nodes) > 0 && !_u.mutation.AssignedRbacUserRolesCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.AssignedRbacUserRolesTable,
+			Columns: []string{user.AssignedRbacUserRolesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(rbacuserrole.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.AssignedRbacUserRolesIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.AssignedRbacUserRolesTable,
+			Columns: []string{user.AssignedRbacUserRolesColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(rbacuserrole.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.RbacUserVersionCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   user.RbacUserVersionTable,
+			Columns: []string{user.RbacUserVersionColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(rbacuserversion.FieldID, field.TypeInt64),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RbacUserVersionIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   user.RbacUserVersionTable,
+			Columns: []string{user.RbacUserVersionColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(rbacuserversion.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.RbacAuditLogsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RbacAuditLogsTable,
+			Columns: []string{user.RbacAuditLogsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(rbacauditlog.FieldID, field.TypeInt64),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedRbacAuditLogsIDs(); len(nodes) > 0 && !_u.mutation.RbacAuditLogsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RbacAuditLogsTable,
+			Columns: []string{user.RbacAuditLogsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(rbacauditlog.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RbacAuditLogsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.RbacAuditLogsTable,
+			Columns: []string{user.RbacAuditLogsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(rbacauditlog.FieldID, field.TypeInt64),
 			},
 		}
 		for _, k := range nodes {

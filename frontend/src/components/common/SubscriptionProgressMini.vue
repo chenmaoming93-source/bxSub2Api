@@ -181,12 +181,13 @@
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Icon from '@/components/icons/Icon.vue'
-import { useSubscriptionStore } from '@/stores'
+import { useAuthStore, useSubscriptionStore } from '@/stores'
 import type { UserSubscription } from '@/types'
 
 const { t } = useI18n()
 
 const subscriptionStore = useSubscriptionStore()
+const authStore = useAuthStore()
 
 const containerRef = ref<HTMLElement | null>(null)
 const tooltipOpen = ref(false)
@@ -294,11 +295,11 @@ function handleClickOutside(event: MouseEvent) {
 
 onMounted(() => {
   document.addEventListener('click', handleClickOutside)
-  // Trigger initial fetch if not already loaded
-  // The actual data loading is handled by App.vue globally
-  subscriptionStore.fetchActiveSubscriptions().catch((error) => {
-    console.error('Failed to load subscriptions in SubscriptionProgressMini:', error)
-  })
+  if (authStore.can('subscriptions.self.read')) {
+    subscriptionStore.fetchActiveSubscriptions().catch((error) => {
+      console.error('Failed to load subscriptions in SubscriptionProgressMini:', error)
+    })
+  }
 })
 
 onBeforeUnmount(() => {

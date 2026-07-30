@@ -20,6 +20,14 @@ func NewAdminAuthMiddleware(
 	return AdminAuthMiddleware(adminAuth(authService, userService, settingService))
 }
 
+func NewAdminIdentityAuthMiddleware(
+	authService *service.AuthService,
+	userService *service.UserService,
+	settingService *service.SettingService,
+) AdminIdentityAuthMiddleware {
+	return AdminIdentityAuthMiddleware(adminAuthWithRoleRequirement(authService, userService, settingService, false))
+}
+
 // adminAuth 管理员认证中间件实现
 // 支持两种认证方式（通过不同的 header 区分）：
 // 1. Admin API Key: x-api-key: <admin-api-key>
@@ -29,6 +37,15 @@ func adminAuth(
 	userService *service.UserService,
 	settingService *service.SettingService,
 ) gin.HandlerFunc {
+	return adminAuthWithRoleRequirement(authService, userService, settingService, true)
+}
+
+func adminAuthWithRoleRequirement(
+	authService *service.AuthService,
+	userService *service.UserService,
+	settingService *service.SettingService,
+	requireAdminRole bool,
+) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// WebSocket upgrade requests cannot set Authorization headers in browsers.
 		// For admin WebSocket endpoints (e.g. Ops realtime), allow passing the JWT via
@@ -36,7 +53,7 @@ func adminAuth(
 		//   Sec-WebSocket-Protocol: sub2api-admin, jwt.<token>
 		if isWebSocketUpgradeRequest(c) {
 			if token := extractJWTFromWebSocketSubprotocol(c); token != "" {
-				if !validateJWTForAdmin(c, token, authService, userService) {
+				if !validateJWTForAdminRole(c, token, authService, userService, requireAdminRole) {
 					return
 				}
 				c.Next()
@@ -64,7 +81,7 @@ func adminAuth(
 					AbortWithError(c, 401, "UNAUTHORIZED", "Authorization required")
 					return
 				}
-				if !validateJWTForAdmin(c, token, authService, userService) {
+				if !validateJWTForAdminRole(c, token, authService, userService, requireAdminRole) {
 					return
 				}
 				c.Next()
@@ -157,6 +174,16 @@ func validateJWTForAdmin(
 	authService *service.AuthService,
 	userService *service.UserService,
 ) bool {
+	return validateJWTForAdminRole(c, token, authService, userService, true)
+}
+
+func validateJWTForAdminRole(
+	c *gin.Context,
+	token string,
+	authService *service.AuthService,
+	userService *service.UserService,
+	requireAdminRole bool,
+) bool {
 	// 验证 JWT token
 	claims, err := authService.ValidateToken(token)
 	if err != nil {
@@ -188,7 +215,7 @@ func validateJWTForAdmin(
 	}
 
 	// 检查管理员权限
-	if !user.IsAdmin() {
+	if requireAdminRole && !user.IsAdmin() {
 		AbortWithError(c, 403, "FORBIDDEN", "Admin access required")
 		return false
 	}

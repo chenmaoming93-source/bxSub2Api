@@ -49,7 +49,7 @@ func (c opsCleanupDeletedCounts) String() string {
 
 // opsCleanupPlan 把"保留天数"翻译成具体的清理动作。
 //   - days < 0  → 跳过该项清理（ok=false），保留兼容老数据
-//   - days == 0 → TRUNCATE TABLE（O(1) 全清），truncate=true
+//   - days == 0 → 分批 DELETE 全清，truncate=true（保留既有业务调用语义）
 //   - days > 0  → 批量 DELETE 早于 now-N天 的行，cutoff = now - N 天
 func opsCleanupPlan(now time.Time, days int) (cutoff time.Time, truncate, ok bool) {
 	if days < 0 {
@@ -130,28 +130,40 @@ WHERE id IN (
 	return total, nil
 }
 
-// truncateOpsTable 用 TRUNCATE TABLE 清空指定表，先 SELECT COUNT(*) 取得清空前行数用于 heartbeat。
+// truncateOpsTable 保留既有函数签名和调用语义，数据库操作改为分批 DELETE，
+// 以便仅具有 DELETE 权限的运行账号也能完成全量清理。
 func truncateOpsTable(ctx context.Context, db *sql.DB, table string) (int64, error) {
 	if db == nil {
 		return 0, nil
 	}
-	var count int64
-	if err := db.QueryRowContext(ctx, fmt.Sprintf("SELECT COUNT(*) FROM %s", table)).Scan(&count); err != nil {
-		if isMissingRelationError(err) {
-			return 0, nil
+	q := fmt.Sprintf(`
+DELETE FROM %s
+WHERE id IN (
+  SELECT id FROM (
+    SELECT id FROM %s
+    ORDER BY id
+    LIMIT ?
+  ) AS batch
+)
+`, table, table)
+	var total int64
+	for {
+		res, err := db.ExecContext(ctx, q, opsCleanupBatchSize)
+		if err != nil {
+			if isMissingRelationError(err) {
+				return total, nil
+			}
+			return total, fmt.Errorf("delete all from %s: %w", table, err)
 		}
-		return 0, fmt.Errorf("count %s: %w", table, err)
-	}
-	if count == 0 {
-		return 0, nil
-	}
-	if _, err := db.ExecContext(ctx, fmt.Sprintf("TRUNCATE TABLE %s", table)); err != nil {
-		if isMissingRelationError(err) {
-			return 0, nil
+		affected, err := res.RowsAffected()
+		if err != nil {
+			return total, err
 		}
-		return 0, fmt.Errorf("truncate %s: %w", table, err)
+		total += affected
+		if affected == 0 {
+			return total, nil
+		}
 	}
-	return count, nil
 }
 
 func isMissingRelationError(err error) bool {

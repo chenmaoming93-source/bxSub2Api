@@ -3,11 +3,50 @@ package routes
 
 import (
 	"github.com/Wei-Shaw/sub2api/internal/handler"
+	"github.com/Wei-Shaw/sub2api/internal/rbac"
 	"github.com/Wei-Shaw/sub2api/internal/server/middleware"
 	"github.com/Wei-Shaw/sub2api/internal/service"
 
 	"github.com/gin-gonic/gin"
 )
+
+type AdminRBACOptions struct {
+	IdentityAuth middleware.AdminIdentityAuthMiddleware
+	Registrar    *rbac.RouteRegistrar
+	Registry     *rbac.Registry
+}
+
+func adminGET(routes *rbac.RouteRegistrar, group *gin.RouterGroup, path, permission string, handler gin.HandlerFunc) {
+	if routes == nil {
+		group.GET(path, handler)
+		return
+	}
+	routes.GET(group, path, permission, handler)
+}
+
+func adminPOST(routes *rbac.RouteRegistrar, group *gin.RouterGroup, path, permission string, handler gin.HandlerFunc) {
+	if routes == nil {
+		group.POST(path, handler)
+		return
+	}
+	routes.POST(group, path, permission, handler)
+}
+
+func adminPUT(routes *rbac.RouteRegistrar, group *gin.RouterGroup, path, permission string, handler gin.HandlerFunc) {
+	if routes == nil {
+		group.PUT(path, handler)
+		return
+	}
+	routes.PUT(group, path, permission, handler)
+}
+
+func adminDELETE(routes *rbac.RouteRegistrar, group *gin.RouterGroup, path, permission string, handler gin.HandlerFunc) {
+	if routes == nil {
+		group.DELETE(path, handler)
+		return
+	}
+	routes.DELETE(group, path, permission, handler)
+}
 
 // RegisterAdminRoutes 注册管理员路由
 func RegisterAdminRoutes(
@@ -15,687 +54,714 @@ func RegisterAdminRoutes(
 	h *handler.Handlers,
 	adminAuth middleware.AdminAuthMiddleware,
 	settingService *service.SettingService,
+	rbacOptions ...AdminRBACOptions,
 ) {
 	admin := v1.Group("/admin")
-	admin.Use(gin.HandlerFunc(adminAuth))
+	var rbacRoutes *rbac.RouteRegistrar
+	if len(rbacOptions) > 0 && rbacOptions[0].Registrar != nil && rbacOptions[0].Registry != nil {
+		option := rbacOptions[0]
+		rbacRoutes = option.Registrar
+		admin.Use(gin.HandlerFunc(option.IdentityAuth))
+		admin.Use(middleware.PrincipalFromAuthenticatedSubject())
+		admin.Use(middleware.RequireLegacyAdminForUnregistered(option.Registry))
+	} else {
+		admin.Use(gin.HandlerFunc(adminAuth))
+	}
 	admin.Use(middleware.AdminComplianceGuard(settingService))
 	{
 		// 部署与运营合规确认
-		registerAdminComplianceRoutes(admin, h)
+		registerAdminComplianceRoutes(admin, h, rbacRoutes)
 
 		// 仪表盘
-		registerDashboardRoutes(admin, h)
+		registerDashboardRoutes(admin, h, rbacRoutes)
 
 		// 用户管理
-		registerUserManagementRoutes(admin, h)
+		registerUserManagementRoutes(admin, h, rbacRoutes)
 
 		// 分组管理
-		registerGroupRoutes(admin, h)
+		registerGroupRoutes(admin, h, rbacRoutes)
 
 		// 账号管理
-		registerAccountRoutes(admin, h)
+		registerAccountRoutes(admin, h, rbacRoutes)
 
 		// 公告管理
-		registerAnnouncementRoutes(admin, h)
+		registerAnnouncementRoutes(admin, h, rbacRoutes)
 
 		// OpenAI OAuth
-		registerOpenAIOAuthRoutes(admin, h)
+		registerOpenAIOAuthRoutes(admin, h, rbacRoutes)
 
 		// Gemini OAuth
-		registerGeminiOAuthRoutes(admin, h)
+		registerGeminiOAuthRoutes(admin, h, rbacRoutes)
 
 		// Antigravity OAuth
-		registerAntigravityOAuthRoutes(admin, h)
+		registerAntigravityOAuthRoutes(admin, h, rbacRoutes)
 
 		// 代理管理
-		registerProxyRoutes(admin, h)
+		registerProxyRoutes(admin, h, rbacRoutes)
 
 		// 卡密管理
-		registerRedeemCodeRoutes(admin, h)
+		registerRedeemCodeRoutes(admin, h, rbacRoutes)
 
 		// 优惠码管理
-		registerPromoCodeRoutes(admin, h)
+		registerPromoCodeRoutes(admin, h, rbacRoutes)
 
 		// 系统设置
-		registerSettingsRoutes(admin, h)
+		registerSettingsRoutes(admin, h, rbacRoutes)
 
 		// 数据管理
-		registerDataManagementRoutes(admin, h)
+		registerDataManagementRoutes(admin, h, rbacRoutes)
 
 		// 数据库备份恢复
-		registerBackupRoutes(admin, h)
+		registerBackupRoutes(admin, h, rbacRoutes)
 
 		// 运维监控（Ops）
-		registerOpsRoutes(admin, h)
+		registerOpsRoutes(admin, h, rbacRoutes)
 
 		// 系统管理
-		registerSystemRoutes(admin, h)
+		registerSystemRoutes(admin, h, rbacRoutes)
 
 		// 订阅管理
-		registerSubscriptionRoutes(admin, h)
+		registerSubscriptionRoutes(admin, h, rbacRoutes)
 
 		// 使用记录管理
-		registerUsageRoutes(admin, h)
+		registerUsageRoutes(admin, h, rbacRoutes)
 
 		// 用户属性管理
-		registerUserAttributeRoutes(admin, h)
+		registerUserAttributeRoutes(admin, h, rbacRoutes)
 
 		// 错误透传规则管理
-		registerErrorPassthroughRoutes(admin, h)
+		registerErrorPassthroughRoutes(admin, h, rbacRoutes)
 
 		// TLS 指纹模板管理
-		registerTLSFingerprintProfileRoutes(admin, h)
+		registerTLSFingerprintProfileRoutes(admin, h, rbacRoutes)
 
 		// API Key 管理
-		registerAdminAPIKeyRoutes(admin, h)
+		registerAdminAPIKeyRoutes(admin, h, rbacRoutes)
 
 		// 定时测试计划
-		registerScheduledTestRoutes(admin, h)
+		registerScheduledTestRoutes(admin, h, rbacRoutes)
 
 		// 渠道管理
-		registerChannelRoutes(admin, h)
+		registerChannelRoutes(admin, h, rbacRoutes)
 
 		// 渠道监控
-		registerChannelMonitorRoutes(admin, h)
+		registerChannelMonitorRoutes(admin, h, rbacRoutes)
 
 		// 风控中心
-		registerContentModerationRoutes(admin, h)
+		registerContentModerationRoutes(admin, h, rbacRoutes)
 
 		// 邀请返利（专属用户管理）
-		registerAffiliateRoutes(admin, h)
+		registerAffiliateRoutes(admin, h, rbacRoutes)
 
 		// 全局模型 Token 配额
-		registerModelTokenQuotaRoutes(admin, h)
+		registerModelTokenQuotaRoutes(admin, h, rbacRoutes)
+		registerRBACManagementRoutes(admin, h, rbacRoutes)
 	}
 }
 
-func registerAdminComplianceRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
+func registerRBACManagementRoutes(admin *gin.RouterGroup, h *handler.Handlers, routes *rbac.RouteRegistrar) {
+	group := admin.Group("/rbac")
+	adminGET(routes, group, "/roles", rbac.PermissionRolesRead, h.Admin.RBAC.ListRoles)
+	adminPOST(routes, group, "/roles", rbac.PermissionRolesCreate, h.Admin.RBAC.CreateRole)
+	adminPUT(routes, group, "/roles/:id", rbac.PermissionRolesUpdate, h.Admin.RBAC.UpdateRole)
+	adminDELETE(routes, group, "/roles/:id", rbac.PermissionRolesDelete, h.Admin.RBAC.DeleteRole)
+	adminGET(routes, group, "/permissions", rbac.PermissionPermissionsRead, h.Admin.RBAC.ListPermissions)
+	adminPOST(routes, group, "/permissions", rbac.PermissionPermissionsCreate, h.Admin.RBAC.CreatePermission)
+	adminPUT(routes, group, "/permissions/:id", rbac.PermissionPermissionsUpdate, h.Admin.RBAC.UpdatePermission)
+	adminDELETE(routes, group, "/permissions/:id", rbac.PermissionPermissionsDelete, h.Admin.RBAC.DeletePermission)
+	adminGET(routes, group, "/roles/:id/permissions", rbac.PermissionRolesRead, h.Admin.RBAC.GetRolePermissions)
+	adminPUT(routes, group, "/roles/:id/permissions", rbac.PermissionRolesPermissionsAssign, h.Admin.RBAC.ReplaceRolePermissions)
+	adminGET(routes, admin, "/users/:id/roles", rbac.PermissionUsersRolesRead, h.Admin.RBAC.GetUserRoles)
+	adminPUT(routes, admin, "/users/:id/roles", rbac.PermissionUsersRolesAssign, h.Admin.RBAC.ReplaceUserRoles)
+}
+
+func registerAdminComplianceRoutes(admin *gin.RouterGroup, h *handler.Handlers, routes *rbac.RouteRegistrar) {
 	compliance := admin.Group("/compliance")
 	{
-		compliance.GET("", h.Admin.Compliance.GetStatus)
-		compliance.POST("/accept", h.Admin.Compliance.Accept)
+		adminGET(routes, compliance, "", rbac.PermissionSettingsRead, h.Admin.Compliance.GetStatus)
+		adminPOST(routes, compliance, "/accept", rbac.PermissionSettingsUpdate, h.Admin.Compliance.Accept)
 	}
 }
 
-func registerContentModerationRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
+func registerContentModerationRoutes(admin *gin.RouterGroup, h *handler.Handlers, routes *rbac.RouteRegistrar) {
 	risk := admin.Group("/risk-control")
 	{
-		risk.GET("/config", h.Admin.ContentModeration.GetConfig)
-		risk.PUT("/config", h.Admin.ContentModeration.UpdateConfig)
-		risk.POST("/api-keys/test", h.Admin.ContentModeration.TestAPIKeys)
-		risk.GET("/status", h.Admin.ContentModeration.GetStatus)
-		risk.GET("/logs", h.Admin.ContentModeration.ListLogs)
-		risk.POST("/users/:user_id/unban", h.Admin.ContentModeration.UnbanUser)
-		risk.DELETE("/hashes", h.Admin.ContentModeration.DeleteFlaggedHash)
-		risk.DELETE("/hashes/all", h.Admin.ContentModeration.ClearFlaggedHashes)
+		adminGET(routes, risk, "/config", rbac.PermissionRiskRead, h.Admin.ContentModeration.GetConfig)
+		adminPUT(routes, risk, "/config", rbac.PermissionRiskUpdate, h.Admin.ContentModeration.UpdateConfig)
+		adminPOST(routes, risk, "/api-keys/test", rbac.PermissionRiskUpdate, h.Admin.ContentModeration.TestAPIKeys)
+		adminGET(routes, risk, "/status", rbac.PermissionRiskRead, h.Admin.ContentModeration.GetStatus)
+		adminGET(routes, risk, "/logs", rbac.PermissionRiskRead, h.Admin.ContentModeration.ListLogs)
+		adminPOST(routes, risk, "/users/:user_id/unban", rbac.PermissionRiskOperate, h.Admin.ContentModeration.UnbanUser)
+		adminDELETE(routes, risk, "/hashes", rbac.PermissionRiskOperate, h.Admin.ContentModeration.DeleteFlaggedHash)
+		adminDELETE(routes, risk, "/hashes/all", rbac.PermissionRiskOperate, h.Admin.ContentModeration.ClearFlaggedHashes)
 	}
 }
 
-func registerAdminAPIKeyRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
+func registerAdminAPIKeyRoutes(admin *gin.RouterGroup, h *handler.Handlers, routes *rbac.RouteRegistrar) {
 	apiKeys := admin.Group("/api-keys")
 	{
-		apiKeys.PUT("/:id", h.Admin.APIKey.UpdateGroup)
+		adminPUT(routes, apiKeys, "/:id", rbac.PermissionUsersUpdate, h.Admin.APIKey.UpdateGroup)
 	}
 }
 
-func registerModelTokenQuotaRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
+func registerModelTokenQuotaRoutes(admin *gin.RouterGroup, h *handler.Handlers, routes *rbac.RouteRegistrar) {
 	quotas := admin.Group("/model-token-quotas")
 	{
-		quotas.GET("", h.Admin.ModelTokenQuota.List)
-		quotas.PUT("", h.Admin.ModelTokenQuota.Update)
+		adminGET(routes, quotas, "", rbac.PermissionTokenQuotaRead, h.Admin.ModelTokenQuota.List)
+		adminPUT(routes, quotas, "", rbac.PermissionTokenQuotaUpdate, h.Admin.ModelTokenQuota.Update)
 	}
 
 	tokenUsage := admin.Group("/token-usage")
 	{
-		tokenUsage.GET("/models", h.Admin.TokenUsageReport.GetModels)
-		tokenUsage.GET("/routes", h.Admin.TokenUsageReport.GetRoutes)
-		tokenUsage.GET("/users", h.Admin.TokenUsageReport.GetUsers)
-		tokenUsage.GET("/options/models", h.Admin.TokenUsageReport.ModelsOptions)
-		tokenUsage.GET("/options/groups", h.Admin.TokenUsageReport.GroupsOptions)
-		tokenUsage.GET("/options/groups/:group_id/routes", h.Admin.TokenUsageReport.RoutesOptions)
-		tokenUsage.GET("/options/groups/:group_id/routes/:route_alias/models", h.Admin.TokenUsageReport.RouteModelsOptions)
-		tokenUsage.GET("/options/users", h.Admin.TokenUsageReport.UsersOptions)
-		tokenUsage.GET("/options/users/:user_id/models", h.Admin.TokenUsageReport.UserModelsOptions)
-		tokenUsage.GET("/default-target", h.Admin.TokenUsageReport.GetDefaultTarget)
+		adminGET(routes, tokenUsage, "/models", rbac.PermissionTokenUsageRead, h.Admin.TokenUsageReport.GetModels)
+		adminGET(routes, tokenUsage, "/routes", rbac.PermissionTokenUsageRead, h.Admin.TokenUsageReport.GetRoutes)
+		adminGET(routes, tokenUsage, "/users", rbac.PermissionTokenUsageRead, h.Admin.TokenUsageReport.GetUsers)
+		adminGET(routes, tokenUsage, "/options/models", rbac.PermissionTokenUsageRead, h.Admin.TokenUsageReport.ModelsOptions)
+		adminGET(routes, tokenUsage, "/options/groups", rbac.PermissionTokenUsageRead, h.Admin.TokenUsageReport.GroupsOptions)
+		adminGET(routes, tokenUsage, "/options/groups/:group_id/routes", rbac.PermissionTokenUsageRead, h.Admin.TokenUsageReport.RoutesOptions)
+		adminGET(routes, tokenUsage, "/options/groups/:group_id/routes/:route_alias/models", rbac.PermissionTokenUsageRead, h.Admin.TokenUsageReport.RouteModelsOptions)
+		adminGET(routes, tokenUsage, "/options/users", rbac.PermissionTokenUsageRead, h.Admin.TokenUsageReport.UsersOptions)
+		adminGET(routes, tokenUsage, "/options/users/:user_id/models", rbac.PermissionTokenUsageRead, h.Admin.TokenUsageReport.UserModelsOptions)
+		adminGET(routes, tokenUsage, "/default-target", rbac.PermissionTokenUsageRead, h.Admin.TokenUsageReport.GetDefaultTarget)
 	}
 }
 
-func registerOpsRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
+func registerOpsRoutes(admin *gin.RouterGroup, h *handler.Handlers, routes *rbac.RouteRegistrar) {
 	ops := admin.Group("/ops")
 	{
 		// Realtime ops signals
-		ops.GET("/concurrency", h.Admin.Ops.GetConcurrencyStats)
-		ops.GET("/user-concurrency", h.Admin.Ops.GetUserConcurrencyStats)
-		ops.GET("/account-availability", h.Admin.Ops.GetAccountAvailability)
-		ops.GET("/realtime-traffic", h.Admin.Ops.GetRealtimeTrafficSummary)
+		adminGET(routes, ops, "/concurrency", rbac.PermissionOpsRead, h.Admin.Ops.GetConcurrencyStats)
+		adminGET(routes, ops, "/user-concurrency", rbac.PermissionOpsRead, h.Admin.Ops.GetUserConcurrencyStats)
+		adminGET(routes, ops, "/account-availability", rbac.PermissionOpsRead, h.Admin.Ops.GetAccountAvailability)
+		adminGET(routes, ops, "/realtime-traffic", rbac.PermissionOpsRead, h.Admin.Ops.GetRealtimeTrafficSummary)
 
 		// Alerts (rules + events)
-		ops.GET("/alert-rules", h.Admin.Ops.ListAlertRules)
-		ops.POST("/alert-rules", h.Admin.Ops.CreateAlertRule)
-		ops.PUT("/alert-rules/:id", h.Admin.Ops.UpdateAlertRule)
-		ops.DELETE("/alert-rules/:id", h.Admin.Ops.DeleteAlertRule)
-		ops.GET("/alert-events", h.Admin.Ops.ListAlertEvents)
-		ops.GET("/alert-events/:id", h.Admin.Ops.GetAlertEvent)
-		ops.PUT("/alert-events/:id/status", h.Admin.Ops.UpdateAlertEventStatus)
-		ops.POST("/alert-silences", h.Admin.Ops.CreateAlertSilence)
+		adminGET(routes, ops, "/alert-rules", rbac.PermissionOpsRead, h.Admin.Ops.ListAlertRules)
+		adminPOST(routes, ops, "/alert-rules", rbac.PermissionOpsUpdate, h.Admin.Ops.CreateAlertRule)
+		adminPUT(routes, ops, "/alert-rules/:id", rbac.PermissionOpsUpdate, h.Admin.Ops.UpdateAlertRule)
+		adminDELETE(routes, ops, "/alert-rules/:id", rbac.PermissionOpsUpdate, h.Admin.Ops.DeleteAlertRule)
+		adminGET(routes, ops, "/alert-events", rbac.PermissionOpsRead, h.Admin.Ops.ListAlertEvents)
+		adminGET(routes, ops, "/alert-events/:id", rbac.PermissionOpsRead, h.Admin.Ops.GetAlertEvent)
+		adminPUT(routes, ops, "/alert-events/:id/status", rbac.PermissionOpsUpdate, h.Admin.Ops.UpdateAlertEventStatus)
+		adminPOST(routes, ops, "/alert-silences", rbac.PermissionOpsUpdate, h.Admin.Ops.CreateAlertSilence)
 
 		// Email notification config (DB-backed)
-		ops.GET("/email-notification/config", h.Admin.Ops.GetEmailNotificationConfig)
-		ops.PUT("/email-notification/config", h.Admin.Ops.UpdateEmailNotificationConfig)
+		adminGET(routes, ops, "/email-notification/config", rbac.PermissionOpsRead, h.Admin.Ops.GetEmailNotificationConfig)
+		adminPUT(routes, ops, "/email-notification/config", rbac.PermissionOpsUpdate, h.Admin.Ops.UpdateEmailNotificationConfig)
 
 		// Runtime settings (DB-backed)
 		runtime := ops.Group("/runtime")
 		{
-			runtime.GET("/alert", h.Admin.Ops.GetAlertRuntimeSettings)
-			runtime.PUT("/alert", h.Admin.Ops.UpdateAlertRuntimeSettings)
-			runtime.GET("/logging", h.Admin.Ops.GetRuntimeLogConfig)
-			runtime.PUT("/logging", h.Admin.Ops.UpdateRuntimeLogConfig)
-			runtime.POST("/logging/reset", h.Admin.Ops.ResetRuntimeLogConfig)
+			adminGET(routes, runtime, "/alert", rbac.PermissionOpsRead, h.Admin.Ops.GetAlertRuntimeSettings)
+			adminPUT(routes, runtime, "/alert", rbac.PermissionOpsUpdate, h.Admin.Ops.UpdateAlertRuntimeSettings)
+			adminGET(routes, runtime, "/logging", rbac.PermissionOpsRead, h.Admin.Ops.GetRuntimeLogConfig)
+			adminPUT(routes, runtime, "/logging", rbac.PermissionOpsLogsManage, h.Admin.Ops.UpdateRuntimeLogConfig)
+			adminPOST(routes, runtime, "/logging/reset", rbac.PermissionOpsLogsManage, h.Admin.Ops.ResetRuntimeLogConfig)
 		}
 
 		// Advanced settings (DB-backed)
-		ops.GET("/advanced-settings", h.Admin.Ops.GetAdvancedSettings)
-		ops.PUT("/advanced-settings", h.Admin.Ops.UpdateAdvancedSettings)
+		adminGET(routes, ops, "/advanced-settings", rbac.PermissionOpsRead, h.Admin.Ops.GetAdvancedSettings)
+		adminPUT(routes, ops, "/advanced-settings", rbac.PermissionOpsUpdate, h.Admin.Ops.UpdateAdvancedSettings)
 
 		// Settings group (DB-backed)
 		settings := ops.Group("/settings")
 		{
-			settings.GET("/metric-thresholds", h.Admin.Ops.GetMetricThresholds)
-			settings.PUT("/metric-thresholds", h.Admin.Ops.UpdateMetricThresholds)
+			adminGET(routes, settings, "/metric-thresholds", rbac.PermissionOpsRead, h.Admin.Ops.GetMetricThresholds)
+			adminPUT(routes, settings, "/metric-thresholds", rbac.PermissionOpsUpdate, h.Admin.Ops.UpdateMetricThresholds)
 		}
 
 		// WebSocket realtime (QPS/TPS)
 		ws := ops.Group("/ws")
 		{
-			ws.GET("/qps", h.Admin.Ops.QPSWSHandler)
+			adminGET(routes, ws, "/qps", rbac.PermissionOpsRead, h.Admin.Ops.QPSWSHandler)
 		}
 
 		// Error logs (legacy)
-		ops.GET("/errors", h.Admin.Ops.GetErrorLogs)
-		ops.GET("/errors/:id", h.Admin.Ops.GetErrorLogByID)
-		ops.PUT("/errors/:id/resolve", h.Admin.Ops.UpdateErrorResolution)
+		adminGET(routes, ops, "/errors", rbac.PermissionOpsRead, h.Admin.Ops.GetErrorLogs)
+		adminGET(routes, ops, "/errors/:id", rbac.PermissionOpsRead, h.Admin.Ops.GetErrorLogByID)
+		adminPUT(routes, ops, "/errors/:id/resolve", rbac.PermissionOpsLogsManage, h.Admin.Ops.UpdateErrorResolution)
 
 		// Request errors (client-visible failures)
-		ops.GET("/request-errors", h.Admin.Ops.ListRequestErrors)
-		ops.GET("/request-errors/:id", h.Admin.Ops.GetRequestError)
-		ops.GET("/request-errors/:id/upstream-errors", h.Admin.Ops.ListRequestErrorUpstreamErrors)
-		ops.PUT("/request-errors/:id/resolve", h.Admin.Ops.ResolveRequestError)
+		adminGET(routes, ops, "/request-errors", rbac.PermissionOpsRead, h.Admin.Ops.ListRequestErrors)
+		adminGET(routes, ops, "/request-errors/:id", rbac.PermissionOpsRead, h.Admin.Ops.GetRequestError)
+		adminGET(routes, ops, "/request-errors/:id/upstream-errors", rbac.PermissionOpsRead, h.Admin.Ops.ListRequestErrorUpstreamErrors)
+		adminPUT(routes, ops, "/request-errors/:id/resolve", rbac.PermissionOpsLogsManage, h.Admin.Ops.ResolveRequestError)
 
 		// Upstream errors (independent upstream failures)
-		ops.GET("/upstream-errors", h.Admin.Ops.ListUpstreamErrors)
-		ops.GET("/upstream-errors/:id", h.Admin.Ops.GetUpstreamError)
-		ops.PUT("/upstream-errors/:id/resolve", h.Admin.Ops.ResolveUpstreamError)
+		adminGET(routes, ops, "/upstream-errors", rbac.PermissionOpsRead, h.Admin.Ops.ListUpstreamErrors)
+		adminGET(routes, ops, "/upstream-errors/:id", rbac.PermissionOpsRead, h.Admin.Ops.GetUpstreamError)
+		adminPUT(routes, ops, "/upstream-errors/:id/resolve", rbac.PermissionOpsLogsManage, h.Admin.Ops.ResolveUpstreamError)
 
 		// Request drilldown (success + error)
-		ops.GET("/requests", h.Admin.Ops.ListRequestDetails)
+		adminGET(routes, ops, "/requests", rbac.PermissionOpsRead, h.Admin.Ops.ListRequestDetails)
 
 		// Indexed system logs
-		ops.GET("/system-logs", h.Admin.Ops.ListSystemLogs)
-		ops.POST("/system-logs/cleanup", h.Admin.Ops.CleanupSystemLogs)
-		ops.GET("/system-logs/health", h.Admin.Ops.GetSystemLogIngestionHealth)
+		adminGET(routes, ops, "/system-logs", rbac.PermissionOpsRead, h.Admin.Ops.ListSystemLogs)
+		adminPOST(routes, ops, "/system-logs/cleanup", rbac.PermissionOpsLogsManage, h.Admin.Ops.CleanupSystemLogs)
+		adminGET(routes, ops, "/system-logs/health", rbac.PermissionOpsRead, h.Admin.Ops.GetSystemLogIngestionHealth)
 
 		// Dashboard (vNext - raw path for MVP)
-		ops.GET("/dashboard/snapshot-v2", h.Admin.Ops.GetDashboardSnapshotV2)
-		ops.GET("/dashboard/overview", h.Admin.Ops.GetDashboardOverview)
-		ops.GET("/dashboard/throughput-trend", h.Admin.Ops.GetDashboardThroughputTrend)
-		ops.GET("/dashboard/latency-histogram", h.Admin.Ops.GetDashboardLatencyHistogram)
-		ops.GET("/dashboard/error-trend", h.Admin.Ops.GetDashboardErrorTrend)
-		ops.GET("/dashboard/error-distribution", h.Admin.Ops.GetDashboardErrorDistribution)
-		ops.GET("/dashboard/openai-token-stats", h.Admin.Ops.GetDashboardOpenAITokenStats)
+		adminGET(routes, ops, "/dashboard/snapshot-v2", rbac.PermissionOpsRead, h.Admin.Ops.GetDashboardSnapshotV2)
+		adminGET(routes, ops, "/dashboard/overview", rbac.PermissionOpsRead, h.Admin.Ops.GetDashboardOverview)
+		adminGET(routes, ops, "/dashboard/throughput-trend", rbac.PermissionOpsRead, h.Admin.Ops.GetDashboardThroughputTrend)
+		adminGET(routes, ops, "/dashboard/latency-histogram", rbac.PermissionOpsRead, h.Admin.Ops.GetDashboardLatencyHistogram)
+		adminGET(routes, ops, "/dashboard/error-trend", rbac.PermissionOpsRead, h.Admin.Ops.GetDashboardErrorTrend)
+		adminGET(routes, ops, "/dashboard/error-distribution", rbac.PermissionOpsRead, h.Admin.Ops.GetDashboardErrorDistribution)
+		adminGET(routes, ops, "/dashboard/openai-token-stats", rbac.PermissionOpsRead, h.Admin.Ops.GetDashboardOpenAITokenStats)
 	}
 }
 
-func registerDashboardRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
+func registerDashboardRoutes(admin *gin.RouterGroup, h *handler.Handlers, routes *rbac.RouteRegistrar) {
 	dashboard := admin.Group("/dashboard")
 	{
-		dashboard.GET("/snapshot-v2", h.Admin.Dashboard.GetSnapshotV2)
-		dashboard.GET("/stats", h.Admin.Dashboard.GetStats)
-		dashboard.GET("/realtime", h.Admin.Dashboard.GetRealtimeMetrics)
-		dashboard.GET("/trend", h.Admin.Dashboard.GetUsageTrend)
-		dashboard.GET("/models", h.Admin.Dashboard.GetModelStats)
-		dashboard.GET("/groups", h.Admin.Dashboard.GetGroupStats)
-		dashboard.GET("/api-keys-trend", h.Admin.Dashboard.GetAPIKeyUsageTrend)
-		dashboard.GET("/users-trend", h.Admin.Dashboard.GetUserUsageTrend)
-		dashboard.GET("/users-ranking", h.Admin.Dashboard.GetUserSpendingRanking)
-		dashboard.POST("/users-usage", h.Admin.Dashboard.GetBatchUsersUsage)
-		dashboard.POST("/api-keys-usage", h.Admin.Dashboard.GetBatchAPIKeysUsage)
-		dashboard.GET("/user-breakdown", h.Admin.Dashboard.GetUserBreakdown)
-		dashboard.POST("/aggregation/backfill", h.Admin.Dashboard.BackfillAggregation)
+		adminGET(routes, dashboard, "/snapshot-v2", rbac.PermissionDashboardRead, h.Admin.Dashboard.GetSnapshotV2)
+		adminGET(routes, dashboard, "/stats", rbac.PermissionDashboardRead, h.Admin.Dashboard.GetStats)
+		adminGET(routes, dashboard, "/realtime", rbac.PermissionDashboardRead, h.Admin.Dashboard.GetRealtimeMetrics)
+		adminGET(routes, dashboard, "/trend", rbac.PermissionDashboardRead, h.Admin.Dashboard.GetUsageTrend)
+		adminGET(routes, dashboard, "/models", rbac.PermissionDashboardRead, h.Admin.Dashboard.GetModelStats)
+		adminGET(routes, dashboard, "/groups", rbac.PermissionDashboardRead, h.Admin.Dashboard.GetGroupStats)
+		adminGET(routes, dashboard, "/api-keys-trend", rbac.PermissionDashboardRead, h.Admin.Dashboard.GetAPIKeyUsageTrend)
+		adminGET(routes, dashboard, "/users-trend", rbac.PermissionDashboardRead, h.Admin.Dashboard.GetUserUsageTrend)
+		adminGET(routes, dashboard, "/users-ranking", rbac.PermissionDashboardRead, h.Admin.Dashboard.GetUserSpendingRanking)
+		adminPOST(routes, dashboard, "/users-usage", rbac.PermissionDashboardRead, h.Admin.Dashboard.GetBatchUsersUsage)
+		adminPOST(routes, dashboard, "/api-keys-usage", rbac.PermissionDashboardRead, h.Admin.Dashboard.GetBatchAPIKeysUsage)
+		adminGET(routes, dashboard, "/user-breakdown", rbac.PermissionDashboardRead, h.Admin.Dashboard.GetUserBreakdown)
+		adminPOST(routes, dashboard, "/aggregation/backfill", rbac.PermissionDashboardBackfill, h.Admin.Dashboard.BackfillAggregation)
 	}
 }
 
-func registerUserManagementRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
+func registerUserManagementRoutes(admin *gin.RouterGroup, h *handler.Handlers, routes *rbac.RouteRegistrar) {
 	users := admin.Group("/users")
 	{
-		users.GET("", h.Admin.User.List)
-		users.GET("/:id", h.Admin.User.GetByID)
-		users.POST("/:id/auth-identities", h.Admin.User.BindAuthIdentity)
-		users.POST("", h.Admin.User.Create)
-		users.PUT("/:id", h.Admin.User.Update)
-		users.DELETE("/:id", h.Admin.User.Delete)
-		users.POST("/:id/balance", h.Admin.User.UpdateBalance)
-		users.GET("/:id/api-keys", h.Admin.User.GetUserAPIKeys)
-		users.GET("/:id/usage", h.Admin.User.GetUserUsage)
-		users.GET("/:id/balance-history", h.Admin.User.GetBalanceHistory)
-		users.POST("/:id/replace-group", h.Admin.User.ReplaceGroup)
-		users.GET("/:id/rpm-status", h.Admin.User.GetUserRPMStatus)
-		users.POST("/batch-concurrency", h.Admin.User.BatchUpdateConcurrency)
-		users.GET("/:id/platform-quotas", h.Admin.User.GetUserPlatformQuotas)
-		users.PUT("/:id/platform-quotas", h.Admin.User.UpdateUserPlatformQuotas)
-		users.POST("/:id/platform-quotas/reset", h.Admin.User.ResetUserPlatformQuotaWindow)
-		users.GET("/:id/model-token-quotas", h.Admin.UserModelTokenQuota.List)
-		users.PUT("/:id/model-token-quotas", h.Admin.UserModelTokenQuota.Update)
-		users.POST("/model-token-quotas/batch", h.Admin.UserModelTokenQuota.Batch)
+		adminGET(routes, users, "", rbac.PermissionUsersRead, h.Admin.User.List)
+		adminGET(routes, users, "/:id", rbac.PermissionUsersRead, h.Admin.User.GetByID)
+		adminPOST(routes, users, "/:id/auth-identities", rbac.PermissionUsersUpdate, h.Admin.User.BindAuthIdentity)
+		adminPOST(routes, users, "", rbac.PermissionUsersCreate, h.Admin.User.Create)
+		adminPUT(routes, users, "/:id", rbac.PermissionUsersUpdate, h.Admin.User.Update)
+		adminDELETE(routes, users, "/:id", rbac.PermissionUsersDelete, h.Admin.User.Delete)
+		adminPOST(routes, users, "/:id/balance", rbac.PermissionUsersBalanceAdjust, h.Admin.User.UpdateBalance)
+		adminGET(routes, users, "/:id/api-keys", rbac.PermissionUsersAPIKeysRead, h.Admin.User.GetUserAPIKeys)
+		adminGET(routes, users, "/:id/usage", rbac.PermissionUsersUsageRead, h.Admin.User.GetUserUsage)
+		adminGET(routes, users, "/:id/balance-history", rbac.PermissionUsersRead, h.Admin.User.GetBalanceHistory)
+		adminPOST(routes, users, "/:id/replace-group", rbac.PermissionUsersUpdate, h.Admin.User.ReplaceGroup)
+		adminGET(routes, users, "/:id/rpm-status", rbac.PermissionUsersRead, h.Admin.User.GetUserRPMStatus)
+		adminPOST(routes, users, "/batch-concurrency", rbac.PermissionUsersUpdate, h.Admin.User.BatchUpdateConcurrency)
+		adminGET(routes, users, "/:id/platform-quotas", rbac.PermissionUsersQuotaRead, h.Admin.User.GetUserPlatformQuotas)
+		adminPUT(routes, users, "/:id/platform-quotas", rbac.PermissionUsersQuotaUpdate, h.Admin.User.UpdateUserPlatformQuotas)
+		adminPOST(routes, users, "/:id/platform-quotas/reset", rbac.PermissionUsersQuotaUpdate, h.Admin.User.ResetUserPlatformQuotaWindow)
+		adminGET(routes, users, "/:id/model-token-quotas", rbac.PermissionUsersQuotaRead, h.Admin.UserModelTokenQuota.List)
+		adminPUT(routes, users, "/:id/model-token-quotas", rbac.PermissionUsersQuotaUpdate, h.Admin.UserModelTokenQuota.Update)
+		adminPOST(routes, users, "/model-token-quotas/batch", rbac.PermissionUsersQuotaUpdate, h.Admin.UserModelTokenQuota.Batch)
 
 		// User attribute values
-		users.GET("/:id/attributes", h.Admin.UserAttribute.GetUserAttributes)
-		users.PUT("/:id/attributes", h.Admin.UserAttribute.UpdateUserAttributes)
+		adminGET(routes, users, "/:id/attributes", rbac.PermissionUsersRead, h.Admin.UserAttribute.GetUserAttributes)
+		adminPUT(routes, users, "/:id/attributes", rbac.PermissionUsersUpdate, h.Admin.UserAttribute.UpdateUserAttributes)
 	}
 }
 
-func registerGroupRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
+func registerGroupRoutes(admin *gin.RouterGroup, h *handler.Handlers, routes *rbac.RouteRegistrar) {
 	groups := admin.Group("/groups")
 	{
-		groups.GET("", h.Admin.Group.List)
-		groups.GET("/all", h.Admin.Group.GetAll)
-		groups.GET("/usage-summary", h.Admin.Group.GetUsageSummary)
-		groups.GET("/capacity-summary", h.Admin.Group.GetCapacitySummary)
-		groups.PUT("/sort-order", h.Admin.Group.UpdateSortOrder)
-		groups.GET("/:id/models-list-candidates", h.Admin.Group.GetModelsListCandidates)
-		groups.GET("/:id", h.Admin.Group.GetByID)
-		groups.POST("", h.Admin.Group.Create)
-		groups.PUT("/:id", h.Admin.Group.Update)
-		groups.DELETE("/:id", h.Admin.Group.Delete)
-		groups.GET("/:id/stats", h.Admin.Group.GetStats)
-		groups.GET("/:id/rate-multipliers", h.Admin.Group.GetGroupRateMultipliers)
-		groups.PUT("/:id/rate-multipliers", h.Admin.Group.BatchSetGroupRateMultipliers)
-		groups.DELETE("/:id/rate-multipliers", h.Admin.Group.ClearGroupRateMultipliers)
-		groups.PUT("/:id/rpm-overrides", h.Admin.Group.BatchSetGroupRPMOverrides)
-		groups.DELETE("/:id/rpm-overrides", h.Admin.Group.ClearGroupRPMOverrides)
-		groups.GET("/:id/api-keys", h.Admin.Group.GetGroupAPIKeys)
+		adminGET(routes, groups, "", rbac.PermissionGroupsRead, h.Admin.Group.List)
+		adminGET(routes, groups, "/all", rbac.PermissionGroupsRead, h.Admin.Group.GetAll)
+		adminGET(routes, groups, "/usage-summary", rbac.PermissionGroupsRead, h.Admin.Group.GetUsageSummary)
+		adminGET(routes, groups, "/capacity-summary", rbac.PermissionGroupsRead, h.Admin.Group.GetCapacitySummary)
+		adminPUT(routes, groups, "/sort-order", rbac.PermissionGroupsUpdate, h.Admin.Group.UpdateSortOrder)
+		adminGET(routes, groups, "/:id/models-list-candidates", rbac.PermissionGroupsRead, h.Admin.Group.GetModelsListCandidates)
+		adminGET(routes, groups, "/:id", rbac.PermissionGroupsRead, h.Admin.Group.GetByID)
+		adminPOST(routes, groups, "", rbac.PermissionGroupsCreate, h.Admin.Group.Create)
+		adminPUT(routes, groups, "/:id", rbac.PermissionGroupsUpdate, h.Admin.Group.Update)
+		adminDELETE(routes, groups, "/:id", rbac.PermissionGroupsDelete, h.Admin.Group.Delete)
+		adminGET(routes, groups, "/:id/stats", rbac.PermissionGroupsRead, h.Admin.Group.GetStats)
+		adminGET(routes, groups, "/:id/rate-multipliers", rbac.PermissionGroupsRead, h.Admin.Group.GetGroupRateMultipliers)
+		adminPUT(routes, groups, "/:id/rate-multipliers", rbac.PermissionGroupsUpdate, h.Admin.Group.BatchSetGroupRateMultipliers)
+		adminDELETE(routes, groups, "/:id/rate-multipliers", rbac.PermissionGroupsUpdate, h.Admin.Group.ClearGroupRateMultipliers)
+		adminPUT(routes, groups, "/:id/rpm-overrides", rbac.PermissionGroupsUpdate, h.Admin.Group.BatchSetGroupRPMOverrides)
+		adminDELETE(routes, groups, "/:id/rpm-overrides", rbac.PermissionGroupsUpdate, h.Admin.Group.ClearGroupRPMOverrides)
+		adminGET(routes, groups, "/:id/api-keys", rbac.PermissionGroupsRead, h.Admin.Group.GetGroupAPIKeys)
 	}
 }
 
-func registerAccountRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
+func registerAccountRoutes(admin *gin.RouterGroup, h *handler.Handlers, routes *rbac.RouteRegistrar) {
 	accounts := admin.Group("/accounts")
 	{
-		accounts.GET("", h.Admin.Account.List)
-		accounts.GET("/:id", h.Admin.Account.GetByID)
-		accounts.GET("/:id/credentials", h.Admin.Account.GetCredentials)
-		accounts.POST("", h.Admin.Account.Create)
-		accounts.POST("/check-mixed-channel", h.Admin.Account.CheckMixedChannel)
-		accounts.POST("/import/codex-session", h.Admin.Account.ImportCodexSession)
-		accounts.POST("/sync/crs", h.Admin.Account.SyncFromCRS)
-		accounts.POST("/sync/crs/preview", h.Admin.Account.PreviewFromCRS)
-		accounts.PUT("/:id", h.Admin.Account.Update)
-		accounts.DELETE("/:id", h.Admin.Account.Delete)
-		accounts.POST("/:id/test", h.Admin.Account.Test)
-		accounts.POST("/:id/recover-state", h.Admin.Account.RecoverState)
-		accounts.POST("/:id/refresh", h.Admin.Account.Refresh)
-		accounts.POST("/:id/apply-oauth-credentials", h.Admin.Account.ApplyOAuthCredentials)
-		accounts.POST("/:id/set-privacy", h.Admin.Account.SetPrivacy)
-		accounts.POST("/:id/refresh-tier", h.Admin.Account.RefreshTier)
-		accounts.GET("/:id/stats", h.Admin.Account.GetStats)
-		accounts.POST("/:id/clear-error", h.Admin.Account.ClearError)
-		accounts.POST("/:id/revert-proxy-fallback", h.Admin.Account.RevertProxyFallback)
-		accounts.GET("/:id/usage", h.Admin.Account.GetUsage)
-		accounts.GET("/:id/today-stats", h.Admin.Account.GetTodayStats)
-		accounts.POST("/today-stats/batch", h.Admin.Account.GetBatchTodayStats)
-		accounts.POST("/:id/clear-rate-limit", h.Admin.Account.ClearRateLimit)
-		accounts.POST("/:id/reset-quota", h.Admin.Account.ResetQuota)
-		accounts.GET("/:id/temp-unschedulable", h.Admin.Account.GetTempUnschedulable)
-		accounts.DELETE("/:id/temp-unschedulable", h.Admin.Account.ClearTempUnschedulable)
-		accounts.POST("/:id/schedulable", h.Admin.Account.SetSchedulable)
-		accounts.POST("/models/sync-upstream-preview", h.Admin.Account.SyncUpstreamModelsPreview)
-		accounts.GET("/:id/models", h.Admin.Account.GetAvailableModels)
-		accounts.POST("/:id/models/sync-upstream", h.Admin.Account.SyncUpstreamModels)
-		accounts.POST("/batch", h.Admin.Account.BatchCreate)
-		accounts.GET("/data", h.Admin.Account.ExportData)
-		accounts.POST("/data", h.Admin.Account.ImportData)
-		accounts.POST("/batch-update-credentials", h.Admin.Account.BatchUpdateCredentials)
-		accounts.POST("/batch-refresh-tier", h.Admin.Account.BatchRefreshTier)
-		accounts.POST("/bulk-update", h.Admin.Account.BulkUpdate)
-		accounts.POST("/batch-clear-error", h.Admin.Account.BatchClearError)
-		accounts.POST("/batch-refresh", h.Admin.Account.BatchRefresh)
+		adminGET(routes, accounts, "", rbac.PermissionAccountsRead, h.Admin.Account.List)
+		adminGET(routes, accounts, "/:id", rbac.PermissionAccountsRead, h.Admin.Account.GetByID)
+		adminGET(routes, accounts, "/:id/credentials", rbac.PermissionAccountsCredentialsRead, h.Admin.Account.GetCredentials)
+		adminPOST(routes, accounts, "", rbac.PermissionAccountsCreate, h.Admin.Account.Create)
+		adminPOST(routes, accounts, "/check-mixed-channel", rbac.PermissionAccountsRead, h.Admin.Account.CheckMixedChannel)
+		adminPOST(routes, accounts, "/import/codex-session", rbac.PermissionAccountsCredentialsUpdate, h.Admin.Account.ImportCodexSession)
+		adminPOST(routes, accounts, "/sync/crs", rbac.PermissionAccountsCredentialsUpdate, h.Admin.Account.SyncFromCRS)
+		adminPOST(routes, accounts, "/sync/crs/preview", rbac.PermissionAccountsCredentialsRead, h.Admin.Account.PreviewFromCRS)
+		adminPUT(routes, accounts, "/:id", rbac.PermissionAccountsUpdate, h.Admin.Account.Update)
+		adminDELETE(routes, accounts, "/:id", rbac.PermissionAccountsDelete, h.Admin.Account.Delete)
+		adminPOST(routes, accounts, "/:id/test", rbac.PermissionAccountsOperate, h.Admin.Account.Test)
+		adminPOST(routes, accounts, "/:id/recover-state", rbac.PermissionAccountsOperate, h.Admin.Account.RecoverState)
+		adminPOST(routes, accounts, "/:id/refresh", rbac.PermissionAccountsOperate, h.Admin.Account.Refresh)
+		adminPOST(routes, accounts, "/:id/apply-oauth-credentials", rbac.PermissionAccountsCredentialsUpdate, h.Admin.Account.ApplyOAuthCredentials)
+		adminPOST(routes, accounts, "/:id/set-privacy", rbac.PermissionAccountsUpdate, h.Admin.Account.SetPrivacy)
+		adminPOST(routes, accounts, "/:id/refresh-tier", rbac.PermissionAccountsOperate, h.Admin.Account.RefreshTier)
+		adminGET(routes, accounts, "/:id/stats", rbac.PermissionAccountsRead, h.Admin.Account.GetStats)
+		adminPOST(routes, accounts, "/:id/clear-error", rbac.PermissionAccountsOperate, h.Admin.Account.ClearError)
+		adminPOST(routes, accounts, "/:id/revert-proxy-fallback", rbac.PermissionAccountsOperate, h.Admin.Account.RevertProxyFallback)
+		adminGET(routes, accounts, "/:id/usage", rbac.PermissionAccountsRead, h.Admin.Account.GetUsage)
+		adminGET(routes, accounts, "/:id/today-stats", rbac.PermissionAccountsRead, h.Admin.Account.GetTodayStats)
+		adminPOST(routes, accounts, "/today-stats/batch", rbac.PermissionAccountsRead, h.Admin.Account.GetBatchTodayStats)
+		adminPOST(routes, accounts, "/:id/clear-rate-limit", rbac.PermissionAccountsOperate, h.Admin.Account.ClearRateLimit)
+		adminPOST(routes, accounts, "/:id/reset-quota", rbac.PermissionAccountsOperate, h.Admin.Account.ResetQuota)
+		adminGET(routes, accounts, "/:id/temp-unschedulable", rbac.PermissionAccountsRead, h.Admin.Account.GetTempUnschedulable)
+		adminDELETE(routes, accounts, "/:id/temp-unschedulable", rbac.PermissionAccountsOperate, h.Admin.Account.ClearTempUnschedulable)
+		adminPOST(routes, accounts, "/:id/schedulable", rbac.PermissionAccountsOperate, h.Admin.Account.SetSchedulable)
+		adminPOST(routes, accounts, "/models/sync-upstream-preview", rbac.PermissionAccountsRead, h.Admin.Account.SyncUpstreamModelsPreview)
+		adminGET(routes, accounts, "/:id/models", rbac.PermissionAccountsRead, h.Admin.Account.GetAvailableModels)
+		adminPOST(routes, accounts, "/:id/models/sync-upstream", rbac.PermissionAccountsOperate, h.Admin.Account.SyncUpstreamModels)
+		adminPOST(routes, accounts, "/batch", rbac.PermissionAccountsCreate, h.Admin.Account.BatchCreate)
+		adminGET(routes, accounts, "/data", rbac.PermissionAccountsCredentialsRead, h.Admin.Account.ExportData)
+		adminPOST(routes, accounts, "/data", rbac.PermissionAccountsCredentialsUpdate, h.Admin.Account.ImportData)
+		adminPOST(routes, accounts, "/batch-update-credentials", rbac.PermissionAccountsCredentialsUpdate, h.Admin.Account.BatchUpdateCredentials)
+		adminPOST(routes, accounts, "/batch-refresh-tier", rbac.PermissionAccountsOperate, h.Admin.Account.BatchRefreshTier)
+		adminPOST(routes, accounts, "/bulk-update", rbac.PermissionAccountsUpdate, h.Admin.Account.BulkUpdate)
+		adminPOST(routes, accounts, "/batch-clear-error", rbac.PermissionAccountsOperate, h.Admin.Account.BatchClearError)
+		adminPOST(routes, accounts, "/batch-refresh", rbac.PermissionAccountsOperate, h.Admin.Account.BatchRefresh)
 
 		// Antigravity 默认模型映射
-		accounts.GET("/antigravity/default-model-mapping", h.Admin.Account.GetAntigravityDefaultModelMapping)
+		adminGET(routes, accounts, "/antigravity/default-model-mapping", rbac.PermissionAccountsRead, h.Admin.Account.GetAntigravityDefaultModelMapping)
 
 		// Claude OAuth routes
-		accounts.POST("/generate-auth-url", h.Admin.OAuth.GenerateAuthURL)
-		accounts.POST("/generate-setup-token-url", h.Admin.OAuth.GenerateSetupTokenURL)
-		accounts.POST("/exchange-code", h.Admin.OAuth.ExchangeCode)
-		accounts.POST("/exchange-setup-token-code", h.Admin.OAuth.ExchangeSetupTokenCode)
-		accounts.POST("/cookie-auth", h.Admin.OAuth.CookieAuth)
-		accounts.POST("/setup-token-cookie-auth", h.Admin.OAuth.SetupTokenCookieAuth)
+		adminPOST(routes, accounts, "/generate-auth-url", rbac.PermissionAccountsCredentialsUpdate, h.Admin.OAuth.GenerateAuthURL)
+		adminPOST(routes, accounts, "/generate-setup-token-url", rbac.PermissionAccountsCredentialsUpdate, h.Admin.OAuth.GenerateSetupTokenURL)
+		adminPOST(routes, accounts, "/exchange-code", rbac.PermissionAccountsCredentialsUpdate, h.Admin.OAuth.ExchangeCode)
+		adminPOST(routes, accounts, "/exchange-setup-token-code", rbac.PermissionAccountsCredentialsUpdate, h.Admin.OAuth.ExchangeSetupTokenCode)
+		adminPOST(routes, accounts, "/cookie-auth", rbac.PermissionAccountsCredentialsUpdate, h.Admin.OAuth.CookieAuth)
+		adminPOST(routes, accounts, "/setup-token-cookie-auth", rbac.PermissionAccountsCredentialsUpdate, h.Admin.OAuth.SetupTokenCookieAuth)
 	}
 }
 
-func registerAnnouncementRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
+func registerAnnouncementRoutes(admin *gin.RouterGroup, h *handler.Handlers, routes *rbac.RouteRegistrar) {
 	announcements := admin.Group("/announcements")
 	{
-		announcements.GET("", h.Admin.Announcement.List)
-		announcements.POST("", h.Admin.Announcement.Create)
-		announcements.GET("/:id", h.Admin.Announcement.GetByID)
-		announcements.PUT("/:id", h.Admin.Announcement.Update)
-		announcements.DELETE("/:id", h.Admin.Announcement.Delete)
-		announcements.GET("/:id/read-status", h.Admin.Announcement.ListReadStatus)
+		adminGET(routes, announcements, "", rbac.PermissionAnnouncementsRead, h.Admin.Announcement.List)
+		adminPOST(routes, announcements, "", rbac.PermissionAnnouncementsCreate, h.Admin.Announcement.Create)
+		adminGET(routes, announcements, "/:id", rbac.PermissionAnnouncementsRead, h.Admin.Announcement.GetByID)
+		adminPUT(routes, announcements, "/:id", rbac.PermissionAnnouncementsUpdate, h.Admin.Announcement.Update)
+		adminDELETE(routes, announcements, "/:id", rbac.PermissionAnnouncementsDelete, h.Admin.Announcement.Delete)
+		adminGET(routes, announcements, "/:id/read-status", rbac.PermissionAnnouncementsRead, h.Admin.Announcement.ListReadStatus)
 	}
 }
 
-func registerOpenAIOAuthRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
+func registerOpenAIOAuthRoutes(admin *gin.RouterGroup, h *handler.Handlers, routes *rbac.RouteRegistrar) {
 	openai := admin.Group("/openai")
 	{
-		openai.POST("/generate-auth-url", h.Admin.OpenAIOAuth.GenerateAuthURL)
-		openai.POST("/exchange-code", h.Admin.OpenAIOAuth.ExchangeCode)
-		openai.POST("/refresh-token", h.Admin.OpenAIOAuth.RefreshToken)
-		openai.POST("/accounts/:id/refresh", h.Admin.OpenAIOAuth.RefreshAccountToken)
-		openai.POST("/create-from-oauth", h.Admin.OpenAIOAuth.CreateAccountFromOAuth)
-		openai.GET("/accounts/:id/quota", h.Admin.OpenAIOAuth.QueryQuota)
-		openai.POST("/accounts/:id/reset-quota", h.Admin.OpenAIOAuth.ResetQuota)
+		adminPOST(routes, openai, "/generate-auth-url", rbac.PermissionAccountsCredentialsUpdate, h.Admin.OpenAIOAuth.GenerateAuthURL)
+		adminPOST(routes, openai, "/exchange-code", rbac.PermissionAccountsCredentialsUpdate, h.Admin.OpenAIOAuth.ExchangeCode)
+		adminPOST(routes, openai, "/refresh-token", rbac.PermissionAccountsCredentialsUpdate, h.Admin.OpenAIOAuth.RefreshToken)
+		adminPOST(routes, openai, "/accounts/:id/refresh", rbac.PermissionAccountsOperate, h.Admin.OpenAIOAuth.RefreshAccountToken)
+		adminPOST(routes, openai, "/create-from-oauth", rbac.PermissionAccountsCreate, h.Admin.OpenAIOAuth.CreateAccountFromOAuth)
+		adminGET(routes, openai, "/accounts/:id/quota", rbac.PermissionAccountsRead, h.Admin.OpenAIOAuth.QueryQuota)
+		adminPOST(routes, openai, "/accounts/:id/reset-quota", rbac.PermissionAccountsOperate, h.Admin.OpenAIOAuth.ResetQuota)
 	}
 }
 
-func registerGeminiOAuthRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
+func registerGeminiOAuthRoutes(admin *gin.RouterGroup, h *handler.Handlers, routes *rbac.RouteRegistrar) {
 	gemini := admin.Group("/gemini")
 	{
-		gemini.POST("/oauth/auth-url", h.Admin.GeminiOAuth.GenerateAuthURL)
-		gemini.POST("/oauth/exchange-code", h.Admin.GeminiOAuth.ExchangeCode)
-		gemini.GET("/oauth/capabilities", h.Admin.GeminiOAuth.GetCapabilities)
+		adminPOST(routes, gemini, "/oauth/auth-url", rbac.PermissionAccountsCredentialsUpdate, h.Admin.GeminiOAuth.GenerateAuthURL)
+		adminPOST(routes, gemini, "/oauth/exchange-code", rbac.PermissionAccountsCredentialsUpdate, h.Admin.GeminiOAuth.ExchangeCode)
+		adminGET(routes, gemini, "/oauth/capabilities", rbac.PermissionAccountsRead, h.Admin.GeminiOAuth.GetCapabilities)
 	}
 }
 
-func registerAntigravityOAuthRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
+func registerAntigravityOAuthRoutes(admin *gin.RouterGroup, h *handler.Handlers, routes *rbac.RouteRegistrar) {
 	antigravity := admin.Group("/antigravity")
 	{
-		antigravity.POST("/oauth/auth-url", h.Admin.AntigravityOAuth.GenerateAuthURL)
-		antigravity.POST("/oauth/exchange-code", h.Admin.AntigravityOAuth.ExchangeCode)
-		antigravity.POST("/oauth/refresh-token", h.Admin.AntigravityOAuth.RefreshToken)
+		adminPOST(routes, antigravity, "/oauth/auth-url", rbac.PermissionAccountsCredentialsUpdate, h.Admin.AntigravityOAuth.GenerateAuthURL)
+		adminPOST(routes, antigravity, "/oauth/exchange-code", rbac.PermissionAccountsCredentialsUpdate, h.Admin.AntigravityOAuth.ExchangeCode)
+		adminPOST(routes, antigravity, "/oauth/refresh-token", rbac.PermissionAccountsCredentialsUpdate, h.Admin.AntigravityOAuth.RefreshToken)
 	}
 }
 
-func registerProxyRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
+func registerProxyRoutes(admin *gin.RouterGroup, h *handler.Handlers, routes *rbac.RouteRegistrar) {
 	proxies := admin.Group("/proxies")
 	{
-		proxies.GET("", h.Admin.Proxy.List)
-		proxies.GET("/all", h.Admin.Proxy.GetAll)
-		proxies.GET("/data", h.Admin.Proxy.ExportData)
-		proxies.POST("/data", h.Admin.Proxy.ImportData)
-		proxies.GET("/:id", h.Admin.Proxy.GetByID)
-		proxies.POST("", h.Admin.Proxy.Create)
-		proxies.PUT("/:id", h.Admin.Proxy.Update)
-		proxies.DELETE("/:id", h.Admin.Proxy.Delete)
-		proxies.POST("/:id/test", h.Admin.Proxy.Test)
-		proxies.POST("/:id/quality-check", h.Admin.Proxy.CheckQuality)
-		proxies.GET("/:id/stats", h.Admin.Proxy.GetStats)
-		proxies.GET("/:id/accounts", h.Admin.Proxy.GetProxyAccounts)
-		proxies.POST("/batch-delete", h.Admin.Proxy.BatchDelete)
-		proxies.POST("/batch", h.Admin.Proxy.BatchCreate)
+		adminGET(routes, proxies, "", rbac.PermissionProxiesRead, h.Admin.Proxy.List)
+		adminGET(routes, proxies, "/all", rbac.PermissionProxiesRead, h.Admin.Proxy.GetAll)
+		adminGET(routes, proxies, "/data", rbac.PermissionProxiesRead, h.Admin.Proxy.ExportData)
+		adminPOST(routes, proxies, "/data", rbac.PermissionProxiesUpdate, h.Admin.Proxy.ImportData)
+		adminGET(routes, proxies, "/:id", rbac.PermissionProxiesRead, h.Admin.Proxy.GetByID)
+		adminPOST(routes, proxies, "", rbac.PermissionProxiesCreate, h.Admin.Proxy.Create)
+		adminPUT(routes, proxies, "/:id", rbac.PermissionProxiesUpdate, h.Admin.Proxy.Update)
+		adminDELETE(routes, proxies, "/:id", rbac.PermissionProxiesDelete, h.Admin.Proxy.Delete)
+		adminPOST(routes, proxies, "/:id/test", rbac.PermissionProxiesOperate, h.Admin.Proxy.Test)
+		adminPOST(routes, proxies, "/:id/quality-check", rbac.PermissionProxiesOperate, h.Admin.Proxy.CheckQuality)
+		adminGET(routes, proxies, "/:id/stats", rbac.PermissionProxiesRead, h.Admin.Proxy.GetStats)
+		adminGET(routes, proxies, "/:id/accounts", rbac.PermissionProxiesRead, h.Admin.Proxy.GetProxyAccounts)
+		adminPOST(routes, proxies, "/batch-delete", rbac.PermissionProxiesDelete, h.Admin.Proxy.BatchDelete)
+		adminPOST(routes, proxies, "/batch", rbac.PermissionProxiesCreate, h.Admin.Proxy.BatchCreate)
 	}
 }
 
-func registerRedeemCodeRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
+func registerRedeemCodeRoutes(admin *gin.RouterGroup, h *handler.Handlers, routes *rbac.RouteRegistrar) {
 	codes := admin.Group("/redeem-codes")
 	{
-		codes.GET("", h.Admin.Redeem.List)
-		codes.GET("/stats", h.Admin.Redeem.GetStats)
-		codes.GET("/export", h.Admin.Redeem.Export)
-		codes.GET("/:id", h.Admin.Redeem.GetByID)
-		codes.POST("/create-and-redeem", h.Admin.Redeem.CreateAndRedeem)
-		codes.POST("/generate", h.Admin.Redeem.Generate)
-		codes.DELETE("/:id", h.Admin.Redeem.Delete)
-		codes.POST("/batch-delete", h.Admin.Redeem.BatchDelete)
-		codes.POST("/batch-update", h.Admin.Redeem.BatchUpdate)
-		codes.POST("/:id/expire", h.Admin.Redeem.Expire)
+		adminGET(routes, codes, "", rbac.PermissionRedeemCodesRead, h.Admin.Redeem.List)
+		adminGET(routes, codes, "/stats", rbac.PermissionRedeemCodesRead, h.Admin.Redeem.GetStats)
+		adminGET(routes, codes, "/export", rbac.PermissionRedeemCodesRead, h.Admin.Redeem.Export)
+		adminGET(routes, codes, "/:id", rbac.PermissionRedeemCodesRead, h.Admin.Redeem.GetByID)
+		adminPOST(routes, codes, "/create-and-redeem", rbac.PermissionRedeemCodesManage, h.Admin.Redeem.CreateAndRedeem)
+		adminPOST(routes, codes, "/generate", rbac.PermissionRedeemCodesManage, h.Admin.Redeem.Generate)
+		adminDELETE(routes, codes, "/:id", rbac.PermissionRedeemCodesManage, h.Admin.Redeem.Delete)
+		adminPOST(routes, codes, "/batch-delete", rbac.PermissionRedeemCodesManage, h.Admin.Redeem.BatchDelete)
+		adminPOST(routes, codes, "/batch-update", rbac.PermissionRedeemCodesManage, h.Admin.Redeem.BatchUpdate)
+		adminPOST(routes, codes, "/:id/expire", rbac.PermissionRedeemCodesManage, h.Admin.Redeem.Expire)
 	}
 }
 
-func registerPromoCodeRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
+func registerPromoCodeRoutes(admin *gin.RouterGroup, h *handler.Handlers, routes *rbac.RouteRegistrar) {
 	promoCodes := admin.Group("/promo-codes")
 	{
-		promoCodes.GET("", h.Admin.Promo.List)
-		promoCodes.GET("/:id", h.Admin.Promo.GetByID)
-		promoCodes.POST("", h.Admin.Promo.Create)
-		promoCodes.PUT("/:id", h.Admin.Promo.Update)
-		promoCodes.DELETE("/:id", h.Admin.Promo.Delete)
-		promoCodes.GET("/:id/usages", h.Admin.Promo.GetUsages)
+		adminGET(routes, promoCodes, "", rbac.PermissionPromoCodesRead, h.Admin.Promo.List)
+		adminGET(routes, promoCodes, "/:id", rbac.PermissionPromoCodesRead, h.Admin.Promo.GetByID)
+		adminPOST(routes, promoCodes, "", rbac.PermissionPromoCodesManage, h.Admin.Promo.Create)
+		adminPUT(routes, promoCodes, "/:id", rbac.PermissionPromoCodesManage, h.Admin.Promo.Update)
+		adminDELETE(routes, promoCodes, "/:id", rbac.PermissionPromoCodesManage, h.Admin.Promo.Delete)
+		adminGET(routes, promoCodes, "/:id/usages", rbac.PermissionPromoCodesRead, h.Admin.Promo.GetUsages)
 	}
 }
 
-func registerSettingsRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
-	admin.GET("/default-group", h.Admin.Setting.GetDefaultGroup)
+func registerSettingsRoutes(admin *gin.RouterGroup, h *handler.Handlers, routes *rbac.RouteRegistrar) {
+	adminGET(routes, admin, "/default-group", rbac.PermissionSettingsRead, h.Admin.Setting.GetDefaultGroup)
 	adminSettings := admin.Group("/settings")
 	{
-		adminSettings.GET("", h.Admin.Setting.GetSettings)
-		adminSettings.PUT("", h.Admin.Setting.UpdateSettings)
-		adminSettings.PUT("/default-group", h.Admin.Setting.UpdateDefaultGroup)
-		adminSettings.POST("/test-smtp", h.Admin.Setting.TestSMTPConnection)
-		adminSettings.POST("/send-test-email", h.Admin.Setting.SendTestEmail)
-		adminSettings.GET("/email-templates", h.Admin.Setting.ListEmailTemplates)
-		adminSettings.POST("/email-template-preview", h.Admin.Setting.PreviewEmailTemplate)
-		adminSettings.GET("/email-templates/:event/:locale", h.Admin.Setting.GetEmailTemplate)
-		adminSettings.PUT("/email-templates/:event/:locale", h.Admin.Setting.UpdateEmailTemplate)
-		adminSettings.POST("/email-templates/:event/:locale/restore-official", h.Admin.Setting.RestoreOfficialEmailTemplate)
+		adminGET(routes, adminSettings, "", rbac.PermissionSettingsRead, h.Admin.Setting.GetSettings)
+		adminPUT(routes, adminSettings, "", rbac.PermissionSettingsUpdate, h.Admin.Setting.UpdateSettings)
+		adminPUT(routes, adminSettings, "/default-group", rbac.PermissionSettingsUpdate, h.Admin.Setting.UpdateDefaultGroup)
+		adminPOST(routes, adminSettings, "/test-smtp", rbac.PermissionSettingsUpdate, h.Admin.Setting.TestSMTPConnection)
+		adminPOST(routes, adminSettings, "/send-test-email", rbac.PermissionSettingsUpdate, h.Admin.Setting.SendTestEmail)
+		adminGET(routes, adminSettings, "/email-templates", rbac.PermissionSettingsRead, h.Admin.Setting.ListEmailTemplates)
+		adminPOST(routes, adminSettings, "/email-template-preview", rbac.PermissionSettingsRead, h.Admin.Setting.PreviewEmailTemplate)
+		adminGET(routes, adminSettings, "/email-templates/:event/:locale", rbac.PermissionSettingsRead, h.Admin.Setting.GetEmailTemplate)
+		adminPUT(routes, adminSettings, "/email-templates/:event/:locale", rbac.PermissionSettingsUpdate, h.Admin.Setting.UpdateEmailTemplate)
+		adminPOST(routes, adminSettings, "/email-templates/:event/:locale/restore-official", rbac.PermissionSettingsUpdate, h.Admin.Setting.RestoreOfficialEmailTemplate)
 		// Admin API Key 管理
-		adminSettings.GET("/admin-api-key", h.Admin.Setting.GetAdminAPIKey)
-		adminSettings.POST("/admin-api-key/regenerate", h.Admin.Setting.RegenerateAdminAPIKey)
-		adminSettings.DELETE("/admin-api-key", h.Admin.Setting.DeleteAdminAPIKey)
+		adminGET(routes, adminSettings, "/admin-api-key", rbac.PermissionSettingsSecretsManage, h.Admin.Setting.GetAdminAPIKey)
+		adminPOST(routes, adminSettings, "/admin-api-key/regenerate", rbac.PermissionSettingsSecretsManage, h.Admin.Setting.RegenerateAdminAPIKey)
+		adminDELETE(routes, adminSettings, "/admin-api-key", rbac.PermissionSettingsSecretsManage, h.Admin.Setting.DeleteAdminAPIKey)
 		// 529过载冷却配置
-		adminSettings.GET("/overload-cooldown", h.Admin.Setting.GetOverloadCooldownSettings)
-		adminSettings.PUT("/overload-cooldown", h.Admin.Setting.UpdateOverloadCooldownSettings)
+		adminGET(routes, adminSettings, "/overload-cooldown", rbac.PermissionSettingsRead, h.Admin.Setting.GetOverloadCooldownSettings)
+		adminPUT(routes, adminSettings, "/overload-cooldown", rbac.PermissionSettingsUpdate, h.Admin.Setting.UpdateOverloadCooldownSettings)
 		// 429默认回避配置
-		adminSettings.GET("/rate-limit-429-cooldown", h.Admin.Setting.GetRateLimit429CooldownSettings)
-		adminSettings.PUT("/rate-limit-429-cooldown", h.Admin.Setting.UpdateRateLimit429CooldownSettings)
+		adminGET(routes, adminSettings, "/rate-limit-429-cooldown", rbac.PermissionSettingsRead, h.Admin.Setting.GetRateLimit429CooldownSettings)
+		adminPUT(routes, adminSettings, "/rate-limit-429-cooldown", rbac.PermissionSettingsUpdate, h.Admin.Setting.UpdateRateLimit429CooldownSettings)
 		// 流超时处理配置
-		adminSettings.GET("/stream-timeout", h.Admin.Setting.GetStreamTimeoutSettings)
-		adminSettings.PUT("/stream-timeout", h.Admin.Setting.UpdateStreamTimeoutSettings)
+		adminGET(routes, adminSettings, "/stream-timeout", rbac.PermissionSettingsRead, h.Admin.Setting.GetStreamTimeoutSettings)
+		adminPUT(routes, adminSettings, "/stream-timeout", rbac.PermissionSettingsUpdate, h.Admin.Setting.UpdateStreamTimeoutSettings)
 		// 请求整流器配置
-		adminSettings.GET("/rectifier", h.Admin.Setting.GetRectifierSettings)
-		adminSettings.PUT("/rectifier", h.Admin.Setting.UpdateRectifierSettings)
+		adminGET(routes, adminSettings, "/rectifier", rbac.PermissionSettingsRead, h.Admin.Setting.GetRectifierSettings)
+		adminPUT(routes, adminSettings, "/rectifier", rbac.PermissionSettingsUpdate, h.Admin.Setting.UpdateRectifierSettings)
 		// Beta 策略配置
-		adminSettings.GET("/beta-policy", h.Admin.Setting.GetBetaPolicySettings)
-		adminSettings.PUT("/beta-policy", h.Admin.Setting.UpdateBetaPolicySettings)
+		adminGET(routes, adminSettings, "/beta-policy", rbac.PermissionSettingsRead, h.Admin.Setting.GetBetaPolicySettings)
+		adminPUT(routes, adminSettings, "/beta-policy", rbac.PermissionSettingsUpdate, h.Admin.Setting.UpdateBetaPolicySettings)
 		// Web Search 模拟配置
-		adminSettings.GET("/web-search-emulation", h.Admin.Setting.GetWebSearchEmulationConfig)
-		adminSettings.PUT("/web-search-emulation", h.Admin.Setting.UpdateWebSearchEmulationConfig)
-		adminSettings.POST("/web-search-emulation/test", h.Admin.Setting.TestWebSearchEmulation)
-		adminSettings.POST("/web-search-emulation/reset-usage", h.Admin.Setting.ResetWebSearchUsage)
+		adminGET(routes, adminSettings, "/web-search-emulation", rbac.PermissionSettingsRead, h.Admin.Setting.GetWebSearchEmulationConfig)
+		adminPUT(routes, adminSettings, "/web-search-emulation", rbac.PermissionSettingsUpdate, h.Admin.Setting.UpdateWebSearchEmulationConfig)
+		adminPOST(routes, adminSettings, "/web-search-emulation/test", rbac.PermissionSettingsUpdate, h.Admin.Setting.TestWebSearchEmulation)
+		adminPOST(routes, adminSettings, "/web-search-emulation/reset-usage", rbac.PermissionSettingsUpdate, h.Admin.Setting.ResetWebSearchUsage)
 		// 新用户默认模型 Token 限额
-		adminSettings.GET("/default-model-token-quotas", h.Admin.Setting.GetDefaultModelTokenQuotas)
-		adminSettings.PUT("/default-model-token-quotas", h.Admin.Setting.UpdateDefaultModelTokenQuotas)
+		adminGET(routes, adminSettings, "/default-model-token-quotas", rbac.PermissionSettingsRead, h.Admin.Setting.GetDefaultModelTokenQuotas)
+		adminPUT(routes, adminSettings, "/default-model-token-quotas", rbac.PermissionSettingsUpdate, h.Admin.Setting.UpdateDefaultModelTokenQuotas)
 	}
 }
 
-func registerDataManagementRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
+func registerDataManagementRoutes(admin *gin.RouterGroup, h *handler.Handlers, routes *rbac.RouteRegistrar) {
 	dataManagement := admin.Group("/data-management")
 	{
-		dataManagement.GET("/agent/health", h.Admin.DataManagement.GetAgentHealth)
-		dataManagement.GET("/config", h.Admin.DataManagement.GetConfig)
-		dataManagement.PUT("/config", h.Admin.DataManagement.UpdateConfig)
-		dataManagement.GET("/sources/:source_type/profiles", h.Admin.DataManagement.ListSourceProfiles)
-		dataManagement.POST("/sources/:source_type/profiles", h.Admin.DataManagement.CreateSourceProfile)
-		dataManagement.PUT("/sources/:source_type/profiles/:profile_id", h.Admin.DataManagement.UpdateSourceProfile)
-		dataManagement.DELETE("/sources/:source_type/profiles/:profile_id", h.Admin.DataManagement.DeleteSourceProfile)
-		dataManagement.POST("/sources/:source_type/profiles/:profile_id/activate", h.Admin.DataManagement.SetActiveSourceProfile)
-		dataManagement.POST("/s3/test", h.Admin.DataManagement.TestS3)
-		dataManagement.GET("/s3/profiles", h.Admin.DataManagement.ListS3Profiles)
-		dataManagement.POST("/s3/profiles", h.Admin.DataManagement.CreateS3Profile)
-		dataManagement.PUT("/s3/profiles/:profile_id", h.Admin.DataManagement.UpdateS3Profile)
-		dataManagement.DELETE("/s3/profiles/:profile_id", h.Admin.DataManagement.DeleteS3Profile)
-		dataManagement.POST("/s3/profiles/:profile_id/activate", h.Admin.DataManagement.SetActiveS3Profile)
-		dataManagement.POST("/backups", h.Admin.DataManagement.CreateBackupJob)
-		dataManagement.GET("/backups", h.Admin.DataManagement.ListBackupJobs)
-		dataManagement.GET("/backups/:job_id", h.Admin.DataManagement.GetBackupJob)
+		adminGET(routes, dataManagement, "/agent/health", rbac.PermissionDataManagementRead, h.Admin.DataManagement.GetAgentHealth)
+		adminGET(routes, dataManagement, "/config", rbac.PermissionDataManagementRead, h.Admin.DataManagement.GetConfig)
+		adminPUT(routes, dataManagement, "/config", rbac.PermissionDataManagementUpdate, h.Admin.DataManagement.UpdateConfig)
+		adminGET(routes, dataManagement, "/sources/:source_type/profiles", rbac.PermissionDataManagementRead, h.Admin.DataManagement.ListSourceProfiles)
+		adminPOST(routes, dataManagement, "/sources/:source_type/profiles", rbac.PermissionDataManagementUpdate, h.Admin.DataManagement.CreateSourceProfile)
+		adminPUT(routes, dataManagement, "/sources/:source_type/profiles/:profile_id", rbac.PermissionDataManagementUpdate, h.Admin.DataManagement.UpdateSourceProfile)
+		adminDELETE(routes, dataManagement, "/sources/:source_type/profiles/:profile_id", rbac.PermissionDataManagementUpdate, h.Admin.DataManagement.DeleteSourceProfile)
+		adminPOST(routes, dataManagement, "/sources/:source_type/profiles/:profile_id/activate", rbac.PermissionDataManagementUpdate, h.Admin.DataManagement.SetActiveSourceProfile)
+		adminPOST(routes, dataManagement, "/s3/test", rbac.PermissionDataManagementUpdate, h.Admin.DataManagement.TestS3)
+		adminGET(routes, dataManagement, "/s3/profiles", rbac.PermissionDataManagementRead, h.Admin.DataManagement.ListS3Profiles)
+		adminPOST(routes, dataManagement, "/s3/profiles", rbac.PermissionDataManagementUpdate, h.Admin.DataManagement.CreateS3Profile)
+		adminPUT(routes, dataManagement, "/s3/profiles/:profile_id", rbac.PermissionDataManagementUpdate, h.Admin.DataManagement.UpdateS3Profile)
+		adminDELETE(routes, dataManagement, "/s3/profiles/:profile_id", rbac.PermissionDataManagementUpdate, h.Admin.DataManagement.DeleteS3Profile)
+		adminPOST(routes, dataManagement, "/s3/profiles/:profile_id/activate", rbac.PermissionDataManagementUpdate, h.Admin.DataManagement.SetActiveS3Profile)
+		adminPOST(routes, dataManagement, "/backups", rbac.PermissionDataManagementUpdate, h.Admin.DataManagement.CreateBackupJob)
+		adminGET(routes, dataManagement, "/backups", rbac.PermissionDataManagementRead, h.Admin.DataManagement.ListBackupJobs)
+		adminGET(routes, dataManagement, "/backups/:job_id", rbac.PermissionDataManagementRead, h.Admin.DataManagement.GetBackupJob)
 	}
 }
 
-func registerBackupRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
+func registerBackupRoutes(admin *gin.RouterGroup, h *handler.Handlers, routes *rbac.RouteRegistrar) {
 	backup := admin.Group("/backups")
 	{
 		// S3 存储配置
-		backup.GET("/s3-config", h.Admin.Backup.GetS3Config)
-		backup.PUT("/s3-config", h.Admin.Backup.UpdateS3Config)
-		backup.POST("/s3-config/test", h.Admin.Backup.TestS3Connection)
+		adminGET(routes, backup, "/s3-config", rbac.PermissionBackupsRead, h.Admin.Backup.GetS3Config)
+		adminPUT(routes, backup, "/s3-config", rbac.PermissionBackupsCreate, h.Admin.Backup.UpdateS3Config)
+		adminPOST(routes, backup, "/s3-config/test", rbac.PermissionBackupsCreate, h.Admin.Backup.TestS3Connection)
 
 		// 定时备份配置
-		backup.GET("/schedule", h.Admin.Backup.GetSchedule)
-		backup.PUT("/schedule", h.Admin.Backup.UpdateSchedule)
+		adminGET(routes, backup, "/schedule", rbac.PermissionBackupsRead, h.Admin.Backup.GetSchedule)
+		adminPUT(routes, backup, "/schedule", rbac.PermissionBackupsCreate, h.Admin.Backup.UpdateSchedule)
 
 		// 备份操作
-		backup.POST("", h.Admin.Backup.CreateBackup)
-		backup.GET("", h.Admin.Backup.ListBackups)
-		backup.GET("/:id", h.Admin.Backup.GetBackup)
-		backup.DELETE("/:id", h.Admin.Backup.DeleteBackup)
-		backup.GET("/:id/download-url", h.Admin.Backup.GetDownloadURL)
+		adminPOST(routes, backup, "", rbac.PermissionBackupsCreate, h.Admin.Backup.CreateBackup)
+		adminGET(routes, backup, "", rbac.PermissionBackupsRead, h.Admin.Backup.ListBackups)
+		adminGET(routes, backup, "/:id", rbac.PermissionBackupsRead, h.Admin.Backup.GetBackup)
+		adminDELETE(routes, backup, "/:id", rbac.PermissionBackupsCreate, h.Admin.Backup.DeleteBackup)
+		adminGET(routes, backup, "/:id/download-url", rbac.PermissionBackupsRead, h.Admin.Backup.GetDownloadURL)
 
 		// 恢复操作
-		backup.POST("/:id/restore", h.Admin.Backup.RestoreBackup)
+		adminPOST(routes, backup, "/:id/restore", rbac.PermissionBackupsRestore, h.Admin.Backup.RestoreBackup)
 	}
 }
 
-func registerSystemRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
+func registerSystemRoutes(admin *gin.RouterGroup, h *handler.Handlers, routes *rbac.RouteRegistrar) {
 	system := admin.Group("/system")
 	{
-		system.GET("/version", h.Admin.System.GetVersion)
-		system.GET("/check-updates", h.Admin.System.CheckUpdates)
-		system.POST("/update", h.Admin.System.PerformUpdate)
-		system.POST("/rollback", h.Admin.System.Rollback)
-		system.POST("/restart", h.Admin.System.RestartService)
+		adminGET(routes, system, "/version", rbac.PermissionSystemRead, h.Admin.System.GetVersion)
+		adminGET(routes, system, "/check-updates", rbac.PermissionSystemRead, h.Admin.System.CheckUpdates)
+		adminPOST(routes, system, "/update", rbac.PermissionSystemOperate, h.Admin.System.PerformUpdate)
+		adminPOST(routes, system, "/rollback", rbac.PermissionSystemOperate, h.Admin.System.Rollback)
+		adminPOST(routes, system, "/restart", rbac.PermissionSystemOperate, h.Admin.System.RestartService)
 	}
 }
 
-func registerSubscriptionRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
+func registerSubscriptionRoutes(admin *gin.RouterGroup, h *handler.Handlers, routes *rbac.RouteRegistrar) {
 	subscriptions := admin.Group("/subscriptions")
 	{
-		subscriptions.GET("", h.Admin.Subscription.List)
-		subscriptions.GET("/:id", h.Admin.Subscription.GetByID)
-		subscriptions.GET("/:id/progress", h.Admin.Subscription.GetProgress)
-		subscriptions.POST("/assign", h.Admin.Subscription.Assign)
-		subscriptions.POST("/bulk-assign", h.Admin.Subscription.BulkAssign)
-		subscriptions.POST("/:id/extend", h.Admin.Subscription.Extend)
-		subscriptions.POST("/:id/reset-quota", h.Admin.Subscription.ResetQuota)
-		subscriptions.DELETE("/:id", h.Admin.Subscription.Revoke)
+		adminGET(routes, subscriptions, "", rbac.PermissionSubscriptionsRead, h.Admin.Subscription.List)
+		adminGET(routes, subscriptions, "/:id", rbac.PermissionSubscriptionsRead, h.Admin.Subscription.GetByID)
+		adminGET(routes, subscriptions, "/:id/progress", rbac.PermissionSubscriptionsRead, h.Admin.Subscription.GetProgress)
+		adminPOST(routes, subscriptions, "/assign", rbac.PermissionSubscriptionsManage, h.Admin.Subscription.Assign)
+		adminPOST(routes, subscriptions, "/bulk-assign", rbac.PermissionSubscriptionsManage, h.Admin.Subscription.BulkAssign)
+		adminPOST(routes, subscriptions, "/:id/extend", rbac.PermissionSubscriptionsManage, h.Admin.Subscription.Extend)
+		adminPOST(routes, subscriptions, "/:id/reset-quota", rbac.PermissionSubscriptionsManage, h.Admin.Subscription.ResetQuota)
+		adminDELETE(routes, subscriptions, "/:id", rbac.PermissionSubscriptionsManage, h.Admin.Subscription.Revoke)
 	}
 
 	// 分组下的订阅列表
-	admin.GET("/groups/:id/subscriptions", h.Admin.Subscription.ListByGroup)
+	adminGET(routes, admin, "/groups/:id/subscriptions", rbac.PermissionSubscriptionsRead, h.Admin.Subscription.ListByGroup)
 
 	// 用户下的订阅列表
-	admin.GET("/users/:id/subscriptions", h.Admin.Subscription.ListByUser)
+	adminGET(routes, admin, "/users/:id/subscriptions", rbac.PermissionSubscriptionsRead, h.Admin.Subscription.ListByUser)
 }
 
-func registerUsageRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
+func registerUsageRoutes(admin *gin.RouterGroup, h *handler.Handlers, routes *rbac.RouteRegistrar) {
 	usage := admin.Group("/usage")
 	{
-		usage.GET("", h.Admin.Usage.List)
-		usage.GET("/stats", h.Admin.Usage.Stats)
-		usage.GET("/search-users", h.Admin.Usage.SearchUsers)
-		usage.GET("/search-api-keys", h.Admin.Usage.SearchAPIKeys)
-		usage.GET("/cleanup-tasks", h.Admin.Usage.ListCleanupTasks)
-		usage.POST("/cleanup-tasks", h.Admin.Usage.CreateCleanupTask)
-		usage.POST("/cleanup-tasks/:id/cancel", h.Admin.Usage.CancelCleanupTask)
+		adminGET(routes, usage, "", rbac.PermissionUsageAdminRead, h.Admin.Usage.List)
+		adminGET(routes, usage, "/stats", rbac.PermissionUsageAdminRead, h.Admin.Usage.Stats)
+		adminGET(routes, usage, "/search-users", rbac.PermissionUsageAdminRead, h.Admin.Usage.SearchUsers)
+		adminGET(routes, usage, "/search-api-keys", rbac.PermissionUsageAdminRead, h.Admin.Usage.SearchAPIKeys)
+		adminGET(routes, usage, "/cleanup-tasks", rbac.PermissionUsageAdminRead, h.Admin.Usage.ListCleanupTasks)
+		adminPOST(routes, usage, "/cleanup-tasks", rbac.PermissionUsageAdminManage, h.Admin.Usage.CreateCleanupTask)
+		adminPOST(routes, usage, "/cleanup-tasks/:id/cancel", rbac.PermissionUsageAdminManage, h.Admin.Usage.CancelCleanupTask)
 	}
 }
 
-func registerUserAttributeRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
+func registerUserAttributeRoutes(admin *gin.RouterGroup, h *handler.Handlers, routes *rbac.RouteRegistrar) {
 	attrs := admin.Group("/user-attributes")
 	{
-		attrs.GET("", h.Admin.UserAttribute.ListDefinitions)
-		attrs.POST("", h.Admin.UserAttribute.CreateDefinition)
-		attrs.POST("/batch", h.Admin.UserAttribute.GetBatchUserAttributes)
-		attrs.PUT("/reorder", h.Admin.UserAttribute.ReorderDefinitions)
-		attrs.PUT("/:id", h.Admin.UserAttribute.UpdateDefinition)
-		attrs.DELETE("/:id", h.Admin.UserAttribute.DeleteDefinition)
+		adminGET(routes, attrs, "", rbac.PermissionUsersRead, h.Admin.UserAttribute.ListDefinitions)
+		adminPOST(routes, attrs, "", rbac.PermissionUsersUpdate, h.Admin.UserAttribute.CreateDefinition)
+		adminPOST(routes, attrs, "/batch", rbac.PermissionUsersRead, h.Admin.UserAttribute.GetBatchUserAttributes)
+		adminPUT(routes, attrs, "/reorder", rbac.PermissionUsersUpdate, h.Admin.UserAttribute.ReorderDefinitions)
+		adminPUT(routes, attrs, "/:id", rbac.PermissionUsersUpdate, h.Admin.UserAttribute.UpdateDefinition)
+		adminDELETE(routes, attrs, "/:id", rbac.PermissionUsersUpdate, h.Admin.UserAttribute.DeleteDefinition)
 	}
 }
 
-func registerScheduledTestRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
+func registerScheduledTestRoutes(admin *gin.RouterGroup, h *handler.Handlers, routes *rbac.RouteRegistrar) {
 	plans := admin.Group("/scheduled-test-plans")
 	{
-		plans.POST("", h.Admin.ScheduledTest.Create)
-		plans.PUT("/:id", h.Admin.ScheduledTest.Update)
-		plans.DELETE("/:id", h.Admin.ScheduledTest.Delete)
-		plans.GET("/:id/results", h.Admin.ScheduledTest.ListResults)
+		adminPOST(routes, plans, "", rbac.PermissionMonitorsUpdate, h.Admin.ScheduledTest.Create)
+		adminPUT(routes, plans, "/:id", rbac.PermissionMonitorsUpdate, h.Admin.ScheduledTest.Update)
+		adminDELETE(routes, plans, "/:id", rbac.PermissionMonitorsUpdate, h.Admin.ScheduledTest.Delete)
+		adminGET(routes, plans, "/:id/results", rbac.PermissionMonitorsRead, h.Admin.ScheduledTest.ListResults)
 	}
 	// Nested under accounts
-	admin.GET("/accounts/:id/scheduled-test-plans", h.Admin.ScheduledTest.ListByAccount)
+	adminGET(routes, admin, "/accounts/:id/scheduled-test-plans", rbac.PermissionMonitorsRead, h.Admin.ScheduledTest.ListByAccount)
 }
 
-func registerErrorPassthroughRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
+func registerErrorPassthroughRoutes(admin *gin.RouterGroup, h *handler.Handlers, routes *rbac.RouteRegistrar) {
 	rules := admin.Group("/error-passthrough-rules")
 	{
-		rules.GET("", h.Admin.ErrorPassthrough.List)
-		rules.GET("/:id", h.Admin.ErrorPassthrough.GetByID)
-		rules.POST("", h.Admin.ErrorPassthrough.Create)
-		rules.PUT("/:id", h.Admin.ErrorPassthrough.Update)
-		rules.DELETE("/:id", h.Admin.ErrorPassthrough.Delete)
+		adminGET(routes, rules, "", rbac.PermissionSettingsRead, h.Admin.ErrorPassthrough.List)
+		adminGET(routes, rules, "/:id", rbac.PermissionSettingsRead, h.Admin.ErrorPassthrough.GetByID)
+		adminPOST(routes, rules, "", rbac.PermissionSettingsUpdate, h.Admin.ErrorPassthrough.Create)
+		adminPUT(routes, rules, "/:id", rbac.PermissionSettingsUpdate, h.Admin.ErrorPassthrough.Update)
+		adminDELETE(routes, rules, "/:id", rbac.PermissionSettingsUpdate, h.Admin.ErrorPassthrough.Delete)
 	}
 }
 
-func registerTLSFingerprintProfileRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
+func registerTLSFingerprintProfileRoutes(admin *gin.RouterGroup, h *handler.Handlers, routes *rbac.RouteRegistrar) {
 	profiles := admin.Group("/tls-fingerprint-profiles")
 	{
-		profiles.GET("", h.Admin.TLSFingerprintProfile.List)
-		profiles.GET("/:id", h.Admin.TLSFingerprintProfile.GetByID)
-		profiles.POST("", h.Admin.TLSFingerprintProfile.Create)
-		profiles.PUT("/:id", h.Admin.TLSFingerprintProfile.Update)
-		profiles.DELETE("/:id", h.Admin.TLSFingerprintProfile.Delete)
+		adminGET(routes, profiles, "", rbac.PermissionSettingsRead, h.Admin.TLSFingerprintProfile.List)
+		adminGET(routes, profiles, "/:id", rbac.PermissionSettingsRead, h.Admin.TLSFingerprintProfile.GetByID)
+		adminPOST(routes, profiles, "", rbac.PermissionSettingsUpdate, h.Admin.TLSFingerprintProfile.Create)
+		adminPUT(routes, profiles, "/:id", rbac.PermissionSettingsUpdate, h.Admin.TLSFingerprintProfile.Update)
+		adminDELETE(routes, profiles, "/:id", rbac.PermissionSettingsUpdate, h.Admin.TLSFingerprintProfile.Delete)
 	}
 }
 
-func registerChannelRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
+func registerChannelRoutes(admin *gin.RouterGroup, h *handler.Handlers, routes *rbac.RouteRegistrar) {
 	channels := admin.Group("/channels")
 	{
-		channels.GET("", h.Admin.Channel.List)
-		channels.GET("/model-pricing", h.Admin.Channel.GetModelDefaultPricing)
-		channels.GET("/pricing/sync-models", h.Admin.Channel.SyncPricingModels)
-		channels.GET("/:id", h.Admin.Channel.GetByID)
-		channels.POST("", h.Admin.Channel.Create)
-		channels.PUT("/:id", h.Admin.Channel.Update)
-		channels.DELETE("/:id", h.Admin.Channel.Delete)
+		adminGET(routes, channels, "", rbac.PermissionChannelsRead, h.Admin.Channel.List)
+		adminGET(routes, channels, "/model-pricing", rbac.PermissionChannelsRead, h.Admin.Channel.GetModelDefaultPricing)
+		adminGET(routes, channels, "/pricing/sync-models", rbac.PermissionChannelsRead, h.Admin.Channel.SyncPricingModels)
+		adminGET(routes, channels, "/:id", rbac.PermissionChannelsRead, h.Admin.Channel.GetByID)
+		adminPOST(routes, channels, "", rbac.PermissionChannelsCreate, h.Admin.Channel.Create)
+		adminPUT(routes, channels, "/:id", rbac.PermissionChannelsUpdate, h.Admin.Channel.Update)
+		adminDELETE(routes, channels, "/:id", rbac.PermissionChannelsDelete, h.Admin.Channel.Delete)
 	}
 }
 
-func registerChannelMonitorRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
+func registerChannelMonitorRoutes(admin *gin.RouterGroup, h *handler.Handlers, routes *rbac.RouteRegistrar) {
 	monitors := admin.Group("/channel-monitors")
 	{
-		monitors.GET("", h.Admin.ChannelMonitor.List)
-		monitors.POST("", h.Admin.ChannelMonitor.Create)
-		monitors.GET("/:id", h.Admin.ChannelMonitor.Get)
-		monitors.PUT("/:id", h.Admin.ChannelMonitor.Update)
-		monitors.DELETE("/:id", h.Admin.ChannelMonitor.Delete)
-		monitors.POST("/:id/run", h.Admin.ChannelMonitor.Run)
-		monitors.GET("/:id/history", h.Admin.ChannelMonitor.History)
+		adminGET(routes, monitors, "", rbac.PermissionMonitorsRead, h.Admin.ChannelMonitor.List)
+		adminPOST(routes, monitors, "", rbac.PermissionMonitorsUpdate, h.Admin.ChannelMonitor.Create)
+		adminGET(routes, monitors, "/:id", rbac.PermissionMonitorsRead, h.Admin.ChannelMonitor.Get)
+		adminPUT(routes, monitors, "/:id", rbac.PermissionMonitorsUpdate, h.Admin.ChannelMonitor.Update)
+		adminDELETE(routes, monitors, "/:id", rbac.PermissionMonitorsUpdate, h.Admin.ChannelMonitor.Delete)
+		adminPOST(routes, monitors, "/:id/run", rbac.PermissionMonitorsRun, h.Admin.ChannelMonitor.Run)
+		adminGET(routes, monitors, "/:id/history", rbac.PermissionMonitorsRead, h.Admin.ChannelMonitor.History)
 	}
 
 	templates := admin.Group("/channel-monitor-templates")
 	{
-		templates.GET("", h.Admin.ChannelMonitorTemplate.List)
-		templates.POST("", h.Admin.ChannelMonitorTemplate.Create)
-		templates.GET("/:id", h.Admin.ChannelMonitorTemplate.Get)
-		templates.PUT("/:id", h.Admin.ChannelMonitorTemplate.Update)
-		templates.DELETE("/:id", h.Admin.ChannelMonitorTemplate.Delete)
-		templates.GET("/:id/monitors", h.Admin.ChannelMonitorTemplate.AssociatedMonitors)
-		templates.POST("/:id/apply", h.Admin.ChannelMonitorTemplate.Apply)
+		adminGET(routes, templates, "", rbac.PermissionMonitorsRead, h.Admin.ChannelMonitorTemplate.List)
+		adminPOST(routes, templates, "", rbac.PermissionMonitorsUpdate, h.Admin.ChannelMonitorTemplate.Create)
+		adminGET(routes, templates, "/:id", rbac.PermissionMonitorsRead, h.Admin.ChannelMonitorTemplate.Get)
+		adminPUT(routes, templates, "/:id", rbac.PermissionMonitorsUpdate, h.Admin.ChannelMonitorTemplate.Update)
+		adminDELETE(routes, templates, "/:id", rbac.PermissionMonitorsUpdate, h.Admin.ChannelMonitorTemplate.Delete)
+		adminGET(routes, templates, "/:id/monitors", rbac.PermissionMonitorsRead, h.Admin.ChannelMonitorTemplate.AssociatedMonitors)
+		adminPOST(routes, templates, "/:id/apply", rbac.PermissionMonitorsRun, h.Admin.ChannelMonitorTemplate.Apply)
 	}
 }
 
 // registerAffiliateRoutes 注册邀请返利的管理端路由（专属用户配置）
-func registerAffiliateRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
+func registerAffiliateRoutes(admin *gin.RouterGroup, h *handler.Handlers, routes *rbac.RouteRegistrar) {
 	affiliates := admin.Group("/affiliates")
 	{
-		affiliates.GET("/invites", h.Admin.Affiliate.ListInviteRecords)
-		affiliates.GET("/rebates", h.Admin.Affiliate.ListRebateRecords)
-		affiliates.GET("/transfers", h.Admin.Affiliate.ListTransferRecords)
+		adminGET(routes, affiliates, "/invites", rbac.PermissionAffiliatesRead, h.Admin.Affiliate.ListInviteRecords)
+		adminGET(routes, affiliates, "/rebates", rbac.PermissionAffiliatesRead, h.Admin.Affiliate.ListRebateRecords)
+		adminGET(routes, affiliates, "/transfers", rbac.PermissionAffiliatesRead, h.Admin.Affiliate.ListTransferRecords)
 
 		users := affiliates.Group("/users")
 		{
-			users.GET("", h.Admin.Affiliate.ListUsers)
-			users.GET("/lookup", h.Admin.Affiliate.LookupUsers)
-			users.POST("/batch-rate", h.Admin.Affiliate.BatchSetRate)
-			users.GET("/:user_id/overview", h.Admin.Affiliate.GetUserOverview)
-			users.PUT("/:user_id", h.Admin.Affiliate.UpdateUserSettings)
-			users.DELETE("/:user_id", h.Admin.Affiliate.ClearUserSettings)
+			adminGET(routes, users, "", rbac.PermissionAffiliatesRead, h.Admin.Affiliate.ListUsers)
+			adminGET(routes, users, "/lookup", rbac.PermissionAffiliatesRead, h.Admin.Affiliate.LookupUsers)
+			adminPOST(routes, users, "/batch-rate", rbac.PermissionAffiliatesManage, h.Admin.Affiliate.BatchSetRate)
+			adminGET(routes, users, "/:user_id/overview", rbac.PermissionAffiliatesRead, h.Admin.Affiliate.GetUserOverview)
+			adminPUT(routes, users, "/:user_id", rbac.PermissionAffiliatesManage, h.Admin.Affiliate.UpdateUserSettings)
+			adminDELETE(routes, users, "/:user_id", rbac.PermissionAffiliatesManage, h.Admin.Affiliate.ClearUserSettings)
 		}
 	}
 }
