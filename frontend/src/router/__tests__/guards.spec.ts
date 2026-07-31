@@ -549,7 +549,7 @@ describe('路由守卫逻辑', () => {
       hasPendingAuthSession: false,
     }
     expect(simulateGuard(
-      '/admin/token-usage/models',
+      '/admin/token-statistics',
       { requiredPermission: 'token_usage.read' },
       authState
     )).toBeNull()

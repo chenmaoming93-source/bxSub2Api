@@ -110,11 +110,10 @@ type DefaultSubscriptionAssigner interface {
 }
 
 type signupGrantPlan struct {
-	Balance          float64
-	Concurrency      int
-	Subscriptions    []DefaultSubscriptionSetting
-	PlatformQuotas   map[string]*DefaultPlatformQuotaSetting
-	ModelTokenQuotas []UserModelDailyTokenQuotaInput
+	Balance        float64
+	Concurrency    int
+	Subscriptions  []DefaultSubscriptionSetting
+	PlatformQuotas map[string]*DefaultPlatformQuotaSetting
 }
 
 // NewAuthService 创建认证服务实例
@@ -271,7 +270,6 @@ func (s *AuthService) RegisterWithVerification(ctx context.Context, email, passw
 	s.assignSubscriptions(ctx, user.ID, grantPlan.Subscriptions, "auto assigned by signup defaults")
 	// snapshot user × platform quota（fail-open）
 	_ = s.snapshotPlatformQuotaDefaults(ctx, user.ID, &grantPlan)
-	s.snapshotModelTokenQuotaDefaults(ctx, user.ID, &grantPlan)
 	if s.affiliateService != nil {
 		if _, err := s.affiliateService.EnsureUserAffiliate(ctx, user.ID); err != nil {
 			logger.LegacyPrintf("service.auth", "[Auth] Failed to initialize affiliate profile for user %d: %v", user.ID, err)
@@ -571,7 +569,6 @@ func (s *AuthService) LoginLDAP(ctx context.Context, account, displayName string
 			s.postAuthUserBootstrap(ctx, user, "email", false)
 			s.assignSubscriptions(ctx, user.ID, grantPlan.Subscriptions, "auto assigned by LDAP signup defaults")
 			_ = s.snapshotPlatformQuotaDefaults(ctx, user.ID, &grantPlan)
-			s.snapshotModelTokenQuotaDefaults(ctx, user.ID, &grantPlan)
 		}
 	}
 
@@ -653,7 +650,6 @@ func (s *AuthService) LoginOrRegisterOAuth(ctx context.Context, email, username 
 				s.assignSubscriptions(ctx, user.ID, grantPlan.Subscriptions, "auto assigned by signup defaults")
 				// snapshot user × platform quota（fail-open）
 				_ = s.snapshotPlatformQuotaDefaults(ctx, user.ID, &grantPlan)
-				s.snapshotModelTokenQuotaDefaults(ctx, user.ID, &grantPlan)
 			}
 		} else {
 			logger.LegacyPrintf("service.auth", "[Auth] Database error during oauth login: %v", err)
@@ -813,7 +809,6 @@ func (s *AuthService) loginOrRegisterOAuthWithTokenPair(ctx context.Context, ema
 					s.assignSubscriptions(ctx, user.ID, grantPlan.Subscriptions, "auto assigned by signup defaults")
 					// snapshot user × platform quota（fail-open）
 					_ = s.snapshotPlatformQuotaDefaults(ctx, user.ID, &grantPlan)
-					s.snapshotModelTokenQuotaDefaults(ctx, user.ID, &grantPlan)
 					s.bindOAuthAffiliate(ctx, user.ID, affiliateCode)
 				}
 			} else {
@@ -829,7 +824,6 @@ func (s *AuthService) loginOrRegisterOAuthWithTokenPair(ctx context.Context, ema
 					s.assignSubscriptions(ctx, user.ID, grantPlan.Subscriptions, "auto assigned by signup defaults")
 					// snapshot user × platform quota（fail-open）
 					_ = s.snapshotPlatformQuotaDefaults(ctx, user.ID, &grantPlan)
-					s.snapshotModelTokenQuotaDefaults(ctx, user.ID, &grantPlan)
 					s.bindOAuthAffiliate(ctx, user.ID, affiliateCode)
 					if invitationRedeemCode != nil {
 						if err := s.redeemRepo.Use(ctx, invitationRedeemCode.ID, user.ID); err != nil {
@@ -922,9 +916,6 @@ func (s *AuthService) resolveSignupGrantPlan(ctx context.Context, signupSource s
 		plan.PlatformQuotas = quotas
 	} else {
 		logger.LegacyPrintf("service.auth", "[Auth] Warning: load default platform quotas failed: %v (fail-open)", err)
-	}
-	if modelQuotas, err := s.settingService.GetDefaultUserModelTokenQuotas(ctx); err == nil && len(modelQuotas) > 0 {
-		plan.ModelTokenQuotas = modelQuotas
 	}
 	// ============================================================================================
 
@@ -1787,26 +1778,4 @@ func (s *AuthService) snapshotPlatformQuotaDefaults(ctx context.Context, userID 
 		return nil // fail-open：返回 nil，让调用方继续
 	}
 	return nil
-}
-
-// snapshotModelTokenQuotaDefaults 将注册/首次登录时确定的模型 Token 限额写入用户配置。
-// 仅在 plan.ModelTokenQuotas 非空时执行，fail-open：错误只记日志不阻断注册。
-func (s *AuthService) snapshotModelTokenQuotaDefaults(ctx context.Context, userID int64, plan *signupGrantPlan) {
-	if s.entClient == nil || plan == nil || len(plan.ModelTokenQuotas) == 0 {
-		return
-	}
-	for _, q := range plan.ModelTokenQuotas {
-		model := strings.TrimSpace(q.Model)
-		if model == "" {
-			continue
-		}
-		if q.DailyLimitTokens == nil {
-			continue
-		}
-		if err := s.entClient.UserModelTokenDailyLimitConfig.Create().
-			SetUserID(userID).SetModel(model).SetDailyLimitTokens(*q.DailyLimitTokens).
-			Exec(ctx); err != nil {
-			logger.LegacyPrintf("service.auth", "[Auth] Warning: snapshot model token quota failed user=%d model=%s: %v (fail-open)", userID, model, err)
-		}
-	}
 }

@@ -132,6 +132,9 @@ docs/*
 !docs/PAYMENT.md
 !docs/PAYMENT_CN.md
 !docs/ADMIN_PAYMENT_INTEGRATION_API.md
+!docs/token-statistics-development-guide.md
+!docs/token-statistics-operation-guide.md
+!docs/token-statistics-acceptance-report.md
 !docs/legal/
 !docs/legal/*.md
 .serena/

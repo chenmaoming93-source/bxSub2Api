@@ -419,6 +419,36 @@ var ErrNoAvailableAccounts = errors.New("no available accounts")
 // ErrRoutedTokenQuotaExhausted means every routed model candidate was skipped by daily token quota.
 var ErrRoutedTokenQuotaExhausted = errors.New("routed token quota exhausted")
 
+// ModelCandidateFailure describes why one resolved model_routing candidate was
+// not usable. It intentionally contains no credentials or request payload.
+type ModelCandidateFailure struct {
+	AccountID   int64
+	AccountName string
+	Model       string
+	Reason      string
+	Message     string
+}
+
+// ModelCandidatesExhaustedError preserves candidate-level quota failures so
+// the handler can combine them with failures from candidates already sent to
+// an upstream.
+type ModelCandidatesExhaustedError struct {
+	Failures []ModelCandidateFailure
+}
+
+func (e *ModelCandidatesExhaustedError) Error() string {
+	return "all routed model candidates are unavailable"
+}
+func (e *ModelCandidatesExhaustedError) Unwrap() error { return ErrRoutedTokenQuotaExhausted }
+
+func ModelCandidateFailuresFromError(err error) []ModelCandidateFailure {
+	var exhausted *ModelCandidatesExhaustedError
+	if !errors.As(err, &exhausted) {
+		return nil
+	}
+	return exhausted.Failures
+}
+
 // ErrClaudeCodeOnly 表示分组仅允许 Claude Code 客户端访问
 var ErrClaudeCodeOnly = errors.New("this group only allows Claude Code clients")
 
@@ -542,6 +572,7 @@ type AccountSelectionResult struct {
 	WaitPlan       *AccountWaitPlan // nil means no wait allowed
 	RequestedModel string
 	UpstreamModel  string
+	RouteAlias     string
 }
 
 func withSelectionModelIdentity(result *AccountSelectionResult, requestedModel, upstreamModel string) *AccountSelectionResult {
@@ -550,6 +581,7 @@ func withSelectionModelIdentity(result *AccountSelectionResult, requestedModel, 
 	}
 	result.RequestedModel = requestedModel
 	result.UpstreamModel = upstreamModel
+	result.RouteAlias = requestedModel
 	return result
 }
 
@@ -665,14 +697,6 @@ type GatewayService struct {
 	tlsFPProfileService   *TLSFingerprintProfileService
 	balanceNotifyService  *BalanceNotifyService
 	userPlatformQuotaRepo UserPlatformQuotaRepository
-	dailyTokenQuotaRepo   DailyTokenQuotaRepository
-	tokenStatsAccumulator TokenStatisticsAccumulator
-}
-
-func (s *GatewayService) SetTokenStatisticsAccumulator(accumulator TokenStatisticsAccumulator) {
-	if s != nil {
-		s.tokenStatsAccumulator = accumulator
-	}
 }
 
 // NewGatewayService creates a new GatewayService
@@ -704,8 +728,6 @@ func NewGatewayService(
 	resolver *ModelPricingResolver,
 	balanceNotifyService *BalanceNotifyService,
 	userPlatformQuotaRepo UserPlatformQuotaRepository,
-	dailyTokenQuotaRepo DailyTokenQuotaRepository,
-	tokenStatsAccumulator TokenStatisticsAccumulator,
 ) *GatewayService {
 	userGroupRateTTL := resolveUserGroupRateCacheTTL(cfg)
 	modelsListTTL := resolveModelsListCacheTTL(cfg)
@@ -742,8 +764,6 @@ func NewGatewayService(
 		resolver:              resolver,
 		balanceNotifyService:  balanceNotifyService,
 		userPlatformQuotaRepo: userPlatformQuotaRepo,
-		dailyTokenQuotaRepo:   dailyTokenQuotaRepo,
-		tokenStatsAccumulator: tokenStatsAccumulator,
 	}
 	svc.userGroupRateResolver = newUserGroupRateResolver(
 		userGroupRateRepo,
@@ -1646,6 +1666,16 @@ func (s *GatewayService) SelectAccountForModelWithExclusions(ctx context.Context
 // metadataUserID: 用于客户端亲和调度，从中提取客户端 ID
 // sub2apiUserID: 系统用户 ID，用于二维亲和调度
 func (s *GatewayService) SelectAccountWithLoadAwareness(ctx context.Context, groupID *int64, sessionHash string, requestedModel string, excludedIDs map[int64]struct{}, metadataUserID string, sub2apiUserID int64) (*AccountSelectionResult, error) {
+	return s.SelectAccountWithLoadAwarenessForRequest(ctx, groupID, sessionHash, requestedModel, excludedIDs, metadataUserID, DynamicTokenRequestIdentity{UserID: sub2apiUserID})
+}
+
+// SelectAccountWithLoadAwarenessForRequest is the production entry point. It
+// keeps authentication dimensions together while groups.model_routing appends
+// the resolved route candidate dimensions.
+func (s *GatewayService) SelectAccountWithLoadAwarenessForRequest(ctx context.Context, groupID *int64, sessionHash string, requestedModel string, excludedIDs map[int64]struct{}, metadataUserID string, identity DynamicTokenRequestIdentity) (*AccountSelectionResult, error) {
+	if err := checkDynamicQuotaBeforeScheduling(ctx, groupID, identity); err != nil {
+		return nil, err
+	}
 	// 调试日志：记录调度入口参数
 	excludedIDsList := make([]int64, 0, len(excludedIDs))
 	for id := range excludedIDs {
@@ -1825,27 +1855,13 @@ func (s *GatewayService) SelectAccountWithLoadAwareness(ctx context.Context, gro
 	// ============ Layer 1: 模型路由优先选择（优先级高于粘性会话） ============
 	routingModelForSelection := requestedModel
 	if len(routeCandidates) > 0 {
-		quotaSkipped := 0
-		quotaAllowed := 0
+		var candidateFailures []ModelCandidateFailure
 		for _, routeCandidate := range routeCandidates {
 			candidateModel := routeCandidate.Model
 			if candidateModel == "" {
 				candidateModel = requestedModel
 			}
-			exhausted, err := s.quotaAwareRouteCandidateExhausted(ctx, group.ID, requestedModel, candidateModel, sub2apiUserID)
-			if err != nil {
-				return nil, err
-			}
-			if exhausted {
-				quotaSkipped++
-				if s.debugModelRoutingEnabled() {
-					logger.LegacyPrintf("service.gateway", "[ModelRoutingDebug] quota exhausted skip: group_id=%v route=%s model=%s user_id=%d",
-						group.ID, requestedModel, candidateModel, sub2apiUserID)
-				}
-				continue
-			}
-			quotaAllowed++
-			result, ok, err := s.trySelectRouteCandidateAccounts(ctx, groupID, requestedModel, candidateModel, sessionHash, stickyAccountID, routeCandidate.AccountIDs, accountByID, isExcluded, platform, useMixed, cfg)
+			result, ok, err := s.trySelectRouteCandidateAccounts(ctx, groupID, identity, requestedModel, candidateModel, sessionHash, stickyAccountID, routeCandidate.AccountIDs, accountByID, isExcluded, platform, useMixed, cfg, &candidateFailures)
 			if err != nil {
 				return nil, err
 			}
@@ -1853,8 +1869,8 @@ func (s *GatewayService) SelectAccountWithLoadAwareness(ctx context.Context, gro
 				return result, nil
 			}
 		}
-		if quotaAllowed == 0 && quotaSkipped > 0 {
-			return nil, ErrRoutedTokenQuotaExhausted
+		if len(candidateFailures) > 0 {
+			return nil, &ModelCandidatesExhaustedError{Failures: candidateFailures}
 		}
 		return nil, ErrNoAvailableAccounts
 	}
@@ -1917,6 +1933,21 @@ func (s *GatewayService) SelectAccountWithLoadAwareness(ctx context.Context, gro
 			}
 		}
 
+		// Every account produced by groups.model_routing passes the same dynamic
+		// quota gate before sticky/load/concurrency selection. This is the single
+		// enforcement point for the complete resolved route identity.
+		quotaAllowed := routingCandidates[:0]
+		for _, candidateAccount := range routingCandidates {
+			if err := checkDynamicQuotaAfterSelection(ctx, groupID, identity, requestedModel, candidateAccount, routingModelForSelection); err != nil {
+				if errors.Is(err, ErrDynamicTokenQuotaExceeded) {
+					logger.LegacyPrintf("service.gateway", "[ModelRouting] Dynamic quota excluded account=%d route=%s model=%s", candidateAccount.ID, requestedModel, routingModelForSelection)
+					continue
+				}
+			}
+			quotaAllowed = append(quotaAllowed, candidateAccount)
+		}
+		routingCandidates = quotaAllowed
+
 		if len(routingCandidates) > 0 {
 			// 1.5. 在路由账号范围内检查粘性会话
 			if sessionHash != "" && stickyAccountID > 0 {
@@ -1958,7 +1989,8 @@ func (s *GatewayService) SelectAccountWithLoadAwareness(ctx context.Context, gro
 									if s.debugModelRoutingEnabled() {
 										logger.LegacyPrintf("service.gateway", "[ModelRoutingDebug] routed sticky hit: group_id=%v model=%s session=%s account=%d", derefGroupID(groupID), requestedModel, shortSessionHash(sessionHash), stickyAccountID)
 									}
-									return s.newSelectionResult(ctx, stickyAccount, true, result.ReleaseFunc, nil)
+									selection, selectionErr := s.newSelectionResult(ctx, stickyAccount, true, result.ReleaseFunc, nil)
+									return withSelectionModelIdentity(selection, requestedModel, routingModelForSelection), selectionErr
 								}
 							}
 
@@ -1970,7 +2002,7 @@ func (s *GatewayService) SelectAccountWithLoadAwareness(ctx context.Context, gro
 										stickyCacheMissReason = "session_limit"
 										// 会话限制已满，继续到负载感知选择
 									} else {
-										return &AccountSelectionResult{
+										return withSelectionModelIdentity(&AccountSelectionResult{
 											Account: stickyAccount,
 											WaitPlan: &AccountWaitPlan{
 												AccountID:      stickyAccountID,
@@ -1978,7 +2010,7 @@ func (s *GatewayService) SelectAccountWithLoadAwareness(ctx context.Context, gro
 												Timeout:        cfg.StickySessionWaitTimeout,
 												MaxWaiting:     cfg.StickySessionMaxWaiting,
 											},
-										}, nil
+										}, requestedModel, routingModelForSelection), nil
 									}
 								} else {
 									stickyCacheMissReason = "wait_queue_full"
@@ -2069,7 +2101,8 @@ func (s *GatewayService) SelectAccountWithLoadAwareness(ctx context.Context, gro
 						if s.debugModelRoutingEnabled() {
 							logger.LegacyPrintf("service.gateway", "[ModelRoutingDebug] routed select: group_id=%v model=%s session=%s account=%d", derefGroupID(groupID), requestedModel, shortSessionHash(sessionHash), item.account.ID)
 						}
-						return s.newSelectionResult(ctx, item.account, true, result.ReleaseFunc, nil)
+						selection, selectionErr := s.newSelectionResult(ctx, item.account, true, result.ReleaseFunc, nil)
+						return withSelectionModelIdentity(selection, requestedModel, routingModelForSelection), selectionErr
 					}
 				}
 
@@ -2082,12 +2115,13 @@ func (s *GatewayService) SelectAccountWithLoadAwareness(ctx context.Context, gro
 					if s.debugModelRoutingEnabled() {
 						logger.LegacyPrintf("service.gateway", "[ModelRoutingDebug] routed wait: group_id=%v model=%s session=%s account=%d", derefGroupID(groupID), requestedModel, shortSessionHash(sessionHash), item.account.ID)
 					}
-					return s.newSelectionResult(ctx, item.account, false, nil, &AccountWaitPlan{
+					selection, selectionErr := s.newSelectionResult(ctx, item.account, false, nil, &AccountWaitPlan{
 						AccountID:      item.account.ID,
 						MaxConcurrency: item.account.Concurrency,
 						Timeout:        cfg.StickySessionWaitTimeout,
 						MaxWaiting:     cfg.StickySessionMaxWaiting,
 					})
+					return withSelectionModelIdentity(selection, requestedModel, routingModelForSelection), selectionErr
 				}
 				// 所有路由账号会话限制都已满，继续到 Layer 2 回退
 			}
@@ -2349,7 +2383,7 @@ func (s *GatewayService) SelectAccountWithLoadAwareness(ctx context.Context, gro
 	return nil, ErrNoAvailableAccounts
 }
 
-func (s *GatewayService) trySelectRouteCandidateAccounts(ctx context.Context, groupID *int64, requestedModel, routingModelForSelection, sessionHash string, stickyAccountID int64, routingAccountIDs []int64, accountByID map[int64]*Account, isExcluded func(int64) bool, platform string, useMixed bool, cfg config.GatewaySchedulingConfig) (*AccountSelectionResult, bool, error) {
+func (s *GatewayService) trySelectRouteCandidateAccounts(ctx context.Context, groupID *int64, identity DynamicTokenRequestIdentity, requestedModel, routingModelForSelection, sessionHash string, stickyAccountID int64, routingAccountIDs []int64, accountByID map[int64]*Account, isExcluded func(int64) bool, platform string, useMixed bool, cfg config.GatewaySchedulingConfig, candidateFailures *[]ModelCandidateFailure) (*AccountSelectionResult, bool, error) {
 	if len(routingAccountIDs) == 0 || s.concurrencyService == nil {
 		return nil, false, nil
 	}
@@ -2503,6 +2537,16 @@ func (s *GatewayService) trySelectRouteCandidateAccounts(ctx context.Context, gr
 
 	var routingAvailable []accountWithLoad
 	for _, acc := range routingCandidates {
+		if err := checkDynamicQuotaAfterSelection(ctx, groupID, identity, requestedModel, acc, routingModelForSelection); err != nil {
+			if errors.Is(err, ErrDynamicTokenQuotaExceeded) {
+				*candidateFailures = append(*candidateFailures, ModelCandidateFailure{
+					AccountID: acc.ID, AccountName: acc.Name, Model: routingModelForSelection,
+					Reason: "token_quota", Message: "Token quota exceeded",
+				})
+				logger.LegacyPrintf("service.gateway", "[ModelRouting] Dynamic quota excluded account=%d model=%s", acc.ID, routingModelForSelection)
+				continue
+			}
+		}
 		loadInfo := routingLoadMap[acc.ID]
 		if loadInfo == nil {
 			loadInfo = &AccountLoadInfo{AccountID: acc.ID}
@@ -2572,41 +2616,6 @@ func (s *GatewayService) trySelectRouteCandidateAccounts(ctx context.Context, gr
 		return withSelectionModelIdentity(selection, requestedModel, routingModelForSelection), true, err
 	}
 	return nil, false, nil
-}
-
-func (s *GatewayService) selectQuotaAllowedRouteCandidate(ctx context.Context, groupID int64, routeAlias string, userID int64, candidates []domain.ModelRouteCandidate) (domain.ModelRouteCandidate, string, bool, error) {
-	for _, candidate := range candidates {
-		candidateModel := candidate.Model
-		if candidateModel == "" {
-			candidateModel = routeAlias
-		}
-		exhausted, err := s.quotaAwareRouteCandidateExhausted(ctx, groupID, routeAlias, candidateModel, userID)
-		if err != nil {
-			return domain.ModelRouteCandidate{}, "", false, err
-		}
-		if exhausted {
-			if s != nil && s.debugModelRoutingEnabled() {
-				logger.LegacyPrintf("service.gateway", "[ModelRoutingDebug] quota exhausted skip: group_id=%v route=%s model=%s user_id=%d",
-					groupID, routeAlias, candidateModel, userID)
-			}
-			continue
-		}
-		return candidate, candidateModel, true, nil
-	}
-	return domain.ModelRouteCandidate{}, "", false, nil
-}
-
-func (s *GatewayService) quotaAwareRouteCandidateExhausted(ctx context.Context, groupID int64, routeAlias, upstreamModel string, userID int64) (bool, error) {
-	if s == nil {
-		return false, nil
-	}
-	return CheckRouteCandidateDailyTokenQuotas(ctx, s.dailyTokenQuotaRepo, groupID, routeAlias, upstreamModel, userID)
-}
-
-func isDailyTokenQuotaExhausted(err error) bool {
-	return errors.Is(err, ErrGroupCandidateDailyTokenQuotaExhausted) ||
-		errors.Is(err, ErrModelDailyTokenQuotaExhausted) ||
-		errors.Is(err, ErrUserModelDailyTokenQuotaExhausted)
 }
 
 func (s *GatewayService) tryAcquireByLegacyOrder(ctx context.Context, candidates []*Account, groupID *int64, sessionHash string, preferOAuth bool) (*AccountSelectionResult, bool, error) {
@@ -5119,6 +5128,18 @@ func (s *GatewayService) Forward(ctx context.Context, c *gin.Context, account *A
 	startTime := time.Now()
 	if parsed == nil {
 		return nil, fmt.Errorf("parse request: empty request")
+	}
+	selectedModel := parsed.UpstreamModel
+	if strings.TrimSpace(selectedModel) == "" {
+		selectedModel = parsed.Model
+	}
+	apiKey := getAPIKeyFromContext(c)
+	userID := int64(0)
+	if apiKey != nil {
+		userID = apiKey.UserID
+	}
+	if err := checkDynamicQuotaAfterSelection(ctx, parsed.GroupID, DynamicTokenRequestIdentity{UserID: userID, APIKeyID: getAPIKeyIDFromContext(c)}, parsed.RouteAlias, account, selectedModel); err != nil {
+		return nil, err
 	}
 
 	// Web Search 模拟：纯 web_search 请求时，直接调用搜索 API 构造响应
@@ -9163,6 +9184,7 @@ type RecordUsageInput struct {
 	ForceCacheBilling  bool               // 强制缓存计费：将 input_tokens 转为 cache_read 计费（用于粘性会话切换）
 	APIKeyService      APIKeyQuotaUpdater // 可选：用于更新API Key配额
 	QuotaPlatform      string             // user×platform 配额计量平台：handler 在请求 ctx 内经 QuotaPlatform() 算定后传入（后扣运行在 worker 池 background ctx 上，取不到 ForcePlatform）
+	RouteAlias         string             // groups.model_routing 命中的客户端路由别名
 
 	ChannelUsageFields // 渠道映射信息（由 handler 在 Forward 前解析）
 }
@@ -9651,6 +9673,7 @@ func (s *GatewayService) RecordUsage(ctx context.Context, input *RecordUsageInpu
 		ForceCacheBilling:  input.ForceCacheBilling,
 		APIKeyService:      input.APIKeyService,
 		QuotaPlatform:      input.QuotaPlatform,
+		RouteAlias:         input.RouteAlias,
 		ChannelUsageFields: input.ChannelUsageFields,
 	}, &recordUsageOpts{})
 }
@@ -9672,6 +9695,7 @@ type RecordUsageLongContextInput struct {
 	ForceCacheBilling     bool               // 强制缓存计费：将 input_tokens 转为 cache_read 计费（用于粘性会话切换）
 	APIKeyService         APIKeyQuotaUpdater // API Key 配额服务（可选）
 	QuotaPlatform         string             // user×platform 配额计量平台：handler 在请求 ctx 内经 QuotaPlatform() 算定后传入（后扣运行在 worker 池 background ctx 上，取不到 ForcePlatform）
+	RouteAlias            string             // groups.model_routing 命中的客户端路由别名
 
 	ChannelUsageFields // 渠道映射信息（由 handler 在 Forward 前解析）
 }
@@ -9692,6 +9716,7 @@ func (s *GatewayService) RecordUsageWithLongContext(ctx context.Context, input *
 		ForceCacheBilling:  input.ForceCacheBilling,
 		APIKeyService:      input.APIKeyService,
 		QuotaPlatform:      input.QuotaPlatform,
+		RouteAlias:         input.RouteAlias,
 		ChannelUsageFields: input.ChannelUsageFields,
 	}, &recordUsageOpts{
 		LongContextThreshold:  input.LongContextThreshold,
@@ -9714,11 +9739,21 @@ type recordUsageCoreInput struct {
 	ForceCacheBilling  bool
 	APIKeyService      APIKeyQuotaUpdater
 	QuotaPlatform      string
+	RouteAlias         string
 	ChannelUsageFields
 }
 
 // recordUsageCore 是 RecordUsage 和 RecordUsageWithLongContext 的统一实现。
 // LongContextThreshold > 0 时 Token 计费回退走 CalculateCostWithLongContext。
+func createUsageLogForTokenStatistics(ctx context.Context, repo UsageLogRepository, usageLog *UsageLog) (bool, error) {
+	if repo == nil || usageLog == nil {
+		return false, nil
+	}
+	usageCtx, cancel := detachedBillingContext(ctx)
+	defer cancel()
+	return repo.Create(usageCtx, usageLog)
+}
+
 func (s *GatewayService) recordUsageCore(ctx context.Context, input *recordUsageCoreInput, opts *recordUsageOpts) error {
 	result := input.Result
 	apiKey := input.APIKey
@@ -9777,15 +9812,13 @@ func (s *GatewayService) recordUsageCore(ctx context.Context, input *recordUsage
 	usageLog := s.buildRecordUsageLog(ctx, input, result, apiKey, user, account, subscription,
 		requestedModel, multiplier, imageMultiplier, accountRateMultiplier, billingType, cacheTTLOverridden, cost, opts)
 
-	inserted, err := createUsageLogForTokenQuota(ctx, s.usageLogRepo, usageLog)
+	inserted, err := createUsageLogForTokenStatistics(ctx, s.usageLogRepo, usageLog)
 	if err != nil {
 		logger.LegacyPrintf("service.gateway", "Create usage log failed; token statistics not accumulated: %v", err)
 		return nil
 	}
 	if inserted {
-		if err := accumulateTokenStatisticsForUsage(ctx, s.tokenStatsAccumulator, usageLog, apiKey); err != nil {
-			return err
-		}
+		submitDynamicTokenUsage(usageLog)
 	}
 	if s.deferredService != nil {
 		s.deferredService.ScheduleLastUsedUpdate(account.ID)
@@ -9951,6 +9984,7 @@ func (s *GatewayService) buildRecordUsageLog(
 		AccountID:             account.ID,
 		RequestID:             requestID,
 		Model:                 result.Model,
+		RouteAlias:            strings.TrimSpace(input.RouteAlias),
 		RequestedModel:        requestedModel,
 		UpstreamModel:         optionalNonEqualStringPtr(result.UpstreamModel, result.Model),
 		ReasoningEffort:       result.ReasoningEffort,

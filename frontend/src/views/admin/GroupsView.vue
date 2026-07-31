@@ -514,12 +514,6 @@
                         }}</label>
                         <input v-model.number="candidate.priority" type="number" min="0" step="1" class="input text-sm" />
                       </div>
-                      <div class="min-w-0">
-                        <label class="input-label text-xs">{{
-                          t("admin.groups.modelRouting.dailyTokenLimit", "Daily token limit")
-                        }}</label>
-                        <input v-model.number="candidate.daily_token_limit" type="number" min="0" step="1" class="input w-full min-w-0 max-w-full text-sm" :placeholder="t('admin.groups.modelRouting.unlimited')" />
-                      </div>
                     </div>
                     <div v-if="candidate.accounts.length > 0" class="mb-2 flex flex-wrap gap-1.5">
                       <span v-for="account in candidate.accounts" :key="account.id" class="inline-flex items-center gap-1 rounded-full bg-primary-100 px-2.5 py-1 text-xs font-medium text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">
@@ -535,7 +529,7 @@
                         </button>
                       </div>
                     </div>
-                    <p v-if="!candidate.model.trim() || candidate.accounts.length === 0 || !Number.isInteger(Number(candidate.priority)) || Number(candidate.priority) < 0 || (candidate.daily_token_limit !== null && candidate.daily_token_limit !== '' && (!Number.isInteger(Number(candidate.daily_token_limit)) || Number(candidate.daily_token_limit) < 0))" class="text-xs text-red-500">
+                    <p v-if="!candidate.model.trim() || candidate.accounts.length === 0 || !Number.isInteger(Number(candidate.priority)) || Number(candidate.priority) < 0" class="text-xs text-red-500">
                       {{ t("admin.groups.modelRouting.candidateValidation", "Model, account, and non-negative integer values are required") }}
                     </p>
                     <button type="button" @click="removeRoutingCandidate(rule, candidate)" class="absolute right-2 top-2 p-1 text-gray-400 hover:text-red-500" :title="t('admin.groups.modelRouting.removeCandidate', 'Remove candidate')"><Icon name="x" size="xs" /></button>
@@ -1769,10 +1763,6 @@
                         <label class="input-label text-xs">{{ t("admin.groups.modelRouting.priority", "Priority") }}</label>
                         <input v-model.number="candidate.priority" type="number" min="0" step="1" class="input text-sm" />
                       </div>
-                      <div class="min-w-0">
-                        <label class="input-label text-xs">{{ t("admin.groups.modelRouting.dailyTokenLimit", "Daily token limit") }}</label>
-                        <input v-model.number="candidate.daily_token_limit" type="number" min="0" step="1" class="input w-full min-w-0 max-w-full text-sm" :placeholder="t('admin.groups.modelRouting.unlimited')" />
-                      </div>
                     </div>
                     <div v-if="candidate.accounts.length > 0" class="mb-2 flex flex-wrap gap-1.5">
                       <span v-for="account in candidate.accounts" :key="account.id" class="inline-flex items-center gap-1 rounded-full bg-primary-100 px-2.5 py-1 text-xs font-medium text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">
@@ -1788,7 +1778,7 @@
                         </button>
                       </div>
                     </div>
-                    <p v-if="!candidate.model.trim() || candidate.accounts.length === 0 || !Number.isInteger(Number(candidate.priority)) || Number(candidate.priority) < 0 || (candidate.daily_token_limit !== null && candidate.daily_token_limit !== '' && (!Number.isInteger(Number(candidate.daily_token_limit)) || Number(candidate.daily_token_limit) < 0))" class="text-xs text-red-500">
+                    <p v-if="!candidate.model.trim() || candidate.accounts.length === 0 || !Number.isInteger(Number(candidate.priority)) || Number(candidate.priority) < 0" class="text-xs text-red-500">
                       {{ t("admin.groups.modelRouting.candidateValidation", "Model, account, and non-negative integer values are required") }}
                     </p>
                     <button type="button" @click="removeRoutingCandidate(rule, candidate, true)" class="absolute right-2 top-2 p-1 text-gray-400 hover:text-red-500" :title="t('admin.groups.modelRouting.removeCandidate', 'Remove candidate')"><Icon name="x" size="xs" /></button>
@@ -3336,7 +3326,6 @@ interface ModelRoutingCandidateForm {
   model: string;
   accounts: SimpleAccount[];
   priority: number | string;
-  daily_token_limit: number | string | null;
 }
 
 interface ModelRoutingRule {
@@ -3561,7 +3550,6 @@ const createEmptyRoutingCandidate = (): ModelRoutingCandidateForm => ({
   model: "",
   accounts: [],
   priority: 0,
-  daily_token_limit: null,
 });
 
 const addRoutingCandidate = (rule: ModelRoutingRule) => {
@@ -3641,12 +3629,6 @@ const routingFormToRows = (rules: ModelRoutingRule[]): ModelRoutingRuleRow[] =>
         model: candidate.model,
         account_ids: candidate.accounts.map((account) => account.id),
         priority: Number(candidate.priority),
-        daily_token_limit:
-          candidate.daily_token_limit === null ||
-          candidate.daily_token_limit === undefined ||
-          candidate.daily_token_limit === ""
-            ? null
-            : Number(candidate.daily_token_limit),
       }),
     ),
   }));
@@ -3671,7 +3653,6 @@ const convertApiFormatToRoutingRules = async (
         rule.candidates.map(async (candidate) => ({
           model: candidate.model,
           priority: candidate.priority,
-          daily_token_limit: candidate.daily_token_limit,
           accounts: await Promise.all(
             candidate.account_ids.map(async (id) => {
               try {
@@ -3698,7 +3679,6 @@ const routingValidationFallbacks: Record<ModelRoutingValidationCode, string> = {
   invalid_account_id: "Candidate accounts are invalid",
   invalid_priority: "Priority must be a non-negative integer",
   duplicate_priority: "Candidate priorities must be unique within an alias",
-  invalid_daily_token_limit: "Daily token limit must be a non-negative integer",
 };
 
 const validateRoutingForm = (rules: ModelRoutingRule[]): boolean => {

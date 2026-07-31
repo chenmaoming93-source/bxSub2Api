@@ -3,24 +3,19 @@ import { flushPromises, mount } from '@vue/test-utils'
 
 import type { AdminUser } from '@/types'
 import UsersView from '../UsersView.vue'
-import UserModelTokenQuotaModal from '@/components/admin/user/UserModelTokenQuotaModal.vue'
 
 const {
   listUsers,
   getAllGroups,
   getBatchUsersUsage,
   listEnabledDefinitions,
-  getBatchUserAttributes,
-  getUserModelTokenQuotas,
-  updateUserModelTokenQuotas
+  getBatchUserAttributes
 } = vi.hoisted(() => ({
   listUsers: vi.fn(),
   getAllGroups: vi.fn(),
   getBatchUsersUsage: vi.fn(),
   listEnabledDefinitions: vi.fn(),
-  getBatchUserAttributes: vi.fn(),
-  getUserModelTokenQuotas: vi.fn(),
-  updateUserModelTokenQuotas: vi.fn()
+  getBatchUserAttributes: vi.fn()
 }))
 
 vi.mock('@/api/admin', () => ({
@@ -39,10 +34,6 @@ vi.mock('@/api/admin', () => ({
     userAttributes: {
       listEnabledDefinitions,
       getBatchUserAttributes
-    },
-    modelTokenQuotas: {
-      getUser: getUserModelTokenQuotas,
-      updateUser: updateUserModelTokenQuotas
     }
   }
 }))
@@ -108,8 +99,6 @@ describe('admin UsersView', () => {
     getBatchUsersUsage.mockReset()
     listEnabledDefinitions.mockReset()
     getBatchUserAttributes.mockReset()
-    getUserModelTokenQuotas.mockReset()
-    updateUserModelTokenQuotas.mockReset()
 
     listUsers.mockResolvedValue({
       items: [createAdminUser()],
@@ -122,7 +111,6 @@ describe('admin UsersView', () => {
     getBatchUsersUsage.mockResolvedValue({ stats: {} })
     listEnabledDefinitions.mockResolvedValue([])
     getBatchUserAttributes.mockResolvedValue({ values: {} })
-    getUserModelTokenQuotas.mockResolvedValue({ quotas: [] })
   })
 
   it('shows active, used, and created activity columns in order and requests last_used_at sort', async () => {
@@ -143,7 +131,6 @@ describe('admin UsersView', () => {
           UserConcurrencyCell: true,
           UserCreateModal: true,
           UserEditModal: true,
-          UserModelTokenQuotaModal: true,
           UserApiKeysModal: true,
           UserAllowedGroupsModal: true,
           UserBalanceModal: true,
@@ -176,59 +163,4 @@ describe('admin UsersView', () => {
     )
   })
 
-  it('loads, validates, and saves model token quotas for only the selected user', async () => {
-    getUserModelTokenQuotas.mockResolvedValue({
-      quotas: [
-        {
-          user_id: 42,
-          model: 'gpt-5',
-          usage_date: '2026-06-30',
-          used_tokens: 7,
-          daily_limit_tokens: 100
-        }
-      ]
-    })
-    updateUserModelTokenQuotas.mockResolvedValue({
-      quotas: [
-        {
-          user_id: 42,
-          model: 'gpt-5',
-          usage_date: '2026-06-30',
-          used_tokens: 9,
-          daily_limit_tokens: 200
-        }
-      ]
-    })
-    const wrapper = mount(UserModelTokenQuotaModal, {
-      props: { show: true, user: createAdminUser() },
-      global: {
-        stubs: {
-          BaseDialog: {
-            props: ['show'],
-            template: '<div v-if="show"><slot /><slot name="footer" /></div>'
-          },
-          Icon: true
-        }
-      }
-    })
-    await flushPromises()
-
-    expect(getUserModelTokenQuotas).toHaveBeenCalledWith(42)
-    await wrapper.get('[data-test="model-quota-model"]').setValue('')
-    await wrapper.get('[data-test="model-quota-save"]').trigger('click')
-    expect(updateUserModelTokenQuotas).not.toHaveBeenCalled()
-    expect(wrapper.get('[data-test="model-quota-error"]').exists()).toBe(true)
-
-    await wrapper.get('[data-test="model-quota-model"]').setValue('gpt-5')
-    await wrapper.get('[data-test="model-quota-limit"]').setValue('200')
-    await wrapper.get('[data-test="model-quota-save"]').trigger('click')
-    await flushPromises()
-
-    expect(updateUserModelTokenQuotas).toHaveBeenCalledWith(42, [
-      { model: 'gpt-5', daily_limit_tokens: 200 }
-    ])
-    expect(wrapper.text()).toContain('9')
-    expect(wrapper.text()).not.toContain('admin.users.modelTokenQuota.')
-    expect(listUsers).not.toHaveBeenCalled()
-  })
 })

@@ -5,6 +5,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"log"
 	"net/http"
 	"sync"
@@ -14,10 +15,13 @@ import (
 	"github.com/Wei-Shaw/sub2api/internal/config"
 	"github.com/Wei-Shaw/sub2api/internal/handler"
 	"github.com/Wei-Shaw/sub2api/internal/payment"
+	"github.com/Wei-Shaw/sub2api/internal/pkg/ldapauth"
 	"github.com/Wei-Shaw/sub2api/internal/repository"
+	tokenstatrepo "github.com/Wei-Shaw/sub2api/internal/repository/tokenstat"
 	"github.com/Wei-Shaw/sub2api/internal/server"
 	"github.com/Wei-Shaw/sub2api/internal/server/middleware"
 	"github.com/Wei-Shaw/sub2api/internal/service"
+	tokenstat "github.com/Wei-Shaw/sub2api/internal/service/tokenstat"
 
 	"github.com/google/wire"
 	"github.com/redis/go-redis/v9"
@@ -48,6 +52,8 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 
 		// BuildInfo provider
 		provideServiceBuildInfo,
+		provideDynamicTokenStatisticsBootstrap,
+		provideExternalProvisioningHandler,
 
 		// Cleanup function provider
 		provideCleanup,
@@ -56,6 +62,55 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 		wire.Struct(new(Application), "Server", "Cleanup"),
 	)
 	return nil, nil
+}
+
+func provideExternalProvisioningHandler(cfg *config.Config, client *ent.Client, users service.UserRepository, keys service.APIKeyRepository, apiKeyService *service.APIKeyService, groups service.ExternalProvisioningGroupLookup) *handler.ExternalProvisioningHandler {
+	platformKeys := service.NewPlatformAPIKeyService(keys, apiKeyService)
+	var directory service.ExternalProvisioningLDAPDirectory
+	if cfg.LDAP.Enabled {
+		directory = ldapauth.NewDefaultLDAPDirectory(cfg.LDAP)
+	}
+	provisioner := service.NewEntUserProvisioningService(client, users, apiKeyService)
+	return handler.NewExternalProvisioningHandler(service.NewExternalProvisioningService(users, directory, provisioner, platformKeys, groups))
+}
+
+type dynamicTokenStatisticsBootstrap struct{}
+
+func provideDynamicTokenStatisticsBootstrap(client *ent.Client, db *sql.DB, redisClient *redis.Client, cfg *config.Config, projections *tokenstat.ProjectionAdminService) (*dynamicTokenStatisticsBootstrap, error) {
+	if err := projections.RefreshActive(context.Background()); err != nil {
+		return nil, err
+	}
+	dynamic := cfg.Gateway.DynamicTokenStatistics
+	if !dynamic.Enabled {
+		return &dynamicTokenStatisticsBootstrap{}, nil
+	}
+	accumulator := tokenstatrepo.NewRedisAccumulator(redisClient, dynamic.ShardCount, dynamic.OrphanTTLDays)
+	pipeline, err := tokenstat.NewAsyncPipeline(dynamic.AsyncQueueCapacity, dynamic.WorkerCount, time.Duration(dynamic.RedisTimeoutMS)*time.Millisecond, dynamic.RedisRetryCount, dynamic.Timezone, projections, accumulator)
+	if err != nil {
+		return nil, err
+	}
+	tokenstat.SetDefaultPipeline(pipeline)
+	quotaChecker := tokenstat.NewQuotaChecker(tokenstat.NewRedisQuotaCounterReader(redisClient), dynamic.ShardCount)
+	if err := projections.LoadQuotaRules(context.Background(), quotaChecker); err != nil {
+		return nil, err
+	}
+	projections.AttachQuotaChecker(quotaChecker)
+	tokenstat.SetDefaultQuotaChecker(quotaChecker)
+	quotaTimeout := time.Duration(dynamic.RedisTimeoutMS) * time.Millisecond
+	if quotaTimeout <= 0 || quotaTimeout > 50*time.Millisecond {
+		quotaTimeout = 50 * time.Millisecond
+	}
+	tokenstat.SetDefaultQuotaTimeout(quotaTimeout)
+	aggregates := tokenstatrepo.NewRepository(db)
+	syncEngine := tokenstatrepo.NewSyncEngine(redisClient, aggregates, dynamic.MySQLBatchSize)
+	syncEngine.Start(context.Background(), time.Duration(dynamic.SyncIntervalMinutes)*time.Minute)
+	location, err := time.LoadLocation(dynamic.Timezone)
+	if err != nil {
+		return nil, err
+	}
+	finalizer := tokenstatrepo.NewPeriodFinalizer(redisClient, aggregates, aggregates, pipeline, syncEngine)
+	finalizer.Start(context.Background(), time.Duration(dynamic.FinalizeCheckIntervalMinutes)*time.Minute, location)
+	return &dynamicTokenStatisticsBootstrap{}, nil
 }
 
 func providePrivacyClientFactory() service.PrivacyClientFactory {
@@ -70,6 +125,7 @@ func provideServiceBuildInfo(buildInfo handler.BuildInfo) service.BuildInfo {
 }
 
 func provideCleanup(
+	_ *dynamicTokenStatisticsBootstrap,
 	entClient *ent.Client,
 	rdb *redis.Client,
 	opsMetricsCollector *service.OpsMetricsCollector,
@@ -100,7 +156,6 @@ func provideCleanup(
 	paymentOrderExpiry *service.PaymentOrderExpiryService,
 	channelMonitorRunner *service.ChannelMonitorRunner,
 	quotaFlusher *service.UserPlatformQuotaUsageFlusher,
-	tokenStatisticsScheduler *service.TokenStatisticsScheduler,
 ) func() {
 	return func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -113,12 +168,6 @@ func provideCleanup(
 
 		// 应用层清理步骤可并行执行，基础设施资源（Redis/Ent）最后按顺序关闭。
 		parallelSteps := []cleanupStep{
-			{"TokenStatisticsScheduler", func() error {
-				if tokenStatisticsScheduler != nil {
-					tokenStatisticsScheduler.Stop()
-				}
-				return nil
-			}},
 			{"OpsScheduledReportService", func() error {
 				if opsScheduledReport != nil {
 					opsScheduledReport.Stop()

@@ -151,7 +151,7 @@ func registerRoutes(
 	}
 	provHardening := middleware2.NewProvisioningHardening(provLimiter, nil)
 	provAuth := middleware2.ExternalProvisioningAuth(pc)
-	routes.RegisterIntegrationRoutes(v1, h.ExternalProvisioning, provAuth, provHardening.Middleware())
+	routes.RegisterIntegrationRoutes(v1, h.ExternalProvisioning, h.ExternalTokenUsage, provAuth, provHardening.Middleware())
 
 	if err := rbac.RegisterKnownExclusions(r.Routes(), rbacRegistry); err != nil {
 		panic(err)

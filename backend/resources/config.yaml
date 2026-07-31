@@ -86,19 +86,36 @@ run_mode: "standard"
 timezone: "Asia/Shanghai"
 
 gateway:
-  token_statistics:
-    # 是否启用基于 Redis 的 Token 日统计及后台 MySQL 同步。
-    redis_enabled: true
-    # Redis 绝对累计值同步到 MySQL 的周期，单位：分钟。
+  # 可配置多维 Token 统计与限额。关闭时不启动实时统计、限额检查和后台同步。
+  dynamic_token_statistics:
+    # 是否启用整套可配置统计与限额流水线。
+    enabled: false
+    # 自然日、自然周和自然月的周期边界时区，必须是有效的 IANA 时区。
+    timezone: Asia/Shanghai
+    # 模型请求完成后投递 Token 使用事件的内存有界队列容量。
+    async_queue_capacity: 10000
+    # 异步消费使用事件并写入 Redis 的 worker 数量。
+    worker_count: 4
+    # 单次批量写入 Redis 最多处理的使用事件数。
+    batch_size: 100
+    # 批次未满时的最大等待时间，单位：毫秒。
+    flush_interval_ms: 50
+    # 单次 Redis 统计写入的超时时间，单位：毫秒。
+    redis_timeout_ms: 300
+    # Redis 统计写入失败后的重试次数；0 表示不重试。
+    redis_retry_count: 2
+    # Redis 计数器分片数；上线后修改会改变 Key 分布，应谨慎调整。
+    shard_count: 256
+    # Redis 聚合数据同步到 MySQL 的执行间隔，单位：分钟；当前通用查询只读 MySQL，因此查询可能滞后至多一个周期。
     sync_interval_minutes: 5
-    # 每次 HSCAN 建议 Redis 返回的 Field 数量；这是 COUNT 提示值，不保证精确数量。
-    hscan_count: 1000
-    # 每次向单张 MySQL Token 日统计表提交的最大记录数。
+    # 单批写入 MySQL 的最大聚合记录数。
     mysql_batch_size: 500
-    # 单批 MySQL 同步失败后的重试次数；0 表示失败后不重试。
+    # 单批 MySQL 同步失败后的重试次数；0 表示不重试。
     sync_retry_count: 3
-    # 每日 Redis Hash 在业务日期结束后完整保留的天数；默认保留 2 天。
-    redis_retention_days: 2
+    # 检查已结束自然周期并执行封账的间隔，单位：分钟。
+    finalize_check_interval_minutes: 5
+    # 无法正常封账的孤儿 Redis Key 的兜底保留天数。
+    orphan_ttl_days: 7
 
 default:
   admin_email: "admin@example.com"

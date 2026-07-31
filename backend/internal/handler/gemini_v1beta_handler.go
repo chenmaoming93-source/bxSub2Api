@@ -347,10 +347,16 @@ func (h *GatewayHandler) GeminiV1BetaModels(c *gin.Context) {
 	}
 
 	for {
-		selection, err := h.gatewayService.SelectAccountWithLoadAwareness(c.Request.Context(), apiKey.GroupID, sessionKey, modelName, fs.FailedAccountIDs, "", int64(0)) // Gemini 不使用会话限制
+		selection, err := h.gatewayService.SelectAccountWithLoadAwarenessForRequest(c.Request.Context(), apiKey.GroupID, sessionKey, modelName, fs.FailedAccountIDs, "", service.DynamicTokenRequestIdentity{UserID: apiKey.UserID, APIKeyID: apiKey.ID}) // Gemini 不使用会话限制
 		if err != nil {
+			fs.AddSelectionFailures(service.ModelCandidateFailuresFromError(err))
 			if len(fs.FailedAccountIDs) == 0 {
 				markOpsRoutingCapacityLimitedIfNoAvailable(c, err)
+				if errors.Is(err, service.ErrRoutedTokenQuotaExhausted) {
+					status, message := modelCandidatesExhaustedDetails(fs.CandidateFailures)
+					googleError(c, status, message)
+					return
+				}
 				googleError(c, http.StatusServiceUnavailable, "No available Gemini accounts: "+err.Error())
 				return
 			}
@@ -363,7 +369,12 @@ func (h *GatewayHandler) GeminiV1BetaModels(c *gin.Context) {
 			case FailoverCanceled:
 				return
 			default: // FailoverExhausted
-				h.handleGeminiFailoverExhausted(c, fs.LastFailoverErr)
+				if len(fs.CandidateFailures) > 0 {
+					status, message := modelCandidatesExhaustedDetails(fs.CandidateFailures)
+					googleError(c, status, message)
+				} else {
+					h.handleGeminiFailoverExhausted(c, fs.LastFailoverErr)
+				}
 				return
 			}
 		}
@@ -475,12 +486,20 @@ func (h *GatewayHandler) GeminiV1BetaModels(c *gin.Context) {
 		if err != nil {
 			var failoverErr *service.UpstreamFailoverError
 			if errors.As(err, &failoverErr) {
+				if selection.RouteAlias != "" {
+					fs.RecordUpstreamFailure(account, selection.UpstreamModel, failoverErr)
+				}
 				failoverAction := fs.HandleFailoverError(c.Request.Context(), h.gatewayService, account.ID, account.Platform, failoverErr)
 				switch failoverAction {
 				case FailoverContinue:
 					continue
 				case FailoverExhausted:
-					h.handleGeminiFailoverExhausted(c, fs.LastFailoverErr)
+					if len(fs.CandidateFailures) > 0 {
+						status, message := modelCandidatesExhaustedDetails(fs.CandidateFailures)
+						googleError(c, status, message)
+					} else {
+						h.handleGeminiFailoverExhausted(c, fs.LastFailoverErr)
+					}
 					return
 				case FailoverCanceled:
 					return
@@ -530,6 +549,7 @@ func (h *GatewayHandler) GeminiV1BetaModels(c *gin.Context) {
 				UserAgent:             userAgent,
 				IPAddress:             clientIP,
 				RequestPayloadHash:    requestPayloadHash,
+				RouteAlias:            selection.RouteAlias,
 				LongContextThreshold:  200000, // Gemini 200K 阈值
 				LongContextMultiplier: 2.0,    // 超出部分双倍计费
 				ForceCacheBilling:     forceCacheBilling,

@@ -830,8 +830,8 @@ type GatewayConfig struct {
 
 	// UsageRecord: 使用量记录异步队列配置（有界队列 + 固定 worker）
 	UsageRecord GatewayUsageRecordConfig `mapstructure:"usage_record"`
-	// TokenStatistics: Redis Token 日统计与 MySQL 同步配置。
-	TokenStatistics GatewayTokenStatisticsConfig `mapstructure:"token_statistics"`
+	// DynamicTokenStatistics: 可配置多维 Token 统计与限额的独立配置。
+	DynamicTokenStatistics GatewayDynamicTokenStatisticsConfig `mapstructure:"dynamic_token_statistics"`
 
 	// UserGroupRateCacheTTLSeconds: 用户分组倍率热路径缓存 TTL（秒）
 	UserGroupRateCacheTTLSeconds int `mapstructure:"user_group_rate_cache_ttl_seconds"`
@@ -843,14 +843,70 @@ type GatewayConfig struct {
 	UserMessageQueue UserMessageQueueConfig `mapstructure:"user_message_queue"`
 }
 
-// GatewayTokenStatisticsConfig controls Redis-backed daily Token statistics.
-type GatewayTokenStatisticsConfig struct {
-	RedisEnabled        bool `mapstructure:"redis_enabled"`
-	SyncIntervalMinutes int  `mapstructure:"sync_interval_minutes"`
-	HScanCount          int  `mapstructure:"hscan_count"`
-	MySQLBatchSize      int  `mapstructure:"mysql_batch_size"`
-	SyncRetryCount      int  `mapstructure:"sync_retry_count"`
-	RedisRetentionDays  int  `mapstructure:"redis_retention_days"`
+// GatewayDynamicTokenStatisticsConfig controls the independent configurable
+// multi-dimensional Token statistics pipeline.
+type GatewayDynamicTokenStatisticsConfig struct {
+	// Enabled controls whether the configurable statistics and quota pipeline runs.
+	Enabled bool `mapstructure:"enabled"`
+	// Timezone defines the natural day, week, and month boundaries.
+	Timezone string `mapstructure:"timezone"`
+	// AsyncQueueCapacity is the bounded in-memory usage-event queue size.
+	AsyncQueueCapacity int `mapstructure:"async_queue_capacity"`
+	// WorkerCount is the number of asynchronous Redis accounting workers.
+	WorkerCount int `mapstructure:"worker_count"`
+	// BatchSize is the maximum number of events handled in one Redis batch.
+	BatchSize int `mapstructure:"batch_size"`
+	// FlushIntervalMS is the maximum wait before a partial Redis batch is flushed.
+	FlushIntervalMS int `mapstructure:"flush_interval_ms"`
+	// RedisTimeoutMS is the timeout of one Redis accounting operation.
+	RedisTimeoutMS int `mapstructure:"redis_timeout_ms"`
+	// RedisRetryCount is the retry count after a Redis accounting failure.
+	RedisRetryCount int `mapstructure:"redis_retry_count"`
+	// ShardCount distributes counters across Redis hash slots and dirty tracking.
+	ShardCount int `mapstructure:"shard_count"`
+	// SyncIntervalMinutes is the interval for syncing Redis aggregates to MySQL.
+	SyncIntervalMinutes int `mapstructure:"sync_interval_minutes"`
+	// MySQLBatchSize is the maximum aggregate rows written per MySQL batch.
+	MySQLBatchSize int `mapstructure:"mysql_batch_size"`
+	// SyncRetryCount is the retry count after a MySQL synchronization failure.
+	SyncRetryCount int `mapstructure:"sync_retry_count"`
+	// FinalizeCheckIntervalMinutes is the interval for checking completed natural periods.
+	FinalizeCheckIntervalMinutes int `mapstructure:"finalize_check_interval_minutes"`
+	// OrphanTTLDays is the fallback TTL for Redis keys that cannot be finalized normally.
+	OrphanTTLDays int `mapstructure:"orphan_ttl_days"`
+}
+
+func validateGatewayDynamicTokenStatistics(c GatewayDynamicTokenStatisticsConfig) error {
+	if _, err := time.LoadLocation(strings.TrimSpace(c.Timezone)); err != nil {
+		return fmt.Errorf("invalid gateway.dynamic_token_statistics.timezone: %q", c.Timezone)
+	}
+	positive := []struct {
+		name  string
+		value int
+	}{
+		{"async_queue_capacity", c.AsyncQueueCapacity},
+		{"worker_count", c.WorkerCount},
+		{"batch_size", c.BatchSize},
+		{"flush_interval_ms", c.FlushIntervalMS},
+		{"redis_timeout_ms", c.RedisTimeoutMS},
+		{"shard_count", c.ShardCount},
+		{"sync_interval_minutes", c.SyncIntervalMinutes},
+		{"mysql_batch_size", c.MySQLBatchSize},
+		{"finalize_check_interval_minutes", c.FinalizeCheckIntervalMinutes},
+		{"orphan_ttl_days", c.OrphanTTLDays},
+	}
+	for _, field := range positive {
+		if field.value <= 0 {
+			return fmt.Errorf("invalid gateway.dynamic_token_statistics.%s: value=%d, expected positive integer", field.name, field.value)
+		}
+	}
+	if c.RedisRetryCount < 0 {
+		return fmt.Errorf("invalid gateway.dynamic_token_statistics.redis_retry_count: value=%d, expected non-negative integer", c.RedisRetryCount)
+	}
+	if c.SyncRetryCount < 0 {
+		return fmt.Errorf("invalid gateway.dynamic_token_statistics.sync_retry_count: value=%d, expected non-negative integer", c.SyncRetryCount)
+	}
+	return nil
 }
 
 // GatewayOpenAIHTTP2Config OpenAI HTTP 上游协议配置。
@@ -2042,12 +2098,20 @@ func setDefaults() {
 	viper.SetDefault("gateway.usage_record.auto_scale_down_step", 16)
 	viper.SetDefault("gateway.usage_record.auto_scale_check_interval_seconds", 3)
 	viper.SetDefault("gateway.usage_record.auto_scale_cooldown_seconds", 10)
-	viper.SetDefault("gateway.token_statistics.redis_enabled", true)
-	viper.SetDefault("gateway.token_statistics.sync_interval_minutes", 1)
-	viper.SetDefault("gateway.token_statistics.hscan_count", 1000)
-	viper.SetDefault("gateway.token_statistics.mysql_batch_size", 500)
-	viper.SetDefault("gateway.token_statistics.sync_retry_count", 3)
-	viper.SetDefault("gateway.token_statistics.redis_retention_days", 2)
+	viper.SetDefault("gateway.dynamic_token_statistics.enabled", false)
+	viper.SetDefault("gateway.dynamic_token_statistics.timezone", "Asia/Shanghai")
+	viper.SetDefault("gateway.dynamic_token_statistics.async_queue_capacity", 10000)
+	viper.SetDefault("gateway.dynamic_token_statistics.worker_count", 4)
+	viper.SetDefault("gateway.dynamic_token_statistics.batch_size", 100)
+	viper.SetDefault("gateway.dynamic_token_statistics.flush_interval_ms", 50)
+	viper.SetDefault("gateway.dynamic_token_statistics.redis_timeout_ms", 300)
+	viper.SetDefault("gateway.dynamic_token_statistics.redis_retry_count", 2)
+	viper.SetDefault("gateway.dynamic_token_statistics.shard_count", 256)
+	viper.SetDefault("gateway.dynamic_token_statistics.sync_interval_minutes", 5)
+	viper.SetDefault("gateway.dynamic_token_statistics.mysql_batch_size", 500)
+	viper.SetDefault("gateway.dynamic_token_statistics.sync_retry_count", 3)
+	viper.SetDefault("gateway.dynamic_token_statistics.finalize_check_interval_minutes", 5)
+	viper.SetDefault("gateway.dynamic_token_statistics.orphan_ttl_days", 7)
 	viper.SetDefault("gateway.user_group_rate_cache_ttl_seconds", 30)
 	viper.SetDefault("gateway.models_list_cache_ttl_seconds", 15)
 	// TLS指纹伪装配置（默认关闭，需要账号级别单独启用）
@@ -2096,20 +2160,8 @@ func (c *Config) Validate() error {
 			return fmt.Errorf("external_api_key_provisioning.access_token must be at least 32 bytes and contain no whitespace")
 		}
 	}
-	if c.Gateway.TokenStatistics.SyncIntervalMinutes <= 0 {
-		return fmt.Errorf("invalid gateway.token_statistics.sync_interval_minutes: value=%d, expected positive integer", c.Gateway.TokenStatistics.SyncIntervalMinutes)
-	}
-	if c.Gateway.TokenStatistics.HScanCount <= 0 {
-		return fmt.Errorf("invalid gateway.token_statistics.hscan_count: value=%d, expected positive integer", c.Gateway.TokenStatistics.HScanCount)
-	}
-	if c.Gateway.TokenStatistics.MySQLBatchSize <= 0 {
-		return fmt.Errorf("invalid gateway.token_statistics.mysql_batch_size: value=%d, expected positive integer", c.Gateway.TokenStatistics.MySQLBatchSize)
-	}
-	if c.Gateway.TokenStatistics.SyncRetryCount < 0 {
-		return fmt.Errorf("invalid gateway.token_statistics.sync_retry_count: value=%d, expected non-negative integer", c.Gateway.TokenStatistics.SyncRetryCount)
-	}
-	if c.Gateway.TokenStatistics.RedisRetentionDays <= 0 {
-		return fmt.Errorf("invalid gateway.token_statistics.redis_retention_days: value=%d, expected positive integer", c.Gateway.TokenStatistics.RedisRetentionDays)
+	if err := validateGatewayDynamicTokenStatistics(c.Gateway.DynamicTokenStatistics); err != nil {
+		return err
 	}
 	if c.LDAP.Enabled {
 		serverURL := strings.TrimSpace(c.LDAP.ServerURL)

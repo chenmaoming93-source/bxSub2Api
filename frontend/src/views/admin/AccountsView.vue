@@ -155,13 +155,6 @@
                   </div>
                 </div>
               </div>
-              <button
-                @click="showGlobalModelTokenQuotaModal = true"
-                class="btn btn-secondary"
-              >
-                <Icon name="chartBar" size="md" class="mr-2" />
-                {{ t("admin.groups.modelTokenQuota.menuItem") }}
-              </button>
             </template>
           </AccountTableActions>
         </div>
@@ -402,10 +395,6 @@
     </ConfirmDialog>
     <ErrorPassthroughRulesModal :show="showErrorPassthrough" @close="showErrorPassthrough = false" />
     <TLSFingerprintProfilesModal :show="showTLSFingerprintProfiles" @close="showTLSFingerprintProfiles = false" />
-    <GlobalModelTokenQuotaModal
-      :show="showGlobalModelTokenQuotaModal"
-      @close="showGlobalModelTokenQuotaModal = false"
-    />
   </AppLayout>
 </template>
 
@@ -445,7 +434,6 @@ import PlatformTypeBadge from '@/components/common/PlatformTypeBadge.vue'
 import Icon from '@/components/icons/Icon.vue'
 import ErrorPassthroughRulesModal from '@/components/admin/ErrorPassthroughRulesModal.vue'
 import TLSFingerprintProfilesModal from '@/components/admin/TLSFingerprintProfilesModal.vue'
-import GlobalModelTokenQuotaModal from '@/components/admin/group/GlobalModelTokenQuotaModal.vue'
 import { buildOpenAIUsageRefreshKey } from '@/utils/accountUsageRefresh'
 import { formatDateTime, formatRelativeTime } from '@/utils/format'
 import { proxyExpiryBadgeClass, proxyExpiryLabelKey } from '@/utils/proxyExpiry'
@@ -499,7 +487,6 @@ const selTypes = computed<AccountType[]>(() => {
   return [...types]
 })
 const showCreate = ref(false)
-const showGlobalModelTokenQuotaModal = ref(false)
 const showEdit = ref(false)
 const showSync = ref(false)
 const showImportData = ref(false)

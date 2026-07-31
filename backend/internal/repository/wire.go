@@ -9,10 +9,15 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent"
 	"github.com/Wei-Shaw/sub2api/internal/config"
 	"github.com/Wei-Shaw/sub2api/internal/rbac"
+	tokenstatrepo "github.com/Wei-Shaw/sub2api/internal/repository/tokenstat"
 	"github.com/Wei-Shaw/sub2api/internal/service"
 	"github.com/google/wire"
 	"github.com/redis/go-redis/v9"
 )
+
+func ProvideExternalTokenUsageCurrentReader(rdb *redis.Client, cfg *config.Config) service.ExternalTokenUsageCurrentReader {
+	return tokenstatrepo.NewCurrentUsageReader(rdb, cfg.Gateway.DynamicTokenStatistics.ShardCount)
+}
 
 // ProvideConcurrencyCache 创建并发控制缓存，从配置读取 TTL 参数
 // 性能优化：TTL 可配置，支持长时间运行的 LLM 请求场景
@@ -64,45 +69,6 @@ func ProvideSchedulerCache(rdb *redis.Client, cfg *config.Config) service.Schedu
 	return newSchedulerCacheWithChunkSizes(rdb, mgetChunkSize, writeChunkSize)
 }
 
-func ProvideModelTokenQuotaAdminRepository(client *ent.Client) service.ModelTokenQuotaAdminRepository {
-	return &dailyTokenQuotaRepository{client: client}
-}
-
-func ProvideUserModelTokenQuotaAdminRepository(client *ent.Client) service.UserModelTokenQuotaAdminRepository {
-	return &dailyTokenQuotaRepository{client: client}
-}
-
-func ProvideDailyTokenQuotaRepository(client *ent.Client, rdb *redis.Client, cfg *config.Config) service.DailyTokenQuotaRepository {
-	c := cfg.Gateway.TokenStatistics
-	return NewRedisFirstDailyTokenQuotaRepositoryWithRepair(NewDailyTokenQuotaRepository(client), rdb, NewRedisTokenUsageReadRepairer(rdb, c.RedisRetentionDays, c.MySQLBatchSize))
-}
-
-func ProvideDailyTokenUsageAbsoluteRepository(client *ent.Client) service.DailyTokenUsageAbsoluteRepository {
-	return NewDailyTokenUsageAbsoluteRepository(client)
-}
-
-func ProvideTokenStatisticsAccumulator(rdb *redis.Client, cfg *config.Config) service.TokenStatisticsAccumulator {
-	return NewRedisTokenStatisticsAccumulator(rdb, cfg.Gateway.TokenStatistics.RedisRetentionDays)
-}
-
-func ProvideTokenStatisticsSyncEngine(rdb *redis.Client, target service.DailyTokenUsageAbsoluteRepository, cfg *config.Config) *TokenStatisticsSyncEngine {
-	c := cfg.Gateway.TokenStatistics
-	return NewTokenStatisticsSyncEngine(rdb, target, c.HScanCount, c.MySQLBatchSize, c.SyncRetryCount)
-}
-
-func ProvideCurrentTokenUsageReader(rdb *redis.Client, cfg *config.Config) service.CurrentTokenUsageReader {
-	return NewRedisCurrentTokenUsageReader(rdb, cfg.Gateway.TokenStatistics.HScanCount)
-}
-
-func ProvideCurrentTokenUsageRepairer(rdb *redis.Client, cfg *config.Config) service.CurrentTokenUsageRepairer {
-	c := cfg.Gateway.TokenStatistics
-	return NewCurrentTokenUsageRepairer(rdb, c.RedisRetentionDays, c.MySQLBatchSize)
-}
-
-func ProvideTodayTokenUsageRepository(db *sql.DB) service.TodayTokenUsageRepository {
-	return &tokenUsageReportRepository{db: db}
-}
-
 func ProvideRBACPermissionService(db *sql.DB, rdb *redis.Client, cfg *config.Config) *rbac.PermissionService {
 	return rbac.NewPermissionService(NewRBACRepository(db), rdb, time.Duration(cfg.RBAC.CacheTTLMinutes)*time.Minute)
 }
@@ -110,6 +76,8 @@ func ProvideRBACPermissionService(db *sql.DB, rdb *redis.Client, cfg *config.Con
 // ProviderSet is the Wire provider set for all repositories
 var ProviderSet = wire.NewSet(
 	wire.Bind(new(service.RBACRoleRepository), new(*RBACRepository)),
+	wire.Bind(new(service.GroupRepository), new(*groupRepository)),
+	wire.Bind(new(service.ExternalProvisioningGroupLookup), new(*groupRepository)),
 	NewUserRepository,
 	NewAPIKeyRepository,
 	NewGroupRepository,
@@ -139,26 +107,16 @@ var ProviderSet = wire.NewSet(
 	NewChannelMonitorRequestTemplateRepository,
 	NewContentModerationRepository,
 	NewAffiliateRepository,
+	NewExternalTokenUsageDimensionRepository,
+	ProvideExternalTokenUsageCurrentReader,
 	NewUserPlatformQuotaRepository,     // T14: user × platform quota
 	NewUserPlatformQuotaServiceAdapter, // T14: adapter → service.UserPlatformQuotaRepository
-	ProvideDailyTokenQuotaRepository,
-	ProvideDailyTokenUsageAbsoluteRepository,
-	ProvideTokenStatisticsAccumulator,
-	ProvideTokenStatisticsSyncEngine,
-	ProvideCurrentTokenUsageReader,
-	ProvideCurrentTokenUsageRepairer,
-	ProvideTodayTokenUsageRepository,
-	wire.Bind(new(service.TokenStatisticsDateSyncer), new(*TokenStatisticsSyncEngine)),
-	NewTokenUsageReportRepository,
-	ProvideModelTokenQuotaAdminRepository,
-	ProvideUserModelTokenQuotaAdminRepository,
 	NewRBACRepository,
 	ProvideRBACPermissionService,
 
 	// Cache implementations
 	NewGatewayCache,
 	NewBillingCache,
-	NewDailyTokenQuotaCacheInvalidator,
 	NewAPIKeyCache,
 	NewTempUnschedCache,
 	NewTimeoutCounterCache,

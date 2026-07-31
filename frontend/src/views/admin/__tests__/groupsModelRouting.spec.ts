@@ -19,8 +19,7 @@ describe('groups model routing normalizer', () => {
           {
             model: 'claude-*',
             account_ids: [9, 3, 7],
-            priority: 0,
-            daily_token_limit: null
+            priority: 0
           }
         ]
       }
@@ -28,12 +27,12 @@ describe('groups model routing normalizer', () => {
     expect(serializeModelRouting(rows)['claude-*'][0].account_ids).toEqual([9, 3, 7])
   })
 
-  it('round trips every new candidate field and sorts priorities stably', () => {
+  it('round trips candidate fields and sorts priorities stably', () => {
     const config: ModelRoutingConfig = {
       coding: [
-        { model: 'gpt-5', account_ids: [4, 2], priority: 20, daily_token_limit: 1000 },
-        { model: 'claude-sonnet', account_ids: [8], priority: 10, daily_token_limit: null },
-        { model: 'gemini-pro', account_ids: [6], priority: 10, daily_token_limit: 0 }
+        { model: 'gpt-5', account_ids: [4, 2], priority: 20 },
+        { model: 'claude-sonnet', account_ids: [8], priority: 10 },
+        { model: 'gemini-pro', account_ids: [6], priority: 10 }
       ]
     }
 
@@ -45,32 +44,31 @@ describe('groups model routing normalizer', () => {
     ])
     expect(serializeModelRouting(rows)).toEqual({
       coding: [
-        { model: 'claude-sonnet', account_ids: [8], priority: 10, daily_token_limit: null },
-        { model: 'gemini-pro', account_ids: [6], priority: 10, daily_token_limit: 0 },
-        { model: 'gpt-5', account_ids: [4, 2], priority: 20, daily_token_limit: 1000 }
+        { model: 'claude-sonnet', account_ids: [8], priority: 10 },
+        { model: 'gemini-pro', account_ids: [6], priority: 10 },
+        { model: 'gpt-5', account_ids: [4, 2], priority: 20 }
       ]
     })
   })
 
-  it('reports duplicate aliases, models, priorities, and negative limits', () => {
+  it('reports duplicate aliases, models, and priorities', () => {
     const rows: ModelRoutingRuleRow[] = [
       {
         alias: 'coding',
         candidates: [
-          { model: 'gpt-5', account_ids: [1], priority: 1, daily_token_limit: 100 },
-          { model: 'gpt-5', account_ids: [2], priority: 1, daily_token_limit: -1 }
+          { model: 'gpt-5', account_ids: [1], priority: 1 },
+          { model: 'gpt-5', account_ids: [2], priority: 1 }
         ]
       },
       {
         alias: 'coding',
-        candidates: [{ model: 'claude', account_ids: [3], priority: 2, daily_token_limit: null }]
+        candidates: [{ model: 'claude', account_ids: [3], priority: 2 }]
       }
     ]
 
     expect(validateModelRouting(rows).map(issue => issue.code)).toEqual([
       'duplicate_model',
       'duplicate_priority',
-      'invalid_daily_token_limit',
       'duplicate_alias'
     ])
   })

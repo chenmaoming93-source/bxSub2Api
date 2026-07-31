@@ -56,7 +56,6 @@
                   <p v-else-if="candidate.accounts.length && !(candidateModels[candidateKey(candidate)] || []).length" data-test="model-empty" class="mt-1 text-xs text-amber-600">{{ t('admin.groups.modelRouting.noCommonModels', 'No common models are available.') }}</p>
                 </div>
                 <div><label class="input-label text-xs">{{ t('admin.groups.modelRouting.priority', 'Priority') }}</label><input v-model.number="candidate.priority" type="number" min="0" step="1" class="input text-sm" /></div>
-                <div><label class="input-label text-xs">{{ t('admin.groups.modelRouting.dailyTokenLimit', 'Daily token limit') }}</label><input v-model.number="candidate.daily_token_limit" type="number" min="0" step="1" class="input text-sm" :placeholder="t('admin.groups.modelRouting.unlimited')" /></div>
               </div>
               <p v-if="modelInvalidated[candidateKey(candidate)] || (candidate.model && modelReady(candidate) && !modelAvailable(candidate))" data-test="model-invalid" class="text-xs text-red-500">{{ t('admin.groups.modelRouting.modelInvalid', 'The selected model is no longer available. Select another model.') }}</p>
               <p v-if="invalid(candidate)" class="text-xs text-red-500">{{ t('admin.groups.modelRouting.candidateValidation', 'Model, account, and non-negative integer values are required') }}</p>
@@ -190,7 +189,7 @@ const modelOptions = (candidate: RoutingEditorCandidate): SelectOption[] => (can
 }))
 const invalid = (candidate: RoutingEditorCandidate) => {
   const key = candidateKey(candidate)
-  return !candidate.model.trim() || !candidate.accounts.length || modelLoading.value[key] || modelErrors.value[key] || !modelAvailable(candidate) || !Number.isInteger(Number(candidate.priority)) || Number(candidate.priority) < 0 || (candidate.daily_token_limit !== null && candidate.daily_token_limit !== '' && (!Number.isInteger(Number(candidate.daily_token_limit)) || Number(candidate.daily_token_limit) < 0))
+  return !candidate.model.trim() || !candidate.accounts.length || modelLoading.value[key] || modelErrors.value[key] || !modelAvailable(candidate) || !Number.isInteger(Number(candidate.priority)) || Number(candidate.priority) < 0
 }
 const isValid = () => !enabled.value || (rules.value.length > 0 && rules.value.every(rule => rule.alias.trim() && rule.candidates.length > 0 && rule.candidates.every(candidate => !invalid(candidate))))
 defineExpose({ isValid })

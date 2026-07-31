@@ -90,6 +90,7 @@ const (
 	PermissionUsageAdminRead   = "usage.admin.read"
 	PermissionUsageAdminManage = "usage.admin.manage"
 	PermissionTokenUsageRead   = "token_usage.read"
+	PermissionTokenUsageManage = "token_usage.manage"
 	PermissionTokenQuotaRead   = "token_quota.read"
 	PermissionTokenQuotaUpdate = "token_quota.update"
 
@@ -248,6 +249,7 @@ func buildCatalog() []PermissionDefinition {
 	)
 	add("usage", RiskHigh,
 		[3]string{PermissionUsageAdminManage, "管理用量数据", "创建或取消用量清理任务"},
+		[3]string{PermissionTokenUsageManage, "管理 Token 统计", "创建、发布和停用可配置 Token 统计投影"},
 		[3]string{PermissionTokenQuotaUpdate, "修改 Token 配额", "修改全局或用户模型 Token 配额"},
 	)
 	add("monitors", RiskLow, [3]string{PermissionMonitorsRead, "查看渠道监控", "查看监控与历史"})

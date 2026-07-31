@@ -7,7 +7,6 @@ export interface RoutingEditorCandidate {
   model: string
   accounts: RoutingEditorAccount[]
   priority: number | string
-  daily_token_limit: number | string | null
 }
 
 export interface RoutingEditorRule {
@@ -52,7 +51,7 @@ export function intersectAccountModels(
 }
 
 export function createEmptyRoutingCandidate(): RoutingEditorCandidate {
-  return { model: '', accounts: [], priority: 0, daily_token_limit: null }
+  return { model: '', accounts: [], priority: 0 }
 }
 
 export function addRoutingCandidate(rule: RoutingEditorRule): void {

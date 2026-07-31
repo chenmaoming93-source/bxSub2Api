@@ -124,14 +124,36 @@ security:
 # 网关配置
 # =============================================================================
 gateway:
-  # Redis-backed daily Token statistics and periodic MySQL synchronization.
-  token_statistics:
-    redis_enabled: true
-    sync_interval_minutes: 1
-    hscan_count: 1000
+  # Configurable multi-dimensional Token statistics and quota pipeline.
+  dynamic_token_statistics:
+    # Enable real-time accounting, quota checks, MySQL synchronization, and period finalization.
+    enabled: false
+    # IANA timezone used to calculate natural day, week, and month boundaries.
+    timezone: Asia/Shanghai
+    # Capacity of the bounded in-memory usage-event queue.
+    async_queue_capacity: 10000
+    # Number of asynchronous workers that consume events and update Redis.
+    worker_count: 4
+    # Maximum usage events processed in one Redis batch.
+    batch_size: 100
+    # Maximum wait before flushing a partial batch, in milliseconds.
+    flush_interval_ms: 50
+    # Timeout for one Redis accounting operation, in milliseconds.
+    redis_timeout_ms: 300
+    # Redis accounting retries after a failure; 0 disables retries.
+    redis_retry_count: 2
+    # Redis counter shard count; changing it after launch changes key distribution.
+    shard_count: 256
+    # Interval for synchronizing Redis aggregates to MySQL, in minutes; generic queries currently read MySQL only.
+    sync_interval_minutes: 5
+    # Maximum aggregate rows written in one MySQL batch.
     mysql_batch_size: 500
+    # MySQL synchronization retries after a batch failure; 0 disables retries.
     sync_retry_count: 3
-    redis_retention_days: 2
+    # Interval for checking and finalizing completed natural periods, in minutes.
+    finalize_check_interval_minutes: 5
+    # Fallback retention for orphan Redis keys that cannot be finalized, in days.
+    orphan_ttl_days: 7
   # Timeout for waiting upstream response headers (seconds)
   # 等待上游响应头超时时间（秒）
   response_header_timeout: 600

@@ -17,6 +17,13 @@ import (
 
 type integrationProvisioningServiceStub struct{}
 
+type integrationTokenUsageServiceStub struct{}
+
+func (integrationTokenUsageServiceStub) QueryCurrentUsage(_ context.Context, _ service.ExternalTokenUsageInput) (service.ExternalTokenUsageResult, error) {
+	zero := int64(0)
+	return service.ExternalTokenUsageResult{Dimensions: service.ExternalTokenUsageDimensions{UserID: 1, GroupID: 2, APIKeyID: 3, RouteAlias: "gpt-main"}, Metric: "total_tokens", Timezone: "Asia/Shanghai", Day: service.ExternalTokenUsagePeriodResult{DimensionConfigured: true, TotalTokens: &zero}}, nil
+}
+
 func (integrationProvisioningServiceStub) EnsurePlatformKey(_ context.Context, input service.EnsurePlatformKeyInput) (*service.EnsurePlatformKeyResult, error) {
 	groupID := int64(2)
 	return &service.EnsurePlatformKeyResult{
@@ -37,10 +44,53 @@ func integrationRouter(cfg config.ExternalAPIKeyProvisioningConfig) *gin.Engine 
 	RegisterIntegrationRoutes(
 		v1,
 		handler.NewExternalProvisioningHandler(integrationProvisioningServiceStub{}),
+		handler.NewExternalTokenUsageHandlerWithQuerier(integrationTokenUsageServiceStub{}),
 		middleware.ExternalProvisioningAuth(cfg),
 		middleware.NewProvisioningHardening(nil, nil).Middleware(),
 	)
 	return router
+}
+
+func TestIntegrationRoutes_TokenUsageExternalTokenOnlyAndUnique(t *testing.T) {
+	const token = "secret_0123456789abcdef0123456789abcdef"
+	router := integrationRouter(config.ExternalAPIKeyProvisioningConfig{Enabled: true, AccessToken: token})
+	path := "/api/v1/integrations/token-usage/query"
+	body := `{"username":"u@example.com","group_name":"public","api_key":"sk-key-value-1234567890","route_alias":"gpt-main"}`
+
+	routes := router.Routes()
+	count := 0
+	for _, route := range routes {
+		if route.Method == http.MethodPost && route.Path == path {
+			count++
+		}
+	}
+	if count != 1 {
+		t.Fatalf("token usage route count=%d, want 1", count)
+	}
+
+	for _, unauthorized := range []struct {
+		token  string
+		cookie string
+	}{{}, {token: "Bearer fake-jwt"}, {cookie: "session=admin"}} {
+		request := httptest.NewRequest(http.MethodPost, path, bytes.NewBufferString(body))
+		request.Header.Set("Content-Type", "application/json")
+		if unauthorized.token != "" {
+			request.Header.Set("Authorization", unauthorized.token)
+		}
+		if unauthorized.cookie != "" {
+			request.Header.Set("Cookie", unauthorized.cookie)
+		}
+		recorder := httptest.NewRecorder()
+		router.ServeHTTP(recorder, request)
+		if recorder.Code != http.StatusUnauthorized {
+			t.Fatalf("unauthorized status=%d body=%s", recorder.Code, recorder.Body.String())
+		}
+	}
+
+	response := performIntegrationRequest(router, path, "Bearer "+token, body)
+	if response.Code != http.StatusOK || !strings.Contains(response.Body.String(), `"periods"`) {
+		t.Fatalf("authorized status=%d body=%s", response.Code, response.Body.String())
+	}
 }
 
 func performIntegrationRequest(router http.Handler, path, token, body string) *httptest.ResponseRecorder {

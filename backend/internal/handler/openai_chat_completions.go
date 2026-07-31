@@ -137,6 +137,7 @@ func (h *OpenAIGatewayHandler) ChatCompletions(c *gin.Context) {
 
 	failedAccountIDs := make(map[int64]struct{})
 	var lastFailoverErr *service.UpstreamFailoverError
+	var candidateFailures []service.ModelCandidateFailure
 
 	for {
 		// If all routing accounts have been tried and failed upstream, re-resolve
@@ -153,7 +154,10 @@ func (h *OpenAIGatewayHandler) ChatCompletions(c *gin.Context) {
 				newModel, newIDs, _, reRouteErr := h.gatewayService.ResolveQuotaAllowedGroupRoute(
 					c.Request.Context(), apiKey.Group, reqModel, subject.UserID, failedAccountIDs)
 				if reRouteErr != nil {
-					if lastFailoverErr != nil {
+					if len(candidateFailures) > 0 {
+						status, message := modelCandidatesExhaustedDetails(candidateFailures)
+						h.handleStreamingAwareError(c, status, "all_model_candidates_failed", message, streamStarted)
+					} else if lastFailoverErr != nil {
 						h.handleFailoverExhausted(c, lastFailoverErr, streamStarted)
 					} else {
 						h.handleStreamingAwareError(c, http.StatusBadGateway, "api_error", "Upstream request failed", streamStarted)
@@ -210,6 +214,24 @@ func (h *OpenAIGatewayHandler) ChatCompletions(c *gin.Context) {
 			}
 			failedAccountIDs[account.ID] = struct{}{}
 			continue
+		}
+		if routed {
+			quotaErr := service.CheckDynamicTokenRouteCandidate(
+				c.Request.Context(), apiKey.GroupID,
+				service.DynamicTokenRequestIdentity{UserID: subject.UserID, APIKeyID: apiKey.ID},
+				reqModel, account, routingModel,
+			)
+			if errors.Is(quotaErr, service.ErrDynamicTokenQuotaExceeded) {
+				if selection.ReleaseFunc != nil {
+					selection.ReleaseFunc()
+				}
+				failedAccountIDs[account.ID] = struct{}{}
+				candidateFailures = appendModelCandidateFailure(candidateFailures, service.ModelCandidateFailure{
+					AccountID: account.ID, AccountName: account.Name, Model: routingModel,
+					Reason: "token_quota", Message: "Token quota exceeded",
+				})
+				continue
+			}
 		}
 		sessionHash = ensureOpenAIPoolModeSessionHash(sessionHash, account)
 		reqLog.Debug("openai_chat_completions.account_selected", zap.Int64("account_id", account.ID), zap.String("account_name", account.Name))
@@ -298,6 +320,7 @@ func (h *OpenAIGatewayHandler) ChatCompletions(c *gin.Context) {
 					h.gatewayService.RecordOpenAIAccountSwitch()
 					failedAccountIDs[account.ID] = struct{}{}
 					lastFailoverErr = failoverErr
+					candidateFailures = appendModelCandidateFailure(candidateFailures, upstreamCandidateFailure(account, forwardModel, failoverErr))
 					reqLog.Warn("openai_chat_completions.upstream_failover_switching",
 						zap.Int64("account_id", account.ID),
 						zap.Int("upstream_status", failoverErr.StatusCode),
@@ -309,6 +332,10 @@ func (h *OpenAIGatewayHandler) ChatCompletions(c *gin.Context) {
 					h.gatewayService.RecordOpenAIAccountSwitch()
 					failedAccountIDs[account.ID] = struct{}{}
 					lastFailoverErr = &service.UpstreamFailoverError{StatusCode: http.StatusBadGateway}
+					candidateFailures = appendModelCandidateFailure(candidateFailures, service.ModelCandidateFailure{
+						AccountID: account.ID, AccountName: account.Name, Model: forwardModel,
+						Reason: "upstream_error", Message: err.Error(),
+					})
 					continue
 				}
 				h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, false, nil)

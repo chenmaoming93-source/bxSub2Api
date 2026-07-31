@@ -10,9 +10,20 @@ import (
 	"github.com/Wei-Shaw/sub2api/internal/payment"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/antigravity"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/logger"
+	tokenstat "github.com/Wei-Shaw/sub2api/internal/service/tokenstat"
 	"github.com/google/wire"
 	"github.com/redis/go-redis/v9"
 )
+
+func ProvideExternalTokenUsageService(lookup ExternalTokenUsageDimensionLookup, reader ExternalTokenUsageCurrentReader, projections *tokenstat.ProjectionAdminService, cfg *config.Config) (*ExternalTokenUsageService, error) {
+	location, err := time.LoadLocation(cfg.Gateway.DynamicTokenStatistics.Timezone)
+	if err != nil {
+		return nil, err
+	}
+	svc := NewExternalTokenUsageService(lookup)
+	svc.ConfigureCurrentUsage(reader, projections, location)
+	return svc, nil
+}
 
 // BuildInfo contains build information
 type BuildInfo struct {
@@ -498,28 +509,6 @@ func ProvideBillingCacheService(
 	return NewBillingCacheService(cache, userRepo, subRepo, apiKeyRepo, rpmCache, rateRepo, cfg, userPlatformQuotaRepo)
 }
 
-func ProvideTokenStatisticsScheduler(rdb *redis.Client, syncer TokenStatisticsDateSyncer, cfg *config.Config) *TokenStatisticsScheduler {
-	scheduler := NewTokenStatisticsScheduler(rdb, syncer, time.Duration(cfg.Gateway.TokenStatistics.SyncIntervalMinutes)*time.Minute)
-	if cfg.Gateway.TokenStatistics.RedisEnabled {
-		_ = scheduler.Start(context.Background())
-	}
-	return scheduler
-}
-
-func ProvideTokenUsageReportService(repo ModelTokenUsageRepository, today TodayTokenUsageRepository, reader CurrentTokenUsageReader, repairer CurrentTokenUsageRepairer) *TokenUsageReportService {
-	service := NewTokenUsageReportService(repo)
-	service.todayRepo = today
-	return service.ConfigureCurrentTokenUsage(reader, repairer)
-}
-
-func ProvideModelTokenQuotaAdminService(repo ModelTokenQuotaAdminRepository, cache ModelDailyTokenQuotaCacheInvalidator, reader CurrentTokenUsageReader, repairer CurrentTokenUsageRepairer) *ModelTokenQuotaAdminService {
-	return NewModelTokenQuotaAdminService(repo, cache).ConfigureCurrentTokenUsage(reader, repairer)
-}
-
-func ProvideUserModelTokenQuotaAdminService(repo UserModelTokenQuotaAdminRepository, cache UserModelDailyTokenQuotaCacheInvalidator, reader CurrentTokenUsageReader, repairer CurrentTokenUsageRepairer) *UserModelTokenQuotaAdminService {
-	return NewUserModelTokenQuotaAdminService(repo, cache).ConfigureCurrentTokenUsage(reader, repairer)
-}
-
 // ProvideAPIKeyService wires APIKeyService and connects rate-limit cache invalidation.
 func ProvideAPIKeyService(
 	apiKeyRepo APIKeyRepository,
@@ -559,10 +548,10 @@ func ProvideAdminService(
 	proxyLatencyCache ProxyLatencyCache, authCacheInvalidator APIKeyAuthCacheInvalidator,
 	entClient *dbent.Client, settingService *SettingService, defaultSubAssigner DefaultSubscriptionAssigner,
 	userSubRepo UserSubscriptionRepository, privacyClientFactory PrivacyClientFactory,
-	runtimeBlocker AccountRuntimeBlocker, tokenQuotaAdminRepo UserModelTokenQuotaAdminRepository,
+	runtimeBlocker AccountRuntimeBlocker,
 	apiKeyService *APIKeyService,
 ) AdminService {
-	svc := NewAdminService(userRepo, groupRepo, accountRepo, proxyRepo, apiKeyRepo, redeemCodeRepo, userGroupRateRepo, userRPMCache, billingCacheService, proxyProber, proxyLatencyCache, authCacheInvalidator, entClient, settingService, defaultSubAssigner, userSubRepo, privacyClientFactory, runtimeBlocker, tokenQuotaAdminRepo)
+	svc := NewAdminService(userRepo, groupRepo, accountRepo, proxyRepo, apiKeyRepo, redeemCodeRepo, userGroupRateRepo, userRPMCache, billingCacheService, proxyProber, proxyLatencyCache, authCacheInvalidator, entClient, settingService, defaultSubAssigner, userSubRepo, privacyClientFactory, runtimeBlocker)
 	if impl, ok := svc.(*adminServiceImpl); ok {
 		impl.SetUserProvisioningService(NewEntUserProvisioningService(entClient, userRepo, apiKeyService))
 	}
@@ -578,6 +567,7 @@ var ProviderSet = wire.NewSet(
 	ProvideAPIKeyService,
 	ProvideAPIKeyAuthCacheInvalidator,
 	NewGroupService,
+	ProvideExternalTokenUsageService,
 	NewAccountService,
 	NewProxyService,
 	NewRedeemService,
@@ -658,9 +648,6 @@ var ProviderSet = wire.NewSet(
 	NewModelPricingResolver,
 	NewContentModerationService,
 	NewAffiliateService,
-	ProvideModelTokenQuotaAdminService,
-	ProvideUserModelTokenQuotaAdminService,
-	ProvideTokenUsageReportService,
 	ProvidePaymentConfigService,
 	ProvidePaymentService,
 	ProvidePaymentOrderExpiryService,
@@ -669,7 +656,6 @@ var ProviderSet = wire.NewSet(
 	ProvideChannelMonitorRunner,
 	NewChannelMonitorRequestTemplateService,
 	ProvideUserPlatformQuotaUsageFlusher,
-	ProvideTokenStatisticsScheduler,
 )
 
 // ProvideUserPlatformQuotaUsageFlusher 创建并启动 UserPlatformQuotaUsageFlusher。

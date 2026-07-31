@@ -2120,33 +2120,6 @@ export default {
         subscriptionWarning: 'This user has an active subscription. Platform quotas only apply to balance (standard) mode requests; subscription mode requests are not subject to these limits.',
         invalidNumber: 'The following fields contain invalid numbers. Please fix them before saving: {fields}',
       },
-      modelTokenQuota: {
-        menuItem: 'Model Token Limits',
-        title: 'User Model Daily Token Limits',
-        subtitle: 'Configure daily token limits by upstream model for user {email}',
-        model: 'Upstream Model',
-        limit: 'Daily Token Limit',
-        unlimited: '0=unlimited blank=delete',
-        used: 'Used Today',
-        add: 'Add Model',
-        loadFailed: 'Failed to load model token limits',
-        invalid: 'Models must be unique and limits must be non-negative integers',
-        updateFailed: 'Failed to update model token limits',
-        saveSuccess: 'Model token quotas updated'
-      },
-      defaultQuota: {
-        button: 'Default Quotas',
-        title: 'Default Model Daily Token Quotas for New Users',
-        description: 'New users will automatically inherit these model token quota settings',
-        model: 'Upstream Model',
-        limit: 'Daily Token Limit',
-        unlimited: '0=unlimited blank=delete',
-        add: 'Add Model',
-        loadFailed: 'Failed to load default quotas',
-        invalid: 'Models must be unique and limits must be non-negative integers',
-        updateFailed: 'Failed to save default quotas',
-        saveSuccess: 'Default quotas updated'
-      },
       batchQuota: {
         button: 'Batch Manage',
         title: 'Batch Manage User Model Token Quotas',
@@ -2390,7 +2363,6 @@ export default {
         candidateModel: 'Upstream Model',
         selectModel: 'Select an upstream model',
         priority: 'Priority',
-        dailyTokenLimit: 'Daily Token Limit',
         unlimited: '0=unlimited blank=delete',
         candidateValidation: 'Model, account, and non-negative integer values are required',
         modelsLoading: 'Loading account models...',
@@ -2410,20 +2382,7 @@ export default {
           invalid_account_id: 'Candidate accounts are invalid',
           invalid_priority: 'Priority must be a non-negative integer',
           duplicate_priority: 'Candidate priorities must be unique within an alias',
-          invalid_daily_token_limit: 'Daily token limit must be a non-negative integer'
         }
-      },
-      modelTokenQuota: {
-        menuItem: 'Model Token Limits',
-        title: 'Global Model Daily Token Limits',
-        model: 'Upstream Model',
-        limit: 'Daily Token Limit',
-        unlimited: '0=unlimited blank=delete',
-        used: 'Used Today',
-        add: 'Add Model',
-        loadFailed: 'Failed to load global model token limits',
-        invalid: 'Models must be unique and limits must be non-negative integers',
-        updateFailed: 'Failed to update global model token limits'
       },
       mcpXml: {
         title: 'MCP XML Protocol Injection',

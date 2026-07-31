@@ -75,6 +75,8 @@ func RegisterAdminRoutes(
 		// 仪表盘
 		registerDashboardRoutes(admin, h, rbacRoutes)
 
+		registerDynamicTokenStatisticsRoutes(admin, h, rbacRoutes)
+
 		// 用户管理
 		registerUserManagementRoutes(admin, h, rbacRoutes)
 
@@ -153,9 +155,32 @@ func RegisterAdminRoutes(
 		// 邀请返利（专属用户管理）
 		registerAffiliateRoutes(admin, h, rbacRoutes)
 
-		// 全局模型 Token 配额
-		registerModelTokenQuotaRoutes(admin, h, rbacRoutes)
 		registerRBACManagementRoutes(admin, h, rbacRoutes)
+	}
+}
+
+func registerDynamicTokenStatisticsRoutes(admin *gin.RouterGroup, h *handler.Handlers, routes *rbac.RouteRegistrar) {
+	stats := admin.Group("/token-statistics")
+	{
+		adminGET(routes, stats, "/dimensions", rbac.PermissionTokenUsageRead, h.Admin.DynamicTokenStatistics.Dimensions)
+		adminGET(routes, stats, "/metrics", rbac.PermissionTokenUsageRead, h.Admin.DynamicTokenStatistics.Metrics)
+		adminGET(routes, stats, "/runtime", rbac.PermissionTokenUsageRead, h.Admin.DynamicTokenStatistics.RuntimeState)
+		adminPUT(routes, stats, "/runtime", rbac.PermissionTokenUsageManage, h.Admin.DynamicTokenStatistics.UpdateRuntimeState)
+		adminGET(routes, stats, "/projections", rbac.PermissionTokenUsageRead, h.Admin.DynamicTokenStatistics.ListProjections)
+		adminPOST(routes, stats, "/projections", rbac.PermissionTokenUsageManage, h.Admin.DynamicTokenStatistics.CreateProjection)
+		adminGET(routes, stats, "/projections/:id", rbac.PermissionTokenUsageRead, h.Admin.DynamicTokenStatistics.GetProjection)
+		adminPUT(routes, stats, "/projections/:id", rbac.PermissionTokenUsageManage, h.Admin.DynamicTokenStatistics.UpdateProjection)
+		adminPOST(routes, stats, "/projections/:id/publish", rbac.PermissionTokenUsageManage, h.Admin.DynamicTokenStatistics.PublishProjection)
+		adminPOST(routes, stats, "/projections/:id/activate", rbac.PermissionTokenUsageManage, h.Admin.DynamicTokenStatistics.ActivateProjection)
+		adminPOST(routes, stats, "/projections/:id/disable", rbac.PermissionTokenUsageManage, h.Admin.DynamicTokenStatistics.DisableProjection)
+		adminGET(routes, stats, "/quotas", rbac.PermissionTokenQuotaRead, h.Admin.DynamicTokenStatistics.ListQuotas)
+		adminPOST(routes, stats, "/quotas", rbac.PermissionTokenQuotaUpdate, h.Admin.DynamicTokenStatistics.CreateQuota)
+		adminPUT(routes, stats, "/quotas/:id", rbac.PermissionTokenQuotaUpdate, h.Admin.DynamicTokenStatistics.UpdateQuota)
+		adminDELETE(routes, stats, "/quotas/:id", rbac.PermissionTokenQuotaUpdate, h.Admin.DynamicTokenStatistics.DeleteQuota)
+		adminPOST(routes, stats, "/quotas/:id/enable", rbac.PermissionTokenQuotaUpdate, h.Admin.DynamicTokenStatistics.EnableQuota)
+		adminPOST(routes, stats, "/quotas/:id/disable", rbac.PermissionTokenQuotaUpdate, h.Admin.DynamicTokenStatistics.DisableQuota)
+		adminPOST(routes, stats, "/query", rbac.PermissionTokenUsageRead, h.Admin.DynamicTokenStatistics.QueryUsage)
+		adminGET(routes, stats, "/status", rbac.PermissionTokenUsageRead, h.Admin.DynamicTokenStatistics.SyncStatus)
 	}
 }
 
@@ -201,28 +226,6 @@ func registerAdminAPIKeyRoutes(admin *gin.RouterGroup, h *handler.Handlers, rout
 	apiKeys := admin.Group("/api-keys")
 	{
 		adminPUT(routes, apiKeys, "/:id", rbac.PermissionUsersUpdate, h.Admin.APIKey.UpdateGroup)
-	}
-}
-
-func registerModelTokenQuotaRoutes(admin *gin.RouterGroup, h *handler.Handlers, routes *rbac.RouteRegistrar) {
-	quotas := admin.Group("/model-token-quotas")
-	{
-		adminGET(routes, quotas, "", rbac.PermissionTokenQuotaRead, h.Admin.ModelTokenQuota.List)
-		adminPUT(routes, quotas, "", rbac.PermissionTokenQuotaUpdate, h.Admin.ModelTokenQuota.Update)
-	}
-
-	tokenUsage := admin.Group("/token-usage")
-	{
-		adminGET(routes, tokenUsage, "/models", rbac.PermissionTokenUsageRead, h.Admin.TokenUsageReport.GetModels)
-		adminGET(routes, tokenUsage, "/routes", rbac.PermissionTokenUsageRead, h.Admin.TokenUsageReport.GetRoutes)
-		adminGET(routes, tokenUsage, "/users", rbac.PermissionTokenUsageRead, h.Admin.TokenUsageReport.GetUsers)
-		adminGET(routes, tokenUsage, "/options/models", rbac.PermissionTokenUsageRead, h.Admin.TokenUsageReport.ModelsOptions)
-		adminGET(routes, tokenUsage, "/options/groups", rbac.PermissionTokenUsageRead, h.Admin.TokenUsageReport.GroupsOptions)
-		adminGET(routes, tokenUsage, "/options/groups/:group_id/routes", rbac.PermissionTokenUsageRead, h.Admin.TokenUsageReport.RoutesOptions)
-		adminGET(routes, tokenUsage, "/options/groups/:group_id/routes/:route_alias/models", rbac.PermissionTokenUsageRead, h.Admin.TokenUsageReport.RouteModelsOptions)
-		adminGET(routes, tokenUsage, "/options/users", rbac.PermissionTokenUsageRead, h.Admin.TokenUsageReport.UsersOptions)
-		adminGET(routes, tokenUsage, "/options/users/:user_id/models", rbac.PermissionTokenUsageRead, h.Admin.TokenUsageReport.UserModelsOptions)
-		adminGET(routes, tokenUsage, "/default-target", rbac.PermissionTokenUsageRead, h.Admin.TokenUsageReport.GetDefaultTarget)
 	}
 }
 
@@ -349,9 +352,6 @@ func registerUserManagementRoutes(admin *gin.RouterGroup, h *handler.Handlers, r
 		adminGET(routes, users, "/:id/platform-quotas", rbac.PermissionUsersQuotaRead, h.Admin.User.GetUserPlatformQuotas)
 		adminPUT(routes, users, "/:id/platform-quotas", rbac.PermissionUsersQuotaUpdate, h.Admin.User.UpdateUserPlatformQuotas)
 		adminPOST(routes, users, "/:id/platform-quotas/reset", rbac.PermissionUsersQuotaUpdate, h.Admin.User.ResetUserPlatformQuotaWindow)
-		adminGET(routes, users, "/:id/model-token-quotas", rbac.PermissionUsersQuotaRead, h.Admin.UserModelTokenQuota.List)
-		adminPUT(routes, users, "/:id/model-token-quotas", rbac.PermissionUsersQuotaUpdate, h.Admin.UserModelTokenQuota.Update)
-		adminPOST(routes, users, "/model-token-quotas/batch", rbac.PermissionUsersQuotaUpdate, h.Admin.UserModelTokenQuota.Batch)
 
 		// User attribute values
 		adminGET(routes, users, "/:id/attributes", rbac.PermissionUsersRead, h.Admin.UserAttribute.GetUserAttributes)
@@ -567,8 +567,6 @@ func registerSettingsRoutes(admin *gin.RouterGroup, h *handler.Handlers, routes 
 		adminPOST(routes, adminSettings, "/web-search-emulation/test", rbac.PermissionSettingsUpdate, h.Admin.Setting.TestWebSearchEmulation)
 		adminPOST(routes, adminSettings, "/web-search-emulation/reset-usage", rbac.PermissionSettingsUpdate, h.Admin.Setting.ResetWebSearchUsage)
 		// 新用户默认模型 Token 限额
-		adminGET(routes, adminSettings, "/default-model-token-quotas", rbac.PermissionSettingsRead, h.Admin.Setting.GetDefaultModelTokenQuotas)
-		adminPUT(routes, adminSettings, "/default-model-token-quotas", rbac.PermissionSettingsUpdate, h.Admin.Setting.UpdateDefaultModelTokenQuotas)
 	}
 }
 

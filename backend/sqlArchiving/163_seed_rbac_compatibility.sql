@@ -106,6 +106,7 @@ VALUES
     ('system.read', '查看系统状态', 'system', '查看版本和更新状态', 'low', TRUE, 'active', CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), NULL),
     ('token_quota.read', '查看 Token 配额', 'usage', '查看模型 Token 配额', 'low', TRUE, 'active', CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), NULL),
     ('token_quota.update', '修改 Token 配额', 'usage', '修改全局或用户模型 Token 配额', 'high', TRUE, 'active', CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), NULL),
+    ('token_usage.manage', '管理 Token 统计', 'usage', '创建、发布和停用可配置 Token 统计投影', 'high', TRUE, 'active', CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), NULL),
     ('token_usage.read', '查看 Token 统计', 'usage', '查看模型、路由和用户 Token 统计', 'low', TRUE, 'active', CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), NULL),
     ('usage.admin.manage', '管理用量数据', 'usage', '创建或取消用量清理任务', 'high', TRUE, 'active', CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), NULL),
     ('usage.admin.read', '查看全局用量', 'usage', '查看用户和 API Key 用量', 'low', TRUE, 'active', CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), NULL),

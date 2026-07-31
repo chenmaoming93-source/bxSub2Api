@@ -64,7 +64,7 @@ async function load() {
       rules.value = await Promise.all(normalizeModelRouting(group.value.model_routing).map(async row => ({
         alias: row.alias,
         candidates: await Promise.all(row.candidates.map(async candidate => ({
-          model: candidate.model, priority: candidate.priority, daily_token_limit: candidate.daily_token_limit,
+          model: candidate.model, priority: candidate.priority,
           accounts: await Promise.all(candidate.account_ids.map(async id => {
             try { const account = await adminAPI.accounts.getById(id); return { id: account.id, name: account.name } }
             catch { return { id, name: `#${id}` } }
@@ -85,8 +85,7 @@ async function save() {
   saving.value = true
   try {
     const rows: ModelRoutingRuleRow[] = rules.value.map(rule => ({ alias: rule.alias, candidates: rule.candidates.map((candidate): ModelRoutingCandidate => ({
-      model: candidate.model, account_ids: candidate.accounts.map(account => account.id), priority: Number(candidate.priority),
-      daily_token_limit: candidate.daily_token_limit === null || candidate.daily_token_limit === '' ? null : Number(candidate.daily_token_limit)
+      model: candidate.model, account_ids: candidate.accounts.map(account => account.id), priority: Number(candidate.priority)
     })) }))
     group.value = await adminAPI.groups.update(group.value.id, { model_routing_enabled: enabled.value, model_routing: rows.length ? serializeModelRouting(rows) : null })
     appStore.showSuccess(t('admin.defaultGroupRouting.saved'))
