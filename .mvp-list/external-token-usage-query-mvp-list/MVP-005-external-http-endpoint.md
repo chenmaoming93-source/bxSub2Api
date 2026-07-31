@@ -66,4 +66,5 @@
 - 2026-07-31：目标接口仅加入 integrations 组；成功请求无需任何登录或 RBAC 上下文。
 - 审计只记录内部 ID、路由别名、来源 IP 和结果，不记录 Authorization 或 API Key 密钥。
 - 2026-07-31（契约变更）：请求参数 `api_key_name` 改为 `api_key`（`api_keys.key` 明文值）；响应 `query.api_key` 仅回显脱敏形式（如 `sk-ab****efgh`），完整明文不出现在响应与日志中。
+- 2026-07-31（错误契约）：Key 值存在但与请求用户/分组不匹配返回 HTTP 400 `API_KEY_MISMATCH`（区别于不存在/已删除的 404 `API_KEY_NOT_FOUND`）。
 

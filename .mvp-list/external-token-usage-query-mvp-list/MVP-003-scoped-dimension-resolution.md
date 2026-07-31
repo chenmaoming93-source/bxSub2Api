@@ -16,7 +16,7 @@
 
 ## 范围内
 
-- 定义输入模型、解析结果和 `USER_NOT_FOUND`、`GROUP_NOT_FOUND`、`API_KEY_NOT_FOUND`、`ROUTE_ALIAS_NOT_FOUND` 领域错误。
+- 定义输入模型、解析结果和 `USER_NOT_FOUND`、`GROUP_NOT_FOUND`、`API_KEY_NOT_FOUND`、`API_KEY_MISMATCH`、`ROUTE_ALIAS_NOT_FOUND` 领域错误。
 - 复用或扩展受范围约束的 Repository 方法（按 `api_keys.key` 唯一值查询）。
 - 固定用户、分组、API Key、路由别名的解析顺序。
 - 覆盖跨用户、跨分组及关系不成立场景。
@@ -40,7 +40,8 @@
 - [x] email 精确查询得到正确 `user_id`，且未使用用户展示名匹配。
 - [x] 四类不存在场景产生稳定且不同的领域错误。
 - [x] 首个失败对象按固定顺序返回。
-- [x] 其他用户的 Key 或其他分组的路由别名对外表现为不存在。
+- [x] API Key 值不存在或已删除返回 `API_KEY_NOT_FOUND`；值存在但属于其他用户/分组（或无分组）返回 `API_KEY_MISMATCH`（HTTP 400），不泄露该 Key 实际归属。
+- [x] 其他分组的路由别名对外表现为不存在（`ROUTE_ALIAS_NOT_FOUND`）。
 - [x] 测试覆盖既有大小写、唯一性和分组授权规则。
 
 ## 验证计划
@@ -62,4 +63,5 @@
 - 2026-07-31：新增专用窄 Repository，避免扩大已有大型接口并影响大量测试桩。
 - email 复用现有 `userEmailLookupPredicate`；API Key 按 `api_keys.key` 唯一值查询并校验 user/group 归属，未删除状态；路由别名按 `ModelRoutingRuleNames()` 精确匹配。
 - 2026-07-31（契约变更）：`api_key_name` 改为 `api_key`（明文值），Service 输入与 Repository 查询同步调整；新增归属不符、无分组用例。
+- 2026-07-31（错误语义调整）：Key 值存在但归属不符不再伪装为不存在，改为 `API_KEY_MISMATCH`（HTTP 400）；仅值不存在/已删除返回 `API_KEY_NOT_FOUND`（HTTP 404）。
 

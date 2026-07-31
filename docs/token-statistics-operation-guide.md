@@ -117,7 +117,8 @@ Redis 只保留当前自然日、周、月和封账中的短暂数据。只有�
 接口路径为 `POST /api/v1/integrations/token-usage/query`，复用 `ExternalAPIKeyProvisioning` 的启用开关、Access Token 和限流配置。调用方不需要站内登录或 RBAC 权限。
 
 - HTTP 401：检查 `Authorization: Bearer <token>`，JWT、登录 Cookie 和模型 Gateway API Key 均不能替代 integrations Token。
-- HTTP 404：功能可能关闭，或用户 email、分组、API Key 值、路由别名不存在/关系不匹配（API Key 值全局唯一，但仍须属于请求中的用户与分组）。
+- HTTP 400 `API_KEY_MISMATCH`：API Key 值存在，但不属于请求中的用户/分组（或无分组），请核对 `username`/`group_name` 与 Key 的实际归属。
+- HTTP 404：功能可能关闭，或用户 email、分组、API Key 值（不存在/已删除）、路由别名不存在。
 - HTTP 200 且 `dimension_configured=false`：启用精确四维活动投影 `user_id,api_key_id,group_id,route_alias`。
 - HTTP 200 且 `data_present=false,total_tokens=0`：投影存在，但该当前周期 Redis Field 尚无数据，属于合法零值。
 - HTTP 503：Redis 当前周期读取失败或值非法；接口不会回退到可能滞后的 MySQL。

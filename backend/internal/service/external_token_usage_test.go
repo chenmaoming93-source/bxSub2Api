@@ -113,9 +113,9 @@ func TestExternalTokenUsageResolveDimensionsNotFoundOrder(t *testing.T) {
 		{"user", func(s *externalTokenDimensionLookupStub) { s.userErr = ErrUserNotFound; s.groupErr = ErrGroupNotFound }, ErrUserNotFound},
 		{"group", func(s *externalTokenDimensionLookupStub) { s.groupErr = ErrGroupNotFound; s.keyErr = ErrAPIKeyNotFound }, ErrGroupNotFound},
 		{"api key", func(s *externalTokenDimensionLookupStub) { s.keyErr = ErrAPIKeyNotFound }, ErrAPIKeyNotFound},
-		{"api key belongs to another user", func(s *externalTokenDimensionLookupStub) { s.key.UserID = 99 }, ErrAPIKeyNotFound},
-		{"api key belongs to another group", func(s *externalTokenDimensionLookupStub) { other := int64(99); s.key.GroupID = &other }, ErrAPIKeyNotFound},
-		{"api key has no group", func(s *externalTokenDimensionLookupStub) { s.key.GroupID = nil }, ErrAPIKeyNotFound},
+		{"api key belongs to another user", func(s *externalTokenDimensionLookupStub) { s.key.UserID = 99 }, ErrAPIKeyMismatch},
+		{"api key belongs to another group", func(s *externalTokenDimensionLookupStub) { other := int64(99); s.key.GroupID = &other }, ErrAPIKeyMismatch},
+		{"api key has no group", func(s *externalTokenDimensionLookupStub) { s.key.GroupID = nil }, ErrAPIKeyMismatch},
 		{"route alias", func(s *externalTokenDimensionLookupStub) { s.group.ModelRouting = map[string][]int64{"other": {3}} }, ErrRouteAliasNotFound},
 	}
 	for _, tt := range tests {

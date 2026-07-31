@@ -12,6 +12,10 @@ import (
 )
 
 var ErrRouteAliasNotFound = infraerrors.NotFound("ROUTE_ALIAS_NOT_FOUND", "route alias not found")
+// ErrAPIKeyMismatch 表示 API Key 值存在，但不属于请求中的用户或分组。
+// 与 ErrAPIKeyNotFound（值不存在或已删除）区分，便于调用方定位参数组合问题；
+// 消息不泄露该 Key 实际归属。
+var ErrAPIKeyMismatch = infraerrors.BadRequest("API_KEY_MISMATCH", "api key does not belong to the given user or group")
 var ErrTokenUsageUnavailable = errors.New("token usage unavailable")
 
 type ExternalTokenUsageInput struct {
@@ -115,7 +119,7 @@ func (s *ExternalTokenUsageService) ResolveDimensions(ctx context.Context, input
 		return ExternalTokenUsageDimensions{}, fmt.Errorf("find token usage api key: %w", err)
 	}
 	if key.UserID != user.ID || key.GroupID == nil || *key.GroupID != group.ID {
-		return ExternalTokenUsageDimensions{}, ErrAPIKeyNotFound
+		return ExternalTokenUsageDimensions{}, ErrAPIKeyMismatch
 	}
 	foundAlias := false
 	for _, candidate := range group.ModelRoutingRuleNames() {

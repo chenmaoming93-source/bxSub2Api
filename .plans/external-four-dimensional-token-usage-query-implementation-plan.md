@@ -264,7 +264,8 @@ Content-Type: application/json
 | 404 | `NOT_FOUND` | integrations 功能关闭 |
 | 404 | `USER_NOT_FOUND` | email 精确匹配不到用户 |
 | 404 | `GROUP_NOT_FOUND` | 分组不存在 |
-| 404 | `API_KEY_NOT_FOUND` | 用户范围内 Key 不存在或关系不成立 |
+| 404 | `API_KEY_NOT_FOUND` | API Key 值不存在或已删除 |
+| 400 | `API_KEY_MISMATCH` | API Key 值存在，但不属于请求中的用户/分组（或无分组） |
 | 404 | `ROUTE_ALIAS_NOT_FOUND` | 分组下路由别名不存在 |
 | 429 | 既有限流错误码 | integrations 限流触发 |
 | 503 | `TOKEN_USAGE_UNAVAILABLE` | Redis 不可用或统计值非法 |
@@ -324,8 +325,9 @@ function queryCurrentUsage(context, input):
   group = findGroupByName(input.group_name)
   if absent: return GROUP_NOT_FOUND
 
-  apiKey = findAPIKeyByKey(input.api_key) // api_keys.key 唯一；并校验属于目标 user 与 group
-  if absent or does not belong to user/group: return API_KEY_NOT_FOUND
+  apiKey = findAPIKeyByKey(input.api_key) // api_keys.key 唯一
+  if absent: return API_KEY_NOT_FOUND
+  if not belongs to target user/group: return API_KEY_MISMATCH
 
   if routeAliasDoesNotExist(group.id, input.route_alias):
     return ROUTE_ALIAS_NOT_FOUND

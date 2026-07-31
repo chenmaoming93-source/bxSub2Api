@@ -122,6 +122,7 @@ pnpm build
 - 接口：`POST /api/v1/integrations/token-usage/query`。
 - 只允许 integrations Bearer Token；不得添加 JWT、登录态、Admin Auth 或 RBAC 权限点。
 - `username` 精确使用用户 `email` 查询；`api_key` 使用 `api_keys.key` 明文值（数据库唯一约束），并校验其属于目标用户和分组；路由别名必须属于目标分组。
+- Key 值不存在/已删除返回 404 `API_KEY_NOT_FOUND`；Key 存在但用户/分组归属不匹配返回 400 `API_KEY_MISMATCH`（消息不泄露该 Key 实际归属）。
 - 只匹配 `user_id,api_key_id,group_id,route_alias` 精确活动投影，指标为 `total_tokens`。
 - 当前日、周、月使用 `CurrentUsageReader` 精确执行最多三个 `HGET`；禁止 Redis 扫描及 MySQL 回退。
 - Field 缺失表示已配置但当前周期为 0；投影不存在返回 `dimension_configured=false`；Redis 故障返回 HTTP 503。

@@ -51,6 +51,9 @@ func TestExternalTokenUsageHandlerErrors(t *testing.T) {
 		require.Equal(t, http.StatusBadRequest, performExternalTokenUsage(t, externalTokenUsageQuerierStub{}, body).Code)
 	}
 	require.Equal(t, http.StatusNotFound, performExternalTokenUsage(t, externalTokenUsageQuerierStub{err: service.ErrRouteAliasNotFound}, `{"username":"u@example.com","group_name":"g","api_key":"k","route_alias":"r"}`).Code)
+	mismatch := performExternalTokenUsage(t, externalTokenUsageQuerierStub{err: service.ErrAPIKeyMismatch}, `{"username":"u@example.com","group_name":"g","api_key":"sk-existing-key-1234567890","route_alias":"r"}`)
+	require.Equal(t, http.StatusBadRequest, mismatch.Code)
+	require.Contains(t, mismatch.Body.String(), "API_KEY_MISMATCH")
 	require.Equal(t, http.StatusServiceUnavailable, performExternalTokenUsage(t, externalTokenUsageQuerierStub{err: service.ErrTokenUsageUnavailable}, `{"username":"u@example.com","group_name":"g","api_key":"k","route_alias":"r"}`).Code)
 	require.False(t, errors.Is(service.ErrRouteAliasNotFound, service.ErrTokenUsageUnavailable))
 }
