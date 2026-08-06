@@ -1918,6 +1918,8 @@ func TestLoad_DefaultGatewayDynamicTokenStatisticsConfig(t *testing.T) {
 	require.Equal(t, 100, dynamic.BatchSize)
 	require.Equal(t, 50, dynamic.FlushIntervalMS)
 	require.Equal(t, 300, dynamic.RedisTimeoutMS)
+	require.Equal(t, 300, dynamic.TotalQuotaCheckTimeoutMS)
+	require.Equal(t, 50, dynamic.SingleQuotaCheckTimeoutMS)
 	require.Equal(t, 2, dynamic.RedisRetryCount)
 	require.Equal(t, 256, dynamic.ShardCount)
 	require.Equal(t, 5, dynamic.SyncIntervalMinutes)
@@ -1941,6 +1943,8 @@ func TestValidateConfig_GatewayDynamicTokenStatistics(t *testing.T) {
 		{"queue", func(c *GatewayDynamicTokenStatisticsConfig) { c.AsyncQueueCapacity = 0 }, "async_queue_capacity"},
 		{"worker", func(c *GatewayDynamicTokenStatisticsConfig) { c.WorkerCount = 0 }, "worker_count"},
 		{"redis retry", func(c *GatewayDynamicTokenStatisticsConfig) { c.RedisRetryCount = -1 }, "redis_retry_count"},
+		{"total quota timeout", func(c *GatewayDynamicTokenStatisticsConfig) { c.TotalQuotaCheckTimeoutMS = -1 }, "total_quota_check_timeout"},
+		{"single quota timeout", func(c *GatewayDynamicTokenStatisticsConfig) { c.SingleQuotaCheckTimeoutMS = -1 }, "single_quota_check_timeout"},
 		{"sync retry", func(c *GatewayDynamicTokenStatisticsConfig) { c.SyncRetryCount = -1 }, "sync_retry_count"},
 		{"orphan ttl", func(c *GatewayDynamicTokenStatisticsConfig) { c.OrphanTTLDays = 0 }, "orphan_ttl_days"},
 	}

@@ -18,16 +18,12 @@ func (s *OpenAIGatewayService) ResolveQuotaAllowedGroupRoute(ctx context.Context
 	}
 	allExcluded := 0
 	for _, candidate := range candidates {
-		model := candidate.Model
-		if model == "" {
-			model = requestedModel
-		}
 		// Skip candidates whose all accounts have failed upstream.
 		if len(candidate.AccountIDs) > 0 && allAccountIDsExcluded(candidate.AccountIDs, excludedAccountIDs) {
 			allExcluded++
 			continue
 		}
-		return model, candidate.AccountIDs, true, nil
+		return requestedModel, candidate.AccountIDs, true, nil
 	}
 	return "", nil, true, ErrNoAvailableAccounts
 }

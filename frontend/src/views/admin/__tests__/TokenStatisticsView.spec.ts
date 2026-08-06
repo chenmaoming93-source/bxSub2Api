@@ -62,6 +62,16 @@ describe('configurable token statistics admin view', () => {
     expect(source).toContain('onQuotaValueChange(dimension.code)')
   })
 
+  it('supports wildcard quota values and a debounced API key selector that stores IDs', () => {
+		expect(source).toContain("{ type: 'wildcard' }")
+		expect(source).toContain('keyword.length < 2')
+		expect(source).toContain('}, 400)')
+		expect(source).toContain('apiKeySearchController?.abort()')
+		expect(source).toContain('version === apiKeySearchVersion')
+		expect(source).toContain('quotaValues.api_key_id = key.id')
+		expect(source).toContain('key.masked_key')
+	})
+
   it('shows the concrete dimension scope of every quota', () => {
     expect(source).toContain('<th>适用范围</th>')
     expect(source).toContain('quotaDimensionEntries(item)')

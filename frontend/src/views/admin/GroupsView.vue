@@ -3028,6 +3028,7 @@ import {
   validateModelRouting,
   type ModelRoutingValidationCode,
 } from "./groupsModelRouting";
+import { extractUpstreamModel } from "@/components/admin/group/groupModelRoutingEditor";
 
 const { t } = useI18n();
 const appStore = useAppStore();
@@ -3626,7 +3627,6 @@ const routingFormToRows = (rules: ModelRoutingRule[]): ModelRoutingRuleRow[] =>
     alias: rule.alias,
     candidates: rule.candidates.map(
       (candidate): ModelRoutingCandidate => ({
-        model: candidate.model,
         account_ids: candidate.accounts.map((account) => account.id),
         priority: Number(candidate.priority),
       }),
@@ -3651,13 +3651,13 @@ const convertApiFormatToRoutingRules = async (
       alias: rule.alias,
       candidates: await Promise.all(
         rule.candidates.map(async (candidate) => ({
-          model: candidate.model,
+          model: "",
           priority: candidate.priority,
           accounts: await Promise.all(
             candidate.account_ids.map(async (id) => {
               try {
                 const account = await adminAPI.accounts.getById(id);
-                return { id: account.id, name: account.name };
+                return { id: account.id, name: account.name, upstreamModel: extractUpstreamModel(account.credentials) };
               } catch {
                 return { id, name: `#${id}` };
               }
@@ -3673,8 +3673,6 @@ const routingValidationFallbacks: Record<ModelRoutingValidationCode, string> = {
   alias_required: "Route alias is required",
   duplicate_alias: "Route aliases must be unique",
   candidate_required: "At least one candidate is required",
-  model_required: "Candidate model is required",
-  duplicate_model: "Candidate models must be unique within an alias",
   account_ids_required: "Select at least one account for each candidate",
   invalid_account_id: "Candidate accounts are invalid",
   invalid_priority: "Priority must be a non-negative integer",

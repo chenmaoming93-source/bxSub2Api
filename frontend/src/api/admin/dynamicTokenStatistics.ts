@@ -33,7 +33,7 @@ export interface Projection {
 }
 
 export interface DimensionValue {
-  type: 'int64' | 'string'
+  type: 'int64' | 'string' | 'wildcard'
   int64?: number
   string?: string
 }
@@ -42,7 +42,7 @@ export interface Quota {
   id: number
   name: string
   projection_id: number
-  dimension_values: Record<string, number | string>
+  dimension_values: Record<string, number | string | { type: 'wildcard' }>
   metric_code: MetricCode
   period_type: PeriodType
   limit_value: number

@@ -344,7 +344,7 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 					h.handleStreamingAwareError(c, http.StatusServiceUnavailable, "compact_not_supported", "No available OpenAI accounts support /responses/compact", streamStarted)
 					return
 				}
-				h.handleStreamingAwareError(c, http.StatusServiceUnavailable, "api_error", "Service temporarily unavailable", streamStarted)
+				h.handleStreamingAwareError(c, http.StatusServiceUnavailable, "api_error", noAvailableAccountsMessage(reqModel, false, apiKey.Group), streamStarted)
 				return
 			}
 			if lastFailoverErr != nil {
@@ -356,7 +356,7 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 		}
 		if selection == nil || selection.Account == nil {
 			markOpsRoutingCapacityLimited(c)
-			h.handleStreamingAwareError(c, http.StatusServiceUnavailable, "api_error", "No available accounts", streamStarted)
+			h.handleStreamingAwareError(c, http.StatusServiceUnavailable, "api_error", noAvailableAccountsMessage(reqModel, false, apiKey.Group), streamStarted)
 			return
 		}
 		if previousResponseID != "" && selection != nil && selection.Account != nil {

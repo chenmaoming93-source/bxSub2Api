@@ -1334,8 +1334,27 @@ func openAICompactSupportTier(account *Account) int {
 	return 0
 }
 
+// withRouteAccountIDs 将模型路由候选账号 ID 集合写入 ctx，供 OpenAI 账号选择链路判断
+// 候选账号的模型支持（用账号自身 model_mapping 而非客户端请求名）。
+func withRouteAccountIDs(ctx context.Context, ids map[int64]struct{}) context.Context {
+	return context.WithValue(ctx, ctxkey.RouteAccountIDs, ids)
+}
+
+// WithRouteAccountIDs 是 withRouteAccountIDs 的导出版本，供 handler 在路由命中时调用。
+func WithRouteAccountIDs(ctx context.Context, ids map[int64]struct{}) context.Context {
+	return withRouteAccountIDs(ctx, ids)
+}
+
+// routeAccountIDsFromContext 读取模型路由候选账号 ID 集合；未设置时返回 nil。
+func routeAccountIDsFromContext(ctx context.Context) map[int64]struct{} {
+	ids, _ := ctx.Value(ctxkey.RouteAccountIDs).(map[int64]struct{})
+	return ids
+}
+
 // isOpenAIAccountEligibleForRequest centralises the schedulable / OpenAI / model /
 // compact-support checks used during account selection.
+// Model-routing candidate accounts (from ctxkey.RouteAccountIDs) are judged by
+// the account's own model_mapping first value, not the requested name.
 func isOpenAIAccountEligibleForRequest(ctx context.Context, account *Account, requestedModel string, requireCompact bool, requiredCapability OpenAIEndpointCapability) bool {
 	if account == nil || !account.IsOpenAI() || !account.IsSchedulableForModelWithContext(ctx, requestedModel) {
 		return false
@@ -1351,7 +1370,11 @@ func isOpenAIAccountEligibleForRequest(ctx context.Context, account *Account, re
 		)
 		return false
 	}
-	if requestedModel != "" && !account.IsModelSupported(requestedModel) {
+	if _, isRouteCandidate := routeAccountIDsFromContext(ctx)[account.ID]; isRouteCandidate {
+		if account.FirstModelMappingValue() == "" {
+			return false
+		}
+	} else if requestedModel != "" && !account.IsModelSupported(requestedModel) {
 		return false
 	}
 	if !account.SupportsOpenAIEndpointCapability(requiredCapability) {

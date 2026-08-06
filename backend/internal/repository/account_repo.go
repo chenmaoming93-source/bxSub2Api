@@ -21,6 +21,7 @@ import (
 	dbgroup "github.com/Wei-Shaw/sub2api/ent/group"
 	dbpredicate "github.com/Wei-Shaw/sub2api/ent/predicate"
 	dbproxy "github.com/Wei-Shaw/sub2api/ent/proxy"
+	"github.com/Wei-Shaw/sub2api/internal/domain"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/logger"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
 	"github.com/Wei-Shaw/sub2api/internal/service"
@@ -83,6 +84,10 @@ func (r *accountRepository) Create(ctx context.Context, account *service.Account
 		SetErrorMessage(account.ErrorMessage).
 		SetSchedulable(account.Schedulable).
 		SetAutoPauseOnExpired(account.AutoPauseOnExpired)
+
+	if account.ModelAttributes != nil {
+		builder.SetModelAttributes(account.ModelAttributes)
+	}
 
 	if account.RateMultiplier != nil {
 		builder.SetRateMultiplier(*account.RateMultiplier)
@@ -323,6 +328,12 @@ func (r *accountRepository) Update(ctx context.Context, account *service.Account
 		SetErrorMessage(account.ErrorMessage).
 		SetSchedulable(schedulable).
 		SetAutoPauseOnExpired(account.AutoPauseOnExpired)
+
+	if account.ModelAttributes != nil {
+		builder.SetModelAttributes(account.ModelAttributes)
+	} else {
+		builder.ClearModelAttributes()
+	}
 
 	if account.RateMultiplier != nil {
 		builder.SetRateMultiplier(*account.RateMultiplier)
@@ -1875,6 +1886,7 @@ func accountEntityToService(m *dbent.Account) *service.Account {
 		Type:                    m.Type,
 		Credentials:             copyJSONMap(m.Credentials),
 		Extra:                   copyJSONMap(m.Extra),
+		ModelAttributes:         copyModelAttributes(m.ModelAttributes),
 		ProxyID:                 m.ProxyID,
 		ProxyFallbackOriginID:   m.ProxyFallbackOriginID,
 		Concurrency:             m.Concurrency,
@@ -1912,6 +1924,17 @@ func copyJSONMap(in map[string]any) map[string]any {
 		return nil
 	}
 	out := make(map[string]any, len(in))
+	for k, v := range in {
+		out[k] = v
+	}
+	return out
+}
+
+func copyModelAttributes(in domain.ModelAttributes) domain.ModelAttributes {
+	if in == nil {
+		return nil
+	}
+	out := make(domain.ModelAttributes, len(in))
 	for k, v := range in {
 		out[k] = v
 	}

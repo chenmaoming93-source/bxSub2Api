@@ -981,6 +981,8 @@
         </div>
       </div>
 
+      <ModelAttributesSection v-if="form.platform === 'antigravity'" v-model="modelAttributes" />
+
       <!-- Add Method (only for Anthropic OAuth-based type) -->
       <div v-if="form.platform === 'anthropic' && isOAuthFlow">
         <label class="input-label">{{ t('admin.accounts.addMethod') }}</label>
@@ -1239,6 +1241,8 @@
             </div>
           </template>
         </div>
+
+        <ModelAttributesSection v-model="modelAttributes" />
 
         <!-- Pool Mode Section -->
         <div class="border-t border-gray-200 pt-4 dark:border-dark-600">
@@ -1597,6 +1601,8 @@
           </div>
         </div>
 
+        <ModelAttributesSection v-model="modelAttributes" />
+
         <!-- Pool Mode Section for Bedrock -->
         <div class="border-t border-gray-200 pt-4 dark:border-dark-600">
           <div class="mb-3 flex items-center justify-between">
@@ -1901,6 +1907,8 @@
           </div>
         </template>
       </div>
+
+      <ModelAttributesSection v-if="form.platform === 'openai' && form.type === 'oauth'" v-model="modelAttributes" />
 
       <!-- Temp Unschedulable Rules -->
       <div class="border-t border-gray-200 pt-4 dark:border-dark-600 space-y-4">
@@ -3227,7 +3235,8 @@ import type {
   CodexSessionImportMessage,
   OpenAICompactMode,
   OpenAIResponsesMode,
-  OpenAIEndpointCapability
+  OpenAIEndpointCapability,
+  ModelAttributes
 } from '@/types'
 import BaseDialog from '@/components/common/BaseDialog.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
@@ -3237,6 +3246,7 @@ import ProxySelector from '@/components/common/ProxySelector.vue'
 import ProxyAdBanner from '@/components/common/ProxyAdBanner.vue'
 import GroupSelector from '@/components/common/GroupSelector.vue'
 import ModelWhitelistSelector from '@/components/account/ModelWhitelistSelector.vue'
+import ModelAttributesSection from '@/components/account/ModelAttributesSection.vue'
 import QuotaLimitCard from '@/components/account/QuotaLimitCard.vue'
 import { applyInterceptWarmup } from '@/components/account/credentialsBuilder'
 import { formatDateTimeLocalInput, parseDateTimeLocalInput } from '@/utils/format'
@@ -3695,6 +3705,9 @@ const form = reactive({
   group_ids: [] as number[],
   expires_at: null as number | null
 })
+
+// 模型基本属性（JSON map，属性名为 key；一行不填则为空对象）
+const modelAttributes = ref<ModelAttributes>({})
 
 // Helper to check if current type needs OAuth flow
 const isOAuthFlow = computed(() => {
@@ -4173,7 +4186,7 @@ const ensureAntigravityMixedChannelConfirmed = async (onConfirm: () => Promise<v
 const submitCreateAccount = async (payload: CreateAccountRequest) => {
   submitting.value = true
   try {
-    await adminAPI.accounts.create(withAntigravityConfirmFlag(payload))
+    await adminAPI.accounts.create(withAntigravityConfirmFlag({ ...payload, model_attributes: modelAttributes.value }))
     appStore.showSuccess(t('admin.accounts.accountCreated'))
     emit('created')
     handleClose()
@@ -4209,6 +4222,7 @@ const resetForm = () => {
   form.rate_multiplier = 1
   form.group_ids = []
   form.expires_at = null
+  modelAttributes.value = {}
   accountCategory.value = 'oauth-based'
   addMethod.value = 'oauth'
   apiKeyBaseUrl.value = 'https://api.anthropic.com'
@@ -4850,7 +4864,8 @@ const handleOpenAIExchange = async (authCode: string) => {
         rate_multiplier: form.rate_multiplier,
         group_ids: form.group_ids,
         expires_at: form.expires_at,
-        auto_pause_on_expired: autoPauseOnExpired.value
+        auto_pause_on_expired: autoPauseOnExpired.value,
+        model_attributes: modelAttributes.value
       })
       appStore.showSuccess(t('admin.accounts.accountCreated'))
     }
@@ -5054,7 +5069,8 @@ const handleOpenAIBatchRT = async (refreshTokenInput: string, clientId?: string)
             rate_multiplier: form.rate_multiplier,
             group_ids: form.group_ids,
             expires_at: form.expires_at,
-            auto_pause_on_expired: autoPauseOnExpired.value
+            auto_pause_on_expired: autoPauseOnExpired.value,
+            model_attributes: modelAttributes.value
           })
         }
 
@@ -5152,7 +5168,8 @@ const handleAntigravityValidateRT = async (refreshTokenInput: string) => {
           rate_multiplier: form.rate_multiplier,
           group_ids: form.group_ids,
           expires_at: form.expires_at,
-          auto_pause_on_expired: autoPauseOnExpired.value
+          auto_pause_on_expired: autoPauseOnExpired.value,
+          model_attributes: modelAttributes.value
         })
         await adminAPI.accounts.create(createPayload)
         successCount++
@@ -5493,7 +5510,8 @@ const handleCookieAuth = async (sessionKey: string) => {
           rate_multiplier: form.rate_multiplier,
           group_ids: form.group_ids,
           expires_at: form.expires_at,
-          auto_pause_on_expired: autoPauseOnExpired.value
+          auto_pause_on_expired: autoPauseOnExpired.value,
+          model_attributes: modelAttributes.value
         })
 
         successCount++

@@ -15,6 +15,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/group"
 	"github.com/Wei-Shaw/sub2api/ent/proxy"
 	"github.com/Wei-Shaw/sub2api/ent/usagelog"
+	"github.com/Wei-Shaw/sub2api/internal/domain"
 )
 
 // AccountCreate is the builder for creating a Account entity.
@@ -108,6 +109,12 @@ func (_c *AccountCreate) SetCredentials(v map[string]interface{}) *AccountCreate
 // SetExtra sets the "extra" field.
 func (_c *AccountCreate) SetExtra(v map[string]interface{}) *AccountCreate {
 	_c.mutation.SetExtra(v)
+	return _c
+}
+
+// SetModelAttributes sets the "model_attributes" field.
+func (_c *AccountCreate) SetModelAttributes(v domain.ModelAttributes) *AccountCreate {
+	_c.mutation.SetModelAttributes(v)
 	return _c
 }
 
@@ -647,6 +654,10 @@ func (_c *AccountCreate) createSpec() (*Account, *sqlgraph.CreateSpec) {
 		_spec.SetField(account.FieldExtra, field.TypeJSON, value)
 		_node.Extra = value
 	}
+	if value, ok := _c.mutation.ModelAttributes(); ok {
+		_spec.SetField(account.FieldModelAttributes, field.TypeJSON, value)
+		_node.ModelAttributes = value
+	}
 	if value, ok := _c.mutation.ProxyFallbackOriginID(); ok {
 		_spec.SetField(account.FieldProxyFallbackOriginID, field.TypeInt64, value)
 		_node.ProxyFallbackOriginID = &value
@@ -933,6 +944,24 @@ func (u *AccountUpsert) SetExtra(v map[string]interface{}) *AccountUpsert {
 // UpdateExtra sets the "extra" field to the value that was provided on create.
 func (u *AccountUpsert) UpdateExtra() *AccountUpsert {
 	u.SetExcluded(account.FieldExtra)
+	return u
+}
+
+// SetModelAttributes sets the "model_attributes" field.
+func (u *AccountUpsert) SetModelAttributes(v domain.ModelAttributes) *AccountUpsert {
+	u.Set(account.FieldModelAttributes, v)
+	return u
+}
+
+// UpdateModelAttributes sets the "model_attributes" field to the value that was provided on create.
+func (u *AccountUpsert) UpdateModelAttributes() *AccountUpsert {
+	u.SetExcluded(account.FieldModelAttributes)
+	return u
+}
+
+// ClearModelAttributes clears the value of the "model_attributes" field.
+func (u *AccountUpsert) ClearModelAttributes() *AccountUpsert {
+	u.SetNull(account.FieldModelAttributes)
 	return u
 }
 
@@ -1458,6 +1487,27 @@ func (u *AccountUpsertOne) SetExtra(v map[string]interface{}) *AccountUpsertOne 
 func (u *AccountUpsertOne) UpdateExtra() *AccountUpsertOne {
 	return u.Update(func(s *AccountUpsert) {
 		s.UpdateExtra()
+	})
+}
+
+// SetModelAttributes sets the "model_attributes" field.
+func (u *AccountUpsertOne) SetModelAttributes(v domain.ModelAttributes) *AccountUpsertOne {
+	return u.Update(func(s *AccountUpsert) {
+		s.SetModelAttributes(v)
+	})
+}
+
+// UpdateModelAttributes sets the "model_attributes" field to the value that was provided on create.
+func (u *AccountUpsertOne) UpdateModelAttributes() *AccountUpsertOne {
+	return u.Update(func(s *AccountUpsert) {
+		s.UpdateModelAttributes()
+	})
+}
+
+// ClearModelAttributes clears the value of the "model_attributes" field.
+func (u *AccountUpsertOne) ClearModelAttributes() *AccountUpsertOne {
+	return u.Update(func(s *AccountUpsert) {
+		s.ClearModelAttributes()
 	})
 }
 
@@ -2208,6 +2258,27 @@ func (u *AccountUpsertBulk) SetExtra(v map[string]interface{}) *AccountUpsertBul
 func (u *AccountUpsertBulk) UpdateExtra() *AccountUpsertBulk {
 	return u.Update(func(s *AccountUpsert) {
 		s.UpdateExtra()
+	})
+}
+
+// SetModelAttributes sets the "model_attributes" field.
+func (u *AccountUpsertBulk) SetModelAttributes(v domain.ModelAttributes) *AccountUpsertBulk {
+	return u.Update(func(s *AccountUpsert) {
+		s.SetModelAttributes(v)
+	})
+}
+
+// UpdateModelAttributes sets the "model_attributes" field to the value that was provided on create.
+func (u *AccountUpsertBulk) UpdateModelAttributes() *AccountUpsertBulk {
+	return u.Update(func(s *AccountUpsert) {
+		s.UpdateModelAttributes()
+	})
+}
+
+// ClearModelAttributes clears the value of the "model_attributes" field.
+func (u *AccountUpsertBulk) ClearModelAttributes() *AccountUpsertBulk {
+	return u.Update(func(s *AccountUpsert) {
+		s.ClearModelAttributes()
 	})
 }
 

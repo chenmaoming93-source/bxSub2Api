@@ -102,6 +102,16 @@ gateway:
     flush_interval_ms: 50
     # 单次 Redis 统计写入的超时时间，单位：毫秒。
     redis_timeout_ms: 300
+    # 配额检查的总耗时超时，单位：毫秒。
+    # 一次请求命中多条限额规则时，所有规则计数读取（串行）合计允许的最长耗时；
+    # 超过该值后，尚未完成的规则读取按 fail-open（放行）处理。
+    # 建议不小于 single_quota_check_timeout；0 或缺失时使用默认值 300。
+    total_quota_check_timeout: 3000
+    # 单条限额规则检查的超时，单位：毫秒。
+    # 每条规则各自读取 Redis 计数允许的最长耗时；单条规则超过该值按 fail-open（放行）处理。
+    # 注意：单条超时同时受 total_quota_check_timeout 总预算约束（实际取两者剩余值中的较小者）。
+    # 0 或缺失时使用默认值 50。
+    single_quota_check_timeout: 500
     # Redis 统计写入失败后的重试次数；0 表示不重试。
     redis_retry_count: 2
     # Redis 计数器分片数；上线后修改会改变 Key 分布，应谨慎调整。

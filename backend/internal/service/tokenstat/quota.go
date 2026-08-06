@@ -12,9 +12,15 @@ import (
 
 var defaultQuotaChecker atomic.Pointer[QuotaChecker]
 var defaultQuotaTimeoutNanos atomic.Int64
+var defaultQuotaSingleTimeoutNanos atomic.Int64
 
 func SetDefaultQuotaChecker(checker *QuotaChecker) { defaultQuotaChecker.Store(checker) }
 func SetDefaultQuotaTimeout(timeout time.Duration) { defaultQuotaTimeoutNanos.Store(int64(timeout)) }
+
+// SetDefaultQuotaSingleTimeout configures the per-rule timeout for a single
+// quota counter read. A value <= 0 disables the per-rule limit and leaves every
+// rule read bounded only by the shared total timeout.
+func SetDefaultQuotaSingleTimeout(timeout time.Duration) { defaultQuotaSingleTimeoutNanos.Store(int64(timeout)) }
 
 func CheckDefaultQuota(ctx context.Context, at time.Time, available map[DimensionCode]DimensionValue) []QuotaDecision {
 	if !RuntimeEnabled() {
@@ -104,11 +110,20 @@ func (c *QuotaChecker) Check(ctx context.Context, at time.Time, available map[Di
 		periodByType[period.Type] = period
 	}
 	decisions := make([]QuotaDecision, 0, len(rules))
+	type cachedRead struct {
+		used int64
+		err  error
+	}
+	reads := make(map[string]cachedRead)
 	for _, rule := range rules {
 		if !ruleEffective(rule, at) || !ruleMatches(rule, available) {
 			continue
 		}
-		identity, err := BuildDimensionIdentity(rule.DimensionCodes, rule.DimensionValues)
+		lookupValues := make(map[DimensionCode]DimensionValue, len(rule.DimensionCodes))
+		for _, code := range rule.DimensionCodes {
+			lookupValues[code] = available[code]
+		}
+		identity, err := BuildDimensionIdentity(rule.DimensionCodes, lookupValues)
 		if err != nil {
 			continue
 		}
@@ -121,7 +136,24 @@ func (c *QuotaChecker) Check(ctx context.Context, at time.Time, available map[Di
 			period.Type, period.Start.Format("20060102T150405-0700"), rule.ProjectionID, shard)
 		field := hex.EncodeToString(identity.Hash[:]) + ":" + string(rule.MetricCode)
 		readStartedAt := time.Now()
-		used, err := c.reader.Read(ctx, key, field)
+		readKey := key + "\x00" + field
+		cached, exists := reads[readKey]
+		if !exists {
+			// Each rule read gets its own per-rule deadline derived from the
+			// shared total check context, so a single rule is bounded by
+			// min(single_quota_check_timeout, remaining total budget).
+			readCtx := ctx
+			if singleTimeout := time.Duration(defaultQuotaSingleTimeoutNanos.Load()); singleTimeout > 0 {
+				var cancel context.CancelFunc
+				readCtx, cancel = context.WithTimeout(ctx, singleTimeout)
+				cached.used, cached.err = c.reader.Read(readCtx, key, field)
+				cancel()
+			} else {
+				cached.used, cached.err = c.reader.Read(ctx, key, field)
+			}
+			reads[readKey] = cached
+		}
+		used, err := cached.used, cached.err
 		if err != nil {
 			observability.quotaFailOpen.Add(1)
 			slog.WarnContext(ctx, "dynamic token quota redis read failed; request allowed by fail-open policy",
@@ -161,7 +193,13 @@ func ruleMatches(rule QuotaRule, available map[DimensionCode]DimensionValue) boo
 			return false
 		}
 		actual, ok := available[code]
-		if !ok || actual != expected {
+		if !ok {
+			return false
+		}
+		if expected.Type == ValueTypeWildcard {
+			continue
+		}
+		if actual != expected {
 			return false
 		}
 	}

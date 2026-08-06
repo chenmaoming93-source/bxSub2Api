@@ -1,6 +1,8 @@
 package domain
 
 import (
+	"bytes"
+	"encoding/json"
 	"errors"
 	"testing"
 )
@@ -15,7 +17,7 @@ func TestParseModelRoutingConfigLegacyPreservesAccountOrderAndWildcard(t *testin
 	if len(candidates) != 1 {
 		t.Fatalf("Match() candidate count = %d, want 1", len(candidates))
 	}
-	if candidates[0].Model != "claude-opus-4-1" || !candidates[0].Legacy {
+	if !candidates[0].Legacy {
 		t.Fatalf("legacy candidate = %+v", candidates[0])
 	}
 	want := []int64{9, 3, 7}
@@ -39,8 +41,12 @@ func TestParseModelRoutingConfigCandidatesStableSort(t *testing.T) {
 	}
 
 	candidates := config.Match("fast-code")
-	if got := []string{candidates[0].Model, candidates[1].Model, candidates[2].Model}; got[0] != "first" || got[1] != "second" || got[2] != "third" {
+	if got := []int64{candidates[0].AccountIDs[0], candidates[1].AccountIDs[0], candidates[2].AccountIDs[0]}; got[0] != 1 || got[1] != 2 || got[2] != 3 {
 		t.Fatalf("stable priority order = %v", got)
+	}
+	encoded, err := json.Marshal(candidates)
+	if err != nil || bytes.Contains(encoded, []byte(`"model"`)) {
+		t.Fatalf("candidate JSON = %s, err = %v; model must not be emitted", encoded, err)
 	}
 }
 
@@ -50,7 +56,7 @@ func TestParseModelRoutingConfigRejectsInvalidCandidates(t *testing.T) {
 		`{"bad*pattern":[1]}`,
 		`{"route":null}`,
 		`{"route":[]}`,
-		`{"route":[{"model":"","account_ids":[1],"priority":1}]}`,
+		`{"route":[{"account_ids":[],"priority":1}]}`,
 		`{"route":[{"model":"model","account_ids":[],"priority":1}]}`,
 		`{"route":[{"model":"model","account_ids":[1],"priority":-1}]}`,
 	}

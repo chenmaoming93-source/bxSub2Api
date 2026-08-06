@@ -86,6 +86,15 @@ func (Account) Fields() []ent.Field {
 			Default(func() map[string]any { return map[string]any{} }).
 			SchemaType(map[string]string{dialect.MySQL: "json"}),
 
+		// model_attributes: 模型基本属性（JSON map）
+		// 记录该账户所绑定模型的上下文窗口大小、是否支持推理/图片输入等能力信息；
+		// 属性名（英文）为 key，{description, value} 为值。作为模型账户的基本属性保存，
+		// 供管理端创建/编辑账户时维护与回显。结构由 domain.ModelAttributes 定义。
+		field.JSON("model_attributes", domain.ModelAttributes{}).
+			Optional().
+			Comment("Model basic attributes map: {attrName: {description, value}}.").
+			SchemaType(map[string]string{dialect.MySQL: "json"}),
+
 		// proxy_id: 关联的代理配置 ID（可选）
 		// 用于需要通过特定代理访问 API 的场景
 		field.Int64("proxy_id").

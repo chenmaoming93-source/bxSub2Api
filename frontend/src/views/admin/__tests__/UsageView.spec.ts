@@ -239,6 +239,85 @@ describe('admin UsageView distribution metric toggles', () => {
   })
 })
 
+describe('admin UsageView route alias filter forwarding', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+    list.mockReset()
+    getStats.mockReset()
+    getSnapshotV2.mockReset()
+    getModelStats.mockReset()
+    listErrorLogs.mockReset()
+
+    list.mockResolvedValue({ items: [], total: 0, pages: 0 })
+    getStats.mockResolvedValue({
+      total_requests: 0, total_input_tokens: 0, total_output_tokens: 0,
+      total_cache_tokens: 0, total_tokens: 0, total_cost: 0, total_actual_cost: 0, average_duration_ms: 0,
+    })
+    getSnapshotV2.mockResolvedValue({ trend: [], models: [], groups: [] })
+    getModelStats.mockResolvedValue({ models: [] })
+    listErrorLogs.mockResolvedValue({ items: [], total: 0, pages: 0 })
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it('forwards the same route alias filter value to usage details, stats, model stats and charts', async () => {
+    const wrapper = mount(UsageView, {
+      global: { stubs: {
+        AppLayout: AppLayoutStub, UsageStatsCards: true, UsageFilters: UsageFiltersStub,
+        UsageTable: true, UsageExportProgress: true, UsageCleanupDialog: true,
+        UserBalanceHistoryModal: true, AuditLogModal: true, Pagination: true, Select: true,
+        DateRangePicker: true, Icon: true, TokenUsageTrend: true,
+        ModelDistributionChart: true, GroupDistributionChart: true, EndpointDistributionChart: true,
+        OpsErrorLogTable: true, OpsErrorDetailModal: true,
+      } },
+    })
+    vi.advanceTimersByTime(120)
+    await flushPromises()
+
+    const vm = wrapper.vm as any
+    vm.filters.model = 'gpt-5.3-codex'
+    vm.applyFilters()
+    await flushPromises()
+
+    // 用量明细
+    expect(list).toHaveBeenCalledWith(expect.objectContaining({ model: 'gpt-5.3-codex' }), expect.anything())
+    // 汇总统计
+    expect(getStats).toHaveBeenCalledWith(expect.objectContaining({ model: 'gpt-5.3-codex' }))
+    // 模型分布图表（候选/图表共用 requested-model 口径）
+    expect(getModelStats).toHaveBeenCalledWith(expect.objectContaining({ model: 'gpt-5.3-codex', model_source: 'requested' }))
+    // 趋势/分组图表
+    expect(getSnapshotV2).toHaveBeenCalledWith(expect.objectContaining({ model: 'gpt-5.3-codex' }))
+    // 错误请求
+    vm.activeTab = 'errors'
+    vm.loadAdminErrors()
+    await flushPromises()
+    expect(listErrorLogs).toHaveBeenCalledWith(expect.objectContaining({ model: 'gpt-5.3-codex' }))
+  })
+
+  it('clears the route alias filter on reset', async () => {
+    const wrapper = mount(UsageView, {
+      global: { stubs: {
+        AppLayout: AppLayoutStub, UsageStatsCards: true, UsageFilters: UsageFiltersStub,
+        UsageTable: true, UsageExportProgress: true, UsageCleanupDialog: true,
+        UserBalanceHistoryModal: true, AuditLogModal: true, Pagination: true, Select: true,
+        DateRangePicker: true, Icon: true, TokenUsageTrend: true,
+        ModelDistributionChart: true, GroupDistributionChart: true, EndpointDistributionChart: true,
+      } },
+    })
+    vi.advanceTimersByTime(120)
+    await flushPromises()
+
+    const vm = wrapper.vm as any
+    vm.filters.model = 'gpt-5.3-codex'
+    vm.resetFilters()
+    await flushPromises()
+
+    expect(vm.filters.model).toBeUndefined()
+  })
+})
+
 describe('admin UsageView handleUserClick', () => {
   beforeEach(() => {
     vi.useFakeTimers()

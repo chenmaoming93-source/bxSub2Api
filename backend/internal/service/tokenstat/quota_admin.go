@@ -2,6 +2,8 @@ package tokenstat
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -52,7 +54,17 @@ func (s *ProjectionAdminService) CreateQuota(ctx context.Context, input QuotaInp
 	if err != nil {
 		return nil, err
 	}
-	identity, err := BuildDimensionIdentity(canonical, input.DimensionValues)
+	for _, code := range canonical {
+		definition, _ := Dimension(code)
+		value, exists := input.DimensionValues[code]
+		if !exists {
+			return nil, fmt.Errorf("missing dimension %q", code)
+		}
+		if err := validateQuotaDimensionValue(definition, value); err != nil {
+			return nil, err
+		}
+	}
+	identityHash, err := quotaRuleDimensionHash(canonical, input.DimensionValues)
 	if err != nil {
 		return nil, err
 	}
@@ -75,7 +87,9 @@ func (s *ProjectionAdminService) CreateQuota(ctx context.Context, input QuotaInp
 	}
 	raw := make(map[string]any, len(input.DimensionValues))
 	for code, value := range input.DimensionValues {
-		if value.Type == ValueTypeInt64 {
+		if value.Type == ValueTypeWildcard {
+			raw[string(code)] = map[string]any{"type": string(ValueTypeWildcard)}
+		} else if value.Type == ValueTypeInt64 {
 			raw[string(code)] = value.Int64
 		} else {
 			raw[string(code)] = value.String
@@ -86,7 +100,7 @@ func (s *ProjectionAdminService) CreateQuota(ctx context.Context, input QuotaInp
 	effectiveFrom := time.Now()
 	rule, err := s.client.TokenStatQuotaRule.Create().
 		SetName(strings.TrimSpace(input.Name)).SetProjectionID(projection.ID).
-		SetDimensionHash(identity.Hash[:]).SetDimensionValues(raw).
+		SetDimensionHash(identityHash[:]).SetDimensionValues(raw).
 		SetMetricCode(string(input.MetricCode)).SetPeriodType(string(input.PeriodType)).
 		SetLimitValue(input.LimitValue).SetEnforcementMode(string(input.Mode)).
 		SetStatus(status).SetEffectiveFrom(effectiveFrom).SetCreatedBy(input.CreatedBy).Save(ctx)
@@ -201,7 +215,9 @@ func (s *ProjectionAdminService) LoadQuotaRules(ctx context.Context, checker *Qu
 				continue
 			}
 			raw := row.DimensionValues[rawCode]
-			if definition.ValueType == ValueTypeInt64 {
+			if wildcard, ok := raw.(map[string]any); ok && wildcard["type"] == string(ValueTypeWildcard) {
+				values[code] = WildcardValue()
+			} else if definition.ValueType == ValueTypeInt64 {
 				if number, ok := raw.(float64); ok {
 					values[code] = Int64Value(int64(number))
 				} else if number, ok := raw.(int64); ok {
@@ -220,6 +236,27 @@ func (s *ProjectionAdminService) LoadQuotaRules(ctx context.Context, checker *Qu
 	}
 	checker.ReplaceRules(rules)
 	return nil
+}
+
+func quotaRuleDimensionHash(codes []DimensionCode, values map[DimensionCode]DimensionValue) ([16]byte, error) {
+	payload := make([]struct {
+		Code  DimensionCode  `json:"code"`
+		Value DimensionValue `json:"value"`
+	}, 0, len(codes))
+	for _, code := range codes {
+		payload = append(payload, struct {
+			Code  DimensionCode  `json:"code"`
+			Value DimensionValue `json:"value"`
+		}{code, values[code]})
+	}
+	encoded, err := json.Marshal(payload)
+	if err != nil {
+		return [16]byte{}, err
+	}
+	sum := sha256.Sum256(encoded)
+	var result [16]byte
+	copy(result[:], sum[:16])
+	return result, nil
 }
 
 func (s *ProjectionAdminService) CanDisableProjection(ctx context.Context, projectionID int64) error {

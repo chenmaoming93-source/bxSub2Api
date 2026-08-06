@@ -220,11 +220,57 @@ func (c *schedulerCache) GetAccount(ctx context.Context, accountID int64) (*serv
 	return decodeCachedAccount(val)
 }
 
+func (c *schedulerCache) GetAccounts(ctx context.Context, accountIDs []int64) (map[int64]*service.Account, error) {
+	result := make(map[int64]*service.Account, len(accountIDs))
+	keys := make([]string, 0, len(accountIDs))
+	ids := make([]int64, 0, len(accountIDs))
+	seen := make(map[int64]struct{}, len(accountIDs))
+	for _, id := range accountIDs {
+		if id <= 0 {
+			continue
+		}
+		if _, ok := seen[id]; ok {
+			continue
+		}
+		seen[id] = struct{}{}
+		ids = append(ids, id)
+		keys = append(keys, schedulerAccountKey(strconv.FormatInt(id, 10)))
+	}
+	if len(keys) == 0 {
+		return result, nil
+	}
+	values, err := c.mgetChunked(ctx, keys)
+	if err != nil {
+		return nil, err
+	}
+	for i, value := range values {
+		if value == nil {
+			continue
+		}
+		account, err := decodeCachedAccount(value)
+		if err != nil {
+			return nil, err
+		}
+		result[ids[i]] = account
+	}
+	return result, nil
+}
+
 func (c *schedulerCache) SetAccount(ctx context.Context, account *service.Account) error {
 	if account == nil || account.ID <= 0 {
 		return nil
 	}
 	return c.writeAccounts(ctx, []service.Account{*account})
+}
+
+func (c *schedulerCache) SetAccounts(ctx context.Context, accounts []*service.Account) error {
+	values := make([]service.Account, 0, len(accounts))
+	for _, account := range accounts {
+		if account != nil && account.ID > 0 {
+			values = append(values, *account)
+		}
+	}
+	return c.writeAccounts(ctx, values)
 }
 
 func (c *schedulerCache) DeleteAccount(ctx context.Context, accountID int64) error {

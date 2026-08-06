@@ -22,6 +22,7 @@ func RegisterIntegrationRoutes(
 	{
 		integration.POST("/api-keys/getOrCreate", provHandler.EnsureAPIKey)
 		integration.POST("/model-routes/list", provHandler.ListGroupModelRoutes)
+		integration.POST("/model-routes/list-attributes", provHandler.ListGroupModelRoutesWithAttributes)
 		if tokenUsageHandler != nil {
 			integration.POST("/token-usage/query", tokenUsageHandler.Query)
 		}

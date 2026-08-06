@@ -24,7 +24,7 @@ func TestBuildOpsErrorLogsWhere_UserScopedFilters(t *testing.T) {
 	for _, want := range []string{
 		"e.user_id = ?",
 		"e.api_key_id = ?",
-		"COALESCE(e.requested_model, e.model, '') = ?",
+		"COALESCE(NULLIF(TRIM(e.requested_model), ''), e.model) = ?",
 		"COALESCE(e.is_count_tokens, false) = false",
 		"e.error_phase IN (?)",
 		"e.error_type IN (?)",
@@ -42,14 +42,14 @@ func TestBuildOpsErrorLogsWhere_ModelFuzzy(t *testing.T) {
 	// 默认（ModelFuzzy=false）保持精确匹配
 	exact := &service.OpsErrorLogFilter{Model: "claude"}
 	whereExact, _ := buildOpsErrorLogsWhere(exact)
-	if !strings.Contains(whereExact, "COALESCE(e.requested_model, e.model, '') = ?") {
+	if !strings.Contains(whereExact, "COALESCE(NULLIF(TRIM(e.requested_model), ''), e.model) = ?") {
 		t.Fatalf("default should be exact match, got: %s", whereExact)
 	}
 
 	// ModelFuzzy=true → case-insensitive LIKE
 	fuzzy := &service.OpsErrorLogFilter{Model: "claude", ModelFuzzy: true}
 	whereFuzzy, args := buildOpsErrorLogsWhere(fuzzy)
-	if !strings.Contains(whereFuzzy, "LOWER(COALESCE(e.requested_model, e.model, '')) LIKE LOWER(?)") {
+	if !strings.Contains(whereFuzzy, "LOWER(COALESCE(NULLIF(TRIM(e.requested_model), ''), e.model)) LIKE LOWER(?)") {
 		t.Fatalf("ModelFuzzy should use ILIKE, got: %s", whereFuzzy)
 	}
 	if len(args) != 1 || args[0] != "%claude%" {

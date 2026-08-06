@@ -37,6 +37,10 @@ func (integrationProvisioningServiceStub) ListGroupModelRoutes(_ context.Context
 	return []service.GroupModelRouteProjection{}, nil
 }
 
+func (integrationProvisioningServiceStub) ListGroupModelRoutesWithAttributes(_ context.Context, _ service.ListGroupModelRoutesInput) ([]service.GroupModelRoutesWithAttributesProjection, error) {
+	return []service.GroupModelRoutesWithAttributesProjection{}, nil
+}
+
 func integrationRouter(cfg config.ExternalAPIKeyProvisioningConfig) *gin.Engine {
 	gin.SetMode(gin.TestMode)
 	router := gin.New()

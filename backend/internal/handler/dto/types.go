@@ -165,6 +165,8 @@ type Account struct {
 	Credentials             map[string]any  `json:"credentials"`
 	CredentialsStatus       map[string]bool `json:"credentials_status,omitempty"`
 	Extra                   map[string]any  `json:"extra"`
+	// ModelAttributes 模型基本属性 map：{属性名: {description, value}}；nil/未配置时省略。
+	ModelAttributes domain.ModelAttributes `json:"model_attributes,omitempty"`
 	ProxyID                 *int64          `json:"proxy_id"`
 	ProxyFallbackOriginID   *int64          `json:"proxy_fallback_origin_id"`
 	ProxyFallbackOriginName *string         `json:"proxy_fallback_origin_name,omitempty"`

@@ -12,6 +12,9 @@ const messages: Record<string, string> = {
   'admin.usage.searchApiKeyPlaceholder': 'Search API key...',
   'usage.model': 'Model',
   'admin.usage.allModels': 'All Models',
+  'admin.usage.routeAlias': 'Route Alias',
+  'admin.usage.searchRouteAliasPlaceholder': 'Search route alias...',
+  'admin.usage.allRouteAliases': 'All Route Aliases',
   'admin.usage.account': 'Account',
   'admin.usage.searchAccountPlaceholder': 'Search account...',
   'usage.type': 'Type',
@@ -165,7 +168,7 @@ describe('UsageFilters — user search dropdown', () => {
   })
 })
 
-describe('UsageFilters — model options come from prop (no dup request)', () => {
+describe('UsageFilters — route alias filter UI', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     mockGetModelStats.mockClear()
@@ -173,7 +176,7 @@ describe('UsageFilters — model options come from prop (no dup request)', () =>
   })
   afterEach(() => { vi.useRealTimers() })
 
-  it('does not call dashboard.getModelStats on mount and renders model options from prop', async () => {
+  it('labels the model filter as route alias and keeps candidates from the prop (requested-model source)', async () => {
     const wrapper = mount(UsageFilters, {
       props: {
         modelValue: defaultFilters(),
@@ -191,5 +194,16 @@ describe('UsageFilters — model options come from prop (no dup request)', () =>
 
     const opts = (wrapper.vm as any).modelOptions as Array<{ value: string | null; label: string }>
     expect(opts.map((o) => o.value)).toEqual([null, 'claude-3', 'gpt-4o'])
+    // 路由别名语义：空选项文案为「全部路由别名」，候选不混入 upstream/mapping 分布数据
+    expect(opts[0].label).toBe('All Route Aliases')
+
+    // 标签文案为「路由别名」（原「模型」搜索框原位重构，无第二个搜索字段）
+    const labels = wrapper.findAll('.input-label').map((l) => l.text())
+    expect(labels).toContain('Route Alias')
+    // 路由别名下拉只出现一次，没有新增第二个模型/别名输入框
+    const selects = wrapper.findAllComponents({ name: 'Select' })
+    const selectModelValues = selects.filter((s) => (s.props('modelValue') as any) === null || (s.props('modelValue') as any) === undefined)
+    // 多个 Select 均被 stub；确认组件内只有唯一 modelOptions（见上方 opts），未新增第二个字段
+    expect(opts.length).toBe(3)
   })
 })

@@ -503,7 +503,6 @@ export interface OpenAIMessagesDispatchModelConfig {
 }
 
 export interface ModelRoutingCandidate {
-  model: string
   account_ids: number[]
   priority: number
 }
@@ -834,6 +833,15 @@ export interface TempUnschedulableStatus {
   state?: TempUnschedulableState
 }
 
+// 模型基本属性：一条属性 = 属性名（key）+ 描述 + 动态类型值。
+// 后端整体以 JSON map 存储，value 类型由前端解析后原样提交（信任前端）。
+export interface ModelAttributeItem {
+  description?: string
+  value?: unknown
+}
+
+export type ModelAttributes = Record<string, ModelAttributeItem>
+
 export interface Account {
   id: number
   name: string
@@ -851,6 +859,8 @@ export interface Account {
     model_rate_limits?: Record<string, { rate_limited_at: string; rate_limit_reset_at: string }>
     antigravity_credits_overages?: Record<string, { activated_at: string; active_until: string }>
   } & Record<string, unknown>)
+  // 模型基本属性 map：{属性名: {description, value}}；未配置时省略。
+  model_attributes?: ModelAttributes
   proxy_id: number | null
   proxy_fallback_origin_id?: number | null
   proxy_fallback_origin_name?: string | null
@@ -1045,6 +1055,7 @@ export interface CreateAccountRequest {
   type: AccountType
   credentials: Record<string, unknown>
   extra?: Record<string, unknown>
+  model_attributes?: ModelAttributes
   proxy_id?: number | null
   concurrency?: number
   load_factor?: number | null
@@ -1062,6 +1073,7 @@ export interface UpdateAccountRequest {
   type?: AccountType
   credentials?: Record<string, unknown>
   extra?: Record<string, unknown>
+  model_attributes?: ModelAttributes
   proxy_id?: number | null
   concurrency?: number
   load_factor?: number | null

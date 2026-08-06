@@ -24,8 +24,9 @@ const MetricTotalTokens MetricCode = "total_tokens"
 type ValueType string
 
 const (
-	ValueTypeInt64  ValueType = "int64"
-	ValueTypeString ValueType = "string"
+	ValueTypeInt64    ValueType = "int64"
+	ValueTypeString   ValueType = "string"
+	ValueTypeWildcard ValueType = "wildcard"
 )
 
 type DimensionDefinition struct {
@@ -56,6 +57,15 @@ func Int64Value(value int64) DimensionValue {
 
 func StringValue(value string) DimensionValue {
 	return DimensionValue{Type: ValueTypeString, String: strings.TrimSpace(value)}
+}
+
+func WildcardValue() DimensionValue { return DimensionValue{Type: ValueTypeWildcard} }
+
+func validateQuotaDimensionValue(definition DimensionDefinition, value DimensionValue) error {
+	if value.Type == ValueTypeWildcard {
+		return nil
+	}
+	return validateDimensionValue(definition, value)
 }
 
 type ProjectionDefinition struct {

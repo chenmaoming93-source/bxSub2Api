@@ -39,6 +39,7 @@ import { settingsAPI, type DefaultGroupStatus } from '@/api/admin/settings'
 import { adminAPI } from '@/api/admin'
 import type { AdminGroup, ModelRoutingCandidate, ModelRoutingRuleRow } from '@/types'
 import { normalizeModelRouting, serializeModelRouting } from './groupsModelRouting'
+import { extractUpstreamModel } from '@/components/admin/group/groupModelRoutingEditor'
 import { useAppStore } from '@/stores'
 import { extractApiErrorMessage } from '@/utils/apiError'
 
@@ -64,9 +65,9 @@ async function load() {
       rules.value = await Promise.all(normalizeModelRouting(group.value.model_routing).map(async row => ({
         alias: row.alias,
         candidates: await Promise.all(row.candidates.map(async candidate => ({
-          model: candidate.model, priority: candidate.priority,
+          priority: candidate.priority,
           accounts: await Promise.all(candidate.account_ids.map(async id => {
-            try { const account = await adminAPI.accounts.getById(id); return { id: account.id, name: account.name } }
+            try { const account = await adminAPI.accounts.getById(id); return { id: account.id, name: account.name, upstreamModel: extractUpstreamModel(account.credentials) } }
             catch { return { id, name: `#${id}` } }
           }))
         })))
@@ -85,7 +86,7 @@ async function save() {
   saving.value = true
   try {
     const rows: ModelRoutingRuleRow[] = rules.value.map(rule => ({ alias: rule.alias, candidates: rule.candidates.map((candidate): ModelRoutingCandidate => ({
-      model: candidate.model, account_ids: candidate.accounts.map(account => account.id), priority: Number(candidate.priority)
+      account_ids: candidate.accounts.map(account => account.id), priority: Number(candidate.priority)
     })) }))
     group.value = await adminAPI.groups.update(group.value.id, { model_routing_enabled: enabled.value, model_routing: rows.length ? serializeModelRouting(rows) : null })
     appStore.showSuccess(t('admin.defaultGroupRouting.saved'))

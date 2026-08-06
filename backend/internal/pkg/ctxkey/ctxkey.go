@@ -41,6 +41,10 @@ const (
 	// Group 认证后的分组信息，由 API Key 认证中间件设置
 	Group Key = "ctx_group"
 
+	// RouteAccountIDs 当前请求命中的模型路由候选账号 ID 集合（map[int64]struct{}）。
+	// 由 handler 在路由命中时写入，服务层据此用账号自身 model_mapping 判断候选账号模型支持。
+	RouteAccountIDs Key = "ctx_route_account_ids"
+
 	// IsMaxTokensOneHaikuRequest 标识当前请求是否为 max_tokens=1 + haiku 模型的探测请求
 	// 用于 ClaudeCodeOnly 验证绕过（绕过 system prompt 检查，但仍需验证 User-Agent）
 	IsMaxTokensOneHaikuRequest Key = "ctx_is_max_tokens_one_haiku"

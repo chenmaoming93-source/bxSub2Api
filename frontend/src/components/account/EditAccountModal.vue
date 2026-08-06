@@ -259,6 +259,8 @@
           </template>
         </div>
 
+        <ModelAttributesSection v-model="modelAttributes" />
+
         <!-- Pool Mode Section -->
         <div class="border-t border-gray-200 pt-4 dark:border-dark-600">
           <div class="mb-3 flex items-center justify-between">
@@ -559,6 +561,8 @@
         </template>
       </div>
 
+      <ModelAttributesSection v-if="account.platform === 'openai' && account.type === 'oauth'" v-model="modelAttributes" />
+
       <!-- Upstream fields (only for upstream type) -->
       <div v-if="account.type === 'upstream'" class="space-y-4">
         <div>
@@ -802,6 +806,8 @@
         </div>
       </div>
 
+      <ModelAttributesSection v-if="(account.platform === 'gemini' || account.platform === 'anthropic') && account.type === 'service_account'" v-model="modelAttributes" />
+
       <!-- Bedrock fields (for bedrock type, both SigV4 and API Key modes) -->
       <div v-if="account.type === 'bedrock'" class="space-y-4">
         <!-- SigV4 fields -->
@@ -942,6 +948,8 @@
             </div>
           </div>
         </div>
+
+        <ModelAttributesSection v-model="modelAttributes" />
 
         <!-- Pool Mode Section for Bedrock -->
         <div class="border-t border-gray-200 pt-4 dark:border-dark-600">
@@ -1108,6 +1116,8 @@
           </div>
         </div>
       </div>
+
+      <ModelAttributesSection v-if="account.platform === 'antigravity'" v-model="modelAttributes" />
 
       <!-- Temp Unschedulable Rules -->
       <div class="border-t border-gray-200 pt-4 dark:border-dark-600 space-y-4">
@@ -2395,7 +2405,8 @@ import type {
   CheckMixedChannelResponse,
   OpenAICompactMode,
   OpenAIResponsesMode,
-  OpenAIEndpointCapability
+  OpenAIEndpointCapability,
+  ModelAttributes
 } from '@/types'
 import BaseDialog from '@/components/common/BaseDialog.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
@@ -2405,6 +2416,7 @@ import ProxySelector from '@/components/common/ProxySelector.vue'
 import ProxyAdBanner from '@/components/common/ProxyAdBanner.vue'
 import GroupSelector from '@/components/common/GroupSelector.vue'
 import ModelWhitelistSelector from '@/components/account/ModelWhitelistSelector.vue'
+import ModelAttributesSection from '@/components/account/ModelAttributesSection.vue'
 import QuotaLimitCard from '@/components/account/QuotaLimitCard.vue'
 import { applyInterceptWarmup } from '@/components/account/credentialsBuilder'
 import { formatDateTime, formatDateTimeLocalInput, parseDateTimeLocalInput } from '@/utils/format'
@@ -2874,6 +2886,9 @@ const form = reactive({
   expires_at: null as number | null
 })
 
+// 模型基本属性（JSON map，属性名为 key；打开弹窗时从账户回显，保存时整体提交）
+const modelAttributes = ref<ModelAttributes>({})
+
 const statusOptions = computed(() => {
   const options = [
     { value: 'active', label: t('common.active') },
@@ -2941,6 +2956,7 @@ const syncFormFromAccount = (newAccount: Account | null) => {
     : 'active'
   form.group_ids = newAccount.group_ids || []
   form.expires_at = newAccount.expires_at ?? null
+  modelAttributes.value = { ...(newAccount.model_attributes || {}) }
 
   // Load intercept warmup requests setting (applies to all account types)
   const credentials = newAccount.credentials as Record<string, unknown> | undefined
@@ -3690,6 +3706,7 @@ const handleSubmit = async () => {
   }
 
   const updatePayload: Record<string, unknown> = { ...form }
+  updatePayload.model_attributes = modelAttributes.value
   try {
     // 后端期望 proxy_id: 0 表示清除代理，而不是 null
     if (updatePayload.proxy_id === null) {

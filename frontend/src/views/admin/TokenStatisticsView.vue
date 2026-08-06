@@ -110,8 +110,27 @@
             <label v-for="dimension in dimensions" :key="dimension.code" class="dimension-option" :class="{ 'dimension-option-active': quotaDraft.dimension_codes.includes(dimension.code) }">
               <input v-model="quotaDraft.dimension_codes" type="checkbox" :value="dimension.code" @change="onQuotaDimensionToggle(dimension.code)" />
               <span class="min-w-0 flex-1"><b>{{ dimension.display_name }}</b><small>{{ dimension.code }}</small>
+                <select v-if="quotaDraft.dimension_codes.includes(dimension.code)" v-model="quotaValueModes[dimension.code]" class="input mt-2" @change="onQuotaValueModeChange(dimension.code)">
+                  <option value="exact">指定具体值</option><option value="wildcard">任意值（分别统计）</option>
+                </select>
+                <div v-if="quotaDraft.dimension_codes.includes(dimension.code) && quotaValueModes[dimension.code] !== 'wildcard'">
+                <div v-if="dimension.code === 'api_key_id'" class="relative mt-2">
+                  <input v-model="apiKeySearchText" data-test="quota-api-key-search" class="input" required placeholder="输入 API Key 名称或具体 Key" @input="onAPIKeySearchInput" />
+                  <div v-if="apiKeySearchResults.length" class="absolute z-20 mt-1 max-h-48 w-full overflow-auto rounded-xl border border-gray-200 bg-white shadow-sm dark:border-dark-700 dark:bg-dark-800">
+                    <button v-for="key in apiKeySearchResults" :key="key.id" type="button" class="flex w-full flex-col gap-0.5 px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-dark-700" @click="selectQuotaAPIKey(key)">
+                      <span class="flex items-center gap-2">
+                        <span class="truncate font-medium text-gray-800 dark:text-gray-100">{{ key.name || `#${key.id}` }}</span>
+                        <span class="shrink-0 text-xs text-gray-400">#{{ key.id }}</span>
+                      </span>
+                      <span class="flex items-center gap-2">
+                        <span class="truncate font-mono text-xs text-gray-500 dark:text-gray-400">{{ key.masked_key }}</span>
+                        <span v-if="key.user_email || key.user_name" class="shrink-0 truncate text-xs text-gray-400">{{ key.user_name || key.user_email }}</span>
+                      </span>
+                    </button>
+                  </div>
+                </div>
                 <select
-                  v-if="quotaDraft.dimension_codes.includes(dimension.code) && usesEnhancedSelector(dimension.code, quotaValues)"
+                  v-else-if="usesEnhancedSelector(dimension.code, quotaValues)"
                   v-model="quotaValues[dimension.code]"
                   class="input mt-2"
                   required
@@ -122,7 +141,8 @@
                     {{ option.label }}
                   </option>
                 </select>
-                <input v-else-if="quotaDraft.dimension_codes.includes(dimension.code)" v-model="quotaValues[dimension.code]" class="input mt-2" required :type="dimension.value_type === 'int64' ? 'number' : 'text'" placeholder="匹配值" />
+                <input v-else v-model="quotaValues[dimension.code]" class="input mt-2" required :type="dimension.value_type === 'int64' ? 'number' : 'text'" placeholder="匹配值" />
+                </div>
               </span>
             </label>
           </div>
@@ -255,7 +275,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import Icon from '@/components/icons/Icon.vue'
 import BaseDialog from '@/components/common/BaseDialog.vue'
@@ -265,6 +285,7 @@ import type { DimensionCode, DimensionDefinition, DimensionValue, PeriodType, Pr
 import * as usersAPI from '@/api/admin/users'
 import * as groupsAPI from '@/api/admin/groups'
 import * as accountsAPI from '@/api/admin/accounts'
+import { searchApiKeys, type SimpleApiKey } from '@/api/admin/usage'
 import { usePermission } from '@/composables/usePermission'
 import type { Account, AdminGroup, AdminUser, SelectOption } from '@/types'
 
@@ -289,6 +310,12 @@ const success = ref('')
 const projectionDraft = reactive<{ id?: number; name: string; dimension_codes: DimensionCode[] }>({ name: '', dimension_codes: [] })
 const quotaDraft = reactive<{ name: string; dimension_codes: DimensionCode[]; period_type: PeriodType; mode: 'OBSERVE' | 'ENFORCE'; limit_value: number }>({ name: '', dimension_codes: [], period_type: 'D', mode: 'OBSERVE', limit_value: 0 })
 const quotaValues = reactive<Partial<Record<DimensionCode, string | number>>>({})
+const quotaValueModes = reactive<Partial<Record<DimensionCode, 'exact' | 'wildcard'>>>({})
+const apiKeySearchText = ref('')
+const apiKeySearchResults = ref<SimpleApiKey[]>([])
+let apiKeySearchTimer: ReturnType<typeof setTimeout> | undefined
+let apiKeySearchController: AbortController | undefined
+let apiKeySearchVersion = 0
 const deletingQuota = ref<Quota>()
 const editingQuota = ref<Quota>()
 const quotaEditDraft = reactive<{ name: string; mode: 'OBSERVE' | 'ENFORCE'; limit_value: number }>({ name: '', mode: 'OBSERVE', limit_value: 0 })
@@ -406,15 +433,49 @@ async function onQueryFilterChange(code: DimensionCode) {
 }
 function onQuotaDimensionToggle(code: DimensionCode) {
   if (quotaDraft.dimension_codes.includes(code)) {
+		quotaValueModes[code] = 'exact'
     quotaValues[code] = ''
     return
   }
   delete quotaValues[code]
+	delete quotaValueModes[code]
   if (code === 'group_id') delete quotaValues.route_alias
   if (code === 'account_id') {
     delete quotaValues.upstream_model
     quotaAccountModels.value = []
   }
+}
+function onQuotaValueModeChange(code: DimensionCode) {
+	delete quotaValues[code]
+	if (code === 'api_key_id') {
+		apiKeySearchText.value = ''
+		apiKeySearchResults.value = []
+	}
+}
+function onAPIKeySearchInput() {
+	delete quotaValues.api_key_id
+	apiKeySearchResults.value = []
+	if (apiKeySearchTimer) clearTimeout(apiKeySearchTimer)
+	apiKeySearchController?.abort()
+	const keyword = apiKeySearchText.value.trim()
+	if (keyword.length < 2) return
+	const version = ++apiKeySearchVersion
+	apiKeySearchTimer = setTimeout(async () => {
+		const controller = new AbortController()
+		apiKeySearchController = controller
+		try {
+			const results = await searchApiKeys(undefined, keyword, { signal: controller.signal })
+			if (version === apiKeySearchVersion) apiKeySearchResults.value = results
+		} catch {
+			if (version === apiKeySearchVersion && !controller.signal.aborted) apiKeySearchResults.value = []
+		}
+	}, 400)
+}
+function selectQuotaAPIKey(key: SimpleApiKey) {
+	quotaValues.api_key_id = key.id
+	const user = key.user_name || key.user_email
+	apiKeySearchText.value = user ? `${key.name} · ${key.masked_key} · ${user}` : `${key.name} · ${key.masked_key}`
+	apiKeySearchResults.value = []
 }
 async function onQuotaValueChange(code: DimensionCode) {
   if (code === 'group_id') quotaValues.route_alias = ''
@@ -471,6 +532,9 @@ function resetQuota() {
   quotaDraft.mode = 'OBSERVE'
   quotaDraft.limit_value = 0
   Object.keys(quotaValues).forEach(key => delete quotaValues[key as DimensionCode])
+	Object.keys(quotaValueModes).forEach(key => delete quotaValueModes[key as DimensionCode])
+	apiKeySearchText.value = ''
+	apiKeySearchResults.value = []
   quotaAccountModels.value = []
 }
 function editQuota(item: Quota) {
@@ -489,7 +553,9 @@ async function createQuota() {
   success.value = ''
   try {
     const values = Object.fromEntries(quotaDraft.dimension_codes.map(code => {
+		if (quotaValueModes[code] === 'wildcard') return [code, { type: 'wildcard' }]
       const definition = dimensions.value.find(item => item.code === code)!
+		if (code === 'api_key_id' && !Number(quotaValues.api_key_id)) throw new Error('请从搜索结果中选择 API Key')
       return [code, definition.value_type === 'int64' ? { type: 'int64', int64: Number(quotaValues[code]) } : { type: 'string', string: String(quotaValues[code] ?? '') }]
     }))
     await dynamicTokenStatisticsAPI.createQuota({ ...quotaDraft, dimension_values: values, metric_code: 'total_tokens' })
@@ -601,7 +667,8 @@ function dimensionLabel(values: Partial<Record<DimensionCode, DimensionValue>>) 
   return Object.entries(values).map(([code, value]) => `${dimensionName(code as DimensionCode)}=${value?.type === 'int64' ? value.int64 : value?.string}`).join(', ')
 }
 function dimensionName(code: DimensionCode) { return dimensions.value.find(item => item.code === code)?.display_name ?? code }
-function readableDimensionValue(code: DimensionCode, value: number | string) {
+function readableDimensionValue(code: DimensionCode, value: number | string | { type: 'wildcard' }) {
+	if (typeof value === 'object' && value.type === 'wildcard') return '任意值（分别统计）'
   const id = Number(value)
   if (code === 'user_id') {
     const user = queryUsers.value.find(item => item.id === id)
@@ -617,6 +684,11 @@ function readableDimensionValue(code: DimensionCode, value: number | string) {
   }
   return String(value)
 }
+
+onBeforeUnmount(() => {
+	if (apiKeySearchTimer) clearTimeout(apiKeySearchTimer)
+	apiKeySearchController?.abort()
+})
 function quotaDimensionEntries(item: Quota) {
   const projection = projections.value.find(candidate => candidate.id === item.projection_id)
   const orderedCodes = projection?.dimension_codes ?? Object.keys(item.dimension_values) as DimensionCode[]

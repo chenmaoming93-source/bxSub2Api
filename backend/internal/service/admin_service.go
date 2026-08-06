@@ -18,6 +18,7 @@ import (
 	dbent "github.com/Wei-Shaw/sub2api/ent"
 	"github.com/Wei-Shaw/sub2api/ent/authidentity"
 	"github.com/Wei-Shaw/sub2api/ent/authidentitychannel"
+	"github.com/Wei-Shaw/sub2api/internal/domain"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/antigravity"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/claude"
 	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
@@ -283,6 +284,7 @@ type CreateAccountInput struct {
 	Type               string
 	Credentials        map[string]any
 	Extra              map[string]any
+	ModelAttributes    domain.ModelAttributes // 模型基本属性 map；nil = 未配置
 	ProxyID            *int64
 	Concurrency        int
 	Priority           int
@@ -304,6 +306,7 @@ type UpdateAccountInput struct {
 	Type                  string // Account type: oauth, setup-token, apikey
 	Credentials           map[string]any
 	Extra                 map[string]any
+	ModelAttributes       domain.ModelAttributes // 模型基本属性 map；nil = 不改动，空 map = 清空
 	ProxyID               *int64
 	Concurrency           *int     // 使用指针区分"未提供"和"设置为0"
 	Priority              *int     // 使用指针区分"未提供"和"设置为0"
@@ -2601,6 +2604,10 @@ func (s *adminServiceImpl) GetAccountsByIDs(ctx context.Context, ids []int64) ([
 }
 
 func (s *adminServiceImpl) CreateAccount(ctx context.Context, input *CreateAccountInput) (*Account, error) {
+	if err := validateAccountModelMapping(input.Type, input.Credentials); err != nil {
+		return nil, err
+	}
+
 	// 绑定分组
 	groupIDs := input.GroupIDs
 	// 如果没有指定分组,自动绑定对应平台的默认分组
@@ -2625,17 +2632,18 @@ func (s *adminServiceImpl) CreateAccount(ctx context.Context, input *CreateAccou
 	}
 
 	account := &Account{
-		Name:        input.Name,
-		Notes:       normalizeAccountNotes(input.Notes),
-		Platform:    input.Platform,
-		Type:        input.Type,
-		Credentials: input.Credentials,
-		Extra:       input.Extra,
-		ProxyID:     input.ProxyID,
-		Concurrency: input.Concurrency,
-		Priority:    input.Priority,
-		Status:      StatusActive,
-		Schedulable: true,
+		Name:            input.Name,
+		Notes:           normalizeAccountNotes(input.Notes),
+		Platform:        input.Platform,
+		Type:            input.Type,
+		Credentials:     input.Credentials,
+		Extra:           input.Extra,
+		ModelAttributes: input.ModelAttributes.Normalize(),
+		ProxyID:         input.ProxyID,
+		Concurrency:     input.Concurrency,
+		Priority:        input.Priority,
+		Status:          StatusActive,
+		Schedulable:     true,
 	}
 	// 预计算固定时间重置的下次重置时间
 	if account.Extra != nil {
@@ -2726,6 +2734,9 @@ func (s *adminServiceImpl) UpdateAccount(ctx context.Context, id int64, input *U
 		// 全对象 PUT 编辑时不会再带回 token，避免覆盖时清空已有凭证。
 		account.Credentials = MergePreservingSensitiveCreds(account.Credentials, input.Credentials)
 	}
+	if err := validateAccountModelMapping(account.Type, account.Credentials); err != nil {
+		return nil, err
+	}
 	// Extra 使用 map：需要区分“未提供(nil)”与“显式清空({})”。
 	// 关闭配额限制时前端会删除 quota_* 键并提交 extra:{}，此时也必须落库。
 	if input.Extra != nil {
@@ -2799,6 +2810,11 @@ func (s *adminServiceImpl) UpdateAccount(ctx context.Context, id int64, input *U
 	}
 	if input.AutoPauseOnExpired != nil {
 		account.AutoPauseOnExpired = *input.AutoPauseOnExpired
+	}
+	// ModelAttributes：nil = 缺省不动；空 map = 显式清空；提供则覆盖。
+	// 后端信任前端，仅做最小规整（丢弃 key 为空白的条目），value 原样存储。
+	if input.ModelAttributes != nil {
+		account.ModelAttributes = input.ModelAttributes.Normalize()
 	}
 
 	// 先验证分组是否存在（在任何写操作之前）
