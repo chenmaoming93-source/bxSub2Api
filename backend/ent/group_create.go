@@ -14,8 +14,6 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/account"
 	"github.com/Wei-Shaw/sub2api/ent/apikey"
 	"github.com/Wei-Shaw/sub2api/ent/group"
-	"github.com/Wei-Shaw/sub2api/ent/groupcandidatetokendailylimitconfig"
-	"github.com/Wei-Shaw/sub2api/ent/groupcandidatetokendailyusage"
 	"github.com/Wei-Shaw/sub2api/ent/redeemcode"
 	"github.com/Wei-Shaw/sub2api/ent/usagelog"
 	"github.com/Wei-Shaw/sub2api/ent/user"
@@ -565,36 +563,6 @@ func (_c *GroupCreate) AddUsageLogs(v ...*UsageLog) *GroupCreate {
 	return _c.AddUsageLogIDs(ids...)
 }
 
-// AddCandidateTokenDailyUsageIDs adds the "candidate_token_daily_usages" edge to the GroupCandidateTokenDailyUsage entity by IDs.
-func (_c *GroupCreate) AddCandidateTokenDailyUsageIDs(ids ...int64) *GroupCreate {
-	_c.mutation.AddCandidateTokenDailyUsageIDs(ids...)
-	return _c
-}
-
-// AddCandidateTokenDailyUsages adds the "candidate_token_daily_usages" edges to the GroupCandidateTokenDailyUsage entity.
-func (_c *GroupCreate) AddCandidateTokenDailyUsages(v ...*GroupCandidateTokenDailyUsage) *GroupCreate {
-	ids := make([]int64, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
-	}
-	return _c.AddCandidateTokenDailyUsageIDs(ids...)
-}
-
-// AddGroupCandidateTokenDailyLimitConfigIDs adds the "group_candidate_token_daily_limit_configs" edge to the GroupCandidateTokenDailyLimitConfig entity by IDs.
-func (_c *GroupCreate) AddGroupCandidateTokenDailyLimitConfigIDs(ids ...int64) *GroupCreate {
-	_c.mutation.AddGroupCandidateTokenDailyLimitConfigIDs(ids...)
-	return _c
-}
-
-// AddGroupCandidateTokenDailyLimitConfigs adds the "group_candidate_token_daily_limit_configs" edges to the GroupCandidateTokenDailyLimitConfig entity.
-func (_c *GroupCreate) AddGroupCandidateTokenDailyLimitConfigs(v ...*GroupCandidateTokenDailyLimitConfig) *GroupCreate {
-	ids := make([]int64, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
-	}
-	return _c.AddGroupCandidateTokenDailyLimitConfigIDs(ids...)
-}
-
 // AddAccountIDs adds the "accounts" edge to the Account entity by IDs.
 func (_c *GroupCreate) AddAccountIDs(ids ...int64) *GroupCreate {
 	_c.mutation.AddAccountIDs(ids...)
@@ -1086,38 +1054,6 @@ func (_c *GroupCreate) createSpec() (*Group, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(usagelog.FieldID, field.TypeInt64),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges = append(_spec.Edges, edge)
-	}
-	if nodes := _c.mutation.CandidateTokenDailyUsagesIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   group.CandidateTokenDailyUsagesTable,
-			Columns: []string{group.CandidateTokenDailyUsagesColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(groupcandidatetokendailyusage.FieldID, field.TypeInt64),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges = append(_spec.Edges, edge)
-	}
-	if nodes := _c.mutation.GroupCandidateTokenDailyLimitConfigsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   group.GroupCandidateTokenDailyLimitConfigsTable,
-			Columns: []string{group.GroupCandidateTokenDailyLimitConfigsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(groupcandidatetokendailylimitconfig.FieldID, field.TypeInt64),
 			},
 		}
 		for _, k := range nodes {

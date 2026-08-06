@@ -14,7 +14,6 @@ export type ModelRoutingValidationCode =
   | 'invalid_account_id'
   | 'invalid_priority'
   | 'duplicate_priority'
-  | 'invalid_daily_token_limit'
 
 export interface ModelRoutingValidationIssue {
   code: ModelRoutingValidationCode
@@ -27,8 +26,7 @@ function cloneCandidate(candidate: ModelRoutingCandidate): ModelRoutingCandidate
   return {
     model: candidate.model,
     account_ids: [...candidate.account_ids],
-    priority: candidate.priority,
-    daily_token_limit: candidate.daily_token_limit ?? null
+    priority: candidate.priority
   }
 }
 
@@ -45,8 +43,7 @@ export function normalizeModelRouting(config: ModelRoutingConfig | null | undefi
             {
               model: alias,
               account_ids: [...(value as number[])],
-              priority: 0,
-              daily_token_limit: null
+              priority: 0
             }
           ]
         }
@@ -118,16 +115,6 @@ export function validateModelRouting(rows: ModelRoutingRuleRow[]): ModelRoutingV
         issues.push({ code: 'duplicate_priority', ruleIndex, candidateIndex, value: candidate.priority })
       } else {
         priorities.add(candidate.priority)
-      }
-
-      const limit = candidate.daily_token_limit
-      if (limit !== null && (!Number.isInteger(limit) || limit < 0)) {
-        issues.push({
-          code: 'invalid_daily_token_limit',
-          ruleIndex,
-          candidateIndex,
-          value: limit
-        })
       }
     })
   })

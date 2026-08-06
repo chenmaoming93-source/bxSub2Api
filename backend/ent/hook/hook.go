@@ -165,30 +165,6 @@ func (f GroupFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.GroupMutation", m)
 }
 
-// The GroupCandidateTokenDailyLimitConfigFunc type is an adapter to allow the use of ordinary
-// function as GroupCandidateTokenDailyLimitConfig mutator.
-type GroupCandidateTokenDailyLimitConfigFunc func(context.Context, *ent.GroupCandidateTokenDailyLimitConfigMutation) (ent.Value, error)
-
-// Mutate calls f(ctx, m).
-func (f GroupCandidateTokenDailyLimitConfigFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	if mv, ok := m.(*ent.GroupCandidateTokenDailyLimitConfigMutation); ok {
-		return f(ctx, mv)
-	}
-	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.GroupCandidateTokenDailyLimitConfigMutation", m)
-}
-
-// The GroupCandidateTokenDailyUsageFunc type is an adapter to allow the use of ordinary
-// function as GroupCandidateTokenDailyUsage mutator.
-type GroupCandidateTokenDailyUsageFunc func(context.Context, *ent.GroupCandidateTokenDailyUsageMutation) (ent.Value, error)
-
-// Mutate calls f(ctx, m).
-func (f GroupCandidateTokenDailyUsageFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	if mv, ok := m.(*ent.GroupCandidateTokenDailyUsageMutation); ok {
-		return f(ctx, mv)
-	}
-	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.GroupCandidateTokenDailyUsageMutation", m)
-}
-
 // The IdempotencyRecordFunc type is an adapter to allow the use of ordinary
 // function as IdempotencyRecord mutator.
 type IdempotencyRecordFunc func(context.Context, *ent.IdempotencyRecordMutation) (ent.Value, error)
@@ -211,30 +187,6 @@ func (f IdentityAdoptionDecisionFunc) Mutate(ctx context.Context, m ent.Mutation
 		return f(ctx, mv)
 	}
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.IdentityAdoptionDecisionMutation", m)
-}
-
-// The ModelTokenDailyLimitConfigFunc type is an adapter to allow the use of ordinary
-// function as ModelTokenDailyLimitConfig mutator.
-type ModelTokenDailyLimitConfigFunc func(context.Context, *ent.ModelTokenDailyLimitConfigMutation) (ent.Value, error)
-
-// Mutate calls f(ctx, m).
-func (f ModelTokenDailyLimitConfigFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	if mv, ok := m.(*ent.ModelTokenDailyLimitConfigMutation); ok {
-		return f(ctx, mv)
-	}
-	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ModelTokenDailyLimitConfigMutation", m)
-}
-
-// The ModelTokenDailyUsageFunc type is an adapter to allow the use of ordinary
-// function as ModelTokenDailyUsage mutator.
-type ModelTokenDailyUsageFunc func(context.Context, *ent.ModelTokenDailyUsageMutation) (ent.Value, error)
-
-// Mutate calls f(ctx, m).
-func (f ModelTokenDailyUsageFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	if mv, ok := m.(*ent.ModelTokenDailyUsageMutation); ok {
-		return f(ctx, mv)
-	}
-	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ModelTokenDailyUsageMutation", m)
 }
 
 // The PaymentAuditLogFunc type is an adapter to allow the use of ordinary
@@ -465,6 +417,66 @@ func (f TLSFingerprintProfileFunc) Mutate(ctx context.Context, m ent.Mutation) (
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.TLSFingerprintProfileMutation", m)
 }
 
+// The TokenStatAggregateFunc type is an adapter to allow the use of ordinary
+// function as TokenStatAggregate mutator.
+type TokenStatAggregateFunc func(context.Context, *ent.TokenStatAggregateMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f TokenStatAggregateFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.TokenStatAggregateMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.TokenStatAggregateMutation", m)
+}
+
+// The TokenStatPeriodStateFunc type is an adapter to allow the use of ordinary
+// function as TokenStatPeriodState mutator.
+type TokenStatPeriodStateFunc func(context.Context, *ent.TokenStatPeriodStateMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f TokenStatPeriodStateFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.TokenStatPeriodStateMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.TokenStatPeriodStateMutation", m)
+}
+
+// The TokenStatProjectionFunc type is an adapter to allow the use of ordinary
+// function as TokenStatProjection mutator.
+type TokenStatProjectionFunc func(context.Context, *ent.TokenStatProjectionMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f TokenStatProjectionFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.TokenStatProjectionMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.TokenStatProjectionMutation", m)
+}
+
+// The TokenStatProjectionMetricFunc type is an adapter to allow the use of ordinary
+// function as TokenStatProjectionMetric mutator.
+type TokenStatProjectionMetricFunc func(context.Context, *ent.TokenStatProjectionMetricMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f TokenStatProjectionMetricFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.TokenStatProjectionMetricMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.TokenStatProjectionMetricMutation", m)
+}
+
+// The TokenStatQuotaRuleFunc type is an adapter to allow the use of ordinary
+// function as TokenStatQuotaRule mutator.
+type TokenStatQuotaRuleFunc func(context.Context, *ent.TokenStatQuotaRuleMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f TokenStatQuotaRuleFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.TokenStatQuotaRuleMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.TokenStatQuotaRuleMutation", m)
+}
+
 // The UsageCleanupTaskFunc type is an adapter to allow the use of ordinary
 // function as UsageCleanupTask mutator.
 type UsageCleanupTaskFunc func(context.Context, *ent.UsageCleanupTaskMutation) (ent.Value, error)
@@ -535,30 +547,6 @@ func (f UserAttributeValueFunc) Mutate(ctx context.Context, m ent.Mutation) (ent
 		return f(ctx, mv)
 	}
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.UserAttributeValueMutation", m)
-}
-
-// The UserModelTokenDailyLimitConfigFunc type is an adapter to allow the use of ordinary
-// function as UserModelTokenDailyLimitConfig mutator.
-type UserModelTokenDailyLimitConfigFunc func(context.Context, *ent.UserModelTokenDailyLimitConfigMutation) (ent.Value, error)
-
-// Mutate calls f(ctx, m).
-func (f UserModelTokenDailyLimitConfigFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	if mv, ok := m.(*ent.UserModelTokenDailyLimitConfigMutation); ok {
-		return f(ctx, mv)
-	}
-	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.UserModelTokenDailyLimitConfigMutation", m)
-}
-
-// The UserModelTokenDailyUsageFunc type is an adapter to allow the use of ordinary
-// function as UserModelTokenDailyUsage mutator.
-type UserModelTokenDailyUsageFunc func(context.Context, *ent.UserModelTokenDailyUsageMutation) (ent.Value, error)
-
-// Mutate calls f(ctx, m).
-func (f UserModelTokenDailyUsageFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
-	if mv, ok := m.(*ent.UserModelTokenDailyUsageMutation); ok {
-		return f(ctx, mv)
-	}
-	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.UserModelTokenDailyUsageMutation", m)
 }
 
 // The UserPlatformQuotaFunc type is an adapter to allow the use of ordinary

@@ -27,6 +27,7 @@ func TestRBACMiddlewarePermissionWildcardAndDenial(t *testing.T) {
 		effective  rbac.EffectivePermissions
 		wantStatus int
 		wantCalled bool
+		wantSuper  bool
 	}{
 		{name: "missing principal", wantStatus: http.StatusUnauthorized},
 		{name: "ordinary permission", principal: &rbac.Principal{UserID: 1, Status: "active"},
@@ -34,9 +35,9 @@ func TestRBACMiddlewarePermissionWildcardAndDenial(t *testing.T) {
 			wantStatus: http.StatusNoContent, wantCalled: true},
 		{name: "wildcard from role", principal: &rbac.Principal{UserID: 1, Status: "active"},
 			effective:  rbac.EffectivePermissions{Permissions: []string{rbac.PermissionAll}, IsSuperAdmin: true},
-			wantStatus: http.StatusNoContent, wantCalled: true},
+			wantStatus: http.StatusNoContent, wantCalled: true, wantSuper: true},
 		{name: "admin api key principal", principal: &rbac.Principal{UserID: 1, Status: "active", SuperAdmin: true},
-			wantStatus: http.StatusNoContent, wantCalled: true},
+			wantStatus: http.StatusNoContent, wantCalled: true, wantSuper: true},
 		{name: "permission denied", principal: &rbac.Principal{UserID: 1, Status: "active"},
 			wantStatus: http.StatusForbidden},
 	}
@@ -45,18 +46,25 @@ func TestRBACMiddlewarePermissionWildcardAndDenial(t *testing.T) {
 			gin.SetMode(gin.TestMode)
 			router := gin.New()
 			called := false
+			superAdmin := false
 			router.GET("/trial", func(c *gin.Context) {
 				if tt.principal != nil {
 					rbac.SetPrincipal(c, *tt.principal)
 				}
 				c.Next()
 			}, RequirePermission(permissionProviderStub{effective: tt.effective}, RBACModeEnforce, nil)(rbac.PermissionUsersRead),
-				func(c *gin.Context) { called = true; c.Status(http.StatusNoContent) })
+				func(c *gin.Context) {
+					called = true
+					principal, _ := rbac.PrincipalFromContext(c)
+					superAdmin = principal.SuperAdmin
+					c.Status(http.StatusNoContent)
+				})
 			request := httptest.NewRequest(http.MethodGet, "/trial", nil)
 			response := httptest.NewRecorder()
 			router.ServeHTTP(response, request)
 			require.Equal(t, tt.wantStatus, response.Code)
 			require.Equal(t, tt.wantCalled, called)
+			require.Equal(t, tt.wantSuper, superAdmin)
 		})
 	}
 }

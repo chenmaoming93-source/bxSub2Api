@@ -50,6 +50,7 @@ func TestProvideCleanup_WithMinimalDependencies_NoPanic(t *testing.T) {
 	opsSystemLogSinkSvc := service.NewOpsSystemLogSink(nil)
 
 	cleanup := provideCleanup(
+		&dynamicTokenStatisticsBootstrap{},
 		nil, // entClient
 		nil, // redis
 		&service.OpsMetricsCollector{},
@@ -80,7 +81,6 @@ func TestProvideCleanup_WithMinimalDependencies_NoPanic(t *testing.T) {
 		nil, // paymentOrderExpiry
 		nil, // channelMonitorRunner
 		nil, // quotaFlusher
-		nil, // tokenStatisticsScheduler
 	)
 
 	require.NotPanics(t, func() {

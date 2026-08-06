@@ -7,6 +7,8 @@ import "context"
 // excludedAccountIDs contains account IDs that have already failed upstream and
 // should be skipped; candidates whose accounts are all excluded will be bypassed.
 func (s *OpenAIGatewayService) ResolveQuotaAllowedGroupRoute(ctx context.Context, group *Group, requestedModel string, userID int64, excludedAccountIDs map[int64]struct{}) (string, []int64, bool, error) {
+	_ = ctx
+	_ = userID
 	if group == nil {
 		return requestedModel, nil, false, nil
 	}
@@ -14,7 +16,6 @@ func (s *OpenAIGatewayService) ResolveQuotaAllowedGroupRoute(ctx context.Context
 	if len(candidates) == 0 {
 		return requestedModel, nil, false, nil
 	}
-	quotaExhausted := 0
 	allExcluded := 0
 	for _, candidate := range candidates {
 		model := candidate.Model
@@ -26,18 +27,7 @@ func (s *OpenAIGatewayService) ResolveQuotaAllowedGroupRoute(ctx context.Context
 			allExcluded++
 			continue
 		}
-		exhausted, err := CheckRouteCandidateDailyTokenQuotas(ctx, s.dailyTokenQuotaRepo, group.ID, requestedModel, model, userID)
-		if err != nil {
-			return "", nil, true, err
-		}
-		if exhausted {
-			quotaExhausted++
-			continue
-		}
 		return model, candidate.AccountIDs, true, nil
-	}
-	if quotaExhausted+allExcluded == len(candidates) {
-		return "", nil, true, ErrRoutedTokenQuotaExhausted
 	}
 	return "", nil, true, ErrNoAvailableAccounts
 }

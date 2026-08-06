@@ -75,11 +75,11 @@ func TestAdminComplianceGuardDoesNotBlockDelegatedRBACUser(t *testing.T) {
 		c.Next()
 	})
 	router.Use(AdminComplianceGuard(svc))
-	router.GET("/api/v1/admin/token-usage/models", func(c *gin.Context) {
+	router.GET("/api/v1/admin/token-statistics/status", func(c *gin.Context) {
 		c.String(http.StatusOK, "ok")
 	})
 
-	req := httptest.NewRequest(http.MethodGet, "/api/v1/admin/token-usage/models", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/admin/token-statistics/status", nil)
 	w := httptest.NewRecorder()
 	router.ServeHTTP(w, req)
 

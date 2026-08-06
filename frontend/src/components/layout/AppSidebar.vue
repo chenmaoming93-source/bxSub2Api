@@ -735,17 +735,7 @@ const adminNavItems = computed((): NavItem[] => {
     { path: '/admin/groups', label: t('nav.groups'), icon: FolderIcon, hideInSimpleMode: true },
     { path: '/admin/users', label: t('nav.users'), icon: UsersIcon, hideInSimpleMode: true },
     { path: '/admin/roles', label: '角色权限', icon: ShieldIcon, hideInSimpleMode: true },
-    {
-      path: '/admin/token-usage/models',
-      label: t('nav.tokenUsage'),
-      icon: ChartIcon,
-      hideInSimpleMode: true,
-      children: [
-        { path: '/admin/token-usage/models', label: t('nav.tokenUsageModels'), icon: ChartIcon },
-        { path: '/admin/token-usage/routes', label: t('nav.tokenUsageRoutes'), icon: ChartIcon },
-        { path: '/admin/token-usage/users', label: t('nav.tokenUsageUsers'), icon: ChartIcon },
-      ],
-    },
+    { path: '/admin/token-statistics', label: '可配置 Token 统计', icon: ChartIcon, hideInSimpleMode: true },
     { path: '/admin/settings', label: t('nav.settings'), icon: CogIcon },
     { path: '/admin/ops', label: t('nav.ops'), icon: ChartIcon, featureFlag: flagOpsMonitoring },
     {

@@ -18,12 +18,8 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/channelmonitorrequesttemplate"
 	"github.com/Wei-Shaw/sub2api/ent/errorpassthroughrule"
 	"github.com/Wei-Shaw/sub2api/ent/group"
-	"github.com/Wei-Shaw/sub2api/ent/groupcandidatetokendailylimitconfig"
-	"github.com/Wei-Shaw/sub2api/ent/groupcandidatetokendailyusage"
 	"github.com/Wei-Shaw/sub2api/ent/idempotencyrecord"
 	"github.com/Wei-Shaw/sub2api/ent/identityadoptiondecision"
-	"github.com/Wei-Shaw/sub2api/ent/modeltokendailylimitconfig"
-	"github.com/Wei-Shaw/sub2api/ent/modeltokendailyusage"
 	"github.com/Wei-Shaw/sub2api/ent/paymentauditlog"
 	"github.com/Wei-Shaw/sub2api/ent/paymentorder"
 	"github.com/Wei-Shaw/sub2api/ent/paymentproviderinstance"
@@ -44,14 +40,17 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/setting"
 	"github.com/Wei-Shaw/sub2api/ent/subscriptionplan"
 	"github.com/Wei-Shaw/sub2api/ent/tlsfingerprintprofile"
+	"github.com/Wei-Shaw/sub2api/ent/tokenstataggregate"
+	"github.com/Wei-Shaw/sub2api/ent/tokenstatperiodstate"
+	"github.com/Wei-Shaw/sub2api/ent/tokenstatprojection"
+	"github.com/Wei-Shaw/sub2api/ent/tokenstatprojectionmetric"
+	"github.com/Wei-Shaw/sub2api/ent/tokenstatquotarule"
 	"github.com/Wei-Shaw/sub2api/ent/usagecleanuptask"
 	"github.com/Wei-Shaw/sub2api/ent/usagelog"
 	"github.com/Wei-Shaw/sub2api/ent/user"
 	"github.com/Wei-Shaw/sub2api/ent/userallowedgroup"
 	"github.com/Wei-Shaw/sub2api/ent/userattributedefinition"
 	"github.com/Wei-Shaw/sub2api/ent/userattributevalue"
-	"github.com/Wei-Shaw/sub2api/ent/usermodeltokendailylimitconfig"
-	"github.com/Wei-Shaw/sub2api/ent/usermodeltokendailyusage"
 	"github.com/Wei-Shaw/sub2api/ent/userplatformquota"
 	"github.com/Wei-Shaw/sub2api/ent/usersubscription"
 	"github.com/Wei-Shaw/sub2api/internal/domain"
@@ -907,118 +906,6 @@ func init() {
 	groupDescRpmLimit := groupFields[31].Descriptor()
 	// group.DefaultRpmLimit holds the default value on creation for the rpm_limit field.
 	group.DefaultRpmLimit = groupDescRpmLimit.Default.(int)
-	groupcandidatetokendailylimitconfigMixin := schema.GroupCandidateTokenDailyLimitConfig{}.Mixin()
-	groupcandidatetokendailylimitconfigMixinFields0 := groupcandidatetokendailylimitconfigMixin[0].Fields()
-	_ = groupcandidatetokendailylimitconfigMixinFields0
-	groupcandidatetokendailylimitconfigFields := schema.GroupCandidateTokenDailyLimitConfig{}.Fields()
-	_ = groupcandidatetokendailylimitconfigFields
-	// groupcandidatetokendailylimitconfigDescCreatedAt is the schema descriptor for created_at field.
-	groupcandidatetokendailylimitconfigDescCreatedAt := groupcandidatetokendailylimitconfigMixinFields0[0].Descriptor()
-	// groupcandidatetokendailylimitconfig.DefaultCreatedAt holds the default value on creation for the created_at field.
-	groupcandidatetokendailylimitconfig.DefaultCreatedAt = groupcandidatetokendailylimitconfigDescCreatedAt.Default.(func() time.Time)
-	// groupcandidatetokendailylimitconfigDescUpdatedAt is the schema descriptor for updated_at field.
-	groupcandidatetokendailylimitconfigDescUpdatedAt := groupcandidatetokendailylimitconfigMixinFields0[1].Descriptor()
-	// groupcandidatetokendailylimitconfig.DefaultUpdatedAt holds the default value on creation for the updated_at field.
-	groupcandidatetokendailylimitconfig.DefaultUpdatedAt = groupcandidatetokendailylimitconfigDescUpdatedAt.Default.(func() time.Time)
-	// groupcandidatetokendailylimitconfig.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
-	groupcandidatetokendailylimitconfig.UpdateDefaultUpdatedAt = groupcandidatetokendailylimitconfigDescUpdatedAt.UpdateDefault.(func() time.Time)
-	// groupcandidatetokendailylimitconfigDescRouteAlias is the schema descriptor for route_alias field.
-	groupcandidatetokendailylimitconfigDescRouteAlias := groupcandidatetokendailylimitconfigFields[1].Descriptor()
-	// groupcandidatetokendailylimitconfig.RouteAliasValidator is a validator for the "route_alias" field. It is called by the builders before save.
-	groupcandidatetokendailylimitconfig.RouteAliasValidator = func() func(string) error {
-		validators := groupcandidatetokendailylimitconfigDescRouteAlias.Validators
-		fns := [...]func(string) error{
-			validators[0].(func(string) error),
-			validators[1].(func(string) error),
-		}
-		return func(route_alias string) error {
-			for _, fn := range fns {
-				if err := fn(route_alias); err != nil {
-					return err
-				}
-			}
-			return nil
-		}
-	}()
-	// groupcandidatetokendailylimitconfigDescUpstreamModel is the schema descriptor for upstream_model field.
-	groupcandidatetokendailylimitconfigDescUpstreamModel := groupcandidatetokendailylimitconfigFields[2].Descriptor()
-	// groupcandidatetokendailylimitconfig.UpstreamModelValidator is a validator for the "upstream_model" field. It is called by the builders before save.
-	groupcandidatetokendailylimitconfig.UpstreamModelValidator = func() func(string) error {
-		validators := groupcandidatetokendailylimitconfigDescUpstreamModel.Validators
-		fns := [...]func(string) error{
-			validators[0].(func(string) error),
-			validators[1].(func(string) error),
-		}
-		return func(upstream_model string) error {
-			for _, fn := range fns {
-				if err := fn(upstream_model); err != nil {
-					return err
-				}
-			}
-			return nil
-		}
-	}()
-	// groupcandidatetokendailylimitconfigDescDailyLimitTokens is the schema descriptor for daily_limit_tokens field.
-	groupcandidatetokendailylimitconfigDescDailyLimitTokens := groupcandidatetokendailylimitconfigFields[3].Descriptor()
-	// groupcandidatetokendailylimitconfig.DailyLimitTokensValidator is a validator for the "daily_limit_tokens" field. It is called by the builders before save.
-	groupcandidatetokendailylimitconfig.DailyLimitTokensValidator = groupcandidatetokendailylimitconfigDescDailyLimitTokens.Validators[0].(func(int64) error)
-	groupcandidatetokendailyusageMixin := schema.GroupCandidateTokenDailyUsage{}.Mixin()
-	groupcandidatetokendailyusageMixinFields0 := groupcandidatetokendailyusageMixin[0].Fields()
-	_ = groupcandidatetokendailyusageMixinFields0
-	groupcandidatetokendailyusageFields := schema.GroupCandidateTokenDailyUsage{}.Fields()
-	_ = groupcandidatetokendailyusageFields
-	// groupcandidatetokendailyusageDescCreatedAt is the schema descriptor for created_at field.
-	groupcandidatetokendailyusageDescCreatedAt := groupcandidatetokendailyusageMixinFields0[0].Descriptor()
-	// groupcandidatetokendailyusage.DefaultCreatedAt holds the default value on creation for the created_at field.
-	groupcandidatetokendailyusage.DefaultCreatedAt = groupcandidatetokendailyusageDescCreatedAt.Default.(func() time.Time)
-	// groupcandidatetokendailyusageDescUpdatedAt is the schema descriptor for updated_at field.
-	groupcandidatetokendailyusageDescUpdatedAt := groupcandidatetokendailyusageMixinFields0[1].Descriptor()
-	// groupcandidatetokendailyusage.DefaultUpdatedAt holds the default value on creation for the updated_at field.
-	groupcandidatetokendailyusage.DefaultUpdatedAt = groupcandidatetokendailyusageDescUpdatedAt.Default.(func() time.Time)
-	// groupcandidatetokendailyusage.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
-	groupcandidatetokendailyusage.UpdateDefaultUpdatedAt = groupcandidatetokendailyusageDescUpdatedAt.UpdateDefault.(func() time.Time)
-	// groupcandidatetokendailyusageDescRouteAlias is the schema descriptor for route_alias field.
-	groupcandidatetokendailyusageDescRouteAlias := groupcandidatetokendailyusageFields[1].Descriptor()
-	// groupcandidatetokendailyusage.RouteAliasValidator is a validator for the "route_alias" field. It is called by the builders before save.
-	groupcandidatetokendailyusage.RouteAliasValidator = func() func(string) error {
-		validators := groupcandidatetokendailyusageDescRouteAlias.Validators
-		fns := [...]func(string) error{
-			validators[0].(func(string) error),
-			validators[1].(func(string) error),
-		}
-		return func(route_alias string) error {
-			for _, fn := range fns {
-				if err := fn(route_alias); err != nil {
-					return err
-				}
-			}
-			return nil
-		}
-	}()
-	// groupcandidatetokendailyusageDescUpstreamModel is the schema descriptor for upstream_model field.
-	groupcandidatetokendailyusageDescUpstreamModel := groupcandidatetokendailyusageFields[2].Descriptor()
-	// groupcandidatetokendailyusage.UpstreamModelValidator is a validator for the "upstream_model" field. It is called by the builders before save.
-	groupcandidatetokendailyusage.UpstreamModelValidator = func() func(string) error {
-		validators := groupcandidatetokendailyusageDescUpstreamModel.Validators
-		fns := [...]func(string) error{
-			validators[0].(func(string) error),
-			validators[1].(func(string) error),
-		}
-		return func(upstream_model string) error {
-			for _, fn := range fns {
-				if err := fn(upstream_model); err != nil {
-					return err
-				}
-			}
-			return nil
-		}
-	}()
-	// groupcandidatetokendailyusageDescUsedTokens is the schema descriptor for used_tokens field.
-	groupcandidatetokendailyusageDescUsedTokens := groupcandidatetokendailyusageFields[4].Descriptor()
-	// groupcandidatetokendailyusage.DefaultUsedTokens holds the default value on creation for the used_tokens field.
-	groupcandidatetokendailyusage.DefaultUsedTokens = groupcandidatetokendailyusageDescUsedTokens.Default.(int64)
-	// groupcandidatetokendailyusage.UsedTokensValidator is a validator for the "used_tokens" field. It is called by the builders before save.
-	groupcandidatetokendailyusage.UsedTokensValidator = groupcandidatetokendailyusageDescUsedTokens.Validators[0].(func(int64) error)
 	idempotencyrecordMixin := schema.IdempotencyRecord{}.Mixin()
 	idempotencyrecordMixinFields0 := idempotencyrecordMixin[0].Fields()
 	_ = idempotencyrecordMixinFields0
@@ -1081,82 +968,6 @@ func init() {
 	identityadoptiondecisionDescDecidedAt := identityadoptiondecisionFields[4].Descriptor()
 	// identityadoptiondecision.DefaultDecidedAt holds the default value on creation for the decided_at field.
 	identityadoptiondecision.DefaultDecidedAt = identityadoptiondecisionDescDecidedAt.Default.(func() time.Time)
-	modeltokendailylimitconfigMixin := schema.ModelTokenDailyLimitConfig{}.Mixin()
-	modeltokendailylimitconfigMixinFields0 := modeltokendailylimitconfigMixin[0].Fields()
-	_ = modeltokendailylimitconfigMixinFields0
-	modeltokendailylimitconfigFields := schema.ModelTokenDailyLimitConfig{}.Fields()
-	_ = modeltokendailylimitconfigFields
-	// modeltokendailylimitconfigDescCreatedAt is the schema descriptor for created_at field.
-	modeltokendailylimitconfigDescCreatedAt := modeltokendailylimitconfigMixinFields0[0].Descriptor()
-	// modeltokendailylimitconfig.DefaultCreatedAt holds the default value on creation for the created_at field.
-	modeltokendailylimitconfig.DefaultCreatedAt = modeltokendailylimitconfigDescCreatedAt.Default.(func() time.Time)
-	// modeltokendailylimitconfigDescUpdatedAt is the schema descriptor for updated_at field.
-	modeltokendailylimitconfigDescUpdatedAt := modeltokendailylimitconfigMixinFields0[1].Descriptor()
-	// modeltokendailylimitconfig.DefaultUpdatedAt holds the default value on creation for the updated_at field.
-	modeltokendailylimitconfig.DefaultUpdatedAt = modeltokendailylimitconfigDescUpdatedAt.Default.(func() time.Time)
-	// modeltokendailylimitconfig.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
-	modeltokendailylimitconfig.UpdateDefaultUpdatedAt = modeltokendailylimitconfigDescUpdatedAt.UpdateDefault.(func() time.Time)
-	// modeltokendailylimitconfigDescModel is the schema descriptor for model field.
-	modeltokendailylimitconfigDescModel := modeltokendailylimitconfigFields[0].Descriptor()
-	// modeltokendailylimitconfig.ModelValidator is a validator for the "model" field. It is called by the builders before save.
-	modeltokendailylimitconfig.ModelValidator = func() func(string) error {
-		validators := modeltokendailylimitconfigDescModel.Validators
-		fns := [...]func(string) error{
-			validators[0].(func(string) error),
-			validators[1].(func(string) error),
-		}
-		return func(model string) error {
-			for _, fn := range fns {
-				if err := fn(model); err != nil {
-					return err
-				}
-			}
-			return nil
-		}
-	}()
-	// modeltokendailylimitconfigDescDailyLimitTokens is the schema descriptor for daily_limit_tokens field.
-	modeltokendailylimitconfigDescDailyLimitTokens := modeltokendailylimitconfigFields[1].Descriptor()
-	// modeltokendailylimitconfig.DailyLimitTokensValidator is a validator for the "daily_limit_tokens" field. It is called by the builders before save.
-	modeltokendailylimitconfig.DailyLimitTokensValidator = modeltokendailylimitconfigDescDailyLimitTokens.Validators[0].(func(int64) error)
-	modeltokendailyusageMixin := schema.ModelTokenDailyUsage{}.Mixin()
-	modeltokendailyusageMixinFields0 := modeltokendailyusageMixin[0].Fields()
-	_ = modeltokendailyusageMixinFields0
-	modeltokendailyusageFields := schema.ModelTokenDailyUsage{}.Fields()
-	_ = modeltokendailyusageFields
-	// modeltokendailyusageDescCreatedAt is the schema descriptor for created_at field.
-	modeltokendailyusageDescCreatedAt := modeltokendailyusageMixinFields0[0].Descriptor()
-	// modeltokendailyusage.DefaultCreatedAt holds the default value on creation for the created_at field.
-	modeltokendailyusage.DefaultCreatedAt = modeltokendailyusageDescCreatedAt.Default.(func() time.Time)
-	// modeltokendailyusageDescUpdatedAt is the schema descriptor for updated_at field.
-	modeltokendailyusageDescUpdatedAt := modeltokendailyusageMixinFields0[1].Descriptor()
-	// modeltokendailyusage.DefaultUpdatedAt holds the default value on creation for the updated_at field.
-	modeltokendailyusage.DefaultUpdatedAt = modeltokendailyusageDescUpdatedAt.Default.(func() time.Time)
-	// modeltokendailyusage.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
-	modeltokendailyusage.UpdateDefaultUpdatedAt = modeltokendailyusageDescUpdatedAt.UpdateDefault.(func() time.Time)
-	// modeltokendailyusageDescModel is the schema descriptor for model field.
-	modeltokendailyusageDescModel := modeltokendailyusageFields[0].Descriptor()
-	// modeltokendailyusage.ModelValidator is a validator for the "model" field. It is called by the builders before save.
-	modeltokendailyusage.ModelValidator = func() func(string) error {
-		validators := modeltokendailyusageDescModel.Validators
-		fns := [...]func(string) error{
-			validators[0].(func(string) error),
-			validators[1].(func(string) error),
-		}
-		return func(model string) error {
-			for _, fn := range fns {
-				if err := fn(model); err != nil {
-					return err
-				}
-			}
-			return nil
-		}
-	}()
-	// modeltokendailyusageDescUsedTokens is the schema descriptor for used_tokens field.
-	modeltokendailyusageDescUsedTokens := modeltokendailyusageFields[2].Descriptor()
-	// modeltokendailyusage.DefaultUsedTokens holds the default value on creation for the used_tokens field.
-	modeltokendailyusage.DefaultUsedTokens = modeltokendailyusageDescUsedTokens.Default.(int64)
-	// modeltokendailyusage.UsedTokensValidator is a validator for the "used_tokens" field. It is called by the builders before save.
-	modeltokendailyusage.UsedTokensValidator = modeltokendailyusageDescUsedTokens.Validators[0].(func(int64) error)
 	paymentauditlogFields := schema.PaymentAuditLog{}.Fields()
 	_ = paymentauditlogFields
 	// paymentauditlogDescOrderID is the schema descriptor for order_id field.
@@ -2099,6 +1910,401 @@ func init() {
 	tlsfingerprintprofileDescEnableGrease := tlsfingerprintprofileFields[2].Descriptor()
 	// tlsfingerprintprofile.DefaultEnableGrease holds the default value on creation for the enable_grease field.
 	tlsfingerprintprofile.DefaultEnableGrease = tlsfingerprintprofileDescEnableGrease.Default.(bool)
+	tokenstataggregateMixin := schema.TokenStatAggregate{}.Mixin()
+	tokenstataggregateMixinFields0 := tokenstataggregateMixin[0].Fields()
+	_ = tokenstataggregateMixinFields0
+	tokenstataggregateFields := schema.TokenStatAggregate{}.Fields()
+	_ = tokenstataggregateFields
+	// tokenstataggregateDescCreatedAt is the schema descriptor for created_at field.
+	tokenstataggregateDescCreatedAt := tokenstataggregateMixinFields0[0].Descriptor()
+	// tokenstataggregate.DefaultCreatedAt holds the default value on creation for the created_at field.
+	tokenstataggregate.DefaultCreatedAt = tokenstataggregateDescCreatedAt.Default.(func() time.Time)
+	// tokenstataggregateDescUpdatedAt is the schema descriptor for updated_at field.
+	tokenstataggregateDescUpdatedAt := tokenstataggregateMixinFields0[1].Descriptor()
+	// tokenstataggregate.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	tokenstataggregate.DefaultUpdatedAt = tokenstataggregateDescUpdatedAt.Default.(func() time.Time)
+	// tokenstataggregate.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	tokenstataggregate.UpdateDefaultUpdatedAt = tokenstataggregateDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// tokenstataggregateDescPeriodType is the schema descriptor for period_type field.
+	tokenstataggregateDescPeriodType := tokenstataggregateFields[0].Descriptor()
+	// tokenstataggregate.PeriodTypeValidator is a validator for the "period_type" field. It is called by the builders before save.
+	tokenstataggregate.PeriodTypeValidator = func() func(string) error {
+		validators := tokenstataggregateDescPeriodType.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(period_type string) error {
+			for _, fn := range fns {
+				if err := fn(period_type); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// tokenstataggregateDescProjectionID is the schema descriptor for projection_id field.
+	tokenstataggregateDescProjectionID := tokenstataggregateFields[3].Descriptor()
+	// tokenstataggregate.ProjectionIDValidator is a validator for the "projection_id" field. It is called by the builders before save.
+	tokenstataggregate.ProjectionIDValidator = tokenstataggregateDescProjectionID.Validators[0].(func(int64) error)
+	// tokenstataggregateDescMetricCode is the schema descriptor for metric_code field.
+	tokenstataggregateDescMetricCode := tokenstataggregateFields[6].Descriptor()
+	// tokenstataggregate.MetricCodeValidator is a validator for the "metric_code" field. It is called by the builders before save.
+	tokenstataggregate.MetricCodeValidator = func() func(string) error {
+		validators := tokenstataggregateDescMetricCode.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(metric_code string) error {
+			for _, fn := range fns {
+				if err := fn(metric_code); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// tokenstataggregateDescMetricValue is the schema descriptor for metric_value field.
+	tokenstataggregateDescMetricValue := tokenstataggregateFields[7].Descriptor()
+	// tokenstataggregate.DefaultMetricValue holds the default value on creation for the metric_value field.
+	tokenstataggregate.DefaultMetricValue = tokenstataggregateDescMetricValue.Default.(int64)
+	// tokenstataggregate.MetricValueValidator is a validator for the "metric_value" field. It is called by the builders before save.
+	tokenstataggregate.MetricValueValidator = tokenstataggregateDescMetricValue.Validators[0].(func(int64) error)
+	// tokenstataggregateDescSourceVersion is the schema descriptor for source_version field.
+	tokenstataggregateDescSourceVersion := tokenstataggregateFields[8].Descriptor()
+	// tokenstataggregate.DefaultSourceVersion holds the default value on creation for the source_version field.
+	tokenstataggregate.DefaultSourceVersion = tokenstataggregateDescSourceVersion.Default.(int64)
+	// tokenstataggregate.SourceVersionValidator is a validator for the "source_version" field. It is called by the builders before save.
+	tokenstataggregate.SourceVersionValidator = tokenstataggregateDescSourceVersion.Validators[0].(func(int64) error)
+	// tokenstataggregateDescRouteAlias is the schema descriptor for route_alias field.
+	tokenstataggregateDescRouteAlias := tokenstataggregateFields[12].Descriptor()
+	// tokenstataggregate.RouteAliasValidator is a validator for the "route_alias" field. It is called by the builders before save.
+	tokenstataggregate.RouteAliasValidator = tokenstataggregateDescRouteAlias.Validators[0].(func(string) error)
+	// tokenstataggregateDescUpstreamModel is the schema descriptor for upstream_model field.
+	tokenstataggregateDescUpstreamModel := tokenstataggregateFields[14].Descriptor()
+	// tokenstataggregate.UpstreamModelValidator is a validator for the "upstream_model" field. It is called by the builders before save.
+	tokenstataggregate.UpstreamModelValidator = tokenstataggregateDescUpstreamModel.Validators[0].(func(string) error)
+	tokenstatperiodstateMixin := schema.TokenStatPeriodState{}.Mixin()
+	tokenstatperiodstateMixinFields0 := tokenstatperiodstateMixin[0].Fields()
+	_ = tokenstatperiodstateMixinFields0
+	tokenstatperiodstateFields := schema.TokenStatPeriodState{}.Fields()
+	_ = tokenstatperiodstateFields
+	// tokenstatperiodstateDescCreatedAt is the schema descriptor for created_at field.
+	tokenstatperiodstateDescCreatedAt := tokenstatperiodstateMixinFields0[0].Descriptor()
+	// tokenstatperiodstate.DefaultCreatedAt holds the default value on creation for the created_at field.
+	tokenstatperiodstate.DefaultCreatedAt = tokenstatperiodstateDescCreatedAt.Default.(func() time.Time)
+	// tokenstatperiodstateDescUpdatedAt is the schema descriptor for updated_at field.
+	tokenstatperiodstateDescUpdatedAt := tokenstatperiodstateMixinFields0[1].Descriptor()
+	// tokenstatperiodstate.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	tokenstatperiodstate.DefaultUpdatedAt = tokenstatperiodstateDescUpdatedAt.Default.(func() time.Time)
+	// tokenstatperiodstate.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	tokenstatperiodstate.UpdateDefaultUpdatedAt = tokenstatperiodstateDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// tokenstatperiodstateDescPeriodType is the schema descriptor for period_type field.
+	tokenstatperiodstateDescPeriodType := tokenstatperiodstateFields[0].Descriptor()
+	// tokenstatperiodstate.PeriodTypeValidator is a validator for the "period_type" field. It is called by the builders before save.
+	tokenstatperiodstate.PeriodTypeValidator = func() func(string) error {
+		validators := tokenstatperiodstateDescPeriodType.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(period_type string) error {
+			for _, fn := range fns {
+				if err := fn(period_type); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// tokenstatperiodstateDescState is the schema descriptor for state field.
+	tokenstatperiodstateDescState := tokenstatperiodstateFields[3].Descriptor()
+	// tokenstatperiodstate.DefaultState holds the default value on creation for the state field.
+	tokenstatperiodstate.DefaultState = tokenstatperiodstateDescState.Default.(string)
+	// tokenstatperiodstate.StateValidator is a validator for the "state" field. It is called by the builders before save.
+	tokenstatperiodstate.StateValidator = func() func(string) error {
+		validators := tokenstatperiodstateDescState.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(state string) error {
+			for _, fn := range fns {
+				if err := fn(state); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// tokenstatperiodstateDescFinalSyncVersion is the schema descriptor for final_sync_version field.
+	tokenstatperiodstateDescFinalSyncVersion := tokenstatperiodstateFields[4].Descriptor()
+	// tokenstatperiodstate.DefaultFinalSyncVersion holds the default value on creation for the final_sync_version field.
+	tokenstatperiodstate.DefaultFinalSyncVersion = tokenstatperiodstateDescFinalSyncVersion.Default.(int64)
+	tokenstatprojectionMixin := schema.TokenStatProjection{}.Mixin()
+	tokenstatprojectionMixinFields0 := tokenstatprojectionMixin[0].Fields()
+	_ = tokenstatprojectionMixinFields0
+	tokenstatprojectionFields := schema.TokenStatProjection{}.Fields()
+	_ = tokenstatprojectionFields
+	// tokenstatprojectionDescCreatedAt is the schema descriptor for created_at field.
+	tokenstatprojectionDescCreatedAt := tokenstatprojectionMixinFields0[0].Descriptor()
+	// tokenstatprojection.DefaultCreatedAt holds the default value on creation for the created_at field.
+	tokenstatprojection.DefaultCreatedAt = tokenstatprojectionDescCreatedAt.Default.(func() time.Time)
+	// tokenstatprojectionDescUpdatedAt is the schema descriptor for updated_at field.
+	tokenstatprojectionDescUpdatedAt := tokenstatprojectionMixinFields0[1].Descriptor()
+	// tokenstatprojection.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	tokenstatprojection.DefaultUpdatedAt = tokenstatprojectionDescUpdatedAt.Default.(func() time.Time)
+	// tokenstatprojection.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	tokenstatprojection.UpdateDefaultUpdatedAt = tokenstatprojectionDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// tokenstatprojectionDescName is the schema descriptor for name field.
+	tokenstatprojectionDescName := tokenstatprojectionFields[0].Descriptor()
+	// tokenstatprojection.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	tokenstatprojection.NameValidator = func() func(string) error {
+		validators := tokenstatprojectionDescName.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(name string) error {
+			for _, fn := range fns {
+				if err := fn(name); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// tokenstatprojectionDescDimensionSignature is the schema descriptor for dimension_signature field.
+	tokenstatprojectionDescDimensionSignature := tokenstatprojectionFields[2].Descriptor()
+	// tokenstatprojection.DimensionSignatureValidator is a validator for the "dimension_signature" field. It is called by the builders before save.
+	tokenstatprojection.DimensionSignatureValidator = func() func(string) error {
+		validators := tokenstatprojectionDescDimensionSignature.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(dimension_signature string) error {
+			for _, fn := range fns {
+				if err := fn(dimension_signature); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// tokenstatprojectionDescStatus is the schema descriptor for status field.
+	tokenstatprojectionDescStatus := tokenstatprojectionFields[3].Descriptor()
+	// tokenstatprojection.DefaultStatus holds the default value on creation for the status field.
+	tokenstatprojection.DefaultStatus = tokenstatprojectionDescStatus.Default.(string)
+	// tokenstatprojection.StatusValidator is a validator for the "status" field. It is called by the builders before save.
+	tokenstatprojection.StatusValidator = func() func(string) error {
+		validators := tokenstatprojectionDescStatus.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(status string) error {
+			for _, fn := range fns {
+				if err := fn(status); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// tokenstatprojectionDescConfigVersion is the schema descriptor for config_version field.
+	tokenstatprojectionDescConfigVersion := tokenstatprojectionFields[4].Descriptor()
+	// tokenstatprojection.DefaultConfigVersion holds the default value on creation for the config_version field.
+	tokenstatprojection.DefaultConfigVersion = tokenstatprojectionDescConfigVersion.Default.(uint64)
+	tokenstatprojectionmetricMixin := schema.TokenStatProjectionMetric{}.Mixin()
+	tokenstatprojectionmetricMixinFields0 := tokenstatprojectionmetricMixin[0].Fields()
+	_ = tokenstatprojectionmetricMixinFields0
+	tokenstatprojectionmetricFields := schema.TokenStatProjectionMetric{}.Fields()
+	_ = tokenstatprojectionmetricFields
+	// tokenstatprojectionmetricDescCreatedAt is the schema descriptor for created_at field.
+	tokenstatprojectionmetricDescCreatedAt := tokenstatprojectionmetricMixinFields0[0].Descriptor()
+	// tokenstatprojectionmetric.DefaultCreatedAt holds the default value on creation for the created_at field.
+	tokenstatprojectionmetric.DefaultCreatedAt = tokenstatprojectionmetricDescCreatedAt.Default.(func() time.Time)
+	// tokenstatprojectionmetricDescUpdatedAt is the schema descriptor for updated_at field.
+	tokenstatprojectionmetricDescUpdatedAt := tokenstatprojectionmetricMixinFields0[1].Descriptor()
+	// tokenstatprojectionmetric.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	tokenstatprojectionmetric.DefaultUpdatedAt = tokenstatprojectionmetricDescUpdatedAt.Default.(func() time.Time)
+	// tokenstatprojectionmetric.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	tokenstatprojectionmetric.UpdateDefaultUpdatedAt = tokenstatprojectionmetricDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// tokenstatprojectionmetricDescProjectionID is the schema descriptor for projection_id field.
+	tokenstatprojectionmetricDescProjectionID := tokenstatprojectionmetricFields[0].Descriptor()
+	// tokenstatprojectionmetric.ProjectionIDValidator is a validator for the "projection_id" field. It is called by the builders before save.
+	tokenstatprojectionmetric.ProjectionIDValidator = tokenstatprojectionmetricDescProjectionID.Validators[0].(func(int64) error)
+	// tokenstatprojectionmetricDescMetricCode is the schema descriptor for metric_code field.
+	tokenstatprojectionmetricDescMetricCode := tokenstatprojectionmetricFields[1].Descriptor()
+	// tokenstatprojectionmetric.MetricCodeValidator is a validator for the "metric_code" field. It is called by the builders before save.
+	tokenstatprojectionmetric.MetricCodeValidator = func() func(string) error {
+		validators := tokenstatprojectionmetricDescMetricCode.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(metric_code string) error {
+			for _, fn := range fns {
+				if err := fn(metric_code); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// tokenstatprojectionmetricDescStatus is the schema descriptor for status field.
+	tokenstatprojectionmetricDescStatus := tokenstatprojectionmetricFields[2].Descriptor()
+	// tokenstatprojectionmetric.DefaultStatus holds the default value on creation for the status field.
+	tokenstatprojectionmetric.DefaultStatus = tokenstatprojectionmetricDescStatus.Default.(string)
+	// tokenstatprojectionmetric.StatusValidator is a validator for the "status" field. It is called by the builders before save.
+	tokenstatprojectionmetric.StatusValidator = func() func(string) error {
+		validators := tokenstatprojectionmetricDescStatus.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(status string) error {
+			for _, fn := range fns {
+				if err := fn(status); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	tokenstatquotaruleMixin := schema.TokenStatQuotaRule{}.Mixin()
+	tokenstatquotaruleMixinFields0 := tokenstatquotaruleMixin[0].Fields()
+	_ = tokenstatquotaruleMixinFields0
+	tokenstatquotaruleFields := schema.TokenStatQuotaRule{}.Fields()
+	_ = tokenstatquotaruleFields
+	// tokenstatquotaruleDescCreatedAt is the schema descriptor for created_at field.
+	tokenstatquotaruleDescCreatedAt := tokenstatquotaruleMixinFields0[0].Descriptor()
+	// tokenstatquotarule.DefaultCreatedAt holds the default value on creation for the created_at field.
+	tokenstatquotarule.DefaultCreatedAt = tokenstatquotaruleDescCreatedAt.Default.(func() time.Time)
+	// tokenstatquotaruleDescUpdatedAt is the schema descriptor for updated_at field.
+	tokenstatquotaruleDescUpdatedAt := tokenstatquotaruleMixinFields0[1].Descriptor()
+	// tokenstatquotarule.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	tokenstatquotarule.DefaultUpdatedAt = tokenstatquotaruleDescUpdatedAt.Default.(func() time.Time)
+	// tokenstatquotarule.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	tokenstatquotarule.UpdateDefaultUpdatedAt = tokenstatquotaruleDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// tokenstatquotaruleDescName is the schema descriptor for name field.
+	tokenstatquotaruleDescName := tokenstatquotaruleFields[0].Descriptor()
+	// tokenstatquotarule.NameValidator is a validator for the "name" field. It is called by the builders before save.
+	tokenstatquotarule.NameValidator = func() func(string) error {
+		validators := tokenstatquotaruleDescName.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(name string) error {
+			for _, fn := range fns {
+				if err := fn(name); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// tokenstatquotaruleDescProjectionID is the schema descriptor for projection_id field.
+	tokenstatquotaruleDescProjectionID := tokenstatquotaruleFields[1].Descriptor()
+	// tokenstatquotarule.ProjectionIDValidator is a validator for the "projection_id" field. It is called by the builders before save.
+	tokenstatquotarule.ProjectionIDValidator = tokenstatquotaruleDescProjectionID.Validators[0].(func(int64) error)
+	// tokenstatquotaruleDescMetricCode is the schema descriptor for metric_code field.
+	tokenstatquotaruleDescMetricCode := tokenstatquotaruleFields[4].Descriptor()
+	// tokenstatquotarule.MetricCodeValidator is a validator for the "metric_code" field. It is called by the builders before save.
+	tokenstatquotarule.MetricCodeValidator = func() func(string) error {
+		validators := tokenstatquotaruleDescMetricCode.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(metric_code string) error {
+			for _, fn := range fns {
+				if err := fn(metric_code); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// tokenstatquotaruleDescPeriodType is the schema descriptor for period_type field.
+	tokenstatquotaruleDescPeriodType := tokenstatquotaruleFields[5].Descriptor()
+	// tokenstatquotarule.PeriodTypeValidator is a validator for the "period_type" field. It is called by the builders before save.
+	tokenstatquotarule.PeriodTypeValidator = func() func(string) error {
+		validators := tokenstatquotaruleDescPeriodType.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(period_type string) error {
+			for _, fn := range fns {
+				if err := fn(period_type); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// tokenstatquotaruleDescLimitValue is the schema descriptor for limit_value field.
+	tokenstatquotaruleDescLimitValue := tokenstatquotaruleFields[6].Descriptor()
+	// tokenstatquotarule.LimitValueValidator is a validator for the "limit_value" field. It is called by the builders before save.
+	tokenstatquotarule.LimitValueValidator = func() func(int64) error {
+		validators := tokenstatquotaruleDescLimitValue.Validators
+		fns := [...]func(int64) error{
+			validators[0].(func(int64) error),
+			validators[1].(func(int64) error),
+		}
+		return func(limit_value int64) error {
+			for _, fn := range fns {
+				if err := fn(limit_value); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// tokenstatquotaruleDescEnforcementMode is the schema descriptor for enforcement_mode field.
+	tokenstatquotaruleDescEnforcementMode := tokenstatquotaruleFields[7].Descriptor()
+	// tokenstatquotarule.DefaultEnforcementMode holds the default value on creation for the enforcement_mode field.
+	tokenstatquotarule.DefaultEnforcementMode = tokenstatquotaruleDescEnforcementMode.Default.(string)
+	// tokenstatquotarule.EnforcementModeValidator is a validator for the "enforcement_mode" field. It is called by the builders before save.
+	tokenstatquotarule.EnforcementModeValidator = func() func(string) error {
+		validators := tokenstatquotaruleDescEnforcementMode.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(enforcement_mode string) error {
+			for _, fn := range fns {
+				if err := fn(enforcement_mode); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// tokenstatquotaruleDescStatus is the schema descriptor for status field.
+	tokenstatquotaruleDescStatus := tokenstatquotaruleFields[8].Descriptor()
+	// tokenstatquotarule.DefaultStatus holds the default value on creation for the status field.
+	tokenstatquotarule.DefaultStatus = tokenstatquotaruleDescStatus.Default.(string)
+	// tokenstatquotarule.StatusValidator is a validator for the "status" field. It is called by the builders before save.
+	tokenstatquotarule.StatusValidator = func() func(string) error {
+		validators := tokenstatquotaruleDescStatus.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(status string) error {
+			for _, fn := range fns {
+				if err := fn(status); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
 	usagecleanuptaskMixin := schema.UsageCleanupTask{}.Mixin()
 	usagecleanuptaskMixinFields0 := usagecleanuptaskMixin[0].Fields()
 	_ = usagecleanuptaskMixinFields0
@@ -2533,82 +2739,6 @@ func init() {
 	userattributevalueDescValue := userattributevalueFields[2].Descriptor()
 	// userattributevalue.DefaultValue holds the default value on creation for the value field.
 	userattributevalue.DefaultValue = userattributevalueDescValue.Default.(string)
-	usermodeltokendailylimitconfigMixin := schema.UserModelTokenDailyLimitConfig{}.Mixin()
-	usermodeltokendailylimitconfigMixinFields0 := usermodeltokendailylimitconfigMixin[0].Fields()
-	_ = usermodeltokendailylimitconfigMixinFields0
-	usermodeltokendailylimitconfigFields := schema.UserModelTokenDailyLimitConfig{}.Fields()
-	_ = usermodeltokendailylimitconfigFields
-	// usermodeltokendailylimitconfigDescCreatedAt is the schema descriptor for created_at field.
-	usermodeltokendailylimitconfigDescCreatedAt := usermodeltokendailylimitconfigMixinFields0[0].Descriptor()
-	// usermodeltokendailylimitconfig.DefaultCreatedAt holds the default value on creation for the created_at field.
-	usermodeltokendailylimitconfig.DefaultCreatedAt = usermodeltokendailylimitconfigDescCreatedAt.Default.(func() time.Time)
-	// usermodeltokendailylimitconfigDescUpdatedAt is the schema descriptor for updated_at field.
-	usermodeltokendailylimitconfigDescUpdatedAt := usermodeltokendailylimitconfigMixinFields0[1].Descriptor()
-	// usermodeltokendailylimitconfig.DefaultUpdatedAt holds the default value on creation for the updated_at field.
-	usermodeltokendailylimitconfig.DefaultUpdatedAt = usermodeltokendailylimitconfigDescUpdatedAt.Default.(func() time.Time)
-	// usermodeltokendailylimitconfig.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
-	usermodeltokendailylimitconfig.UpdateDefaultUpdatedAt = usermodeltokendailylimitconfigDescUpdatedAt.UpdateDefault.(func() time.Time)
-	// usermodeltokendailylimitconfigDescModel is the schema descriptor for model field.
-	usermodeltokendailylimitconfigDescModel := usermodeltokendailylimitconfigFields[1].Descriptor()
-	// usermodeltokendailylimitconfig.ModelValidator is a validator for the "model" field. It is called by the builders before save.
-	usermodeltokendailylimitconfig.ModelValidator = func() func(string) error {
-		validators := usermodeltokendailylimitconfigDescModel.Validators
-		fns := [...]func(string) error{
-			validators[0].(func(string) error),
-			validators[1].(func(string) error),
-		}
-		return func(model string) error {
-			for _, fn := range fns {
-				if err := fn(model); err != nil {
-					return err
-				}
-			}
-			return nil
-		}
-	}()
-	// usermodeltokendailylimitconfigDescDailyLimitTokens is the schema descriptor for daily_limit_tokens field.
-	usermodeltokendailylimitconfigDescDailyLimitTokens := usermodeltokendailylimitconfigFields[2].Descriptor()
-	// usermodeltokendailylimitconfig.DailyLimitTokensValidator is a validator for the "daily_limit_tokens" field. It is called by the builders before save.
-	usermodeltokendailylimitconfig.DailyLimitTokensValidator = usermodeltokendailylimitconfigDescDailyLimitTokens.Validators[0].(func(int64) error)
-	usermodeltokendailyusageMixin := schema.UserModelTokenDailyUsage{}.Mixin()
-	usermodeltokendailyusageMixinFields0 := usermodeltokendailyusageMixin[0].Fields()
-	_ = usermodeltokendailyusageMixinFields0
-	usermodeltokendailyusageFields := schema.UserModelTokenDailyUsage{}.Fields()
-	_ = usermodeltokendailyusageFields
-	// usermodeltokendailyusageDescCreatedAt is the schema descriptor for created_at field.
-	usermodeltokendailyusageDescCreatedAt := usermodeltokendailyusageMixinFields0[0].Descriptor()
-	// usermodeltokendailyusage.DefaultCreatedAt holds the default value on creation for the created_at field.
-	usermodeltokendailyusage.DefaultCreatedAt = usermodeltokendailyusageDescCreatedAt.Default.(func() time.Time)
-	// usermodeltokendailyusageDescUpdatedAt is the schema descriptor for updated_at field.
-	usermodeltokendailyusageDescUpdatedAt := usermodeltokendailyusageMixinFields0[1].Descriptor()
-	// usermodeltokendailyusage.DefaultUpdatedAt holds the default value on creation for the updated_at field.
-	usermodeltokendailyusage.DefaultUpdatedAt = usermodeltokendailyusageDescUpdatedAt.Default.(func() time.Time)
-	// usermodeltokendailyusage.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
-	usermodeltokendailyusage.UpdateDefaultUpdatedAt = usermodeltokendailyusageDescUpdatedAt.UpdateDefault.(func() time.Time)
-	// usermodeltokendailyusageDescModel is the schema descriptor for model field.
-	usermodeltokendailyusageDescModel := usermodeltokendailyusageFields[1].Descriptor()
-	// usermodeltokendailyusage.ModelValidator is a validator for the "model" field. It is called by the builders before save.
-	usermodeltokendailyusage.ModelValidator = func() func(string) error {
-		validators := usermodeltokendailyusageDescModel.Validators
-		fns := [...]func(string) error{
-			validators[0].(func(string) error),
-			validators[1].(func(string) error),
-		}
-		return func(model string) error {
-			for _, fn := range fns {
-				if err := fn(model); err != nil {
-					return err
-				}
-			}
-			return nil
-		}
-	}()
-	// usermodeltokendailyusageDescUsedTokens is the schema descriptor for used_tokens field.
-	usermodeltokendailyusageDescUsedTokens := usermodeltokendailyusageFields[3].Descriptor()
-	// usermodeltokendailyusage.DefaultUsedTokens holds the default value on creation for the used_tokens field.
-	usermodeltokendailyusage.DefaultUsedTokens = usermodeltokendailyusageDescUsedTokens.Default.(int64)
-	// usermodeltokendailyusage.UsedTokensValidator is a validator for the "used_tokens" field. It is called by the builders before save.
-	usermodeltokendailyusage.UsedTokensValidator = usermodeltokendailyusageDescUsedTokens.Validators[0].(func(int64) error)
 	userplatformquotaMixin := schema.UserPlatformQuota{}.Mixin()
 	userplatformquotaMixinHooks1 := userplatformquotaMixin[1].Hooks()
 	userplatformquota.Hooks[0] = userplatformquotaMixinHooks1[0]

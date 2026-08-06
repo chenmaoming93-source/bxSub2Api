@@ -136,6 +136,11 @@ func RequirePermission(
 				AbortWithError(c, http.StatusServiceUnavailable, "AUTHORIZATION_UNAVAILABLE", "Authorization temporarily unavailable")
 				return
 			}
+			// Keep the request principal in sync with the effective RBAC result.
+			// Downstream high-impact mutations (for example granting the admin role)
+			// rely on this flag for an additional super-administrator check.
+			principal.SuperAdmin = effective.IsSuperAdmin
+			rbac.SetPrincipal(c, principal)
 			allowed := effective.IsSuperAdmin || containsPermission(effective.Permissions, permission)
 			if !allowed {
 				denyRBAC(c, principal, permission, mode, audit, "permission_missing")

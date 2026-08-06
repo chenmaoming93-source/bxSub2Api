@@ -5,6 +5,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/internal/handler/admin"
 	"github.com/Wei-Shaw/sub2api/internal/rbac"
 	"github.com/Wei-Shaw/sub2api/internal/service"
+	tokenstat "github.com/Wei-Shaw/sub2api/internal/service/tokenstat"
 
 	"github.com/google/wire"
 )
@@ -48,9 +49,7 @@ func ProvideAdminHandlers(
 	paymentHandler *admin.PaymentHandler,
 	affiliateHandler *admin.AffiliateHandler,
 	complianceHandler *admin.ComplianceHandler,
-	modelTokenQuotaHandler *admin.ModelTokenQuotaHandler,
-	userModelTokenQuotaHandler *admin.UserModelTokenQuotaHandler,
-	tokenUsageReportHandler *admin.TokenUsageReportHandler,
+	dynamicTokenStatisticsHandler *admin.DynamicTokenStatisticsHandler,
 	rbacHandler *admin.RBACHandler,
 ) *AdminHandlers {
 	return &AdminHandlers{
@@ -85,9 +84,7 @@ func ProvideAdminHandlers(
 		Payment:                paymentHandler,
 		Affiliate:              affiliateHandler,
 		Compliance:             complianceHandler,
-		ModelTokenQuota:        modelTokenQuotaHandler,
-		UserModelTokenQuota:    userModelTokenQuotaHandler,
-		TokenUsageReport:       tokenUsageReportHandler,
+		DynamicTokenStatistics: dynamicTokenStatisticsHandler,
 		RBAC:                   rbacHandler,
 	}
 }
@@ -129,26 +126,30 @@ func ProvideHandlers(
 	paymentHandler *PaymentHandler,
 	paymentWebhookHandler *PaymentWebhookHandler,
 	availableChannelHandler *AvailableChannelHandler,
+	externalProvisioningHandler *ExternalProvisioningHandler,
+	externalTokenUsageHandler *ExternalTokenUsageHandler,
 	_ *service.IdempotencyCoordinator,
 	_ *service.IdempotencyCleanupService,
 ) *Handlers {
 	return &Handlers{
-		Auth:             authHandler,
-		User:             userHandler,
-		APIKey:           apiKeyHandler,
-		Usage:            usageHandler,
-		Redeem:           redeemHandler,
-		Subscription:     subscriptionHandler,
-		Announcement:     announcementHandler,
-		ChannelMonitor:   channelMonitorUserHandler,
-		Admin:            adminHandlers,
-		Gateway:          gatewayHandler,
-		OpenAIGateway:    openaiGatewayHandler,
-		Setting:          settingHandler,
-		Totp:             totpHandler,
-		Payment:          paymentHandler,
-		PaymentWebhook:   paymentWebhookHandler,
-		AvailableChannel: availableChannelHandler,
+		Auth:                 authHandler,
+		User:                 userHandler,
+		APIKey:               apiKeyHandler,
+		Usage:                usageHandler,
+		Redeem:               redeemHandler,
+		Subscription:         subscriptionHandler,
+		Announcement:         announcementHandler,
+		ChannelMonitor:       channelMonitorUserHandler,
+		Admin:                adminHandlers,
+		Gateway:              gatewayHandler,
+		OpenAIGateway:        openaiGatewayHandler,
+		Setting:              settingHandler,
+		Totp:                 totpHandler,
+		Payment:              paymentHandler,
+		PaymentWebhook:       paymentWebhookHandler,
+		AvailableChannel:     availableChannelHandler,
+		ExternalProvisioning: externalProvisioningHandler,
+		ExternalTokenUsage:   externalTokenUsageHandler,
 	}
 }
 
@@ -170,6 +171,7 @@ var ProviderSet = wire.NewSet(
 	NewPaymentHandler,
 	NewPaymentWebhookHandler,
 	NewAvailableChannelHandler,
+	NewExternalTokenUsageHandler,
 
 	// Admin handlers
 	admin.NewDashboardHandler,
@@ -204,9 +206,9 @@ var ProviderSet = wire.NewSet(
 	admin.NewPaymentHandler,
 	admin.NewAffiliateHandler,
 	admin.NewComplianceHandler,
-	admin.NewModelTokenQuotaHandler,
-	admin.NewUserModelTokenQuotaHandler,
-	admin.NewTokenUsageReportHandler,
+	admin.NewDynamicTokenStatisticsHandler,
+	tokenstat.NewRuntimeController,
+	tokenstat.NewProjectionAdminService,
 
 	// AdminHandlers and Handlers constructors
 	ProvideAdminHandlers,

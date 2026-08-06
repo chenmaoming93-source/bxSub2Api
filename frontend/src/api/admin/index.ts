@@ -32,9 +32,8 @@ import adminPaymentAPI from './payment'
 import affiliatesAPI from './affiliates'
 import riskControlAPI from './riskControl'
 import adminComplianceAPI from './compliance'
-import modelTokenQuotasAPI from './modelTokenQuotas'
-import tokenUsageAPI from './tokenUsage'
 import rbacAPI from './rbac'
+import dynamicTokenStatisticsAPI from './dynamicTokenStatistics'
 
 /**
  * Unified admin API object for convenient access
@@ -69,9 +68,8 @@ export const adminAPI = {
   affiliates: affiliatesAPI,
   riskControl: riskControlAPI,
   compliance: adminComplianceAPI,
-  modelTokenQuotas: modelTokenQuotasAPI,
-  tokenUsage: tokenUsageAPI,
-  rbac: rbacAPI
+  rbac: rbacAPI,
+  dynamicTokenStatistics: dynamicTokenStatisticsAPI
 }
 
 export {
@@ -104,9 +102,8 @@ export {
   affiliatesAPI,
   riskControlAPI,
   adminComplianceAPI,
-  modelTokenQuotasAPI,
-  tokenUsageAPI,
-  rbacAPI
+  rbacAPI,
+  dynamicTokenStatisticsAPI
 }
 
 export default adminAPI
@@ -117,21 +114,3 @@ export type { ErrorPassthroughRule, CreateRuleRequest, UpdateRuleRequest } from 
 export type { BackupAgentHealth, DataManagementConfig } from './dataManagement'
 export type { TLSFingerprintProfile, CreateProfileRequest, UpdateProfileRequest } from './tlsFingerprintProfile'
 export type { ContentModerationConfig, ContentModerationLog, ModerationMode } from './riskControl'
-export type {
-  ModelTokenQuotaItem,
-  UserModelTokenQuotaItem,
-  ModelTokenQuotaUpdateItem,
-  ModelTokenQuotasResponse,
-  UserModelTokenQuotasResponse
-} from './modelTokenQuotas'
-export type {
-  ModelTokenUsageItem,
-  RouteTokenUsageItem,
-  UserModelTokenUsageItem,
-  TokenUsageReport,
-  TokenUsageOption,
-  TokenUsageQueryParams,
-  ModelReportParams,
-  RouteReportParams,
-  UserReportParams
-} from './tokenUsage'

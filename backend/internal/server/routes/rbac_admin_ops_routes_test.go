@@ -18,11 +18,19 @@ func TestRBACAdminOpsReadWriteAndWebSocketPermissions(t *testing.T) {
 		`"/errors/:id/resolve", rbac.PermissionOpsLogsManage`,
 		`"/system-logs/cleanup", rbac.PermissionOpsLogsManage`,
 		`"/cleanup-tasks", rbac.PermissionUsageAdminManage`,
-		`"/models", rbac.PermissionTokenUsageRead`,
-		`"", rbac.PermissionTokenQuotaUpdate, h.Admin.ModelTokenQuota.Update`,
+		`"/dimensions", rbac.PermissionTokenUsageRead`,
+		`"/projections", rbac.PermissionTokenUsageManage`,
+		`"/quotas", rbac.PermissionTokenQuotaRead`,
+		`"/quotas/:id", rbac.PermissionTokenQuotaUpdate`,
+		`"/quotas/:id/enable", rbac.PermissionTokenQuotaUpdate`,
+		`"/query", rbac.PermissionTokenUsageRead`,
+		`"/status", rbac.PermissionTokenUsageRead`,
 	} {
 		if !strings.Contains(source, check) {
 			t.Errorf("ops/usage/token route mapping missing: %s", check)
 		}
+	}
+	if !strings.Contains(source, `adminDELETE(routes, stats, "/quotas/:id", rbac.PermissionTokenQuotaUpdate`) {
+		t.Error("token quota delete route must use the quota update permission")
 	}
 }

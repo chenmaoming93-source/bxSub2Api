@@ -506,7 +506,6 @@ export interface ModelRoutingCandidate {
   model: string
   account_ids: number[]
   priority: number
-  daily_token_limit: number | null
 }
 
 export type ModelRoutingConfig = Record<string, number[] | ModelRoutingCandidate[]>

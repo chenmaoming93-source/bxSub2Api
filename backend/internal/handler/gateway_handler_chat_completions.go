@@ -159,16 +159,13 @@ func (h *GatewayHandler) ChatCompletions(c *gin.Context) {
 	}
 
 	for {
-		selection, err := h.gatewayService.SelectAccountWithLoadAwareness(c.Request.Context(), apiKey.GroupID, selectionSessionHash, reqModel, fs.FailedAccountIDs, "", int64(0))
+		selection, err := h.gatewayService.SelectAccountWithLoadAwarenessForRequest(c.Request.Context(), apiKey.GroupID, selectionSessionHash, reqModel, fs.FailedAccountIDs, "", service.DynamicTokenRequestIdentity{UserID: apiKey.UserID, APIKeyID: apiKey.ID})
 		if err != nil {
+			fs.AddSelectionFailures(service.ModelCandidateFailuresFromError(err))
 			if len(fs.FailedAccountIDs) == 0 {
 				markOpsRoutingCapacityLimitedIfNoAvailable(c, err)
 				if errors.Is(err, service.ErrRoutedTokenQuotaExhausted) {
-					status, code, message, retryAfter := billingErrorDetails(err)
-					if retryAfter > 0 {
-						c.Header("Retry-After", strconv.Itoa(retryAfter))
-					}
-					h.chatCompletionsErrorResponse(c, status, code, message)
+					h.handleModelCandidatesExhausted(c, fs.CandidateFailures, streamStarted)
 					return
 				}
 				h.chatCompletionsErrorResponse(c, http.StatusServiceUnavailable, "api_error", "No available accounts: "+err.Error())
@@ -181,7 +178,9 @@ func (h *GatewayHandler) ChatCompletions(c *gin.Context) {
 			case FailoverCanceled:
 				return
 			default:
-				if fs.LastFailoverErr != nil {
+				if len(fs.CandidateFailures) > 0 {
+					h.handleModelCandidatesExhausted(c, fs.CandidateFailures, streamStarted)
+				} else if fs.LastFailoverErr != nil {
 					h.handleCCFailoverExhausted(c, fs.LastFailoverErr, streamStarted)
 				} else {
 					h.chatCompletionsErrorResponse(c, http.StatusBadGateway, "server_error", "All available accounts exhausted")
@@ -236,6 +235,7 @@ func (h *GatewayHandler) ChatCompletions(c *gin.Context) {
 		} else {
 			parsedReq.UpstreamModel = ""
 		}
+		parsedReq.RouteAlias = selection.RouteAlias
 		forwardModel := reqModel
 		if channelMapping.Mapped {
 			forwardModel = channelMapping.MappedModel
@@ -279,6 +279,9 @@ func (h *GatewayHandler) ChatCompletions(c *gin.Context) {
 		if err != nil {
 			var failoverErr *service.UpstreamFailoverError
 			if errors.As(err, &failoverErr) {
+				if selection.RouteAlias != "" {
+					fs.RecordUpstreamFailure(account, forwardModel, failoverErr)
+				}
 				if c.Writer.Size() != writerSizeBeforeForward {
 					h.handleCCFailoverExhausted(c, failoverErr, true)
 					return
@@ -288,7 +291,11 @@ func (h *GatewayHandler) ChatCompletions(c *gin.Context) {
 				case FailoverContinue:
 					continue
 				case FailoverExhausted:
-					h.handleCCFailoverExhausted(c, fs.LastFailoverErr, streamStarted)
+					if len(fs.CandidateFailures) > 0 {
+						h.handleModelCandidatesExhausted(c, fs.CandidateFailures, streamStarted)
+					} else {
+						h.handleCCFailoverExhausted(c, fs.LastFailoverErr, streamStarted)
+					}
 					return
 				case FailoverCanceled:
 					return
@@ -329,6 +336,7 @@ func (h *GatewayHandler) ChatCompletions(c *gin.Context) {
 				UserAgent:          userAgent,
 				IPAddress:          clientIP,
 				RequestPayloadHash: requestPayloadHash,
+				RouteAlias:         selection.RouteAlias,
 				APIKeyService:      h.apiKeyService,
 				ChannelUsageFields: channelMapping.ToUsageFields(reqModel, result.UpstreamModel),
 			}); err != nil {

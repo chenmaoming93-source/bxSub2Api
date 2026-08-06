@@ -31,7 +31,7 @@ describe('GroupModelRoutingEditor', () => {
 
   it('creates candidates with the same defaults as GroupsView', () => {
     expect(createEmptyRoutingCandidate()).toEqual({
-      model: '', accounts: [], priority: 0, daily_token_limit: null
+      model: '', accounts: [], priority: 0
     })
   })
 
@@ -39,13 +39,13 @@ describe('GroupModelRoutingEditor', () => {
     const rule: RoutingEditorRule = {
       alias: 'coding',
       candidates: [
-        { model: 'first', accounts: [{ id: 1, name: 'one' }], priority: 4, daily_token_limit: null },
-        { model: 'second', accounts: [{ id: 2, name: 'two' }], priority: 9, daily_token_limit: 100 }
+        { model: 'first', accounts: [{ id: 1, name: 'one' }], priority: 4 },
+        { model: 'second', accounts: [{ id: 2, name: 'two' }], priority: 9 }
       ]
     }
     addRoutingCandidate(rule)
     expect(rule.candidates.at(-1)).toEqual({
-      model: '', accounts: [], priority: 10, daily_token_limit: null
+      model: '', accounts: [], priority: 10
     })
   })
 
@@ -88,8 +88,7 @@ describe('GroupModelRoutingEditor', () => {
       candidates: [{
         model: '',
         accounts: [{ id: 7, name: 'account-seven' }],
-        priority: 0,
-        daily_token_limit: null
+        priority: 0
       }]
     }]
     const wrapper = mount(GroupModelRoutingEditor, {
@@ -137,8 +136,8 @@ describe('GroupModelRoutingEditor', () => {
     const rules: RoutingEditorRule[] = [{
       alias: 'multi',
       candidates: [
-        { model: 'shared', accounts: [{ id: 1, name: 'one' }, { id: 2, name: 'two' }], priority: 0, daily_token_limit: null },
-        { model: '', accounts: [{ id: 1, name: 'one' }], priority: 1, daily_token_limit: null }
+        { model: 'shared', accounts: [{ id: 1, name: 'one' }, { id: 2, name: 'two' }], priority: 0 },
+        { model: '', accounts: [{ id: 1, name: 'one' }], priority: 1 }
       ]
     }]
     const wrapper = mount(GroupModelRoutingEditor, {
@@ -167,7 +166,7 @@ describe('GroupModelRoutingEditor', () => {
       .mockResolvedValueOnce([{ id: 'recovered' }])
     const rules: RoutingEditorRule[] = [{
       alias: 'retry',
-      candidates: [{ model: '', accounts: [{ id: 9, name: 'nine' }], priority: 0, daily_token_limit: null }]
+      candidates: [{ model: '', accounts: [{ id: 9, name: 'nine' }], priority: 0 }]
     }]
     const wrapper = mount(GroupModelRoutingEditor, {
       props: { enabled: true, rules, platform: 'anthropic' },
@@ -196,8 +195,7 @@ describe('GroupModelRoutingEditor', () => {
       candidates: [{
         model: '',
         accounts: [{ id: 1, name: 'one' }, { id: 2, name: 'two' }],
-        priority: 0,
-        daily_token_limit: null
+        priority: 0
       }]
     }]
     const wrapper = mount(GroupModelRoutingEditor, {
@@ -218,8 +216,8 @@ describe('GroupModelRoutingEditor', () => {
     const rules: RoutingEditorRule[] = [{
       alias: 'history',
       candidates: [
-        { model: 'still-valid', accounts: [{ id: 1, name: 'one' }], priority: 0, daily_token_limit: null },
-        { model: 'removed-model', accounts: [{ id: 1, name: 'one' }], priority: 1, daily_token_limit: null }
+        { model: 'still-valid', accounts: [{ id: 1, name: 'one' }], priority: 0 },
+        { model: 'removed-model', accounts: [{ id: 1, name: 'one' }], priority: 1 }
       ]
     }]
     const wrapper = mount(GroupModelRoutingEditor, {

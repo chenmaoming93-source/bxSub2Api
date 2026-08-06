@@ -9,6 +9,7 @@ import (
 func RegisterIntegrationRoutes(
 	v1 *gin.RouterGroup,
 	provHandler *handler.ExternalProvisioningHandler,
+	tokenUsageHandler *handler.ExternalTokenUsageHandler,
 	provAuth gin.HandlerFunc,
 	provHardening gin.HandlerFunc,
 ) {
@@ -21,5 +22,8 @@ func RegisterIntegrationRoutes(
 	{
 		integration.POST("/api-keys/getOrCreate", provHandler.EnsureAPIKey)
 		integration.POST("/model-routes/list", provHandler.ListGroupModelRoutes)
+		if tokenUsageHandler != nil {
+			integration.POST("/token-usage/query", tokenUsageHandler.Query)
+		}
 	}
 }

@@ -1905,62 +1905,51 @@ func TestLoad_DefaultGatewayUsageRecordConfig(t *testing.T) {
 	}
 }
 
-func TestLoad_DefaultGatewayTokenStatisticsConfig(t *testing.T) {
+func TestLoad_DefaultGatewayDynamicTokenStatisticsConfig(t *testing.T) {
 	resetViperWithJWTSecret(t)
 	cfg, err := Load()
 	require.NoError(t, err)
 
-	require.True(t, cfg.Gateway.TokenStatistics.RedisEnabled)
-	require.Equal(t, 1, cfg.Gateway.TokenStatistics.SyncIntervalMinutes)
-	require.Equal(t, 1000, cfg.Gateway.TokenStatistics.HScanCount)
-	require.Equal(t, 500, cfg.Gateway.TokenStatistics.MySQLBatchSize)
-	require.Equal(t, 3, cfg.Gateway.TokenStatistics.SyncRetryCount)
-	require.Equal(t, 2, cfg.Gateway.TokenStatistics.RedisRetentionDays)
+	dynamic := cfg.Gateway.DynamicTokenStatistics
+	require.False(t, dynamic.Enabled)
+	require.Equal(t, "Asia/Shanghai", dynamic.Timezone)
+	require.Equal(t, 10000, dynamic.AsyncQueueCapacity)
+	require.Equal(t, 4, dynamic.WorkerCount)
+	require.Equal(t, 100, dynamic.BatchSize)
+	require.Equal(t, 50, dynamic.FlushIntervalMS)
+	require.Equal(t, 300, dynamic.RedisTimeoutMS)
+	require.Equal(t, 2, dynamic.RedisRetryCount)
+	require.Equal(t, 256, dynamic.ShardCount)
+	require.Equal(t, 5, dynamic.SyncIntervalMinutes)
+	require.Equal(t, 500, dynamic.MySQLBatchSize)
+	require.Equal(t, 3, dynamic.SyncRetryCount)
+	require.Equal(t, 5, dynamic.FinalizeCheckIntervalMinutes)
+	require.Equal(t, 7, dynamic.OrphanTTLDays)
 }
 
-func TestLoad_GatewayTokenStatisticsConfigOverrides(t *testing.T) {
-	resetViperWithJWTSecret(t)
-	viper.Set("gateway.token_statistics.redis_enabled", false)
-	viper.Set("gateway.token_statistics.sync_interval_minutes", 2)
-	viper.Set("gateway.token_statistics.hscan_count", 200)
-	viper.Set("gateway.token_statistics.mysql_batch_size", 100)
-	viper.Set("gateway.token_statistics.sync_retry_count", 5)
-	viper.Set("gateway.token_statistics.redis_retention_days", 4)
-
-	cfg, err := Load()
-	require.NoError(t, err)
-	require.False(t, cfg.Gateway.TokenStatistics.RedisEnabled)
-	require.Equal(t, 2, cfg.Gateway.TokenStatistics.SyncIntervalMinutes)
-	require.Equal(t, 200, cfg.Gateway.TokenStatistics.HScanCount)
-	require.Equal(t, 100, cfg.Gateway.TokenStatistics.MySQLBatchSize)
-	require.Equal(t, 5, cfg.Gateway.TokenStatistics.SyncRetryCount)
-	require.Equal(t, 4, cfg.Gateway.TokenStatistics.RedisRetentionDays)
-}
-
-func TestValidateConfig_GatewayTokenStatistics(t *testing.T) {
+func TestValidateConfig_GatewayDynamicTokenStatistics(t *testing.T) {
 	resetViperWithJWTSecret(t)
 	cfg, err := Load()
 	require.NoError(t, err)
 
 	cases := []struct {
 		name    string
-		mutate  func(*GatewayTokenStatisticsConfig)
+		mutate  func(*GatewayDynamicTokenStatisticsConfig)
 		wantErr string
 	}{
-		{"sync interval", func(c *GatewayTokenStatisticsConfig) { c.SyncIntervalMinutes = 0 }, "gateway.token_statistics.sync_interval_minutes: value=0, expected positive integer"},
-		{"hscan count", func(c *GatewayTokenStatisticsConfig) { c.HScanCount = -1 }, "gateway.token_statistics.hscan_count: value=-1, expected positive integer"},
-		{"mysql batch size", func(c *GatewayTokenStatisticsConfig) { c.MySQLBatchSize = 0 }, "gateway.token_statistics.mysql_batch_size: value=0, expected positive integer"},
-		{"sync retry count", func(c *GatewayTokenStatisticsConfig) { c.SyncRetryCount = -1 }, "gateway.token_statistics.sync_retry_count: value=-1, expected non-negative integer"},
-		{"redis retention days", func(c *GatewayTokenStatisticsConfig) { c.RedisRetentionDays = 0 }, "gateway.token_statistics.redis_retention_days: value=0, expected positive integer"},
+		{"timezone", func(c *GatewayDynamicTokenStatisticsConfig) { c.Timezone = "Mars/Olympus" }, "gateway.dynamic_token_statistics.timezone"},
+		{"queue", func(c *GatewayDynamicTokenStatisticsConfig) { c.AsyncQueueCapacity = 0 }, "async_queue_capacity"},
+		{"worker", func(c *GatewayDynamicTokenStatisticsConfig) { c.WorkerCount = 0 }, "worker_count"},
+		{"redis retry", func(c *GatewayDynamicTokenStatisticsConfig) { c.RedisRetryCount = -1 }, "redis_retry_count"},
+		{"sync retry", func(c *GatewayDynamicTokenStatisticsConfig) { c.SyncRetryCount = -1 }, "sync_retry_count"},
+		{"orphan ttl", func(c *GatewayDynamicTokenStatisticsConfig) { c.OrphanTTLDays = 0 }, "orphan_ttl_days"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			candidate := *cfg
 			candidate.Gateway = cfg.Gateway
-			tc.mutate(&candidate.Gateway.TokenStatistics)
-			err := candidate.Validate()
-			require.Error(t, err)
-			require.Contains(t, err.Error(), tc.wantErr)
+			tc.mutate(&candidate.Gateway.DynamicTokenStatistics)
+			require.ErrorContains(t, candidate.Validate(), tc.wantErr)
 		})
 	}
 }

@@ -37,9 +37,7 @@ type AdminHandlers struct {
 	Payment                *admin.PaymentHandler
 	Affiliate              *admin.AffiliateHandler
 	Compliance             *admin.ComplianceHandler
-	ModelTokenQuota        *admin.ModelTokenQuotaHandler
-	UserModelTokenQuota    *admin.UserModelTokenQuotaHandler
-	TokenUsageReport       *admin.TokenUsageReportHandler
+	DynamicTokenStatistics *admin.DynamicTokenStatisticsHandler
 	RBAC                   *admin.RBACHandler
 }
 
@@ -62,6 +60,7 @@ type Handlers struct {
 	PaymentWebhook       *PaymentWebhookHandler
 	AvailableChannel     *AvailableChannelHandler
 	ExternalProvisioning *ExternalProvisioningHandler
+	ExternalTokenUsage   *ExternalTokenUsageHandler
 }
 
 // BuildInfo contains build-time information

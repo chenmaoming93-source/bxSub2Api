@@ -2173,33 +2173,6 @@ export default {
         subscriptionWarning: '此用户有活跃订阅，平台限额仅在余额（标准）模式下生效，订阅模式请求不受此限额约束。',
         invalidNumber: '以下字段填写不是合法数字，请修正后再保存：{fields}',
       },
-      modelTokenQuota: {
-        menuItem: '模型 Token 限额',
-        title: '用户模型每日 Token 限额',
-        subtitle: '为用户 {email} 按实际上游模型配置每日 Token 限额',
-        model: '上游模型',
-        limit: '每日 Token 限额',
-        unlimited: '0=不限额 空=删除',
-        used: '今日已用',
-        add: '添加模型',
-        loadFailed: '加载模型 Token 限额失败',
-        invalid: '模型不能为空或重复，限额必须是非负整数',
-        updateFailed: '保存模型 Token 限额失败',
-        saveSuccess: '模型 Token 限额已更新'
-      },
-      defaultQuota: {
-        button: '默认限额',
-        title: '新用户默认模型每日 Token 限额',
-        description: '新用户创建时将自动继承以下模型 Token 限额配置',
-        model: '上游模型',
-        limit: '每日 Token 限额',
-        unlimited: '0=不限额 空=删除',
-        add: '添加模型',
-        loadFailed: '加载默认限额失败',
-        invalid: '模型不能为空或重复，限额必须是非负整数',
-        updateFailed: '保存默认限额失败',
-        saveSuccess: '默认限额已更新'
-      },
       batchQuota: {
         button: '批量管理',
         title: '批量管理全体用户模型 Token 限额',
@@ -2475,7 +2448,6 @@ export default {
         candidateModel: '上游模型',
         selectModel: '请选择上游模型',
         priority: '优先级',
-        dailyTokenLimit: '每日 Token 限额',
         unlimited: '0=不限额 空=删除',
         candidateValidation: '必须填写模型、选择账号，并使用非负整数',
         modelsLoading: '正在加载账号模型...',
@@ -2495,20 +2467,7 @@ export default {
           invalid_account_id: '候选账号无效',
           invalid_priority: '优先级必须是非负整数',
           duplicate_priority: '同一别名下优先级不能重复',
-          invalid_daily_token_limit: '每日 Token 限额必须是非负整数'
         }
-      },
-      modelTokenQuota: {
-        menuItem: '模型全局token限额',
-        title: '全局模型每日 Token 限额',
-        model: '上游模型',
-        limit: '每日 Token 限额',
-        unlimited: '0=不限额 空=删除',
-        used: '今日已用',
-        add: '添加模型',
-        loadFailed: '加载全局模型 Token 限额失败',
-        invalid: '模型不能为空或重复，限额必须是非负整数',
-        updateFailed: '保存全局模型 Token 限额失败'
       },
       mcpXml: {
         title: 'MCP XML 协议注入',

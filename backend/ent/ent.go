@@ -25,12 +25,8 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/channelmonitorrequesttemplate"
 	"github.com/Wei-Shaw/sub2api/ent/errorpassthroughrule"
 	"github.com/Wei-Shaw/sub2api/ent/group"
-	"github.com/Wei-Shaw/sub2api/ent/groupcandidatetokendailylimitconfig"
-	"github.com/Wei-Shaw/sub2api/ent/groupcandidatetokendailyusage"
 	"github.com/Wei-Shaw/sub2api/ent/idempotencyrecord"
 	"github.com/Wei-Shaw/sub2api/ent/identityadoptiondecision"
-	"github.com/Wei-Shaw/sub2api/ent/modeltokendailylimitconfig"
-	"github.com/Wei-Shaw/sub2api/ent/modeltokendailyusage"
 	"github.com/Wei-Shaw/sub2api/ent/paymentauditlog"
 	"github.com/Wei-Shaw/sub2api/ent/paymentorder"
 	"github.com/Wei-Shaw/sub2api/ent/paymentproviderinstance"
@@ -50,14 +46,17 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/setting"
 	"github.com/Wei-Shaw/sub2api/ent/subscriptionplan"
 	"github.com/Wei-Shaw/sub2api/ent/tlsfingerprintprofile"
+	"github.com/Wei-Shaw/sub2api/ent/tokenstataggregate"
+	"github.com/Wei-Shaw/sub2api/ent/tokenstatperiodstate"
+	"github.com/Wei-Shaw/sub2api/ent/tokenstatprojection"
+	"github.com/Wei-Shaw/sub2api/ent/tokenstatprojectionmetric"
+	"github.com/Wei-Shaw/sub2api/ent/tokenstatquotarule"
 	"github.com/Wei-Shaw/sub2api/ent/usagecleanuptask"
 	"github.com/Wei-Shaw/sub2api/ent/usagelog"
 	"github.com/Wei-Shaw/sub2api/ent/user"
 	"github.com/Wei-Shaw/sub2api/ent/userallowedgroup"
 	"github.com/Wei-Shaw/sub2api/ent/userattributedefinition"
 	"github.com/Wei-Shaw/sub2api/ent/userattributevalue"
-	"github.com/Wei-Shaw/sub2api/ent/usermodeltokendailylimitconfig"
-	"github.com/Wei-Shaw/sub2api/ent/usermodeltokendailyusage"
 	"github.com/Wei-Shaw/sub2api/ent/userplatformquota"
 	"github.com/Wei-Shaw/sub2api/ent/usersubscription"
 )
@@ -120,54 +119,53 @@ var (
 func checkColumn(t, c string) error {
 	initCheck.Do(func() {
 		columnCheck = sql.NewColumnCheck(map[string]func(string) bool{
-			apikey.Table:                              apikey.ValidColumn,
-			account.Table:                             account.ValidColumn,
-			accountgroup.Table:                        accountgroup.ValidColumn,
-			announcement.Table:                        announcement.ValidColumn,
-			announcementread.Table:                    announcementread.ValidColumn,
-			authidentity.Table:                        authidentity.ValidColumn,
-			authidentitychannel.Table:                 authidentitychannel.ValidColumn,
-			channelmonitor.Table:                      channelmonitor.ValidColumn,
-			channelmonitordailyrollup.Table:           channelmonitordailyrollup.ValidColumn,
-			channelmonitorhistory.Table:               channelmonitorhistory.ValidColumn,
-			channelmonitorrequesttemplate.Table:       channelmonitorrequesttemplate.ValidColumn,
-			errorpassthroughrule.Table:                errorpassthroughrule.ValidColumn,
-			group.Table:                               group.ValidColumn,
-			groupcandidatetokendailylimitconfig.Table: groupcandidatetokendailylimitconfig.ValidColumn,
-			groupcandidatetokendailyusage.Table:       groupcandidatetokendailyusage.ValidColumn,
-			idempotencyrecord.Table:                   idempotencyrecord.ValidColumn,
-			identityadoptiondecision.Table:            identityadoptiondecision.ValidColumn,
-			modeltokendailylimitconfig.Table:          modeltokendailylimitconfig.ValidColumn,
-			modeltokendailyusage.Table:                modeltokendailyusage.ValidColumn,
-			paymentauditlog.Table:                     paymentauditlog.ValidColumn,
-			paymentorder.Table:                        paymentorder.ValidColumn,
-			paymentproviderinstance.Table:             paymentproviderinstance.ValidColumn,
-			pendingauthsession.Table:                  pendingauthsession.ValidColumn,
-			promocode.Table:                           promocode.ValidColumn,
-			promocodeusage.Table:                      promocodeusage.ValidColumn,
-			proxy.Table:                               proxy.ValidColumn,
-			rbacauditlog.Table:                        rbacauditlog.ValidColumn,
-			rbacpermission.Table:                      rbacpermission.ValidColumn,
-			rbacpolicystate.Table:                     rbacpolicystate.ValidColumn,
-			rbacrole.Table:                            rbacrole.ValidColumn,
-			rbacrolepermission.Table:                  rbacrolepermission.ValidColumn,
-			rbacuserrole.Table:                        rbacuserrole.ValidColumn,
-			rbacuserversion.Table:                     rbacuserversion.ValidColumn,
-			redeemcode.Table:                          redeemcode.ValidColumn,
-			securitysecret.Table:                      securitysecret.ValidColumn,
-			setting.Table:                             setting.ValidColumn,
-			subscriptionplan.Table:                    subscriptionplan.ValidColumn,
-			tlsfingerprintprofile.Table:               tlsfingerprintprofile.ValidColumn,
-			usagecleanuptask.Table:                    usagecleanuptask.ValidColumn,
-			usagelog.Table:                            usagelog.ValidColumn,
-			user.Table:                                user.ValidColumn,
-			userallowedgroup.Table:                    userallowedgroup.ValidColumn,
-			userattributedefinition.Table:             userattributedefinition.ValidColumn,
-			userattributevalue.Table:                  userattributevalue.ValidColumn,
-			usermodeltokendailylimitconfig.Table:      usermodeltokendailylimitconfig.ValidColumn,
-			usermodeltokendailyusage.Table:            usermodeltokendailyusage.ValidColumn,
-			userplatformquota.Table:                   userplatformquota.ValidColumn,
-			usersubscription.Table:                    usersubscription.ValidColumn,
+			apikey.Table:                        apikey.ValidColumn,
+			account.Table:                       account.ValidColumn,
+			accountgroup.Table:                  accountgroup.ValidColumn,
+			announcement.Table:                  announcement.ValidColumn,
+			announcementread.Table:              announcementread.ValidColumn,
+			authidentity.Table:                  authidentity.ValidColumn,
+			authidentitychannel.Table:           authidentitychannel.ValidColumn,
+			channelmonitor.Table:                channelmonitor.ValidColumn,
+			channelmonitordailyrollup.Table:     channelmonitordailyrollup.ValidColumn,
+			channelmonitorhistory.Table:         channelmonitorhistory.ValidColumn,
+			channelmonitorrequesttemplate.Table: channelmonitorrequesttemplate.ValidColumn,
+			errorpassthroughrule.Table:          errorpassthroughrule.ValidColumn,
+			group.Table:                         group.ValidColumn,
+			idempotencyrecord.Table:             idempotencyrecord.ValidColumn,
+			identityadoptiondecision.Table:      identityadoptiondecision.ValidColumn,
+			paymentauditlog.Table:               paymentauditlog.ValidColumn,
+			paymentorder.Table:                  paymentorder.ValidColumn,
+			paymentproviderinstance.Table:       paymentproviderinstance.ValidColumn,
+			pendingauthsession.Table:            pendingauthsession.ValidColumn,
+			promocode.Table:                     promocode.ValidColumn,
+			promocodeusage.Table:                promocodeusage.ValidColumn,
+			proxy.Table:                         proxy.ValidColumn,
+			rbacauditlog.Table:                  rbacauditlog.ValidColumn,
+			rbacpermission.Table:                rbacpermission.ValidColumn,
+			rbacpolicystate.Table:               rbacpolicystate.ValidColumn,
+			rbacrole.Table:                      rbacrole.ValidColumn,
+			rbacrolepermission.Table:            rbacrolepermission.ValidColumn,
+			rbacuserrole.Table:                  rbacuserrole.ValidColumn,
+			rbacuserversion.Table:               rbacuserversion.ValidColumn,
+			redeemcode.Table:                    redeemcode.ValidColumn,
+			securitysecret.Table:                securitysecret.ValidColumn,
+			setting.Table:                       setting.ValidColumn,
+			subscriptionplan.Table:              subscriptionplan.ValidColumn,
+			tlsfingerprintprofile.Table:         tlsfingerprintprofile.ValidColumn,
+			tokenstataggregate.Table:            tokenstataggregate.ValidColumn,
+			tokenstatperiodstate.Table:          tokenstatperiodstate.ValidColumn,
+			tokenstatprojection.Table:           tokenstatprojection.ValidColumn,
+			tokenstatprojectionmetric.Table:     tokenstatprojectionmetric.ValidColumn,
+			tokenstatquotarule.Table:            tokenstatquotarule.ValidColumn,
+			usagecleanuptask.Table:              usagecleanuptask.ValidColumn,
+			usagelog.Table:                      usagelog.ValidColumn,
+			user.Table:                          user.ValidColumn,
+			userallowedgroup.Table:              userallowedgroup.ValidColumn,
+			userattributedefinition.Table:       userattributedefinition.ValidColumn,
+			userattributevalue.Table:            userattributevalue.ValidColumn,
+			userplatformquota.Table:             userplatformquota.ValidColumn,
+			usersubscription.Table:              usersubscription.ValidColumn,
 		})
 	})
 	return columnCheck(t, c)

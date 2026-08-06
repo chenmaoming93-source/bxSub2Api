@@ -98,10 +98,6 @@ type UserEdges struct {
 	PendingAuthSessions []*PendingAuthSession `json:"pending_auth_sessions,omitempty"`
 	// PlatformQuotas holds the value of the platform_quotas edge.
 	PlatformQuotas []*UserPlatformQuota `json:"platform_quotas,omitempty"`
-	// ModelTokenDailyUsages holds the value of the model_token_daily_usages edge.
-	ModelTokenDailyUsages []*UserModelTokenDailyUsage `json:"model_token_daily_usages,omitempty"`
-	// UserModelTokenDailyLimitConfigs holds the value of the user_model_token_daily_limit_configs edge.
-	UserModelTokenDailyLimitConfigs []*UserModelTokenDailyLimitConfig `json:"user_model_token_daily_limit_configs,omitempty"`
 	// RbacUserRoles holds the value of the rbac_user_roles edge.
 	RbacUserRoles []*RBACUserRole `json:"rbac_user_roles,omitempty"`
 	// AssignedRbacUserRoles holds the value of the assigned_rbac_user_roles edge.
@@ -114,7 +110,7 @@ type UserEdges struct {
 	UserAllowedGroups []*UserAllowedGroup `json:"user_allowed_groups,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [20]bool
+	loadedTypes [18]bool
 }
 
 // APIKeysOrErr returns the APIKeys value or an error if the edge
@@ -234,28 +230,10 @@ func (e UserEdges) PlatformQuotasOrErr() ([]*UserPlatformQuota, error) {
 	return nil, &NotLoadedError{edge: "platform_quotas"}
 }
 
-// ModelTokenDailyUsagesOrErr returns the ModelTokenDailyUsages value or an error if the edge
-// was not loaded in eager-loading.
-func (e UserEdges) ModelTokenDailyUsagesOrErr() ([]*UserModelTokenDailyUsage, error) {
-	if e.loadedTypes[13] {
-		return e.ModelTokenDailyUsages, nil
-	}
-	return nil, &NotLoadedError{edge: "model_token_daily_usages"}
-}
-
-// UserModelTokenDailyLimitConfigsOrErr returns the UserModelTokenDailyLimitConfigs value or an error if the edge
-// was not loaded in eager-loading.
-func (e UserEdges) UserModelTokenDailyLimitConfigsOrErr() ([]*UserModelTokenDailyLimitConfig, error) {
-	if e.loadedTypes[14] {
-		return e.UserModelTokenDailyLimitConfigs, nil
-	}
-	return nil, &NotLoadedError{edge: "user_model_token_daily_limit_configs"}
-}
-
 // RbacUserRolesOrErr returns the RbacUserRoles value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) RbacUserRolesOrErr() ([]*RBACUserRole, error) {
-	if e.loadedTypes[15] {
+	if e.loadedTypes[13] {
 		return e.RbacUserRoles, nil
 	}
 	return nil, &NotLoadedError{edge: "rbac_user_roles"}
@@ -264,7 +242,7 @@ func (e UserEdges) RbacUserRolesOrErr() ([]*RBACUserRole, error) {
 // AssignedRbacUserRolesOrErr returns the AssignedRbacUserRoles value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) AssignedRbacUserRolesOrErr() ([]*RBACUserRole, error) {
-	if e.loadedTypes[16] {
+	if e.loadedTypes[14] {
 		return e.AssignedRbacUserRoles, nil
 	}
 	return nil, &NotLoadedError{edge: "assigned_rbac_user_roles"}
@@ -275,7 +253,7 @@ func (e UserEdges) AssignedRbacUserRolesOrErr() ([]*RBACUserRole, error) {
 func (e UserEdges) RbacUserVersionOrErr() (*RBACUserVersion, error) {
 	if e.RbacUserVersion != nil {
 		return e.RbacUserVersion, nil
-	} else if e.loadedTypes[17] {
+	} else if e.loadedTypes[15] {
 		return nil, &NotFoundError{label: rbacuserversion.Label}
 	}
 	return nil, &NotLoadedError{edge: "rbac_user_version"}
@@ -284,7 +262,7 @@ func (e UserEdges) RbacUserVersionOrErr() (*RBACUserVersion, error) {
 // RbacAuditLogsOrErr returns the RbacAuditLogs value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) RbacAuditLogsOrErr() ([]*RBACAuditLog, error) {
-	if e.loadedTypes[18] {
+	if e.loadedTypes[16] {
 		return e.RbacAuditLogs, nil
 	}
 	return nil, &NotLoadedError{edge: "rbac_audit_logs"}
@@ -293,7 +271,7 @@ func (e UserEdges) RbacAuditLogsOrErr() ([]*RBACAuditLog, error) {
 // UserAllowedGroupsOrErr returns the UserAllowedGroups value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) UserAllowedGroupsOrErr() ([]*UserAllowedGroup, error) {
-	if e.loadedTypes[19] {
+	if e.loadedTypes[17] {
 		return e.UserAllowedGroups, nil
 	}
 	return nil, &NotLoadedError{edge: "user_allowed_groups"}
@@ -555,16 +533,6 @@ func (_m *User) QueryPendingAuthSessions() *PendingAuthSessionQuery {
 // QueryPlatformQuotas queries the "platform_quotas" edge of the User entity.
 func (_m *User) QueryPlatformQuotas() *UserPlatformQuotaQuery {
 	return NewUserClient(_m.config).QueryPlatformQuotas(_m)
-}
-
-// QueryModelTokenDailyUsages queries the "model_token_daily_usages" edge of the User entity.
-func (_m *User) QueryModelTokenDailyUsages() *UserModelTokenDailyUsageQuery {
-	return NewUserClient(_m.config).QueryModelTokenDailyUsages(_m)
-}
-
-// QueryUserModelTokenDailyLimitConfigs queries the "user_model_token_daily_limit_configs" edge of the User entity.
-func (_m *User) QueryUserModelTokenDailyLimitConfigs() *UserModelTokenDailyLimitConfigQuery {
-	return NewUserClient(_m.config).QueryUserModelTokenDailyLimitConfigs(_m)
 }
 
 // QueryRbacUserRoles queries the "rbac_user_roles" edge of the User entity.

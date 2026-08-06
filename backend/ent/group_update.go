@@ -15,8 +15,6 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/account"
 	"github.com/Wei-Shaw/sub2api/ent/apikey"
 	"github.com/Wei-Shaw/sub2api/ent/group"
-	"github.com/Wei-Shaw/sub2api/ent/groupcandidatetokendailylimitconfig"
-	"github.com/Wei-Shaw/sub2api/ent/groupcandidatetokendailyusage"
 	"github.com/Wei-Shaw/sub2api/ent/predicate"
 	"github.com/Wei-Shaw/sub2api/ent/redeemcode"
 	"github.com/Wei-Shaw/sub2api/ent/usagelog"
@@ -721,36 +719,6 @@ func (_u *GroupUpdate) AddUsageLogs(v ...*UsageLog) *GroupUpdate {
 	return _u.AddUsageLogIDs(ids...)
 }
 
-// AddCandidateTokenDailyUsageIDs adds the "candidate_token_daily_usages" edge to the GroupCandidateTokenDailyUsage entity by IDs.
-func (_u *GroupUpdate) AddCandidateTokenDailyUsageIDs(ids ...int64) *GroupUpdate {
-	_u.mutation.AddCandidateTokenDailyUsageIDs(ids...)
-	return _u
-}
-
-// AddCandidateTokenDailyUsages adds the "candidate_token_daily_usages" edges to the GroupCandidateTokenDailyUsage entity.
-func (_u *GroupUpdate) AddCandidateTokenDailyUsages(v ...*GroupCandidateTokenDailyUsage) *GroupUpdate {
-	ids := make([]int64, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
-	}
-	return _u.AddCandidateTokenDailyUsageIDs(ids...)
-}
-
-// AddGroupCandidateTokenDailyLimitConfigIDs adds the "group_candidate_token_daily_limit_configs" edge to the GroupCandidateTokenDailyLimitConfig entity by IDs.
-func (_u *GroupUpdate) AddGroupCandidateTokenDailyLimitConfigIDs(ids ...int64) *GroupUpdate {
-	_u.mutation.AddGroupCandidateTokenDailyLimitConfigIDs(ids...)
-	return _u
-}
-
-// AddGroupCandidateTokenDailyLimitConfigs adds the "group_candidate_token_daily_limit_configs" edges to the GroupCandidateTokenDailyLimitConfig entity.
-func (_u *GroupUpdate) AddGroupCandidateTokenDailyLimitConfigs(v ...*GroupCandidateTokenDailyLimitConfig) *GroupUpdate {
-	ids := make([]int64, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
-	}
-	return _u.AddGroupCandidateTokenDailyLimitConfigIDs(ids...)
-}
-
 // AddAccountIDs adds the "accounts" edge to the Account entity by IDs.
 func (_u *GroupUpdate) AddAccountIDs(ids ...int64) *GroupUpdate {
 	_u.mutation.AddAccountIDs(ids...)
@@ -868,48 +836,6 @@ func (_u *GroupUpdate) RemoveUsageLogs(v ...*UsageLog) *GroupUpdate {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveUsageLogIDs(ids...)
-}
-
-// ClearCandidateTokenDailyUsages clears all "candidate_token_daily_usages" edges to the GroupCandidateTokenDailyUsage entity.
-func (_u *GroupUpdate) ClearCandidateTokenDailyUsages() *GroupUpdate {
-	_u.mutation.ClearCandidateTokenDailyUsages()
-	return _u
-}
-
-// RemoveCandidateTokenDailyUsageIDs removes the "candidate_token_daily_usages" edge to GroupCandidateTokenDailyUsage entities by IDs.
-func (_u *GroupUpdate) RemoveCandidateTokenDailyUsageIDs(ids ...int64) *GroupUpdate {
-	_u.mutation.RemoveCandidateTokenDailyUsageIDs(ids...)
-	return _u
-}
-
-// RemoveCandidateTokenDailyUsages removes "candidate_token_daily_usages" edges to GroupCandidateTokenDailyUsage entities.
-func (_u *GroupUpdate) RemoveCandidateTokenDailyUsages(v ...*GroupCandidateTokenDailyUsage) *GroupUpdate {
-	ids := make([]int64, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
-	}
-	return _u.RemoveCandidateTokenDailyUsageIDs(ids...)
-}
-
-// ClearGroupCandidateTokenDailyLimitConfigs clears all "group_candidate_token_daily_limit_configs" edges to the GroupCandidateTokenDailyLimitConfig entity.
-func (_u *GroupUpdate) ClearGroupCandidateTokenDailyLimitConfigs() *GroupUpdate {
-	_u.mutation.ClearGroupCandidateTokenDailyLimitConfigs()
-	return _u
-}
-
-// RemoveGroupCandidateTokenDailyLimitConfigIDs removes the "group_candidate_token_daily_limit_configs" edge to GroupCandidateTokenDailyLimitConfig entities by IDs.
-func (_u *GroupUpdate) RemoveGroupCandidateTokenDailyLimitConfigIDs(ids ...int64) *GroupUpdate {
-	_u.mutation.RemoveGroupCandidateTokenDailyLimitConfigIDs(ids...)
-	return _u
-}
-
-// RemoveGroupCandidateTokenDailyLimitConfigs removes "group_candidate_token_daily_limit_configs" edges to GroupCandidateTokenDailyLimitConfig entities.
-func (_u *GroupUpdate) RemoveGroupCandidateTokenDailyLimitConfigs(v ...*GroupCandidateTokenDailyLimitConfig) *GroupUpdate {
-	ids := make([]int64, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
-	}
-	return _u.RemoveGroupCandidateTokenDailyLimitConfigIDs(ids...)
 }
 
 // ClearAccounts clears all "accounts" edges to the Account entity.
@@ -1390,96 +1316,6 @@ func (_u *GroupUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(usagelog.FieldID, field.TypeInt64),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if _u.mutation.CandidateTokenDailyUsagesCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   group.CandidateTokenDailyUsagesTable,
-			Columns: []string{group.CandidateTokenDailyUsagesColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(groupcandidatetokendailyusage.FieldID, field.TypeInt64),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.RemovedCandidateTokenDailyUsagesIDs(); len(nodes) > 0 && !_u.mutation.CandidateTokenDailyUsagesCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   group.CandidateTokenDailyUsagesTable,
-			Columns: []string{group.CandidateTokenDailyUsagesColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(groupcandidatetokendailyusage.FieldID, field.TypeInt64),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.CandidateTokenDailyUsagesIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   group.CandidateTokenDailyUsagesTable,
-			Columns: []string{group.CandidateTokenDailyUsagesColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(groupcandidatetokendailyusage.FieldID, field.TypeInt64),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if _u.mutation.GroupCandidateTokenDailyLimitConfigsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   group.GroupCandidateTokenDailyLimitConfigsTable,
-			Columns: []string{group.GroupCandidateTokenDailyLimitConfigsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(groupcandidatetokendailylimitconfig.FieldID, field.TypeInt64),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.RemovedGroupCandidateTokenDailyLimitConfigsIDs(); len(nodes) > 0 && !_u.mutation.GroupCandidateTokenDailyLimitConfigsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   group.GroupCandidateTokenDailyLimitConfigsTable,
-			Columns: []string{group.GroupCandidateTokenDailyLimitConfigsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(groupcandidatetokendailylimitconfig.FieldID, field.TypeInt64),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.GroupCandidateTokenDailyLimitConfigsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   group.GroupCandidateTokenDailyLimitConfigsTable,
-			Columns: []string{group.GroupCandidateTokenDailyLimitConfigsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(groupcandidatetokendailylimitconfig.FieldID, field.TypeInt64),
 			},
 		}
 		for _, k := range nodes {
@@ -2304,36 +2140,6 @@ func (_u *GroupUpdateOne) AddUsageLogs(v ...*UsageLog) *GroupUpdateOne {
 	return _u.AddUsageLogIDs(ids...)
 }
 
-// AddCandidateTokenDailyUsageIDs adds the "candidate_token_daily_usages" edge to the GroupCandidateTokenDailyUsage entity by IDs.
-func (_u *GroupUpdateOne) AddCandidateTokenDailyUsageIDs(ids ...int64) *GroupUpdateOne {
-	_u.mutation.AddCandidateTokenDailyUsageIDs(ids...)
-	return _u
-}
-
-// AddCandidateTokenDailyUsages adds the "candidate_token_daily_usages" edges to the GroupCandidateTokenDailyUsage entity.
-func (_u *GroupUpdateOne) AddCandidateTokenDailyUsages(v ...*GroupCandidateTokenDailyUsage) *GroupUpdateOne {
-	ids := make([]int64, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
-	}
-	return _u.AddCandidateTokenDailyUsageIDs(ids...)
-}
-
-// AddGroupCandidateTokenDailyLimitConfigIDs adds the "group_candidate_token_daily_limit_configs" edge to the GroupCandidateTokenDailyLimitConfig entity by IDs.
-func (_u *GroupUpdateOne) AddGroupCandidateTokenDailyLimitConfigIDs(ids ...int64) *GroupUpdateOne {
-	_u.mutation.AddGroupCandidateTokenDailyLimitConfigIDs(ids...)
-	return _u
-}
-
-// AddGroupCandidateTokenDailyLimitConfigs adds the "group_candidate_token_daily_limit_configs" edges to the GroupCandidateTokenDailyLimitConfig entity.
-func (_u *GroupUpdateOne) AddGroupCandidateTokenDailyLimitConfigs(v ...*GroupCandidateTokenDailyLimitConfig) *GroupUpdateOne {
-	ids := make([]int64, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
-	}
-	return _u.AddGroupCandidateTokenDailyLimitConfigIDs(ids...)
-}
-
 // AddAccountIDs adds the "accounts" edge to the Account entity by IDs.
 func (_u *GroupUpdateOne) AddAccountIDs(ids ...int64) *GroupUpdateOne {
 	_u.mutation.AddAccountIDs(ids...)
@@ -2451,48 +2257,6 @@ func (_u *GroupUpdateOne) RemoveUsageLogs(v ...*UsageLog) *GroupUpdateOne {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveUsageLogIDs(ids...)
-}
-
-// ClearCandidateTokenDailyUsages clears all "candidate_token_daily_usages" edges to the GroupCandidateTokenDailyUsage entity.
-func (_u *GroupUpdateOne) ClearCandidateTokenDailyUsages() *GroupUpdateOne {
-	_u.mutation.ClearCandidateTokenDailyUsages()
-	return _u
-}
-
-// RemoveCandidateTokenDailyUsageIDs removes the "candidate_token_daily_usages" edge to GroupCandidateTokenDailyUsage entities by IDs.
-func (_u *GroupUpdateOne) RemoveCandidateTokenDailyUsageIDs(ids ...int64) *GroupUpdateOne {
-	_u.mutation.RemoveCandidateTokenDailyUsageIDs(ids...)
-	return _u
-}
-
-// RemoveCandidateTokenDailyUsages removes "candidate_token_daily_usages" edges to GroupCandidateTokenDailyUsage entities.
-func (_u *GroupUpdateOne) RemoveCandidateTokenDailyUsages(v ...*GroupCandidateTokenDailyUsage) *GroupUpdateOne {
-	ids := make([]int64, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
-	}
-	return _u.RemoveCandidateTokenDailyUsageIDs(ids...)
-}
-
-// ClearGroupCandidateTokenDailyLimitConfigs clears all "group_candidate_token_daily_limit_configs" edges to the GroupCandidateTokenDailyLimitConfig entity.
-func (_u *GroupUpdateOne) ClearGroupCandidateTokenDailyLimitConfigs() *GroupUpdateOne {
-	_u.mutation.ClearGroupCandidateTokenDailyLimitConfigs()
-	return _u
-}
-
-// RemoveGroupCandidateTokenDailyLimitConfigIDs removes the "group_candidate_token_daily_limit_configs" edge to GroupCandidateTokenDailyLimitConfig entities by IDs.
-func (_u *GroupUpdateOne) RemoveGroupCandidateTokenDailyLimitConfigIDs(ids ...int64) *GroupUpdateOne {
-	_u.mutation.RemoveGroupCandidateTokenDailyLimitConfigIDs(ids...)
-	return _u
-}
-
-// RemoveGroupCandidateTokenDailyLimitConfigs removes "group_candidate_token_daily_limit_configs" edges to GroupCandidateTokenDailyLimitConfig entities.
-func (_u *GroupUpdateOne) RemoveGroupCandidateTokenDailyLimitConfigs(v ...*GroupCandidateTokenDailyLimitConfig) *GroupUpdateOne {
-	ids := make([]int64, len(v))
-	for i := range v {
-		ids[i] = v[i].ID
-	}
-	return _u.RemoveGroupCandidateTokenDailyLimitConfigIDs(ids...)
 }
 
 // ClearAccounts clears all "accounts" edges to the Account entity.
@@ -3003,96 +2767,6 @@ func (_u *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error)
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(usagelog.FieldID, field.TypeInt64),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if _u.mutation.CandidateTokenDailyUsagesCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   group.CandidateTokenDailyUsagesTable,
-			Columns: []string{group.CandidateTokenDailyUsagesColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(groupcandidatetokendailyusage.FieldID, field.TypeInt64),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.RemovedCandidateTokenDailyUsagesIDs(); len(nodes) > 0 && !_u.mutation.CandidateTokenDailyUsagesCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   group.CandidateTokenDailyUsagesTable,
-			Columns: []string{group.CandidateTokenDailyUsagesColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(groupcandidatetokendailyusage.FieldID, field.TypeInt64),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.CandidateTokenDailyUsagesIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   group.CandidateTokenDailyUsagesTable,
-			Columns: []string{group.CandidateTokenDailyUsagesColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(groupcandidatetokendailyusage.FieldID, field.TypeInt64),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Add = append(_spec.Edges.Add, edge)
-	}
-	if _u.mutation.GroupCandidateTokenDailyLimitConfigsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   group.GroupCandidateTokenDailyLimitConfigsTable,
-			Columns: []string{group.GroupCandidateTokenDailyLimitConfigsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(groupcandidatetokendailylimitconfig.FieldID, field.TypeInt64),
-			},
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.RemovedGroupCandidateTokenDailyLimitConfigsIDs(); len(nodes) > 0 && !_u.mutation.GroupCandidateTokenDailyLimitConfigsCleared() {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   group.GroupCandidateTokenDailyLimitConfigsTable,
-			Columns: []string{group.GroupCandidateTokenDailyLimitConfigsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(groupcandidatetokendailylimitconfig.FieldID, field.TypeInt64),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
-	}
-	if nodes := _u.mutation.GroupCandidateTokenDailyLimitConfigsIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.O2M,
-			Inverse: false,
-			Table:   group.GroupCandidateTokenDailyLimitConfigsTable,
-			Columns: []string{group.GroupCandidateTokenDailyLimitConfigsColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(groupcandidatetokendailylimitconfig.FieldID, field.TypeInt64),
 			},
 		}
 		for _, k := range nodes {

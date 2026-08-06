@@ -2,7 +2,9 @@ package handler
 
 import (
 	"context"
+	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/Wei-Shaw/sub2api/internal/pkg/logger"
@@ -47,7 +49,57 @@ type FailoverState struct {
 	SameAccountRetryCount map[int64]int
 	LastFailoverErr       *service.UpstreamFailoverError
 	ForceCacheBilling     bool
+	CandidateFailures     []service.ModelCandidateFailure
 	hasBoundSession       bool
+}
+
+// RecordUpstreamFailure retains the useful, sanitized upstream response for
+// the final error after model_routing has exhausted every candidate.
+func (s *FailoverState) RecordUpstreamFailure(account *service.Account, model string, failoverErr *service.UpstreamFailoverError) {
+	if account == nil || failoverErr == nil {
+		return
+	}
+	failure := upstreamCandidateFailure(account, model, failoverErr)
+	s.addCandidateFailure(failure)
+}
+
+func upstreamCandidateFailure(account *service.Account, model string, failoverErr *service.UpstreamFailoverError) service.ModelCandidateFailure {
+	message := strings.TrimSpace(service.ExtractUpstreamErrorMessage(failoverErr.ResponseBody))
+	if message == "" {
+		message = fmt.Sprintf("upstream returned HTTP %d", failoverErr.StatusCode)
+	} else {
+		message = fmt.Sprintf("HTTP %d: %s", failoverErr.StatusCode, message)
+	}
+	return service.ModelCandidateFailure{
+		AccountID: account.ID, AccountName: account.Name, Model: model,
+		Reason: "upstream_error", Message: message,
+	}
+}
+
+func (s *FailoverState) addCandidateFailure(failure service.ModelCandidateFailure) {
+	for i := range s.CandidateFailures {
+		if s.CandidateFailures[i].AccountID == failure.AccountID && s.CandidateFailures[i].Model == failure.Model {
+			s.CandidateFailures[i] = failure
+			return
+		}
+	}
+	s.CandidateFailures = append(s.CandidateFailures, failure)
+}
+
+func (s *FailoverState) AddSelectionFailures(failures []service.ModelCandidateFailure) {
+	for _, failure := range failures {
+		s.addCandidateFailure(failure)
+	}
+}
+
+func appendModelCandidateFailure(failures []service.ModelCandidateFailure, failure service.ModelCandidateFailure) []service.ModelCandidateFailure {
+	for i := range failures {
+		if failures[i].AccountID == failure.AccountID && failures[i].Model == failure.Model {
+			failures[i] = failure
+			return failures
+		}
+	}
+	return append(failures, failure)
 }
 
 // NewFailoverState 创建 failover 状态

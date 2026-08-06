@@ -157,10 +157,15 @@ func (h *GatewayHandler) Responses(c *gin.Context) {
 	fs := NewFailoverState(h.maxAccountSwitches, false)
 
 	for {
-		selection, err := h.gatewayService.SelectAccountWithLoadAwareness(requestCtx, apiKey.GroupID, sessionHash, reqModel, fs.FailedAccountIDs, "", int64(0))
+		selection, err := h.gatewayService.SelectAccountWithLoadAwarenessForRequest(requestCtx, apiKey.GroupID, sessionHash, reqModel, fs.FailedAccountIDs, "", service.DynamicTokenRequestIdentity{UserID: apiKey.UserID, APIKeyID: apiKey.ID})
 		if err != nil {
+			fs.AddSelectionFailures(service.ModelCandidateFailuresFromError(err))
 			if len(fs.FailedAccountIDs) == 0 {
 				markOpsRoutingCapacityLimitedIfNoAvailable(c, err)
+				if errors.Is(err, service.ErrRoutedTokenQuotaExhausted) {
+					h.handleModelCandidatesExhausted(c, fs.CandidateFailures, streamStarted)
+					return
+				}
 				h.responsesErrorResponse(c, http.StatusServiceUnavailable, "api_error", "No available accounts: "+err.Error())
 				return
 			}
@@ -171,7 +176,9 @@ func (h *GatewayHandler) Responses(c *gin.Context) {
 			case FailoverCanceled:
 				return
 			default:
-				if fs.LastFailoverErr != nil {
+				if len(fs.CandidateFailures) > 0 {
+					h.handleModelCandidatesExhausted(c, fs.CandidateFailures, streamStarted)
+				} else if fs.LastFailoverErr != nil {
 					h.handleResponsesFailoverExhausted(c, fs.LastFailoverErr, streamStarted)
 				} else {
 					h.responsesErrorResponse(c, http.StatusBadGateway, "server_error", "All available accounts exhausted")
@@ -240,6 +247,9 @@ func (h *GatewayHandler) Responses(c *gin.Context) {
 		if err != nil {
 			var failoverErr *service.UpstreamFailoverError
 			if errors.As(err, &failoverErr) {
+				if selection.RouteAlias != "" {
+					fs.RecordUpstreamFailure(account, forwardModel, failoverErr)
+				}
 				// Can't failover if streaming content already sent
 				if c.Writer.Size() != writerSizeBeforeForward {
 					h.handleResponsesFailoverExhausted(c, failoverErr, true)
@@ -250,7 +260,11 @@ func (h *GatewayHandler) Responses(c *gin.Context) {
 				case FailoverContinue:
 					continue
 				case FailoverExhausted:
-					h.handleResponsesFailoverExhausted(c, fs.LastFailoverErr, streamStarted)
+					if len(fs.CandidateFailures) > 0 {
+						h.handleModelCandidatesExhausted(c, fs.CandidateFailures, streamStarted)
+					} else {
+						h.handleResponsesFailoverExhausted(c, fs.LastFailoverErr, streamStarted)
+					}
 					return
 				case FailoverCanceled:
 					return
@@ -291,6 +305,7 @@ func (h *GatewayHandler) Responses(c *gin.Context) {
 				UserAgent:          userAgent,
 				IPAddress:          clientIP,
 				RequestPayloadHash: requestPayloadHash,
+				RouteAlias:         selection.RouteAlias,
 				APIKeyService:      h.apiKeyService,
 				ChannelUsageFields: channelMapping.ToUsageFields(reqModel, result.UpstreamModel),
 			}); err != nil {

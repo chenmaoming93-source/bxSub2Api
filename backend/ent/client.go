@@ -28,12 +28,8 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/channelmonitorrequesttemplate"
 	"github.com/Wei-Shaw/sub2api/ent/errorpassthroughrule"
 	"github.com/Wei-Shaw/sub2api/ent/group"
-	"github.com/Wei-Shaw/sub2api/ent/groupcandidatetokendailylimitconfig"
-	"github.com/Wei-Shaw/sub2api/ent/groupcandidatetokendailyusage"
 	"github.com/Wei-Shaw/sub2api/ent/idempotencyrecord"
 	"github.com/Wei-Shaw/sub2api/ent/identityadoptiondecision"
-	"github.com/Wei-Shaw/sub2api/ent/modeltokendailylimitconfig"
-	"github.com/Wei-Shaw/sub2api/ent/modeltokendailyusage"
 	"github.com/Wei-Shaw/sub2api/ent/paymentauditlog"
 	"github.com/Wei-Shaw/sub2api/ent/paymentorder"
 	"github.com/Wei-Shaw/sub2api/ent/paymentproviderinstance"
@@ -53,14 +49,17 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/setting"
 	"github.com/Wei-Shaw/sub2api/ent/subscriptionplan"
 	"github.com/Wei-Shaw/sub2api/ent/tlsfingerprintprofile"
+	"github.com/Wei-Shaw/sub2api/ent/tokenstataggregate"
+	"github.com/Wei-Shaw/sub2api/ent/tokenstatperiodstate"
+	"github.com/Wei-Shaw/sub2api/ent/tokenstatprojection"
+	"github.com/Wei-Shaw/sub2api/ent/tokenstatprojectionmetric"
+	"github.com/Wei-Shaw/sub2api/ent/tokenstatquotarule"
 	"github.com/Wei-Shaw/sub2api/ent/usagecleanuptask"
 	"github.com/Wei-Shaw/sub2api/ent/usagelog"
 	"github.com/Wei-Shaw/sub2api/ent/user"
 	"github.com/Wei-Shaw/sub2api/ent/userallowedgroup"
 	"github.com/Wei-Shaw/sub2api/ent/userattributedefinition"
 	"github.com/Wei-Shaw/sub2api/ent/userattributevalue"
-	"github.com/Wei-Shaw/sub2api/ent/usermodeltokendailylimitconfig"
-	"github.com/Wei-Shaw/sub2api/ent/usermodeltokendailyusage"
 	"github.com/Wei-Shaw/sub2api/ent/userplatformquota"
 	"github.com/Wei-Shaw/sub2api/ent/usersubscription"
 
@@ -98,18 +97,10 @@ type Client struct {
 	ErrorPassthroughRule *ErrorPassthroughRuleClient
 	// Group is the client for interacting with the Group builders.
 	Group *GroupClient
-	// GroupCandidateTokenDailyLimitConfig is the client for interacting with the GroupCandidateTokenDailyLimitConfig builders.
-	GroupCandidateTokenDailyLimitConfig *GroupCandidateTokenDailyLimitConfigClient
-	// GroupCandidateTokenDailyUsage is the client for interacting with the GroupCandidateTokenDailyUsage builders.
-	GroupCandidateTokenDailyUsage *GroupCandidateTokenDailyUsageClient
 	// IdempotencyRecord is the client for interacting with the IdempotencyRecord builders.
 	IdempotencyRecord *IdempotencyRecordClient
 	// IdentityAdoptionDecision is the client for interacting with the IdentityAdoptionDecision builders.
 	IdentityAdoptionDecision *IdentityAdoptionDecisionClient
-	// ModelTokenDailyLimitConfig is the client for interacting with the ModelTokenDailyLimitConfig builders.
-	ModelTokenDailyLimitConfig *ModelTokenDailyLimitConfigClient
-	// ModelTokenDailyUsage is the client for interacting with the ModelTokenDailyUsage builders.
-	ModelTokenDailyUsage *ModelTokenDailyUsageClient
 	// PaymentAuditLog is the client for interacting with the PaymentAuditLog builders.
 	PaymentAuditLog *PaymentAuditLogClient
 	// PaymentOrder is the client for interacting with the PaymentOrder builders.
@@ -148,6 +139,16 @@ type Client struct {
 	SubscriptionPlan *SubscriptionPlanClient
 	// TLSFingerprintProfile is the client for interacting with the TLSFingerprintProfile builders.
 	TLSFingerprintProfile *TLSFingerprintProfileClient
+	// TokenStatAggregate is the client for interacting with the TokenStatAggregate builders.
+	TokenStatAggregate *TokenStatAggregateClient
+	// TokenStatPeriodState is the client for interacting with the TokenStatPeriodState builders.
+	TokenStatPeriodState *TokenStatPeriodStateClient
+	// TokenStatProjection is the client for interacting with the TokenStatProjection builders.
+	TokenStatProjection *TokenStatProjectionClient
+	// TokenStatProjectionMetric is the client for interacting with the TokenStatProjectionMetric builders.
+	TokenStatProjectionMetric *TokenStatProjectionMetricClient
+	// TokenStatQuotaRule is the client for interacting with the TokenStatQuotaRule builders.
+	TokenStatQuotaRule *TokenStatQuotaRuleClient
 	// UsageCleanupTask is the client for interacting with the UsageCleanupTask builders.
 	UsageCleanupTask *UsageCleanupTaskClient
 	// UsageLog is the client for interacting with the UsageLog builders.
@@ -160,10 +161,6 @@ type Client struct {
 	UserAttributeDefinition *UserAttributeDefinitionClient
 	// UserAttributeValue is the client for interacting with the UserAttributeValue builders.
 	UserAttributeValue *UserAttributeValueClient
-	// UserModelTokenDailyLimitConfig is the client for interacting with the UserModelTokenDailyLimitConfig builders.
-	UserModelTokenDailyLimitConfig *UserModelTokenDailyLimitConfigClient
-	// UserModelTokenDailyUsage is the client for interacting with the UserModelTokenDailyUsage builders.
-	UserModelTokenDailyUsage *UserModelTokenDailyUsageClient
 	// UserPlatformQuota is the client for interacting with the UserPlatformQuota builders.
 	UserPlatformQuota *UserPlatformQuotaClient
 	// UserSubscription is the client for interacting with the UserSubscription builders.
@@ -192,12 +189,8 @@ func (c *Client) init() {
 	c.ChannelMonitorRequestTemplate = NewChannelMonitorRequestTemplateClient(c.config)
 	c.ErrorPassthroughRule = NewErrorPassthroughRuleClient(c.config)
 	c.Group = NewGroupClient(c.config)
-	c.GroupCandidateTokenDailyLimitConfig = NewGroupCandidateTokenDailyLimitConfigClient(c.config)
-	c.GroupCandidateTokenDailyUsage = NewGroupCandidateTokenDailyUsageClient(c.config)
 	c.IdempotencyRecord = NewIdempotencyRecordClient(c.config)
 	c.IdentityAdoptionDecision = NewIdentityAdoptionDecisionClient(c.config)
-	c.ModelTokenDailyLimitConfig = NewModelTokenDailyLimitConfigClient(c.config)
-	c.ModelTokenDailyUsage = NewModelTokenDailyUsageClient(c.config)
 	c.PaymentAuditLog = NewPaymentAuditLogClient(c.config)
 	c.PaymentOrder = NewPaymentOrderClient(c.config)
 	c.PaymentProviderInstance = NewPaymentProviderInstanceClient(c.config)
@@ -217,14 +210,17 @@ func (c *Client) init() {
 	c.Setting = NewSettingClient(c.config)
 	c.SubscriptionPlan = NewSubscriptionPlanClient(c.config)
 	c.TLSFingerprintProfile = NewTLSFingerprintProfileClient(c.config)
+	c.TokenStatAggregate = NewTokenStatAggregateClient(c.config)
+	c.TokenStatPeriodState = NewTokenStatPeriodStateClient(c.config)
+	c.TokenStatProjection = NewTokenStatProjectionClient(c.config)
+	c.TokenStatProjectionMetric = NewTokenStatProjectionMetricClient(c.config)
+	c.TokenStatQuotaRule = NewTokenStatQuotaRuleClient(c.config)
 	c.UsageCleanupTask = NewUsageCleanupTaskClient(c.config)
 	c.UsageLog = NewUsageLogClient(c.config)
 	c.User = NewUserClient(c.config)
 	c.UserAllowedGroup = NewUserAllowedGroupClient(c.config)
 	c.UserAttributeDefinition = NewUserAttributeDefinitionClient(c.config)
 	c.UserAttributeValue = NewUserAttributeValueClient(c.config)
-	c.UserModelTokenDailyLimitConfig = NewUserModelTokenDailyLimitConfigClient(c.config)
-	c.UserModelTokenDailyUsage = NewUserModelTokenDailyUsageClient(c.config)
 	c.UserPlatformQuota = NewUserPlatformQuotaClient(c.config)
 	c.UserSubscription = NewUserSubscriptionClient(c.config)
 }
@@ -317,56 +313,55 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 	cfg := c.config
 	cfg.driver = tx
 	return &Tx{
-		ctx:                                 ctx,
-		config:                              cfg,
-		APIKey:                              NewAPIKeyClient(cfg),
-		Account:                             NewAccountClient(cfg),
-		AccountGroup:                        NewAccountGroupClient(cfg),
-		Announcement:                        NewAnnouncementClient(cfg),
-		AnnouncementRead:                    NewAnnouncementReadClient(cfg),
-		AuthIdentity:                        NewAuthIdentityClient(cfg),
-		AuthIdentityChannel:                 NewAuthIdentityChannelClient(cfg),
-		ChannelMonitor:                      NewChannelMonitorClient(cfg),
-		ChannelMonitorDailyRollup:           NewChannelMonitorDailyRollupClient(cfg),
-		ChannelMonitorHistory:               NewChannelMonitorHistoryClient(cfg),
-		ChannelMonitorRequestTemplate:       NewChannelMonitorRequestTemplateClient(cfg),
-		ErrorPassthroughRule:                NewErrorPassthroughRuleClient(cfg),
-		Group:                               NewGroupClient(cfg),
-		GroupCandidateTokenDailyLimitConfig: NewGroupCandidateTokenDailyLimitConfigClient(cfg),
-		GroupCandidateTokenDailyUsage:       NewGroupCandidateTokenDailyUsageClient(cfg),
-		IdempotencyRecord:                   NewIdempotencyRecordClient(cfg),
-		IdentityAdoptionDecision:            NewIdentityAdoptionDecisionClient(cfg),
-		ModelTokenDailyLimitConfig:          NewModelTokenDailyLimitConfigClient(cfg),
-		ModelTokenDailyUsage:                NewModelTokenDailyUsageClient(cfg),
-		PaymentAuditLog:                     NewPaymentAuditLogClient(cfg),
-		PaymentOrder:                        NewPaymentOrderClient(cfg),
-		PaymentProviderInstance:             NewPaymentProviderInstanceClient(cfg),
-		PendingAuthSession:                  NewPendingAuthSessionClient(cfg),
-		PromoCode:                           NewPromoCodeClient(cfg),
-		PromoCodeUsage:                      NewPromoCodeUsageClient(cfg),
-		Proxy:                               NewProxyClient(cfg),
-		RBACAuditLog:                        NewRBACAuditLogClient(cfg),
-		RBACPermission:                      NewRBACPermissionClient(cfg),
-		RBACPolicyState:                     NewRBACPolicyStateClient(cfg),
-		RBACRole:                            NewRBACRoleClient(cfg),
-		RBACRolePermission:                  NewRBACRolePermissionClient(cfg),
-		RBACUserRole:                        NewRBACUserRoleClient(cfg),
-		RBACUserVersion:                     NewRBACUserVersionClient(cfg),
-		RedeemCode:                          NewRedeemCodeClient(cfg),
-		SecuritySecret:                      NewSecuritySecretClient(cfg),
-		Setting:                             NewSettingClient(cfg),
-		SubscriptionPlan:                    NewSubscriptionPlanClient(cfg),
-		TLSFingerprintProfile:               NewTLSFingerprintProfileClient(cfg),
-		UsageCleanupTask:                    NewUsageCleanupTaskClient(cfg),
-		UsageLog:                            NewUsageLogClient(cfg),
-		User:                                NewUserClient(cfg),
-		UserAllowedGroup:                    NewUserAllowedGroupClient(cfg),
-		UserAttributeDefinition:             NewUserAttributeDefinitionClient(cfg),
-		UserAttributeValue:                  NewUserAttributeValueClient(cfg),
-		UserModelTokenDailyLimitConfig:      NewUserModelTokenDailyLimitConfigClient(cfg),
-		UserModelTokenDailyUsage:            NewUserModelTokenDailyUsageClient(cfg),
-		UserPlatformQuota:                   NewUserPlatformQuotaClient(cfg),
-		UserSubscription:                    NewUserSubscriptionClient(cfg),
+		ctx:                           ctx,
+		config:                        cfg,
+		APIKey:                        NewAPIKeyClient(cfg),
+		Account:                       NewAccountClient(cfg),
+		AccountGroup:                  NewAccountGroupClient(cfg),
+		Announcement:                  NewAnnouncementClient(cfg),
+		AnnouncementRead:              NewAnnouncementReadClient(cfg),
+		AuthIdentity:                  NewAuthIdentityClient(cfg),
+		AuthIdentityChannel:           NewAuthIdentityChannelClient(cfg),
+		ChannelMonitor:                NewChannelMonitorClient(cfg),
+		ChannelMonitorDailyRollup:     NewChannelMonitorDailyRollupClient(cfg),
+		ChannelMonitorHistory:         NewChannelMonitorHistoryClient(cfg),
+		ChannelMonitorRequestTemplate: NewChannelMonitorRequestTemplateClient(cfg),
+		ErrorPassthroughRule:          NewErrorPassthroughRuleClient(cfg),
+		Group:                         NewGroupClient(cfg),
+		IdempotencyRecord:             NewIdempotencyRecordClient(cfg),
+		IdentityAdoptionDecision:      NewIdentityAdoptionDecisionClient(cfg),
+		PaymentAuditLog:               NewPaymentAuditLogClient(cfg),
+		PaymentOrder:                  NewPaymentOrderClient(cfg),
+		PaymentProviderInstance:       NewPaymentProviderInstanceClient(cfg),
+		PendingAuthSession:            NewPendingAuthSessionClient(cfg),
+		PromoCode:                     NewPromoCodeClient(cfg),
+		PromoCodeUsage:                NewPromoCodeUsageClient(cfg),
+		Proxy:                         NewProxyClient(cfg),
+		RBACAuditLog:                  NewRBACAuditLogClient(cfg),
+		RBACPermission:                NewRBACPermissionClient(cfg),
+		RBACPolicyState:               NewRBACPolicyStateClient(cfg),
+		RBACRole:                      NewRBACRoleClient(cfg),
+		RBACRolePermission:            NewRBACRolePermissionClient(cfg),
+		RBACUserRole:                  NewRBACUserRoleClient(cfg),
+		RBACUserVersion:               NewRBACUserVersionClient(cfg),
+		RedeemCode:                    NewRedeemCodeClient(cfg),
+		SecuritySecret:                NewSecuritySecretClient(cfg),
+		Setting:                       NewSettingClient(cfg),
+		SubscriptionPlan:              NewSubscriptionPlanClient(cfg),
+		TLSFingerprintProfile:         NewTLSFingerprintProfileClient(cfg),
+		TokenStatAggregate:            NewTokenStatAggregateClient(cfg),
+		TokenStatPeriodState:          NewTokenStatPeriodStateClient(cfg),
+		TokenStatProjection:           NewTokenStatProjectionClient(cfg),
+		TokenStatProjectionMetric:     NewTokenStatProjectionMetricClient(cfg),
+		TokenStatQuotaRule:            NewTokenStatQuotaRuleClient(cfg),
+		UsageCleanupTask:              NewUsageCleanupTaskClient(cfg),
+		UsageLog:                      NewUsageLogClient(cfg),
+		User:                          NewUserClient(cfg),
+		UserAllowedGroup:              NewUserAllowedGroupClient(cfg),
+		UserAttributeDefinition:       NewUserAttributeDefinitionClient(cfg),
+		UserAttributeValue:            NewUserAttributeValueClient(cfg),
+		UserPlatformQuota:             NewUserPlatformQuotaClient(cfg),
+		UserSubscription:              NewUserSubscriptionClient(cfg),
 	}, nil
 }
 
@@ -384,56 +379,55 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 	cfg := c.config
 	cfg.driver = &txDriver{tx: tx, drv: c.driver}
 	return &Tx{
-		ctx:                                 ctx,
-		config:                              cfg,
-		APIKey:                              NewAPIKeyClient(cfg),
-		Account:                             NewAccountClient(cfg),
-		AccountGroup:                        NewAccountGroupClient(cfg),
-		Announcement:                        NewAnnouncementClient(cfg),
-		AnnouncementRead:                    NewAnnouncementReadClient(cfg),
-		AuthIdentity:                        NewAuthIdentityClient(cfg),
-		AuthIdentityChannel:                 NewAuthIdentityChannelClient(cfg),
-		ChannelMonitor:                      NewChannelMonitorClient(cfg),
-		ChannelMonitorDailyRollup:           NewChannelMonitorDailyRollupClient(cfg),
-		ChannelMonitorHistory:               NewChannelMonitorHistoryClient(cfg),
-		ChannelMonitorRequestTemplate:       NewChannelMonitorRequestTemplateClient(cfg),
-		ErrorPassthroughRule:                NewErrorPassthroughRuleClient(cfg),
-		Group:                               NewGroupClient(cfg),
-		GroupCandidateTokenDailyLimitConfig: NewGroupCandidateTokenDailyLimitConfigClient(cfg),
-		GroupCandidateTokenDailyUsage:       NewGroupCandidateTokenDailyUsageClient(cfg),
-		IdempotencyRecord:                   NewIdempotencyRecordClient(cfg),
-		IdentityAdoptionDecision:            NewIdentityAdoptionDecisionClient(cfg),
-		ModelTokenDailyLimitConfig:          NewModelTokenDailyLimitConfigClient(cfg),
-		ModelTokenDailyUsage:                NewModelTokenDailyUsageClient(cfg),
-		PaymentAuditLog:                     NewPaymentAuditLogClient(cfg),
-		PaymentOrder:                        NewPaymentOrderClient(cfg),
-		PaymentProviderInstance:             NewPaymentProviderInstanceClient(cfg),
-		PendingAuthSession:                  NewPendingAuthSessionClient(cfg),
-		PromoCode:                           NewPromoCodeClient(cfg),
-		PromoCodeUsage:                      NewPromoCodeUsageClient(cfg),
-		Proxy:                               NewProxyClient(cfg),
-		RBACAuditLog:                        NewRBACAuditLogClient(cfg),
-		RBACPermission:                      NewRBACPermissionClient(cfg),
-		RBACPolicyState:                     NewRBACPolicyStateClient(cfg),
-		RBACRole:                            NewRBACRoleClient(cfg),
-		RBACRolePermission:                  NewRBACRolePermissionClient(cfg),
-		RBACUserRole:                        NewRBACUserRoleClient(cfg),
-		RBACUserVersion:                     NewRBACUserVersionClient(cfg),
-		RedeemCode:                          NewRedeemCodeClient(cfg),
-		SecuritySecret:                      NewSecuritySecretClient(cfg),
-		Setting:                             NewSettingClient(cfg),
-		SubscriptionPlan:                    NewSubscriptionPlanClient(cfg),
-		TLSFingerprintProfile:               NewTLSFingerprintProfileClient(cfg),
-		UsageCleanupTask:                    NewUsageCleanupTaskClient(cfg),
-		UsageLog:                            NewUsageLogClient(cfg),
-		User:                                NewUserClient(cfg),
-		UserAllowedGroup:                    NewUserAllowedGroupClient(cfg),
-		UserAttributeDefinition:             NewUserAttributeDefinitionClient(cfg),
-		UserAttributeValue:                  NewUserAttributeValueClient(cfg),
-		UserModelTokenDailyLimitConfig:      NewUserModelTokenDailyLimitConfigClient(cfg),
-		UserModelTokenDailyUsage:            NewUserModelTokenDailyUsageClient(cfg),
-		UserPlatformQuota:                   NewUserPlatformQuotaClient(cfg),
-		UserSubscription:                    NewUserSubscriptionClient(cfg),
+		ctx:                           ctx,
+		config:                        cfg,
+		APIKey:                        NewAPIKeyClient(cfg),
+		Account:                       NewAccountClient(cfg),
+		AccountGroup:                  NewAccountGroupClient(cfg),
+		Announcement:                  NewAnnouncementClient(cfg),
+		AnnouncementRead:              NewAnnouncementReadClient(cfg),
+		AuthIdentity:                  NewAuthIdentityClient(cfg),
+		AuthIdentityChannel:           NewAuthIdentityChannelClient(cfg),
+		ChannelMonitor:                NewChannelMonitorClient(cfg),
+		ChannelMonitorDailyRollup:     NewChannelMonitorDailyRollupClient(cfg),
+		ChannelMonitorHistory:         NewChannelMonitorHistoryClient(cfg),
+		ChannelMonitorRequestTemplate: NewChannelMonitorRequestTemplateClient(cfg),
+		ErrorPassthroughRule:          NewErrorPassthroughRuleClient(cfg),
+		Group:                         NewGroupClient(cfg),
+		IdempotencyRecord:             NewIdempotencyRecordClient(cfg),
+		IdentityAdoptionDecision:      NewIdentityAdoptionDecisionClient(cfg),
+		PaymentAuditLog:               NewPaymentAuditLogClient(cfg),
+		PaymentOrder:                  NewPaymentOrderClient(cfg),
+		PaymentProviderInstance:       NewPaymentProviderInstanceClient(cfg),
+		PendingAuthSession:            NewPendingAuthSessionClient(cfg),
+		PromoCode:                     NewPromoCodeClient(cfg),
+		PromoCodeUsage:                NewPromoCodeUsageClient(cfg),
+		Proxy:                         NewProxyClient(cfg),
+		RBACAuditLog:                  NewRBACAuditLogClient(cfg),
+		RBACPermission:                NewRBACPermissionClient(cfg),
+		RBACPolicyState:               NewRBACPolicyStateClient(cfg),
+		RBACRole:                      NewRBACRoleClient(cfg),
+		RBACRolePermission:            NewRBACRolePermissionClient(cfg),
+		RBACUserRole:                  NewRBACUserRoleClient(cfg),
+		RBACUserVersion:               NewRBACUserVersionClient(cfg),
+		RedeemCode:                    NewRedeemCodeClient(cfg),
+		SecuritySecret:                NewSecuritySecretClient(cfg),
+		Setting:                       NewSettingClient(cfg),
+		SubscriptionPlan:              NewSubscriptionPlanClient(cfg),
+		TLSFingerprintProfile:         NewTLSFingerprintProfileClient(cfg),
+		TokenStatAggregate:            NewTokenStatAggregateClient(cfg),
+		TokenStatPeriodState:          NewTokenStatPeriodStateClient(cfg),
+		TokenStatProjection:           NewTokenStatProjectionClient(cfg),
+		TokenStatProjectionMetric:     NewTokenStatProjectionMetricClient(cfg),
+		TokenStatQuotaRule:            NewTokenStatQuotaRuleClient(cfg),
+		UsageCleanupTask:              NewUsageCleanupTaskClient(cfg),
+		UsageLog:                      NewUsageLogClient(cfg),
+		User:                          NewUserClient(cfg),
+		UserAllowedGroup:              NewUserAllowedGroupClient(cfg),
+		UserAttributeDefinition:       NewUserAttributeDefinitionClient(cfg),
+		UserAttributeValue:            NewUserAttributeValueClient(cfg),
+		UserPlatformQuota:             NewUserPlatformQuotaClient(cfg),
+		UserSubscription:              NewUserSubscriptionClient(cfg),
 	}, nil
 }
 
@@ -467,17 +461,16 @@ func (c *Client) Use(hooks ...Hook) {
 		c.AuthIdentity, c.AuthIdentityChannel, c.ChannelMonitor,
 		c.ChannelMonitorDailyRollup, c.ChannelMonitorHistory,
 		c.ChannelMonitorRequestTemplate, c.ErrorPassthroughRule, c.Group,
-		c.GroupCandidateTokenDailyLimitConfig, c.GroupCandidateTokenDailyUsage,
-		c.IdempotencyRecord, c.IdentityAdoptionDecision, c.ModelTokenDailyLimitConfig,
-		c.ModelTokenDailyUsage, c.PaymentAuditLog, c.PaymentOrder,
-		c.PaymentProviderInstance, c.PendingAuthSession, c.PromoCode, c.PromoCodeUsage,
-		c.Proxy, c.RBACAuditLog, c.RBACPermission, c.RBACPolicyState, c.RBACRole,
-		c.RBACRolePermission, c.RBACUserRole, c.RBACUserVersion, c.RedeemCode,
-		c.SecuritySecret, c.Setting, c.SubscriptionPlan, c.TLSFingerprintProfile,
+		c.IdempotencyRecord, c.IdentityAdoptionDecision, c.PaymentAuditLog,
+		c.PaymentOrder, c.PaymentProviderInstance, c.PendingAuthSession, c.PromoCode,
+		c.PromoCodeUsage, c.Proxy, c.RBACAuditLog, c.RBACPermission, c.RBACPolicyState,
+		c.RBACRole, c.RBACRolePermission, c.RBACUserRole, c.RBACUserVersion,
+		c.RedeemCode, c.SecuritySecret, c.Setting, c.SubscriptionPlan,
+		c.TLSFingerprintProfile, c.TokenStatAggregate, c.TokenStatPeriodState,
+		c.TokenStatProjection, c.TokenStatProjectionMetric, c.TokenStatQuotaRule,
 		c.UsageCleanupTask, c.UsageLog, c.User, c.UserAllowedGroup,
-		c.UserAttributeDefinition, c.UserAttributeValue,
-		c.UserModelTokenDailyLimitConfig, c.UserModelTokenDailyUsage,
-		c.UserPlatformQuota, c.UserSubscription,
+		c.UserAttributeDefinition, c.UserAttributeValue, c.UserPlatformQuota,
+		c.UserSubscription,
 	} {
 		n.Use(hooks...)
 	}
@@ -491,17 +484,16 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 		c.AuthIdentity, c.AuthIdentityChannel, c.ChannelMonitor,
 		c.ChannelMonitorDailyRollup, c.ChannelMonitorHistory,
 		c.ChannelMonitorRequestTemplate, c.ErrorPassthroughRule, c.Group,
-		c.GroupCandidateTokenDailyLimitConfig, c.GroupCandidateTokenDailyUsage,
-		c.IdempotencyRecord, c.IdentityAdoptionDecision, c.ModelTokenDailyLimitConfig,
-		c.ModelTokenDailyUsage, c.PaymentAuditLog, c.PaymentOrder,
-		c.PaymentProviderInstance, c.PendingAuthSession, c.PromoCode, c.PromoCodeUsage,
-		c.Proxy, c.RBACAuditLog, c.RBACPermission, c.RBACPolicyState, c.RBACRole,
-		c.RBACRolePermission, c.RBACUserRole, c.RBACUserVersion, c.RedeemCode,
-		c.SecuritySecret, c.Setting, c.SubscriptionPlan, c.TLSFingerprintProfile,
+		c.IdempotencyRecord, c.IdentityAdoptionDecision, c.PaymentAuditLog,
+		c.PaymentOrder, c.PaymentProviderInstance, c.PendingAuthSession, c.PromoCode,
+		c.PromoCodeUsage, c.Proxy, c.RBACAuditLog, c.RBACPermission, c.RBACPolicyState,
+		c.RBACRole, c.RBACRolePermission, c.RBACUserRole, c.RBACUserVersion,
+		c.RedeemCode, c.SecuritySecret, c.Setting, c.SubscriptionPlan,
+		c.TLSFingerprintProfile, c.TokenStatAggregate, c.TokenStatPeriodState,
+		c.TokenStatProjection, c.TokenStatProjectionMetric, c.TokenStatQuotaRule,
 		c.UsageCleanupTask, c.UsageLog, c.User, c.UserAllowedGroup,
-		c.UserAttributeDefinition, c.UserAttributeValue,
-		c.UserModelTokenDailyLimitConfig, c.UserModelTokenDailyUsage,
-		c.UserPlatformQuota, c.UserSubscription,
+		c.UserAttributeDefinition, c.UserAttributeValue, c.UserPlatformQuota,
+		c.UserSubscription,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -536,18 +528,10 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.ErrorPassthroughRule.mutate(ctx, m)
 	case *GroupMutation:
 		return c.Group.mutate(ctx, m)
-	case *GroupCandidateTokenDailyLimitConfigMutation:
-		return c.GroupCandidateTokenDailyLimitConfig.mutate(ctx, m)
-	case *GroupCandidateTokenDailyUsageMutation:
-		return c.GroupCandidateTokenDailyUsage.mutate(ctx, m)
 	case *IdempotencyRecordMutation:
 		return c.IdempotencyRecord.mutate(ctx, m)
 	case *IdentityAdoptionDecisionMutation:
 		return c.IdentityAdoptionDecision.mutate(ctx, m)
-	case *ModelTokenDailyLimitConfigMutation:
-		return c.ModelTokenDailyLimitConfig.mutate(ctx, m)
-	case *ModelTokenDailyUsageMutation:
-		return c.ModelTokenDailyUsage.mutate(ctx, m)
 	case *PaymentAuditLogMutation:
 		return c.PaymentAuditLog.mutate(ctx, m)
 	case *PaymentOrderMutation:
@@ -586,6 +570,16 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.SubscriptionPlan.mutate(ctx, m)
 	case *TLSFingerprintProfileMutation:
 		return c.TLSFingerprintProfile.mutate(ctx, m)
+	case *TokenStatAggregateMutation:
+		return c.TokenStatAggregate.mutate(ctx, m)
+	case *TokenStatPeriodStateMutation:
+		return c.TokenStatPeriodState.mutate(ctx, m)
+	case *TokenStatProjectionMutation:
+		return c.TokenStatProjection.mutate(ctx, m)
+	case *TokenStatProjectionMetricMutation:
+		return c.TokenStatProjectionMetric.mutate(ctx, m)
+	case *TokenStatQuotaRuleMutation:
+		return c.TokenStatQuotaRule.mutate(ctx, m)
 	case *UsageCleanupTaskMutation:
 		return c.UsageCleanupTask.mutate(ctx, m)
 	case *UsageLogMutation:
@@ -598,10 +592,6 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.UserAttributeDefinition.mutate(ctx, m)
 	case *UserAttributeValueMutation:
 		return c.UserAttributeValue.mutate(ctx, m)
-	case *UserModelTokenDailyLimitConfigMutation:
-		return c.UserModelTokenDailyLimitConfig.mutate(ctx, m)
-	case *UserModelTokenDailyUsageMutation:
-		return c.UserModelTokenDailyUsage.mutate(ctx, m)
 	case *UserPlatformQuotaMutation:
 		return c.UserPlatformQuota.mutate(ctx, m)
 	case *UserSubscriptionMutation:
@@ -2686,38 +2676,6 @@ func (c *GroupClient) QueryUsageLogs(_m *Group) *UsageLogQuery {
 	return query
 }
 
-// QueryCandidateTokenDailyUsages queries the candidate_token_daily_usages edge of a Group.
-func (c *GroupClient) QueryCandidateTokenDailyUsages(_m *Group) *GroupCandidateTokenDailyUsageQuery {
-	query := (&GroupCandidateTokenDailyUsageClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := _m.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(group.Table, group.FieldID, id),
-			sqlgraph.To(groupcandidatetokendailyusage.Table, groupcandidatetokendailyusage.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, group.CandidateTokenDailyUsagesTable, group.CandidateTokenDailyUsagesColumn),
-		)
-		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryGroupCandidateTokenDailyLimitConfigs queries the group_candidate_token_daily_limit_configs edge of a Group.
-func (c *GroupClient) QueryGroupCandidateTokenDailyLimitConfigs(_m *Group) *GroupCandidateTokenDailyLimitConfigQuery {
-	query := (&GroupCandidateTokenDailyLimitConfigClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := _m.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(group.Table, group.FieldID, id),
-			sqlgraph.To(groupcandidatetokendailylimitconfig.Table, groupcandidatetokendailylimitconfig.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, group.GroupCandidateTokenDailyLimitConfigsTable, group.GroupCandidateTokenDailyLimitConfigsColumn),
-		)
-		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
 // QueryAccounts queries the accounts edge of a Group.
 func (c *GroupClient) QueryAccounts(_m *Group) *AccountQuery {
 	query := (&AccountClient{config: c.config}).Query()
@@ -2806,304 +2764,6 @@ func (c *GroupClient) mutate(ctx context.Context, m *GroupMutation) (Value, erro
 		return (&GroupDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown Group mutation op: %q", m.Op())
-	}
-}
-
-// GroupCandidateTokenDailyLimitConfigClient is a client for the GroupCandidateTokenDailyLimitConfig schema.
-type GroupCandidateTokenDailyLimitConfigClient struct {
-	config
-}
-
-// NewGroupCandidateTokenDailyLimitConfigClient returns a client for the GroupCandidateTokenDailyLimitConfig from the given config.
-func NewGroupCandidateTokenDailyLimitConfigClient(c config) *GroupCandidateTokenDailyLimitConfigClient {
-	return &GroupCandidateTokenDailyLimitConfigClient{config: c}
-}
-
-// Use adds a list of mutation hooks to the hooks stack.
-// A call to `Use(f, g, h)` equals to `groupcandidatetokendailylimitconfig.Hooks(f(g(h())))`.
-func (c *GroupCandidateTokenDailyLimitConfigClient) Use(hooks ...Hook) {
-	c.hooks.GroupCandidateTokenDailyLimitConfig = append(c.hooks.GroupCandidateTokenDailyLimitConfig, hooks...)
-}
-
-// Intercept adds a list of query interceptors to the interceptors stack.
-// A call to `Intercept(f, g, h)` equals to `groupcandidatetokendailylimitconfig.Intercept(f(g(h())))`.
-func (c *GroupCandidateTokenDailyLimitConfigClient) Intercept(interceptors ...Interceptor) {
-	c.inters.GroupCandidateTokenDailyLimitConfig = append(c.inters.GroupCandidateTokenDailyLimitConfig, interceptors...)
-}
-
-// Create returns a builder for creating a GroupCandidateTokenDailyLimitConfig entity.
-func (c *GroupCandidateTokenDailyLimitConfigClient) Create() *GroupCandidateTokenDailyLimitConfigCreate {
-	mutation := newGroupCandidateTokenDailyLimitConfigMutation(c.config, OpCreate)
-	return &GroupCandidateTokenDailyLimitConfigCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// CreateBulk returns a builder for creating a bulk of GroupCandidateTokenDailyLimitConfig entities.
-func (c *GroupCandidateTokenDailyLimitConfigClient) CreateBulk(builders ...*GroupCandidateTokenDailyLimitConfigCreate) *GroupCandidateTokenDailyLimitConfigCreateBulk {
-	return &GroupCandidateTokenDailyLimitConfigCreateBulk{config: c.config, builders: builders}
-}
-
-// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
-// a builder and applies setFunc on it.
-func (c *GroupCandidateTokenDailyLimitConfigClient) MapCreateBulk(slice any, setFunc func(*GroupCandidateTokenDailyLimitConfigCreate, int)) *GroupCandidateTokenDailyLimitConfigCreateBulk {
-	rv := reflect.ValueOf(slice)
-	if rv.Kind() != reflect.Slice {
-		return &GroupCandidateTokenDailyLimitConfigCreateBulk{err: fmt.Errorf("calling to GroupCandidateTokenDailyLimitConfigClient.MapCreateBulk with wrong type %T, need slice", slice)}
-	}
-	builders := make([]*GroupCandidateTokenDailyLimitConfigCreate, rv.Len())
-	for i := 0; i < rv.Len(); i++ {
-		builders[i] = c.Create()
-		setFunc(builders[i], i)
-	}
-	return &GroupCandidateTokenDailyLimitConfigCreateBulk{config: c.config, builders: builders}
-}
-
-// Update returns an update builder for GroupCandidateTokenDailyLimitConfig.
-func (c *GroupCandidateTokenDailyLimitConfigClient) Update() *GroupCandidateTokenDailyLimitConfigUpdate {
-	mutation := newGroupCandidateTokenDailyLimitConfigMutation(c.config, OpUpdate)
-	return &GroupCandidateTokenDailyLimitConfigUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOne returns an update builder for the given entity.
-func (c *GroupCandidateTokenDailyLimitConfigClient) UpdateOne(_m *GroupCandidateTokenDailyLimitConfig) *GroupCandidateTokenDailyLimitConfigUpdateOne {
-	mutation := newGroupCandidateTokenDailyLimitConfigMutation(c.config, OpUpdateOne, withGroupCandidateTokenDailyLimitConfig(_m))
-	return &GroupCandidateTokenDailyLimitConfigUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOneID returns an update builder for the given id.
-func (c *GroupCandidateTokenDailyLimitConfigClient) UpdateOneID(id int64) *GroupCandidateTokenDailyLimitConfigUpdateOne {
-	mutation := newGroupCandidateTokenDailyLimitConfigMutation(c.config, OpUpdateOne, withGroupCandidateTokenDailyLimitConfigID(id))
-	return &GroupCandidateTokenDailyLimitConfigUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// Delete returns a delete builder for GroupCandidateTokenDailyLimitConfig.
-func (c *GroupCandidateTokenDailyLimitConfigClient) Delete() *GroupCandidateTokenDailyLimitConfigDelete {
-	mutation := newGroupCandidateTokenDailyLimitConfigMutation(c.config, OpDelete)
-	return &GroupCandidateTokenDailyLimitConfigDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// DeleteOne returns a builder for deleting the given entity.
-func (c *GroupCandidateTokenDailyLimitConfigClient) DeleteOne(_m *GroupCandidateTokenDailyLimitConfig) *GroupCandidateTokenDailyLimitConfigDeleteOne {
-	return c.DeleteOneID(_m.ID)
-}
-
-// DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *GroupCandidateTokenDailyLimitConfigClient) DeleteOneID(id int64) *GroupCandidateTokenDailyLimitConfigDeleteOne {
-	builder := c.Delete().Where(groupcandidatetokendailylimitconfig.ID(id))
-	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
-	return &GroupCandidateTokenDailyLimitConfigDeleteOne{builder}
-}
-
-// Query returns a query builder for GroupCandidateTokenDailyLimitConfig.
-func (c *GroupCandidateTokenDailyLimitConfigClient) Query() *GroupCandidateTokenDailyLimitConfigQuery {
-	return &GroupCandidateTokenDailyLimitConfigQuery{
-		config: c.config,
-		ctx:    &QueryContext{Type: TypeGroupCandidateTokenDailyLimitConfig},
-		inters: c.Interceptors(),
-	}
-}
-
-// Get returns a GroupCandidateTokenDailyLimitConfig entity by its id.
-func (c *GroupCandidateTokenDailyLimitConfigClient) Get(ctx context.Context, id int64) (*GroupCandidateTokenDailyLimitConfig, error) {
-	return c.Query().Where(groupcandidatetokendailylimitconfig.ID(id)).Only(ctx)
-}
-
-// GetX is like Get, but panics if an error occurs.
-func (c *GroupCandidateTokenDailyLimitConfigClient) GetX(ctx context.Context, id int64) *GroupCandidateTokenDailyLimitConfig {
-	obj, err := c.Get(ctx, id)
-	if err != nil {
-		panic(err)
-	}
-	return obj
-}
-
-// QueryGroup queries the group edge of a GroupCandidateTokenDailyLimitConfig.
-func (c *GroupCandidateTokenDailyLimitConfigClient) QueryGroup(_m *GroupCandidateTokenDailyLimitConfig) *GroupQuery {
-	query := (&GroupClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := _m.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(groupcandidatetokendailylimitconfig.Table, groupcandidatetokendailylimitconfig.FieldID, id),
-			sqlgraph.To(group.Table, group.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, groupcandidatetokendailylimitconfig.GroupTable, groupcandidatetokendailylimitconfig.GroupColumn),
-		)
-		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// Hooks returns the client hooks.
-func (c *GroupCandidateTokenDailyLimitConfigClient) Hooks() []Hook {
-	return c.hooks.GroupCandidateTokenDailyLimitConfig
-}
-
-// Interceptors returns the client interceptors.
-func (c *GroupCandidateTokenDailyLimitConfigClient) Interceptors() []Interceptor {
-	return c.inters.GroupCandidateTokenDailyLimitConfig
-}
-
-func (c *GroupCandidateTokenDailyLimitConfigClient) mutate(ctx context.Context, m *GroupCandidateTokenDailyLimitConfigMutation) (Value, error) {
-	switch m.Op() {
-	case OpCreate:
-		return (&GroupCandidateTokenDailyLimitConfigCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdate:
-		return (&GroupCandidateTokenDailyLimitConfigUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdateOne:
-		return (&GroupCandidateTokenDailyLimitConfigUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpDelete, OpDeleteOne:
-		return (&GroupCandidateTokenDailyLimitConfigDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
-	default:
-		return nil, fmt.Errorf("ent: unknown GroupCandidateTokenDailyLimitConfig mutation op: %q", m.Op())
-	}
-}
-
-// GroupCandidateTokenDailyUsageClient is a client for the GroupCandidateTokenDailyUsage schema.
-type GroupCandidateTokenDailyUsageClient struct {
-	config
-}
-
-// NewGroupCandidateTokenDailyUsageClient returns a client for the GroupCandidateTokenDailyUsage from the given config.
-func NewGroupCandidateTokenDailyUsageClient(c config) *GroupCandidateTokenDailyUsageClient {
-	return &GroupCandidateTokenDailyUsageClient{config: c}
-}
-
-// Use adds a list of mutation hooks to the hooks stack.
-// A call to `Use(f, g, h)` equals to `groupcandidatetokendailyusage.Hooks(f(g(h())))`.
-func (c *GroupCandidateTokenDailyUsageClient) Use(hooks ...Hook) {
-	c.hooks.GroupCandidateTokenDailyUsage = append(c.hooks.GroupCandidateTokenDailyUsage, hooks...)
-}
-
-// Intercept adds a list of query interceptors to the interceptors stack.
-// A call to `Intercept(f, g, h)` equals to `groupcandidatetokendailyusage.Intercept(f(g(h())))`.
-func (c *GroupCandidateTokenDailyUsageClient) Intercept(interceptors ...Interceptor) {
-	c.inters.GroupCandidateTokenDailyUsage = append(c.inters.GroupCandidateTokenDailyUsage, interceptors...)
-}
-
-// Create returns a builder for creating a GroupCandidateTokenDailyUsage entity.
-func (c *GroupCandidateTokenDailyUsageClient) Create() *GroupCandidateTokenDailyUsageCreate {
-	mutation := newGroupCandidateTokenDailyUsageMutation(c.config, OpCreate)
-	return &GroupCandidateTokenDailyUsageCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// CreateBulk returns a builder for creating a bulk of GroupCandidateTokenDailyUsage entities.
-func (c *GroupCandidateTokenDailyUsageClient) CreateBulk(builders ...*GroupCandidateTokenDailyUsageCreate) *GroupCandidateTokenDailyUsageCreateBulk {
-	return &GroupCandidateTokenDailyUsageCreateBulk{config: c.config, builders: builders}
-}
-
-// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
-// a builder and applies setFunc on it.
-func (c *GroupCandidateTokenDailyUsageClient) MapCreateBulk(slice any, setFunc func(*GroupCandidateTokenDailyUsageCreate, int)) *GroupCandidateTokenDailyUsageCreateBulk {
-	rv := reflect.ValueOf(slice)
-	if rv.Kind() != reflect.Slice {
-		return &GroupCandidateTokenDailyUsageCreateBulk{err: fmt.Errorf("calling to GroupCandidateTokenDailyUsageClient.MapCreateBulk with wrong type %T, need slice", slice)}
-	}
-	builders := make([]*GroupCandidateTokenDailyUsageCreate, rv.Len())
-	for i := 0; i < rv.Len(); i++ {
-		builders[i] = c.Create()
-		setFunc(builders[i], i)
-	}
-	return &GroupCandidateTokenDailyUsageCreateBulk{config: c.config, builders: builders}
-}
-
-// Update returns an update builder for GroupCandidateTokenDailyUsage.
-func (c *GroupCandidateTokenDailyUsageClient) Update() *GroupCandidateTokenDailyUsageUpdate {
-	mutation := newGroupCandidateTokenDailyUsageMutation(c.config, OpUpdate)
-	return &GroupCandidateTokenDailyUsageUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOne returns an update builder for the given entity.
-func (c *GroupCandidateTokenDailyUsageClient) UpdateOne(_m *GroupCandidateTokenDailyUsage) *GroupCandidateTokenDailyUsageUpdateOne {
-	mutation := newGroupCandidateTokenDailyUsageMutation(c.config, OpUpdateOne, withGroupCandidateTokenDailyUsage(_m))
-	return &GroupCandidateTokenDailyUsageUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOneID returns an update builder for the given id.
-func (c *GroupCandidateTokenDailyUsageClient) UpdateOneID(id int64) *GroupCandidateTokenDailyUsageUpdateOne {
-	mutation := newGroupCandidateTokenDailyUsageMutation(c.config, OpUpdateOne, withGroupCandidateTokenDailyUsageID(id))
-	return &GroupCandidateTokenDailyUsageUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// Delete returns a delete builder for GroupCandidateTokenDailyUsage.
-func (c *GroupCandidateTokenDailyUsageClient) Delete() *GroupCandidateTokenDailyUsageDelete {
-	mutation := newGroupCandidateTokenDailyUsageMutation(c.config, OpDelete)
-	return &GroupCandidateTokenDailyUsageDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// DeleteOne returns a builder for deleting the given entity.
-func (c *GroupCandidateTokenDailyUsageClient) DeleteOne(_m *GroupCandidateTokenDailyUsage) *GroupCandidateTokenDailyUsageDeleteOne {
-	return c.DeleteOneID(_m.ID)
-}
-
-// DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *GroupCandidateTokenDailyUsageClient) DeleteOneID(id int64) *GroupCandidateTokenDailyUsageDeleteOne {
-	builder := c.Delete().Where(groupcandidatetokendailyusage.ID(id))
-	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
-	return &GroupCandidateTokenDailyUsageDeleteOne{builder}
-}
-
-// Query returns a query builder for GroupCandidateTokenDailyUsage.
-func (c *GroupCandidateTokenDailyUsageClient) Query() *GroupCandidateTokenDailyUsageQuery {
-	return &GroupCandidateTokenDailyUsageQuery{
-		config: c.config,
-		ctx:    &QueryContext{Type: TypeGroupCandidateTokenDailyUsage},
-		inters: c.Interceptors(),
-	}
-}
-
-// Get returns a GroupCandidateTokenDailyUsage entity by its id.
-func (c *GroupCandidateTokenDailyUsageClient) Get(ctx context.Context, id int64) (*GroupCandidateTokenDailyUsage, error) {
-	return c.Query().Where(groupcandidatetokendailyusage.ID(id)).Only(ctx)
-}
-
-// GetX is like Get, but panics if an error occurs.
-func (c *GroupCandidateTokenDailyUsageClient) GetX(ctx context.Context, id int64) *GroupCandidateTokenDailyUsage {
-	obj, err := c.Get(ctx, id)
-	if err != nil {
-		panic(err)
-	}
-	return obj
-}
-
-// QueryGroup queries the group edge of a GroupCandidateTokenDailyUsage.
-func (c *GroupCandidateTokenDailyUsageClient) QueryGroup(_m *GroupCandidateTokenDailyUsage) *GroupQuery {
-	query := (&GroupClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := _m.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(groupcandidatetokendailyusage.Table, groupcandidatetokendailyusage.FieldID, id),
-			sqlgraph.To(group.Table, group.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, groupcandidatetokendailyusage.GroupTable, groupcandidatetokendailyusage.GroupColumn),
-		)
-		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// Hooks returns the client hooks.
-func (c *GroupCandidateTokenDailyUsageClient) Hooks() []Hook {
-	return c.hooks.GroupCandidateTokenDailyUsage
-}
-
-// Interceptors returns the client interceptors.
-func (c *GroupCandidateTokenDailyUsageClient) Interceptors() []Interceptor {
-	return c.inters.GroupCandidateTokenDailyUsage
-}
-
-func (c *GroupCandidateTokenDailyUsageClient) mutate(ctx context.Context, m *GroupCandidateTokenDailyUsageMutation) (Value, error) {
-	switch m.Op() {
-	case OpCreate:
-		return (&GroupCandidateTokenDailyUsageCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdate:
-		return (&GroupCandidateTokenDailyUsageUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdateOne:
-		return (&GroupCandidateTokenDailyUsageUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpDelete, OpDeleteOne:
-		return (&GroupCandidateTokenDailyUsageDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
-	default:
-		return nil, fmt.Errorf("ent: unknown GroupCandidateTokenDailyUsage mutation op: %q", m.Op())
 	}
 }
 
@@ -3402,272 +3062,6 @@ func (c *IdentityAdoptionDecisionClient) mutate(ctx context.Context, m *Identity
 		return (&IdentityAdoptionDecisionDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown IdentityAdoptionDecision mutation op: %q", m.Op())
-	}
-}
-
-// ModelTokenDailyLimitConfigClient is a client for the ModelTokenDailyLimitConfig schema.
-type ModelTokenDailyLimitConfigClient struct {
-	config
-}
-
-// NewModelTokenDailyLimitConfigClient returns a client for the ModelTokenDailyLimitConfig from the given config.
-func NewModelTokenDailyLimitConfigClient(c config) *ModelTokenDailyLimitConfigClient {
-	return &ModelTokenDailyLimitConfigClient{config: c}
-}
-
-// Use adds a list of mutation hooks to the hooks stack.
-// A call to `Use(f, g, h)` equals to `modeltokendailylimitconfig.Hooks(f(g(h())))`.
-func (c *ModelTokenDailyLimitConfigClient) Use(hooks ...Hook) {
-	c.hooks.ModelTokenDailyLimitConfig = append(c.hooks.ModelTokenDailyLimitConfig, hooks...)
-}
-
-// Intercept adds a list of query interceptors to the interceptors stack.
-// A call to `Intercept(f, g, h)` equals to `modeltokendailylimitconfig.Intercept(f(g(h())))`.
-func (c *ModelTokenDailyLimitConfigClient) Intercept(interceptors ...Interceptor) {
-	c.inters.ModelTokenDailyLimitConfig = append(c.inters.ModelTokenDailyLimitConfig, interceptors...)
-}
-
-// Create returns a builder for creating a ModelTokenDailyLimitConfig entity.
-func (c *ModelTokenDailyLimitConfigClient) Create() *ModelTokenDailyLimitConfigCreate {
-	mutation := newModelTokenDailyLimitConfigMutation(c.config, OpCreate)
-	return &ModelTokenDailyLimitConfigCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// CreateBulk returns a builder for creating a bulk of ModelTokenDailyLimitConfig entities.
-func (c *ModelTokenDailyLimitConfigClient) CreateBulk(builders ...*ModelTokenDailyLimitConfigCreate) *ModelTokenDailyLimitConfigCreateBulk {
-	return &ModelTokenDailyLimitConfigCreateBulk{config: c.config, builders: builders}
-}
-
-// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
-// a builder and applies setFunc on it.
-func (c *ModelTokenDailyLimitConfigClient) MapCreateBulk(slice any, setFunc func(*ModelTokenDailyLimitConfigCreate, int)) *ModelTokenDailyLimitConfigCreateBulk {
-	rv := reflect.ValueOf(slice)
-	if rv.Kind() != reflect.Slice {
-		return &ModelTokenDailyLimitConfigCreateBulk{err: fmt.Errorf("calling to ModelTokenDailyLimitConfigClient.MapCreateBulk with wrong type %T, need slice", slice)}
-	}
-	builders := make([]*ModelTokenDailyLimitConfigCreate, rv.Len())
-	for i := 0; i < rv.Len(); i++ {
-		builders[i] = c.Create()
-		setFunc(builders[i], i)
-	}
-	return &ModelTokenDailyLimitConfigCreateBulk{config: c.config, builders: builders}
-}
-
-// Update returns an update builder for ModelTokenDailyLimitConfig.
-func (c *ModelTokenDailyLimitConfigClient) Update() *ModelTokenDailyLimitConfigUpdate {
-	mutation := newModelTokenDailyLimitConfigMutation(c.config, OpUpdate)
-	return &ModelTokenDailyLimitConfigUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOne returns an update builder for the given entity.
-func (c *ModelTokenDailyLimitConfigClient) UpdateOne(_m *ModelTokenDailyLimitConfig) *ModelTokenDailyLimitConfigUpdateOne {
-	mutation := newModelTokenDailyLimitConfigMutation(c.config, OpUpdateOne, withModelTokenDailyLimitConfig(_m))
-	return &ModelTokenDailyLimitConfigUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOneID returns an update builder for the given id.
-func (c *ModelTokenDailyLimitConfigClient) UpdateOneID(id int64) *ModelTokenDailyLimitConfigUpdateOne {
-	mutation := newModelTokenDailyLimitConfigMutation(c.config, OpUpdateOne, withModelTokenDailyLimitConfigID(id))
-	return &ModelTokenDailyLimitConfigUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// Delete returns a delete builder for ModelTokenDailyLimitConfig.
-func (c *ModelTokenDailyLimitConfigClient) Delete() *ModelTokenDailyLimitConfigDelete {
-	mutation := newModelTokenDailyLimitConfigMutation(c.config, OpDelete)
-	return &ModelTokenDailyLimitConfigDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// DeleteOne returns a builder for deleting the given entity.
-func (c *ModelTokenDailyLimitConfigClient) DeleteOne(_m *ModelTokenDailyLimitConfig) *ModelTokenDailyLimitConfigDeleteOne {
-	return c.DeleteOneID(_m.ID)
-}
-
-// DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *ModelTokenDailyLimitConfigClient) DeleteOneID(id int64) *ModelTokenDailyLimitConfigDeleteOne {
-	builder := c.Delete().Where(modeltokendailylimitconfig.ID(id))
-	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
-	return &ModelTokenDailyLimitConfigDeleteOne{builder}
-}
-
-// Query returns a query builder for ModelTokenDailyLimitConfig.
-func (c *ModelTokenDailyLimitConfigClient) Query() *ModelTokenDailyLimitConfigQuery {
-	return &ModelTokenDailyLimitConfigQuery{
-		config: c.config,
-		ctx:    &QueryContext{Type: TypeModelTokenDailyLimitConfig},
-		inters: c.Interceptors(),
-	}
-}
-
-// Get returns a ModelTokenDailyLimitConfig entity by its id.
-func (c *ModelTokenDailyLimitConfigClient) Get(ctx context.Context, id int64) (*ModelTokenDailyLimitConfig, error) {
-	return c.Query().Where(modeltokendailylimitconfig.ID(id)).Only(ctx)
-}
-
-// GetX is like Get, but panics if an error occurs.
-func (c *ModelTokenDailyLimitConfigClient) GetX(ctx context.Context, id int64) *ModelTokenDailyLimitConfig {
-	obj, err := c.Get(ctx, id)
-	if err != nil {
-		panic(err)
-	}
-	return obj
-}
-
-// Hooks returns the client hooks.
-func (c *ModelTokenDailyLimitConfigClient) Hooks() []Hook {
-	return c.hooks.ModelTokenDailyLimitConfig
-}
-
-// Interceptors returns the client interceptors.
-func (c *ModelTokenDailyLimitConfigClient) Interceptors() []Interceptor {
-	return c.inters.ModelTokenDailyLimitConfig
-}
-
-func (c *ModelTokenDailyLimitConfigClient) mutate(ctx context.Context, m *ModelTokenDailyLimitConfigMutation) (Value, error) {
-	switch m.Op() {
-	case OpCreate:
-		return (&ModelTokenDailyLimitConfigCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdate:
-		return (&ModelTokenDailyLimitConfigUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdateOne:
-		return (&ModelTokenDailyLimitConfigUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpDelete, OpDeleteOne:
-		return (&ModelTokenDailyLimitConfigDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
-	default:
-		return nil, fmt.Errorf("ent: unknown ModelTokenDailyLimitConfig mutation op: %q", m.Op())
-	}
-}
-
-// ModelTokenDailyUsageClient is a client for the ModelTokenDailyUsage schema.
-type ModelTokenDailyUsageClient struct {
-	config
-}
-
-// NewModelTokenDailyUsageClient returns a client for the ModelTokenDailyUsage from the given config.
-func NewModelTokenDailyUsageClient(c config) *ModelTokenDailyUsageClient {
-	return &ModelTokenDailyUsageClient{config: c}
-}
-
-// Use adds a list of mutation hooks to the hooks stack.
-// A call to `Use(f, g, h)` equals to `modeltokendailyusage.Hooks(f(g(h())))`.
-func (c *ModelTokenDailyUsageClient) Use(hooks ...Hook) {
-	c.hooks.ModelTokenDailyUsage = append(c.hooks.ModelTokenDailyUsage, hooks...)
-}
-
-// Intercept adds a list of query interceptors to the interceptors stack.
-// A call to `Intercept(f, g, h)` equals to `modeltokendailyusage.Intercept(f(g(h())))`.
-func (c *ModelTokenDailyUsageClient) Intercept(interceptors ...Interceptor) {
-	c.inters.ModelTokenDailyUsage = append(c.inters.ModelTokenDailyUsage, interceptors...)
-}
-
-// Create returns a builder for creating a ModelTokenDailyUsage entity.
-func (c *ModelTokenDailyUsageClient) Create() *ModelTokenDailyUsageCreate {
-	mutation := newModelTokenDailyUsageMutation(c.config, OpCreate)
-	return &ModelTokenDailyUsageCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// CreateBulk returns a builder for creating a bulk of ModelTokenDailyUsage entities.
-func (c *ModelTokenDailyUsageClient) CreateBulk(builders ...*ModelTokenDailyUsageCreate) *ModelTokenDailyUsageCreateBulk {
-	return &ModelTokenDailyUsageCreateBulk{config: c.config, builders: builders}
-}
-
-// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
-// a builder and applies setFunc on it.
-func (c *ModelTokenDailyUsageClient) MapCreateBulk(slice any, setFunc func(*ModelTokenDailyUsageCreate, int)) *ModelTokenDailyUsageCreateBulk {
-	rv := reflect.ValueOf(slice)
-	if rv.Kind() != reflect.Slice {
-		return &ModelTokenDailyUsageCreateBulk{err: fmt.Errorf("calling to ModelTokenDailyUsageClient.MapCreateBulk with wrong type %T, need slice", slice)}
-	}
-	builders := make([]*ModelTokenDailyUsageCreate, rv.Len())
-	for i := 0; i < rv.Len(); i++ {
-		builders[i] = c.Create()
-		setFunc(builders[i], i)
-	}
-	return &ModelTokenDailyUsageCreateBulk{config: c.config, builders: builders}
-}
-
-// Update returns an update builder for ModelTokenDailyUsage.
-func (c *ModelTokenDailyUsageClient) Update() *ModelTokenDailyUsageUpdate {
-	mutation := newModelTokenDailyUsageMutation(c.config, OpUpdate)
-	return &ModelTokenDailyUsageUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOne returns an update builder for the given entity.
-func (c *ModelTokenDailyUsageClient) UpdateOne(_m *ModelTokenDailyUsage) *ModelTokenDailyUsageUpdateOne {
-	mutation := newModelTokenDailyUsageMutation(c.config, OpUpdateOne, withModelTokenDailyUsage(_m))
-	return &ModelTokenDailyUsageUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOneID returns an update builder for the given id.
-func (c *ModelTokenDailyUsageClient) UpdateOneID(id int64) *ModelTokenDailyUsageUpdateOne {
-	mutation := newModelTokenDailyUsageMutation(c.config, OpUpdateOne, withModelTokenDailyUsageID(id))
-	return &ModelTokenDailyUsageUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// Delete returns a delete builder for ModelTokenDailyUsage.
-func (c *ModelTokenDailyUsageClient) Delete() *ModelTokenDailyUsageDelete {
-	mutation := newModelTokenDailyUsageMutation(c.config, OpDelete)
-	return &ModelTokenDailyUsageDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// DeleteOne returns a builder for deleting the given entity.
-func (c *ModelTokenDailyUsageClient) DeleteOne(_m *ModelTokenDailyUsage) *ModelTokenDailyUsageDeleteOne {
-	return c.DeleteOneID(_m.ID)
-}
-
-// DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *ModelTokenDailyUsageClient) DeleteOneID(id int64) *ModelTokenDailyUsageDeleteOne {
-	builder := c.Delete().Where(modeltokendailyusage.ID(id))
-	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
-	return &ModelTokenDailyUsageDeleteOne{builder}
-}
-
-// Query returns a query builder for ModelTokenDailyUsage.
-func (c *ModelTokenDailyUsageClient) Query() *ModelTokenDailyUsageQuery {
-	return &ModelTokenDailyUsageQuery{
-		config: c.config,
-		ctx:    &QueryContext{Type: TypeModelTokenDailyUsage},
-		inters: c.Interceptors(),
-	}
-}
-
-// Get returns a ModelTokenDailyUsage entity by its id.
-func (c *ModelTokenDailyUsageClient) Get(ctx context.Context, id int64) (*ModelTokenDailyUsage, error) {
-	return c.Query().Where(modeltokendailyusage.ID(id)).Only(ctx)
-}
-
-// GetX is like Get, but panics if an error occurs.
-func (c *ModelTokenDailyUsageClient) GetX(ctx context.Context, id int64) *ModelTokenDailyUsage {
-	obj, err := c.Get(ctx, id)
-	if err != nil {
-		panic(err)
-	}
-	return obj
-}
-
-// Hooks returns the client hooks.
-func (c *ModelTokenDailyUsageClient) Hooks() []Hook {
-	return c.hooks.ModelTokenDailyUsage
-}
-
-// Interceptors returns the client interceptors.
-func (c *ModelTokenDailyUsageClient) Interceptors() []Interceptor {
-	return c.inters.ModelTokenDailyUsage
-}
-
-func (c *ModelTokenDailyUsageClient) mutate(ctx context.Context, m *ModelTokenDailyUsageMutation) (Value, error) {
-	switch m.Op() {
-	case OpCreate:
-		return (&ModelTokenDailyUsageCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdate:
-		return (&ModelTokenDailyUsageUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdateOne:
-		return (&ModelTokenDailyUsageUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpDelete, OpDeleteOne:
-		return (&ModelTokenDailyUsageDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
-	default:
-		return nil, fmt.Errorf("ent: unknown ModelTokenDailyUsage mutation op: %q", m.Op())
 	}
 }
 
@@ -6524,6 +5918,671 @@ func (c *TLSFingerprintProfileClient) mutate(ctx context.Context, m *TLSFingerpr
 	}
 }
 
+// TokenStatAggregateClient is a client for the TokenStatAggregate schema.
+type TokenStatAggregateClient struct {
+	config
+}
+
+// NewTokenStatAggregateClient returns a client for the TokenStatAggregate from the given config.
+func NewTokenStatAggregateClient(c config) *TokenStatAggregateClient {
+	return &TokenStatAggregateClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `tokenstataggregate.Hooks(f(g(h())))`.
+func (c *TokenStatAggregateClient) Use(hooks ...Hook) {
+	c.hooks.TokenStatAggregate = append(c.hooks.TokenStatAggregate, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `tokenstataggregate.Intercept(f(g(h())))`.
+func (c *TokenStatAggregateClient) Intercept(interceptors ...Interceptor) {
+	c.inters.TokenStatAggregate = append(c.inters.TokenStatAggregate, interceptors...)
+}
+
+// Create returns a builder for creating a TokenStatAggregate entity.
+func (c *TokenStatAggregateClient) Create() *TokenStatAggregateCreate {
+	mutation := newTokenStatAggregateMutation(c.config, OpCreate)
+	return &TokenStatAggregateCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of TokenStatAggregate entities.
+func (c *TokenStatAggregateClient) CreateBulk(builders ...*TokenStatAggregateCreate) *TokenStatAggregateCreateBulk {
+	return &TokenStatAggregateCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *TokenStatAggregateClient) MapCreateBulk(slice any, setFunc func(*TokenStatAggregateCreate, int)) *TokenStatAggregateCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &TokenStatAggregateCreateBulk{err: fmt.Errorf("calling to TokenStatAggregateClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*TokenStatAggregateCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &TokenStatAggregateCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for TokenStatAggregate.
+func (c *TokenStatAggregateClient) Update() *TokenStatAggregateUpdate {
+	mutation := newTokenStatAggregateMutation(c.config, OpUpdate)
+	return &TokenStatAggregateUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *TokenStatAggregateClient) UpdateOne(_m *TokenStatAggregate) *TokenStatAggregateUpdateOne {
+	mutation := newTokenStatAggregateMutation(c.config, OpUpdateOne, withTokenStatAggregate(_m))
+	return &TokenStatAggregateUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *TokenStatAggregateClient) UpdateOneID(id int64) *TokenStatAggregateUpdateOne {
+	mutation := newTokenStatAggregateMutation(c.config, OpUpdateOne, withTokenStatAggregateID(id))
+	return &TokenStatAggregateUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for TokenStatAggregate.
+func (c *TokenStatAggregateClient) Delete() *TokenStatAggregateDelete {
+	mutation := newTokenStatAggregateMutation(c.config, OpDelete)
+	return &TokenStatAggregateDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *TokenStatAggregateClient) DeleteOne(_m *TokenStatAggregate) *TokenStatAggregateDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *TokenStatAggregateClient) DeleteOneID(id int64) *TokenStatAggregateDeleteOne {
+	builder := c.Delete().Where(tokenstataggregate.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &TokenStatAggregateDeleteOne{builder}
+}
+
+// Query returns a query builder for TokenStatAggregate.
+func (c *TokenStatAggregateClient) Query() *TokenStatAggregateQuery {
+	return &TokenStatAggregateQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeTokenStatAggregate},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a TokenStatAggregate entity by its id.
+func (c *TokenStatAggregateClient) Get(ctx context.Context, id int64) (*TokenStatAggregate, error) {
+	return c.Query().Where(tokenstataggregate.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *TokenStatAggregateClient) GetX(ctx context.Context, id int64) *TokenStatAggregate {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *TokenStatAggregateClient) Hooks() []Hook {
+	return c.hooks.TokenStatAggregate
+}
+
+// Interceptors returns the client interceptors.
+func (c *TokenStatAggregateClient) Interceptors() []Interceptor {
+	return c.inters.TokenStatAggregate
+}
+
+func (c *TokenStatAggregateClient) mutate(ctx context.Context, m *TokenStatAggregateMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&TokenStatAggregateCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&TokenStatAggregateUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&TokenStatAggregateUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&TokenStatAggregateDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown TokenStatAggregate mutation op: %q", m.Op())
+	}
+}
+
+// TokenStatPeriodStateClient is a client for the TokenStatPeriodState schema.
+type TokenStatPeriodStateClient struct {
+	config
+}
+
+// NewTokenStatPeriodStateClient returns a client for the TokenStatPeriodState from the given config.
+func NewTokenStatPeriodStateClient(c config) *TokenStatPeriodStateClient {
+	return &TokenStatPeriodStateClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `tokenstatperiodstate.Hooks(f(g(h())))`.
+func (c *TokenStatPeriodStateClient) Use(hooks ...Hook) {
+	c.hooks.TokenStatPeriodState = append(c.hooks.TokenStatPeriodState, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `tokenstatperiodstate.Intercept(f(g(h())))`.
+func (c *TokenStatPeriodStateClient) Intercept(interceptors ...Interceptor) {
+	c.inters.TokenStatPeriodState = append(c.inters.TokenStatPeriodState, interceptors...)
+}
+
+// Create returns a builder for creating a TokenStatPeriodState entity.
+func (c *TokenStatPeriodStateClient) Create() *TokenStatPeriodStateCreate {
+	mutation := newTokenStatPeriodStateMutation(c.config, OpCreate)
+	return &TokenStatPeriodStateCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of TokenStatPeriodState entities.
+func (c *TokenStatPeriodStateClient) CreateBulk(builders ...*TokenStatPeriodStateCreate) *TokenStatPeriodStateCreateBulk {
+	return &TokenStatPeriodStateCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *TokenStatPeriodStateClient) MapCreateBulk(slice any, setFunc func(*TokenStatPeriodStateCreate, int)) *TokenStatPeriodStateCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &TokenStatPeriodStateCreateBulk{err: fmt.Errorf("calling to TokenStatPeriodStateClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*TokenStatPeriodStateCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &TokenStatPeriodStateCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for TokenStatPeriodState.
+func (c *TokenStatPeriodStateClient) Update() *TokenStatPeriodStateUpdate {
+	mutation := newTokenStatPeriodStateMutation(c.config, OpUpdate)
+	return &TokenStatPeriodStateUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *TokenStatPeriodStateClient) UpdateOne(_m *TokenStatPeriodState) *TokenStatPeriodStateUpdateOne {
+	mutation := newTokenStatPeriodStateMutation(c.config, OpUpdateOne, withTokenStatPeriodState(_m))
+	return &TokenStatPeriodStateUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *TokenStatPeriodStateClient) UpdateOneID(id int64) *TokenStatPeriodStateUpdateOne {
+	mutation := newTokenStatPeriodStateMutation(c.config, OpUpdateOne, withTokenStatPeriodStateID(id))
+	return &TokenStatPeriodStateUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for TokenStatPeriodState.
+func (c *TokenStatPeriodStateClient) Delete() *TokenStatPeriodStateDelete {
+	mutation := newTokenStatPeriodStateMutation(c.config, OpDelete)
+	return &TokenStatPeriodStateDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *TokenStatPeriodStateClient) DeleteOne(_m *TokenStatPeriodState) *TokenStatPeriodStateDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *TokenStatPeriodStateClient) DeleteOneID(id int64) *TokenStatPeriodStateDeleteOne {
+	builder := c.Delete().Where(tokenstatperiodstate.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &TokenStatPeriodStateDeleteOne{builder}
+}
+
+// Query returns a query builder for TokenStatPeriodState.
+func (c *TokenStatPeriodStateClient) Query() *TokenStatPeriodStateQuery {
+	return &TokenStatPeriodStateQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeTokenStatPeriodState},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a TokenStatPeriodState entity by its id.
+func (c *TokenStatPeriodStateClient) Get(ctx context.Context, id int64) (*TokenStatPeriodState, error) {
+	return c.Query().Where(tokenstatperiodstate.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *TokenStatPeriodStateClient) GetX(ctx context.Context, id int64) *TokenStatPeriodState {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *TokenStatPeriodStateClient) Hooks() []Hook {
+	return c.hooks.TokenStatPeriodState
+}
+
+// Interceptors returns the client interceptors.
+func (c *TokenStatPeriodStateClient) Interceptors() []Interceptor {
+	return c.inters.TokenStatPeriodState
+}
+
+func (c *TokenStatPeriodStateClient) mutate(ctx context.Context, m *TokenStatPeriodStateMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&TokenStatPeriodStateCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&TokenStatPeriodStateUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&TokenStatPeriodStateUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&TokenStatPeriodStateDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown TokenStatPeriodState mutation op: %q", m.Op())
+	}
+}
+
+// TokenStatProjectionClient is a client for the TokenStatProjection schema.
+type TokenStatProjectionClient struct {
+	config
+}
+
+// NewTokenStatProjectionClient returns a client for the TokenStatProjection from the given config.
+func NewTokenStatProjectionClient(c config) *TokenStatProjectionClient {
+	return &TokenStatProjectionClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `tokenstatprojection.Hooks(f(g(h())))`.
+func (c *TokenStatProjectionClient) Use(hooks ...Hook) {
+	c.hooks.TokenStatProjection = append(c.hooks.TokenStatProjection, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `tokenstatprojection.Intercept(f(g(h())))`.
+func (c *TokenStatProjectionClient) Intercept(interceptors ...Interceptor) {
+	c.inters.TokenStatProjection = append(c.inters.TokenStatProjection, interceptors...)
+}
+
+// Create returns a builder for creating a TokenStatProjection entity.
+func (c *TokenStatProjectionClient) Create() *TokenStatProjectionCreate {
+	mutation := newTokenStatProjectionMutation(c.config, OpCreate)
+	return &TokenStatProjectionCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of TokenStatProjection entities.
+func (c *TokenStatProjectionClient) CreateBulk(builders ...*TokenStatProjectionCreate) *TokenStatProjectionCreateBulk {
+	return &TokenStatProjectionCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *TokenStatProjectionClient) MapCreateBulk(slice any, setFunc func(*TokenStatProjectionCreate, int)) *TokenStatProjectionCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &TokenStatProjectionCreateBulk{err: fmt.Errorf("calling to TokenStatProjectionClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*TokenStatProjectionCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &TokenStatProjectionCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for TokenStatProjection.
+func (c *TokenStatProjectionClient) Update() *TokenStatProjectionUpdate {
+	mutation := newTokenStatProjectionMutation(c.config, OpUpdate)
+	return &TokenStatProjectionUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *TokenStatProjectionClient) UpdateOne(_m *TokenStatProjection) *TokenStatProjectionUpdateOne {
+	mutation := newTokenStatProjectionMutation(c.config, OpUpdateOne, withTokenStatProjection(_m))
+	return &TokenStatProjectionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *TokenStatProjectionClient) UpdateOneID(id int64) *TokenStatProjectionUpdateOne {
+	mutation := newTokenStatProjectionMutation(c.config, OpUpdateOne, withTokenStatProjectionID(id))
+	return &TokenStatProjectionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for TokenStatProjection.
+func (c *TokenStatProjectionClient) Delete() *TokenStatProjectionDelete {
+	mutation := newTokenStatProjectionMutation(c.config, OpDelete)
+	return &TokenStatProjectionDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *TokenStatProjectionClient) DeleteOne(_m *TokenStatProjection) *TokenStatProjectionDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *TokenStatProjectionClient) DeleteOneID(id int64) *TokenStatProjectionDeleteOne {
+	builder := c.Delete().Where(tokenstatprojection.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &TokenStatProjectionDeleteOne{builder}
+}
+
+// Query returns a query builder for TokenStatProjection.
+func (c *TokenStatProjectionClient) Query() *TokenStatProjectionQuery {
+	return &TokenStatProjectionQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeTokenStatProjection},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a TokenStatProjection entity by its id.
+func (c *TokenStatProjectionClient) Get(ctx context.Context, id int64) (*TokenStatProjection, error) {
+	return c.Query().Where(tokenstatprojection.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *TokenStatProjectionClient) GetX(ctx context.Context, id int64) *TokenStatProjection {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *TokenStatProjectionClient) Hooks() []Hook {
+	return c.hooks.TokenStatProjection
+}
+
+// Interceptors returns the client interceptors.
+func (c *TokenStatProjectionClient) Interceptors() []Interceptor {
+	return c.inters.TokenStatProjection
+}
+
+func (c *TokenStatProjectionClient) mutate(ctx context.Context, m *TokenStatProjectionMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&TokenStatProjectionCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&TokenStatProjectionUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&TokenStatProjectionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&TokenStatProjectionDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown TokenStatProjection mutation op: %q", m.Op())
+	}
+}
+
+// TokenStatProjectionMetricClient is a client for the TokenStatProjectionMetric schema.
+type TokenStatProjectionMetricClient struct {
+	config
+}
+
+// NewTokenStatProjectionMetricClient returns a client for the TokenStatProjectionMetric from the given config.
+func NewTokenStatProjectionMetricClient(c config) *TokenStatProjectionMetricClient {
+	return &TokenStatProjectionMetricClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `tokenstatprojectionmetric.Hooks(f(g(h())))`.
+func (c *TokenStatProjectionMetricClient) Use(hooks ...Hook) {
+	c.hooks.TokenStatProjectionMetric = append(c.hooks.TokenStatProjectionMetric, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `tokenstatprojectionmetric.Intercept(f(g(h())))`.
+func (c *TokenStatProjectionMetricClient) Intercept(interceptors ...Interceptor) {
+	c.inters.TokenStatProjectionMetric = append(c.inters.TokenStatProjectionMetric, interceptors...)
+}
+
+// Create returns a builder for creating a TokenStatProjectionMetric entity.
+func (c *TokenStatProjectionMetricClient) Create() *TokenStatProjectionMetricCreate {
+	mutation := newTokenStatProjectionMetricMutation(c.config, OpCreate)
+	return &TokenStatProjectionMetricCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of TokenStatProjectionMetric entities.
+func (c *TokenStatProjectionMetricClient) CreateBulk(builders ...*TokenStatProjectionMetricCreate) *TokenStatProjectionMetricCreateBulk {
+	return &TokenStatProjectionMetricCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *TokenStatProjectionMetricClient) MapCreateBulk(slice any, setFunc func(*TokenStatProjectionMetricCreate, int)) *TokenStatProjectionMetricCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &TokenStatProjectionMetricCreateBulk{err: fmt.Errorf("calling to TokenStatProjectionMetricClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*TokenStatProjectionMetricCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &TokenStatProjectionMetricCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for TokenStatProjectionMetric.
+func (c *TokenStatProjectionMetricClient) Update() *TokenStatProjectionMetricUpdate {
+	mutation := newTokenStatProjectionMetricMutation(c.config, OpUpdate)
+	return &TokenStatProjectionMetricUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *TokenStatProjectionMetricClient) UpdateOne(_m *TokenStatProjectionMetric) *TokenStatProjectionMetricUpdateOne {
+	mutation := newTokenStatProjectionMetricMutation(c.config, OpUpdateOne, withTokenStatProjectionMetric(_m))
+	return &TokenStatProjectionMetricUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *TokenStatProjectionMetricClient) UpdateOneID(id int64) *TokenStatProjectionMetricUpdateOne {
+	mutation := newTokenStatProjectionMetricMutation(c.config, OpUpdateOne, withTokenStatProjectionMetricID(id))
+	return &TokenStatProjectionMetricUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for TokenStatProjectionMetric.
+func (c *TokenStatProjectionMetricClient) Delete() *TokenStatProjectionMetricDelete {
+	mutation := newTokenStatProjectionMetricMutation(c.config, OpDelete)
+	return &TokenStatProjectionMetricDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *TokenStatProjectionMetricClient) DeleteOne(_m *TokenStatProjectionMetric) *TokenStatProjectionMetricDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *TokenStatProjectionMetricClient) DeleteOneID(id int64) *TokenStatProjectionMetricDeleteOne {
+	builder := c.Delete().Where(tokenstatprojectionmetric.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &TokenStatProjectionMetricDeleteOne{builder}
+}
+
+// Query returns a query builder for TokenStatProjectionMetric.
+func (c *TokenStatProjectionMetricClient) Query() *TokenStatProjectionMetricQuery {
+	return &TokenStatProjectionMetricQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeTokenStatProjectionMetric},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a TokenStatProjectionMetric entity by its id.
+func (c *TokenStatProjectionMetricClient) Get(ctx context.Context, id int64) (*TokenStatProjectionMetric, error) {
+	return c.Query().Where(tokenstatprojectionmetric.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *TokenStatProjectionMetricClient) GetX(ctx context.Context, id int64) *TokenStatProjectionMetric {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *TokenStatProjectionMetricClient) Hooks() []Hook {
+	return c.hooks.TokenStatProjectionMetric
+}
+
+// Interceptors returns the client interceptors.
+func (c *TokenStatProjectionMetricClient) Interceptors() []Interceptor {
+	return c.inters.TokenStatProjectionMetric
+}
+
+func (c *TokenStatProjectionMetricClient) mutate(ctx context.Context, m *TokenStatProjectionMetricMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&TokenStatProjectionMetricCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&TokenStatProjectionMetricUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&TokenStatProjectionMetricUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&TokenStatProjectionMetricDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown TokenStatProjectionMetric mutation op: %q", m.Op())
+	}
+}
+
+// TokenStatQuotaRuleClient is a client for the TokenStatQuotaRule schema.
+type TokenStatQuotaRuleClient struct {
+	config
+}
+
+// NewTokenStatQuotaRuleClient returns a client for the TokenStatQuotaRule from the given config.
+func NewTokenStatQuotaRuleClient(c config) *TokenStatQuotaRuleClient {
+	return &TokenStatQuotaRuleClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `tokenstatquotarule.Hooks(f(g(h())))`.
+func (c *TokenStatQuotaRuleClient) Use(hooks ...Hook) {
+	c.hooks.TokenStatQuotaRule = append(c.hooks.TokenStatQuotaRule, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `tokenstatquotarule.Intercept(f(g(h())))`.
+func (c *TokenStatQuotaRuleClient) Intercept(interceptors ...Interceptor) {
+	c.inters.TokenStatQuotaRule = append(c.inters.TokenStatQuotaRule, interceptors...)
+}
+
+// Create returns a builder for creating a TokenStatQuotaRule entity.
+func (c *TokenStatQuotaRuleClient) Create() *TokenStatQuotaRuleCreate {
+	mutation := newTokenStatQuotaRuleMutation(c.config, OpCreate)
+	return &TokenStatQuotaRuleCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of TokenStatQuotaRule entities.
+func (c *TokenStatQuotaRuleClient) CreateBulk(builders ...*TokenStatQuotaRuleCreate) *TokenStatQuotaRuleCreateBulk {
+	return &TokenStatQuotaRuleCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *TokenStatQuotaRuleClient) MapCreateBulk(slice any, setFunc func(*TokenStatQuotaRuleCreate, int)) *TokenStatQuotaRuleCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &TokenStatQuotaRuleCreateBulk{err: fmt.Errorf("calling to TokenStatQuotaRuleClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*TokenStatQuotaRuleCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &TokenStatQuotaRuleCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for TokenStatQuotaRule.
+func (c *TokenStatQuotaRuleClient) Update() *TokenStatQuotaRuleUpdate {
+	mutation := newTokenStatQuotaRuleMutation(c.config, OpUpdate)
+	return &TokenStatQuotaRuleUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *TokenStatQuotaRuleClient) UpdateOne(_m *TokenStatQuotaRule) *TokenStatQuotaRuleUpdateOne {
+	mutation := newTokenStatQuotaRuleMutation(c.config, OpUpdateOne, withTokenStatQuotaRule(_m))
+	return &TokenStatQuotaRuleUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *TokenStatQuotaRuleClient) UpdateOneID(id int64) *TokenStatQuotaRuleUpdateOne {
+	mutation := newTokenStatQuotaRuleMutation(c.config, OpUpdateOne, withTokenStatQuotaRuleID(id))
+	return &TokenStatQuotaRuleUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for TokenStatQuotaRule.
+func (c *TokenStatQuotaRuleClient) Delete() *TokenStatQuotaRuleDelete {
+	mutation := newTokenStatQuotaRuleMutation(c.config, OpDelete)
+	return &TokenStatQuotaRuleDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *TokenStatQuotaRuleClient) DeleteOne(_m *TokenStatQuotaRule) *TokenStatQuotaRuleDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *TokenStatQuotaRuleClient) DeleteOneID(id int64) *TokenStatQuotaRuleDeleteOne {
+	builder := c.Delete().Where(tokenstatquotarule.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &TokenStatQuotaRuleDeleteOne{builder}
+}
+
+// Query returns a query builder for TokenStatQuotaRule.
+func (c *TokenStatQuotaRuleClient) Query() *TokenStatQuotaRuleQuery {
+	return &TokenStatQuotaRuleQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeTokenStatQuotaRule},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a TokenStatQuotaRule entity by its id.
+func (c *TokenStatQuotaRuleClient) Get(ctx context.Context, id int64) (*TokenStatQuotaRule, error) {
+	return c.Query().Where(tokenstatquotarule.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *TokenStatQuotaRuleClient) GetX(ctx context.Context, id int64) *TokenStatQuotaRule {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *TokenStatQuotaRuleClient) Hooks() []Hook {
+	return c.hooks.TokenStatQuotaRule
+}
+
+// Interceptors returns the client interceptors.
+func (c *TokenStatQuotaRuleClient) Interceptors() []Interceptor {
+	return c.inters.TokenStatQuotaRule
+}
+
+func (c *TokenStatQuotaRuleClient) mutate(ctx context.Context, m *TokenStatQuotaRuleMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&TokenStatQuotaRuleCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&TokenStatQuotaRuleUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&TokenStatQuotaRuleUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&TokenStatQuotaRuleDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown TokenStatQuotaRule mutation op: %q", m.Op())
+	}
+}
+
 // UsageCleanupTaskClient is a client for the UsageCleanupTask schema.
 type UsageCleanupTaskClient struct {
 	config
@@ -7186,38 +7245,6 @@ func (c *UserClient) QueryPlatformQuotas(_m *User) *UserPlatformQuotaQuery {
 	return query
 }
 
-// QueryModelTokenDailyUsages queries the model_token_daily_usages edge of a User.
-func (c *UserClient) QueryModelTokenDailyUsages(_m *User) *UserModelTokenDailyUsageQuery {
-	query := (&UserModelTokenDailyUsageClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := _m.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(user.Table, user.FieldID, id),
-			sqlgraph.To(usermodeltokendailyusage.Table, usermodeltokendailyusage.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, user.ModelTokenDailyUsagesTable, user.ModelTokenDailyUsagesColumn),
-		)
-		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// QueryUserModelTokenDailyLimitConfigs queries the user_model_token_daily_limit_configs edge of a User.
-func (c *UserClient) QueryUserModelTokenDailyLimitConfigs(_m *User) *UserModelTokenDailyLimitConfigQuery {
-	query := (&UserModelTokenDailyLimitConfigClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := _m.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(user.Table, user.FieldID, id),
-			sqlgraph.To(usermodeltokendailylimitconfig.Table, usermodeltokendailylimitconfig.FieldID),
-			sqlgraph.Edge(sqlgraph.O2M, false, user.UserModelTokenDailyLimitConfigsTable, user.UserModelTokenDailyLimitConfigsColumn),
-		)
-		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
 // QueryRbacUserRoles queries the rbac_user_roles edge of a User.
 func (c *UserClient) QueryRbacUserRoles(_m *User) *RBACUserRoleQuery {
 	query := (&RBACUserRoleClient{config: c.config}).Query()
@@ -7757,304 +7784,6 @@ func (c *UserAttributeValueClient) mutate(ctx context.Context, m *UserAttributeV
 	}
 }
 
-// UserModelTokenDailyLimitConfigClient is a client for the UserModelTokenDailyLimitConfig schema.
-type UserModelTokenDailyLimitConfigClient struct {
-	config
-}
-
-// NewUserModelTokenDailyLimitConfigClient returns a client for the UserModelTokenDailyLimitConfig from the given config.
-func NewUserModelTokenDailyLimitConfigClient(c config) *UserModelTokenDailyLimitConfigClient {
-	return &UserModelTokenDailyLimitConfigClient{config: c}
-}
-
-// Use adds a list of mutation hooks to the hooks stack.
-// A call to `Use(f, g, h)` equals to `usermodeltokendailylimitconfig.Hooks(f(g(h())))`.
-func (c *UserModelTokenDailyLimitConfigClient) Use(hooks ...Hook) {
-	c.hooks.UserModelTokenDailyLimitConfig = append(c.hooks.UserModelTokenDailyLimitConfig, hooks...)
-}
-
-// Intercept adds a list of query interceptors to the interceptors stack.
-// A call to `Intercept(f, g, h)` equals to `usermodeltokendailylimitconfig.Intercept(f(g(h())))`.
-func (c *UserModelTokenDailyLimitConfigClient) Intercept(interceptors ...Interceptor) {
-	c.inters.UserModelTokenDailyLimitConfig = append(c.inters.UserModelTokenDailyLimitConfig, interceptors...)
-}
-
-// Create returns a builder for creating a UserModelTokenDailyLimitConfig entity.
-func (c *UserModelTokenDailyLimitConfigClient) Create() *UserModelTokenDailyLimitConfigCreate {
-	mutation := newUserModelTokenDailyLimitConfigMutation(c.config, OpCreate)
-	return &UserModelTokenDailyLimitConfigCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// CreateBulk returns a builder for creating a bulk of UserModelTokenDailyLimitConfig entities.
-func (c *UserModelTokenDailyLimitConfigClient) CreateBulk(builders ...*UserModelTokenDailyLimitConfigCreate) *UserModelTokenDailyLimitConfigCreateBulk {
-	return &UserModelTokenDailyLimitConfigCreateBulk{config: c.config, builders: builders}
-}
-
-// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
-// a builder and applies setFunc on it.
-func (c *UserModelTokenDailyLimitConfigClient) MapCreateBulk(slice any, setFunc func(*UserModelTokenDailyLimitConfigCreate, int)) *UserModelTokenDailyLimitConfigCreateBulk {
-	rv := reflect.ValueOf(slice)
-	if rv.Kind() != reflect.Slice {
-		return &UserModelTokenDailyLimitConfigCreateBulk{err: fmt.Errorf("calling to UserModelTokenDailyLimitConfigClient.MapCreateBulk with wrong type %T, need slice", slice)}
-	}
-	builders := make([]*UserModelTokenDailyLimitConfigCreate, rv.Len())
-	for i := 0; i < rv.Len(); i++ {
-		builders[i] = c.Create()
-		setFunc(builders[i], i)
-	}
-	return &UserModelTokenDailyLimitConfigCreateBulk{config: c.config, builders: builders}
-}
-
-// Update returns an update builder for UserModelTokenDailyLimitConfig.
-func (c *UserModelTokenDailyLimitConfigClient) Update() *UserModelTokenDailyLimitConfigUpdate {
-	mutation := newUserModelTokenDailyLimitConfigMutation(c.config, OpUpdate)
-	return &UserModelTokenDailyLimitConfigUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOne returns an update builder for the given entity.
-func (c *UserModelTokenDailyLimitConfigClient) UpdateOne(_m *UserModelTokenDailyLimitConfig) *UserModelTokenDailyLimitConfigUpdateOne {
-	mutation := newUserModelTokenDailyLimitConfigMutation(c.config, OpUpdateOne, withUserModelTokenDailyLimitConfig(_m))
-	return &UserModelTokenDailyLimitConfigUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOneID returns an update builder for the given id.
-func (c *UserModelTokenDailyLimitConfigClient) UpdateOneID(id int64) *UserModelTokenDailyLimitConfigUpdateOne {
-	mutation := newUserModelTokenDailyLimitConfigMutation(c.config, OpUpdateOne, withUserModelTokenDailyLimitConfigID(id))
-	return &UserModelTokenDailyLimitConfigUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// Delete returns a delete builder for UserModelTokenDailyLimitConfig.
-func (c *UserModelTokenDailyLimitConfigClient) Delete() *UserModelTokenDailyLimitConfigDelete {
-	mutation := newUserModelTokenDailyLimitConfigMutation(c.config, OpDelete)
-	return &UserModelTokenDailyLimitConfigDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// DeleteOne returns a builder for deleting the given entity.
-func (c *UserModelTokenDailyLimitConfigClient) DeleteOne(_m *UserModelTokenDailyLimitConfig) *UserModelTokenDailyLimitConfigDeleteOne {
-	return c.DeleteOneID(_m.ID)
-}
-
-// DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *UserModelTokenDailyLimitConfigClient) DeleteOneID(id int64) *UserModelTokenDailyLimitConfigDeleteOne {
-	builder := c.Delete().Where(usermodeltokendailylimitconfig.ID(id))
-	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
-	return &UserModelTokenDailyLimitConfigDeleteOne{builder}
-}
-
-// Query returns a query builder for UserModelTokenDailyLimitConfig.
-func (c *UserModelTokenDailyLimitConfigClient) Query() *UserModelTokenDailyLimitConfigQuery {
-	return &UserModelTokenDailyLimitConfigQuery{
-		config: c.config,
-		ctx:    &QueryContext{Type: TypeUserModelTokenDailyLimitConfig},
-		inters: c.Interceptors(),
-	}
-}
-
-// Get returns a UserModelTokenDailyLimitConfig entity by its id.
-func (c *UserModelTokenDailyLimitConfigClient) Get(ctx context.Context, id int64) (*UserModelTokenDailyLimitConfig, error) {
-	return c.Query().Where(usermodeltokendailylimitconfig.ID(id)).Only(ctx)
-}
-
-// GetX is like Get, but panics if an error occurs.
-func (c *UserModelTokenDailyLimitConfigClient) GetX(ctx context.Context, id int64) *UserModelTokenDailyLimitConfig {
-	obj, err := c.Get(ctx, id)
-	if err != nil {
-		panic(err)
-	}
-	return obj
-}
-
-// QueryUser queries the user edge of a UserModelTokenDailyLimitConfig.
-func (c *UserModelTokenDailyLimitConfigClient) QueryUser(_m *UserModelTokenDailyLimitConfig) *UserQuery {
-	query := (&UserClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := _m.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(usermodeltokendailylimitconfig.Table, usermodeltokendailylimitconfig.FieldID, id),
-			sqlgraph.To(user.Table, user.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, usermodeltokendailylimitconfig.UserTable, usermodeltokendailylimitconfig.UserColumn),
-		)
-		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// Hooks returns the client hooks.
-func (c *UserModelTokenDailyLimitConfigClient) Hooks() []Hook {
-	return c.hooks.UserModelTokenDailyLimitConfig
-}
-
-// Interceptors returns the client interceptors.
-func (c *UserModelTokenDailyLimitConfigClient) Interceptors() []Interceptor {
-	return c.inters.UserModelTokenDailyLimitConfig
-}
-
-func (c *UserModelTokenDailyLimitConfigClient) mutate(ctx context.Context, m *UserModelTokenDailyLimitConfigMutation) (Value, error) {
-	switch m.Op() {
-	case OpCreate:
-		return (&UserModelTokenDailyLimitConfigCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdate:
-		return (&UserModelTokenDailyLimitConfigUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdateOne:
-		return (&UserModelTokenDailyLimitConfigUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpDelete, OpDeleteOne:
-		return (&UserModelTokenDailyLimitConfigDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
-	default:
-		return nil, fmt.Errorf("ent: unknown UserModelTokenDailyLimitConfig mutation op: %q", m.Op())
-	}
-}
-
-// UserModelTokenDailyUsageClient is a client for the UserModelTokenDailyUsage schema.
-type UserModelTokenDailyUsageClient struct {
-	config
-}
-
-// NewUserModelTokenDailyUsageClient returns a client for the UserModelTokenDailyUsage from the given config.
-func NewUserModelTokenDailyUsageClient(c config) *UserModelTokenDailyUsageClient {
-	return &UserModelTokenDailyUsageClient{config: c}
-}
-
-// Use adds a list of mutation hooks to the hooks stack.
-// A call to `Use(f, g, h)` equals to `usermodeltokendailyusage.Hooks(f(g(h())))`.
-func (c *UserModelTokenDailyUsageClient) Use(hooks ...Hook) {
-	c.hooks.UserModelTokenDailyUsage = append(c.hooks.UserModelTokenDailyUsage, hooks...)
-}
-
-// Intercept adds a list of query interceptors to the interceptors stack.
-// A call to `Intercept(f, g, h)` equals to `usermodeltokendailyusage.Intercept(f(g(h())))`.
-func (c *UserModelTokenDailyUsageClient) Intercept(interceptors ...Interceptor) {
-	c.inters.UserModelTokenDailyUsage = append(c.inters.UserModelTokenDailyUsage, interceptors...)
-}
-
-// Create returns a builder for creating a UserModelTokenDailyUsage entity.
-func (c *UserModelTokenDailyUsageClient) Create() *UserModelTokenDailyUsageCreate {
-	mutation := newUserModelTokenDailyUsageMutation(c.config, OpCreate)
-	return &UserModelTokenDailyUsageCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// CreateBulk returns a builder for creating a bulk of UserModelTokenDailyUsage entities.
-func (c *UserModelTokenDailyUsageClient) CreateBulk(builders ...*UserModelTokenDailyUsageCreate) *UserModelTokenDailyUsageCreateBulk {
-	return &UserModelTokenDailyUsageCreateBulk{config: c.config, builders: builders}
-}
-
-// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
-// a builder and applies setFunc on it.
-func (c *UserModelTokenDailyUsageClient) MapCreateBulk(slice any, setFunc func(*UserModelTokenDailyUsageCreate, int)) *UserModelTokenDailyUsageCreateBulk {
-	rv := reflect.ValueOf(slice)
-	if rv.Kind() != reflect.Slice {
-		return &UserModelTokenDailyUsageCreateBulk{err: fmt.Errorf("calling to UserModelTokenDailyUsageClient.MapCreateBulk with wrong type %T, need slice", slice)}
-	}
-	builders := make([]*UserModelTokenDailyUsageCreate, rv.Len())
-	for i := 0; i < rv.Len(); i++ {
-		builders[i] = c.Create()
-		setFunc(builders[i], i)
-	}
-	return &UserModelTokenDailyUsageCreateBulk{config: c.config, builders: builders}
-}
-
-// Update returns an update builder for UserModelTokenDailyUsage.
-func (c *UserModelTokenDailyUsageClient) Update() *UserModelTokenDailyUsageUpdate {
-	mutation := newUserModelTokenDailyUsageMutation(c.config, OpUpdate)
-	return &UserModelTokenDailyUsageUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOne returns an update builder for the given entity.
-func (c *UserModelTokenDailyUsageClient) UpdateOne(_m *UserModelTokenDailyUsage) *UserModelTokenDailyUsageUpdateOne {
-	mutation := newUserModelTokenDailyUsageMutation(c.config, OpUpdateOne, withUserModelTokenDailyUsage(_m))
-	return &UserModelTokenDailyUsageUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// UpdateOneID returns an update builder for the given id.
-func (c *UserModelTokenDailyUsageClient) UpdateOneID(id int64) *UserModelTokenDailyUsageUpdateOne {
-	mutation := newUserModelTokenDailyUsageMutation(c.config, OpUpdateOne, withUserModelTokenDailyUsageID(id))
-	return &UserModelTokenDailyUsageUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// Delete returns a delete builder for UserModelTokenDailyUsage.
-func (c *UserModelTokenDailyUsageClient) Delete() *UserModelTokenDailyUsageDelete {
-	mutation := newUserModelTokenDailyUsageMutation(c.config, OpDelete)
-	return &UserModelTokenDailyUsageDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
-}
-
-// DeleteOne returns a builder for deleting the given entity.
-func (c *UserModelTokenDailyUsageClient) DeleteOne(_m *UserModelTokenDailyUsage) *UserModelTokenDailyUsageDeleteOne {
-	return c.DeleteOneID(_m.ID)
-}
-
-// DeleteOneID returns a builder for deleting the given entity by its id.
-func (c *UserModelTokenDailyUsageClient) DeleteOneID(id int64) *UserModelTokenDailyUsageDeleteOne {
-	builder := c.Delete().Where(usermodeltokendailyusage.ID(id))
-	builder.mutation.id = &id
-	builder.mutation.op = OpDeleteOne
-	return &UserModelTokenDailyUsageDeleteOne{builder}
-}
-
-// Query returns a query builder for UserModelTokenDailyUsage.
-func (c *UserModelTokenDailyUsageClient) Query() *UserModelTokenDailyUsageQuery {
-	return &UserModelTokenDailyUsageQuery{
-		config: c.config,
-		ctx:    &QueryContext{Type: TypeUserModelTokenDailyUsage},
-		inters: c.Interceptors(),
-	}
-}
-
-// Get returns a UserModelTokenDailyUsage entity by its id.
-func (c *UserModelTokenDailyUsageClient) Get(ctx context.Context, id int64) (*UserModelTokenDailyUsage, error) {
-	return c.Query().Where(usermodeltokendailyusage.ID(id)).Only(ctx)
-}
-
-// GetX is like Get, but panics if an error occurs.
-func (c *UserModelTokenDailyUsageClient) GetX(ctx context.Context, id int64) *UserModelTokenDailyUsage {
-	obj, err := c.Get(ctx, id)
-	if err != nil {
-		panic(err)
-	}
-	return obj
-}
-
-// QueryUser queries the user edge of a UserModelTokenDailyUsage.
-func (c *UserModelTokenDailyUsageClient) QueryUser(_m *UserModelTokenDailyUsage) *UserQuery {
-	query := (&UserClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := _m.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(usermodeltokendailyusage.Table, usermodeltokendailyusage.FieldID, id),
-			sqlgraph.To(user.Table, user.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, usermodeltokendailyusage.UserTable, usermodeltokendailyusage.UserColumn),
-		)
-		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
-// Hooks returns the client hooks.
-func (c *UserModelTokenDailyUsageClient) Hooks() []Hook {
-	return c.hooks.UserModelTokenDailyUsage
-}
-
-// Interceptors returns the client interceptors.
-func (c *UserModelTokenDailyUsageClient) Interceptors() []Interceptor {
-	return c.inters.UserModelTokenDailyUsage
-}
-
-func (c *UserModelTokenDailyUsageClient) mutate(ctx context.Context, m *UserModelTokenDailyUsageMutation) (Value, error) {
-	switch m.Op() {
-	case OpCreate:
-		return (&UserModelTokenDailyUsageCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdate:
-		return (&UserModelTokenDailyUsageUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpUpdateOne:
-		return (&UserModelTokenDailyUsageUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
-	case OpDelete, OpDeleteOne:
-		return (&UserModelTokenDailyUsageDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
-	default:
-		return nil, fmt.Errorf("ent: unknown UserModelTokenDailyUsage mutation op: %q", m.Op())
-	}
-}
-
 // UserPlatformQuotaClient is a client for the UserPlatformQuota schema.
 type UserPlatformQuotaClient struct {
 	config
@@ -8411,29 +8140,29 @@ type (
 		APIKey, Account, AccountGroup, Announcement, AnnouncementRead, AuthIdentity,
 		AuthIdentityChannel, ChannelMonitor, ChannelMonitorDailyRollup,
 		ChannelMonitorHistory, ChannelMonitorRequestTemplate, ErrorPassthroughRule,
-		Group, GroupCandidateTokenDailyLimitConfig, GroupCandidateTokenDailyUsage,
-		IdempotencyRecord, IdentityAdoptionDecision, ModelTokenDailyLimitConfig,
-		ModelTokenDailyUsage, PaymentAuditLog, PaymentOrder, PaymentProviderInstance,
-		PendingAuthSession, PromoCode, PromoCodeUsage, Proxy, RBACAuditLog,
-		RBACPermission, RBACPolicyState, RBACRole, RBACRolePermission, RBACUserRole,
-		RBACUserVersion, RedeemCode, SecuritySecret, Setting, SubscriptionPlan,
-		TLSFingerprintProfile, UsageCleanupTask, UsageLog, User, UserAllowedGroup,
-		UserAttributeDefinition, UserAttributeValue, UserModelTokenDailyLimitConfig,
-		UserModelTokenDailyUsage, UserPlatformQuota, UserSubscription []ent.Hook
+		Group, IdempotencyRecord, IdentityAdoptionDecision, PaymentAuditLog,
+		PaymentOrder, PaymentProviderInstance, PendingAuthSession, PromoCode,
+		PromoCodeUsage, Proxy, RBACAuditLog, RBACPermission, RBACPolicyState, RBACRole,
+		RBACRolePermission, RBACUserRole, RBACUserVersion, RedeemCode, SecuritySecret,
+		Setting, SubscriptionPlan, TLSFingerprintProfile, TokenStatAggregate,
+		TokenStatPeriodState, TokenStatProjection, TokenStatProjectionMetric,
+		TokenStatQuotaRule, UsageCleanupTask, UsageLog, User, UserAllowedGroup,
+		UserAttributeDefinition, UserAttributeValue, UserPlatformQuota,
+		UserSubscription []ent.Hook
 	}
 	inters struct {
 		APIKey, Account, AccountGroup, Announcement, AnnouncementRead, AuthIdentity,
 		AuthIdentityChannel, ChannelMonitor, ChannelMonitorDailyRollup,
 		ChannelMonitorHistory, ChannelMonitorRequestTemplate, ErrorPassthroughRule,
-		Group, GroupCandidateTokenDailyLimitConfig, GroupCandidateTokenDailyUsage,
-		IdempotencyRecord, IdentityAdoptionDecision, ModelTokenDailyLimitConfig,
-		ModelTokenDailyUsage, PaymentAuditLog, PaymentOrder, PaymentProviderInstance,
-		PendingAuthSession, PromoCode, PromoCodeUsage, Proxy, RBACAuditLog,
-		RBACPermission, RBACPolicyState, RBACRole, RBACRolePermission, RBACUserRole,
-		RBACUserVersion, RedeemCode, SecuritySecret, Setting, SubscriptionPlan,
-		TLSFingerprintProfile, UsageCleanupTask, UsageLog, User, UserAllowedGroup,
-		UserAttributeDefinition, UserAttributeValue, UserModelTokenDailyLimitConfig,
-		UserModelTokenDailyUsage, UserPlatformQuota, UserSubscription []ent.Interceptor
+		Group, IdempotencyRecord, IdentityAdoptionDecision, PaymentAuditLog,
+		PaymentOrder, PaymentProviderInstance, PendingAuthSession, PromoCode,
+		PromoCodeUsage, Proxy, RBACAuditLog, RBACPermission, RBACPolicyState, RBACRole,
+		RBACRolePermission, RBACUserRole, RBACUserVersion, RedeemCode, SecuritySecret,
+		Setting, SubscriptionPlan, TLSFingerprintProfile, TokenStatAggregate,
+		TokenStatPeriodState, TokenStatProjection, TokenStatProjectionMetric,
+		TokenStatQuotaRule, UsageCleanupTask, UsageLog, User, UserAllowedGroup,
+		UserAttributeDefinition, UserAttributeValue, UserPlatformQuota,
+		UserSubscription []ent.Interceptor
 	}
 )
 

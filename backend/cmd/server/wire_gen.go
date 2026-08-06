@@ -8,6 +8,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"github.com/Wei-Shaw/sub2api/ent"
 	"github.com/Wei-Shaw/sub2api/internal/config"
 	"github.com/Wei-Shaw/sub2api/internal/handler"
@@ -16,9 +17,11 @@ import (
 	"github.com/Wei-Shaw/sub2api/internal/pkg/ldapauth"
 	"github.com/Wei-Shaw/sub2api/internal/rbac"
 	"github.com/Wei-Shaw/sub2api/internal/repository"
+	tokenstat2 "github.com/Wei-Shaw/sub2api/internal/repository/tokenstat"
 	"github.com/Wei-Shaw/sub2api/internal/server"
 	"github.com/Wei-Shaw/sub2api/internal/server/middleware"
 	"github.com/Wei-Shaw/sub2api/internal/service"
+	"github.com/Wei-Shaw/sub2api/internal/service/tokenstat"
 	"github.com/redis/go-redis/v9"
 	"log"
 	"net/http"
@@ -67,16 +70,6 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 	userGroupRateRepository := repository.NewUserGroupRateRepository(db)
 	userPlatformQuotaRepository := repository.NewUserPlatformQuotaRepository(client)
 	serviceUserPlatformQuotaRepository := repository.NewUserPlatformQuotaServiceAdapter(userPlatformQuotaRepository)
-	dailyTokenQuotaRepository := repository.ProvideDailyTokenQuotaRepository(client, redisClient, configConfig)
-	dailyTokenUsageAbsoluteRepository := repository.ProvideDailyTokenUsageAbsoluteRepository(client)
-	tokenStatisticsAccumulator := repository.ProvideTokenStatisticsAccumulator(redisClient, configConfig)
-	tokenStatisticsSyncEngine := repository.ProvideTokenStatisticsSyncEngine(redisClient, dailyTokenUsageAbsoluteRepository, configConfig)
-	tokenStatisticsScheduler := service.ProvideTokenStatisticsScheduler(redisClient, tokenStatisticsSyncEngine, configConfig)
-	tokenUsageReportRepository := repository.NewTokenUsageReportRepository(db)
-	todayTokenUsageRepository := repository.ProvideTodayTokenUsageRepository(db)
-	currentTokenUsageReader := repository.ProvideCurrentTokenUsageReader(redisClient, configConfig)
-	currentTokenUsageRepairer := repository.ProvideCurrentTokenUsageRepairer(redisClient, configConfig)
-	tokenUsageReportService := service.ProvideTokenUsageReportService(tokenUsageReportRepository, todayTokenUsageRepository, currentTokenUsageReader, currentTokenUsageRepairer)
 	billingCacheService := service.ProvideBillingCacheService(billingCache, userRepository, userSubscriptionRepository, apiKeyRepository, userRPMCache, userGroupRateRepository, configConfig, serviceUserPlatformQuotaRepository)
 	apiKeyCache := repository.NewAPIKeyCache(redisClient)
 	apiKeyService := service.ProvideAPIKeyService(apiKeyRepository, userRepository, groupRepository, userSubscriptionRepository, userGroupRateRepository, apiKeyCache, configConfig, billingCacheService, settingService)
@@ -98,8 +91,8 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 	userAttributeDefinitionRepository := repository.NewUserAttributeDefinitionRepository(client)
 	userAttributeValueRepository := repository.NewUserAttributeValueRepository(client)
 	userAttributeService := service.NewUserAttributeService(userAttributeDefinitionRepository, userAttributeValueRepository)
-	rbacPermissionService := repository.ProvideRBACPermissionService(db, redisClient, configConfig)
-	authHandler := handler.ProvideAuthHandler(configConfig, authService, userService, settingService, promoService, redeemService, totpService, userAttributeService, rbacPermissionService)
+	permissionService := repository.ProvideRBACPermissionService(db, redisClient, configConfig)
+	authHandler := handler.ProvideAuthHandler(configConfig, authService, userService, settingService, promoService, redeemService, totpService, userAttributeService, permissionService)
 	userHandler := handler.NewUserHandler(userService, authService, emailService, emailCache, affiliateService, serviceUserPlatformQuotaRepository)
 	apiKeyHandler := handler.NewAPIKeyHandler(apiKeyService)
 	usageLogRepository := repository.NewUsageLogRepository(client, db)
@@ -149,12 +142,12 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 	modelPricingResolver := service.NewModelPricingResolver(channelService, billingService)
 	notificationEmailService := service.NewNotificationEmailService(settingRepository, emailService)
 	balanceNotifyService := service.ProvideBalanceNotifyService(emailService, settingRepository, accountRepository, notificationEmailService)
-	gatewayService := service.NewGatewayService(accountRepository, groupRepository, usageLogRepository, usageBillingRepository, userRepository, userSubscriptionRepository, userGroupRateRepository, gatewayCache, configConfig, schedulerSnapshotService, concurrencyService, billingService, rateLimitService, billingCacheService, identityService, httpUpstream, deferredService, claudeTokenProvider, sessionLimitCache, rpmCache, digestSessionStore, settingService, tlsFingerprintProfileService, channelService, modelPricingResolver, balanceNotifyService, serviceUserPlatformQuotaRepository, dailyTokenQuotaRepository, tokenStatisticsAccumulator)
+	gatewayService := service.NewGatewayService(accountRepository, groupRepository, usageLogRepository, usageBillingRepository, userRepository, userSubscriptionRepository, userGroupRateRepository, gatewayCache, configConfig, schedulerSnapshotService, concurrencyService, billingService, rateLimitService, billingCacheService, identityService, httpUpstream, deferredService, claudeTokenProvider, sessionLimitCache, rpmCache, digestSessionStore, settingService, tlsFingerprintProfileService, channelService, modelPricingResolver, balanceNotifyService, serviceUserPlatformQuotaRepository)
 	openAIOAuthClient := repository.NewOpenAIOAuthClient()
 	privacyClientFactory := providePrivacyClientFactory()
 	openAIOAuthService := service.ProvideOpenAIOAuthService(proxyRepository, openAIOAuthClient, privacyClientFactory)
 	openAITokenProvider := service.ProvideOpenAITokenProvider(accountRepository, geminiTokenCache, openAIOAuthService, oAuthRefreshAPI)
-	openAIGatewayService := service.NewOpenAIGatewayService(accountRepository, usageLogRepository, usageBillingRepository, userRepository, userSubscriptionRepository, userGroupRateRepository, gatewayCache, configConfig, schedulerSnapshotService, concurrencyService, billingService, rateLimitService, billingCacheService, httpUpstream, deferredService, openAITokenProvider, modelPricingResolver, channelService, balanceNotifyService, settingService, serviceUserPlatformQuotaRepository, dailyTokenQuotaRepository, tokenStatisticsAccumulator)
+	openAIGatewayService := service.NewOpenAIGatewayService(accountRepository, usageLogRepository, usageBillingRepository, userRepository, userSubscriptionRepository, userGroupRateRepository, gatewayCache, configConfig, schedulerSnapshotService, concurrencyService, billingService, rateLimitService, billingCacheService, httpUpstream, deferredService, openAITokenProvider, modelPricingResolver, channelService, balanceNotifyService, settingService, serviceUserPlatformQuotaRepository)
 	geminiOAuthClient := repository.NewGeminiOAuthClient(configConfig)
 	geminiCliCodeAssistClient := repository.NewGeminiCliCodeAssistClient()
 	driveClient := repository.NewGeminiDriveClient()
@@ -185,8 +178,7 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 	dashboardHandler := admin.NewDashboardHandler(dashboardService, dashboardAggregationService)
 	proxyExitInfoProber := repository.NewProxyExitInfoProber(configConfig)
 	proxyLatencyCache := repository.NewProxyLatencyCache(redisClient)
-	userModelTokenQuotaAdminRepository := repository.ProvideUserModelTokenQuotaAdminRepository(client)
-	adminService := service.ProvideAdminService(userRepository, groupRepository, accountRepository, proxyRepository, apiKeyRepository, redeemCodeRepository, userGroupRateRepository, userRPMCache, billingCacheService, proxyExitInfoProber, proxyLatencyCache, apiKeyAuthCacheInvalidator, client, settingService, subscriptionService, userSubscriptionRepository, privacyClientFactory, openAIGatewayService, userModelTokenQuotaAdminRepository, apiKeyService)
+	adminService := service.ProvideAdminService(userRepository, groupRepository, accountRepository, proxyRepository, apiKeyRepository, redeemCodeRepository, userGroupRateRepository, userRPMCache, billingCacheService, proxyExitInfoProber, proxyLatencyCache, apiKeyAuthCacheInvalidator, client, settingService, subscriptionService, userSubscriptionRepository, privacyClientFactory, openAIGatewayService, apiKeyService)
 	adminUserHandler := admin.NewUserHandler(adminService, concurrencyService, serviceUserPlatformQuotaRepository, billingCache)
 	groupCapacityService := service.NewGroupCapacityService(accountRepository, groupRepository, concurrencyService, sessionLimitCache, rpmCache)
 	groupHandler := admin.NewGroupHandler(adminService, dashboardService, groupCapacityService)
@@ -201,7 +193,7 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 	dataManagementService := service.NewDataManagementService()
 	dataManagementHandler := admin.NewDataManagementHandler(dataManagementService)
 	backupObjectStoreFactory := repository.NewS3BackupStoreFactory()
-	dbDumper := repository.NewMySQLDumper(configConfig)
+	dbDumper := repository.NewGoldenDBDumper(configConfig)
 	backupService := service.ProvideBackupService(settingRepository, configConfig, secretEncryptor, backupObjectStoreFactory, dbDumper)
 	backupHandler := admin.NewBackupHandler(backupService, userService)
 	oAuthHandler := admin.NewOAuthHandler(oAuthService)
@@ -256,17 +248,13 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 	paymentHandler := admin.NewPaymentHandler(paymentService, paymentConfigService)
 	affiliateHandler := admin.NewAffiliateHandler(affiliateService, adminService)
 	complianceHandler := admin.NewComplianceHandler(settingService)
-	modelTokenQuotaAdminRepository := repository.ProvideModelTokenQuotaAdminRepository(client)
-	modelDailyTokenQuotaCacheInvalidator := repository.NewDailyTokenQuotaCacheInvalidator(redisClient)
-	modelTokenQuotaAdminService := service.ProvideModelTokenQuotaAdminService(modelTokenQuotaAdminRepository, modelDailyTokenQuotaCacheInvalidator, currentTokenUsageReader, currentTokenUsageRepairer)
-	modelTokenQuotaHandler := admin.NewModelTokenQuotaHandler(modelTokenQuotaAdminService)
-	userModelTokenQuotaAdminService := service.ProvideUserModelTokenQuotaAdminService(userModelTokenQuotaAdminRepository, modelDailyTokenQuotaCacheInvalidator, currentTokenUsageReader, currentTokenUsageRepairer)
-	userModelTokenQuotaHandler := admin.NewUserModelTokenQuotaHandler(adminService, userModelTokenQuotaAdminService)
-	tokenUsageReportHandler := admin.NewTokenUsageReportHandler(tokenUsageReportService)
+	projectionAdminService := tokenstat.NewProjectionAdminService(client, redisClient)
+	runtimeController := tokenstat.NewRuntimeController(redisClient, configConfig)
+	dynamicTokenStatisticsHandler := admin.NewDynamicTokenStatisticsHandler(projectionAdminService, runtimeController)
 	rbacRepository := repository.NewRBACRepository(db)
-	rbacRoleService := service.NewRBACRoleService(rbacRepository, rbacPermissionService)
+	rbacRoleService := service.NewRBACRoleService(rbacRepository, permissionService)
 	rbacHandler := admin.NewRBACHandler(rbacRoleService)
-	adminHandlers := handler.ProvideAdminHandlers(dashboardHandler, adminUserHandler, groupHandler, accountHandler, adminAnnouncementHandler, dataManagementHandler, backupHandler, oAuthHandler, openAIOAuthHandler, geminiOAuthHandler, antigravityOAuthHandler, proxyHandler, adminRedeemHandler, promoHandler, settingHandler, opsHandler, systemHandler, adminSubscriptionHandler, adminUsageHandler, userAttributeHandler, errorPassthroughHandler, tlsFingerprintProfileHandler, adminAPIKeyHandler, scheduledTestHandler, channelHandler, channelMonitorHandler, channelMonitorRequestTemplateHandler, contentModerationHandler, paymentHandler, affiliateHandler, complianceHandler, modelTokenQuotaHandler, userModelTokenQuotaHandler, tokenUsageReportHandler, rbacHandler)
+	adminHandlers := handler.ProvideAdminHandlers(dashboardHandler, adminUserHandler, groupHandler, accountHandler, adminAnnouncementHandler, dataManagementHandler, backupHandler, oAuthHandler, openAIOAuthHandler, geminiOAuthHandler, antigravityOAuthHandler, proxyHandler, adminRedeemHandler, promoHandler, settingHandler, opsHandler, systemHandler, adminSubscriptionHandler, adminUsageHandler, userAttributeHandler, errorPassthroughHandler, tlsFingerprintProfileHandler, adminAPIKeyHandler, scheduledTestHandler, channelHandler, channelMonitorHandler, channelMonitorRequestTemplateHandler, contentModerationHandler, paymentHandler, affiliateHandler, complianceHandler, dynamicTokenStatisticsHandler, rbacHandler)
 	usageRecordWorkerPool := service.NewUsageRecordWorkerPool(configConfig)
 	userMsgQueueCache := repository.NewUserMsgQueueCache(redisClient)
 	userMessageQueueService := service.ProvideUserMessageQueueService(userMsgQueueCache, rpmCache, configConfig)
@@ -277,27 +265,28 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 	handlerPaymentHandler := handler.NewPaymentHandler(paymentService, paymentConfigService, channelService)
 	paymentWebhookHandler := handler.NewPaymentWebhookHandler(paymentService, registry)
 	availableChannelHandler := handler.NewAvailableChannelHandler(channelService, apiKeyService, settingService)
+	externalProvisioningHandler := provideExternalProvisioningHandler(configConfig, client, userRepository, apiKeyRepository, apiKeyService, groupRepository)
+	externalTokenUsageDimensionLookup := repository.NewExternalTokenUsageDimensionRepository(client)
+	externalTokenUsageCurrentReader := repository.ProvideExternalTokenUsageCurrentReader(redisClient, configConfig)
+	externalTokenUsageService, err := service.ProvideExternalTokenUsageService(externalTokenUsageDimensionLookup, externalTokenUsageCurrentReader, projectionAdminService, configConfig)
+	if err != nil {
+		return nil, err
+	}
+	externalTokenUsageHandler := handler.NewExternalTokenUsageHandler(externalTokenUsageService)
 	idempotencyCoordinator := service.ProvideIdempotencyCoordinator(idempotencyRepository, configConfig)
 	idempotencyCleanupService := service.ProvideIdempotencyCleanupService(idempotencyRepository, configConfig)
-	handlers := handler.ProvideHandlers(authHandler, userHandler, apiKeyHandler, usageHandler, redeemHandler, subscriptionHandler, announcementHandler, channelMonitorUserHandler, adminHandlers, gatewayHandler, openAIGatewayHandler, handlerSettingHandler, totpHandler, handlerPaymentHandler, paymentWebhookHandler, availableChannelHandler, idempotencyCoordinator, idempotencyCleanupService)
-
-	// External provisioning handler (manually wired).
-	platformKeySvc := service.NewPlatformAPIKeyService(apiKeyRepository, apiKeyService)
-	var extLdapDir service.ExternalProvisioningLDAPDirectory
-	if configConfig.LDAP.Enabled {
-		extLdapDir = ldapauth.NewDefaultLDAPDirectory(configConfig.LDAP)
-	}
-	userProvisioningSvc := service.NewEntUserProvisioningService(client, userRepository, apiKeyService)
-	extProvSvc := service.NewExternalProvisioningService(userRepository, extLdapDir, userProvisioningSvc, platformKeySvc, groupRepository)
-	handlers.ExternalProvisioning = handler.NewExternalProvisioningHandler(extProvSvc)
-
+	handlers := handler.ProvideHandlers(authHandler, userHandler, apiKeyHandler, usageHandler, redeemHandler, subscriptionHandler, announcementHandler, channelMonitorUserHandler, adminHandlers, gatewayHandler, openAIGatewayHandler, handlerSettingHandler, totpHandler, handlerPaymentHandler, paymentWebhookHandler, availableChannelHandler, externalProvisioningHandler, externalTokenUsageHandler, idempotencyCoordinator, idempotencyCleanupService)
 	jwtAuthMiddleware := middleware.NewJWTAuthMiddleware(authService, userService)
 	adminAuthMiddleware := middleware.NewAdminAuthMiddleware(authService, userService, settingService)
 	adminIdentityAuthMiddleware := middleware.NewAdminIdentityAuthMiddleware(authService, userService, settingService)
 	apiKeyAuthMiddleware := middleware.NewAPIKeyAuthMiddleware(apiKeyService, subscriptionService, configConfig)
 	rbacRegistry := rbac.NewRegistry()
-	engine := server.ProvideRouter(configConfig, handlers, jwtAuthMiddleware, adminAuthMiddleware, adminIdentityAuthMiddleware, apiKeyAuthMiddleware, apiKeyService, subscriptionService, opsService, settingService, redisClient, rbacPermissionService, rbacRegistry)
+	engine := server.ProvideRouter(configConfig, handlers, jwtAuthMiddleware, adminAuthMiddleware, adminIdentityAuthMiddleware, apiKeyAuthMiddleware, apiKeyService, subscriptionService, opsService, settingService, redisClient, permissionService, rbacRegistry)
 	httpServer := server.ProvideHTTPServer(configConfig, engine)
+	mainDynamicTokenStatisticsBootstrap, err := provideDynamicTokenStatisticsBootstrap(client, db, redisClient, configConfig, projectionAdminService)
+	if err != nil {
+		return nil, err
+	}
 	opsMetricsCollector := service.ProvideOpsMetricsCollector(opsRepository, settingRepository, accountRepository, concurrencyService, db, redisClient, configConfig)
 	opsAggregationService := service.ProvideOpsAggregationService(opsRepository, settingRepository, db, redisClient, configConfig)
 	opsAlertEvaluatorService := service.ProvideOpsAlertEvaluatorService(opsService, opsRepository, emailService, redisClient, configConfig, proxyRepository)
@@ -311,7 +300,7 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 	paymentOrderExpiryService := service.ProvidePaymentOrderExpiryService(paymentService, leaderLockCache, db)
 	channelMonitorRunner := service.ProvideChannelMonitorRunner(channelMonitorService, settingService)
 	userPlatformQuotaUsageFlusher := service.ProvideUserPlatformQuotaUsageFlusher(configConfig, billingCache, serviceUserPlatformQuotaRepository, timingWheelService)
-	v := provideCleanup(client, redisClient, opsMetricsCollector, opsAggregationService, opsAlertEvaluatorService, opsCleanupService, opsScheduledReportService, opsSystemLogSink, schedulerSnapshotService, tokenRefreshService, accountExpiryService, proxyExpiryService, subscriptionExpiryService, usageCleanupService, idempotencyCleanupService, pricingService, emailQueueService, billingCacheService, usageRecordWorkerPool, subscriptionService, oAuthService, openAIOAuthService, geminiOAuthService, antigravityOAuthService, openAIGatewayService, scheduledTestRunnerService, backupService, paymentOrderExpiryService, channelMonitorRunner, userPlatformQuotaUsageFlusher, tokenStatisticsScheduler)
+	v := provideCleanup(mainDynamicTokenStatisticsBootstrap, client, redisClient, opsMetricsCollector, opsAggregationService, opsAlertEvaluatorService, opsCleanupService, opsScheduledReportService, opsSystemLogSink, schedulerSnapshotService, tokenRefreshService, accountExpiryService, proxyExpiryService, subscriptionExpiryService, usageCleanupService, idempotencyCleanupService, pricingService, emailQueueService, billingCacheService, usageRecordWorkerPool, subscriptionService, oAuthService, openAIOAuthService, geminiOAuthService, antigravityOAuthService, openAIGatewayService, scheduledTestRunnerService, backupService, paymentOrderExpiryService, channelMonitorRunner, userPlatformQuotaUsageFlusher)
 	application := &Application{
 		Server:  httpServer,
 		Cleanup: v,
@@ -326,6 +315,55 @@ type Application struct {
 	Cleanup func()
 }
 
+func provideExternalProvisioningHandler(cfg *config.Config, client *ent.Client, users service.UserRepository, keys service.APIKeyRepository, apiKeyService *service.APIKeyService, groups service.ExternalProvisioningGroupLookup) *handler.ExternalProvisioningHandler {
+	platformKeys := service.NewPlatformAPIKeyService(keys, apiKeyService)
+	var directory service.ExternalProvisioningLDAPDirectory
+	if cfg.LDAP.Enabled {
+		directory = ldapauth.NewDefaultLDAPDirectory(cfg.LDAP)
+	}
+	provisioner := service.NewEntUserProvisioningService(client, users, apiKeyService)
+	return handler.NewExternalProvisioningHandler(service.NewExternalProvisioningService(users, directory, provisioner, platformKeys, groups))
+}
+
+type dynamicTokenStatisticsBootstrap struct{}
+
+func provideDynamicTokenStatisticsBootstrap(client *ent.Client, db *sql.DB, redisClient *redis.Client, cfg *config.Config, projections *tokenstat.ProjectionAdminService) (*dynamicTokenStatisticsBootstrap, error) {
+	if err := projections.RefreshActive(context.Background()); err != nil {
+		return nil, err
+	}
+	dynamic := cfg.Gateway.DynamicTokenStatistics
+	if !dynamic.Enabled {
+		return &dynamicTokenStatisticsBootstrap{}, nil
+	}
+	accumulator := tokenstat2.NewRedisAccumulator(redisClient, dynamic.ShardCount, dynamic.OrphanTTLDays)
+	pipeline, err := tokenstat.NewAsyncPipeline(dynamic.AsyncQueueCapacity, dynamic.WorkerCount, time.Duration(dynamic.RedisTimeoutMS)*time.Millisecond, dynamic.RedisRetryCount, dynamic.Timezone, projections, accumulator)
+	if err != nil {
+		return nil, err
+	}
+	tokenstat.SetDefaultPipeline(pipeline)
+	quotaChecker := tokenstat.NewQuotaChecker(tokenstat.NewRedisQuotaCounterReader(redisClient), dynamic.ShardCount)
+	if err := projections.LoadQuotaRules(context.Background(), quotaChecker); err != nil {
+		return nil, err
+	}
+	projections.AttachQuotaChecker(quotaChecker)
+	tokenstat.SetDefaultQuotaChecker(quotaChecker)
+	quotaTimeout := time.Duration(dynamic.RedisTimeoutMS) * time.Millisecond
+	if quotaTimeout <= 0 || quotaTimeout > 50*time.Millisecond {
+		quotaTimeout = 50 * time.Millisecond
+	}
+	tokenstat.SetDefaultQuotaTimeout(quotaTimeout)
+	aggregates := tokenstat2.NewRepository(db)
+	syncEngine := tokenstat2.NewSyncEngine(redisClient, aggregates, dynamic.MySQLBatchSize)
+	syncEngine.Start(context.Background(), time.Duration(dynamic.SyncIntervalMinutes)*time.Minute)
+	location, err := time.LoadLocation(dynamic.Timezone)
+	if err != nil {
+		return nil, err
+	}
+	finalizer := tokenstat2.NewPeriodFinalizer(redisClient, aggregates, aggregates, pipeline, syncEngine)
+	finalizer.Start(context.Background(), time.Duration(dynamic.FinalizeCheckIntervalMinutes)*time.Minute, location)
+	return &dynamicTokenStatisticsBootstrap{}, nil
+}
+
 func providePrivacyClientFactory() service.PrivacyClientFactory {
 	return repository.CreatePrivacyReqClient
 }
@@ -338,6 +376,7 @@ func provideServiceBuildInfo(buildInfo handler.BuildInfo) service.BuildInfo {
 }
 
 func provideCleanup(
+	_ *dynamicTokenStatisticsBootstrap,
 	entClient *ent.Client,
 	rdb *redis.Client,
 	opsMetricsCollector *service.OpsMetricsCollector,
@@ -368,7 +407,6 @@ func provideCleanup(
 	paymentOrderExpiry *service.PaymentOrderExpiryService,
 	channelMonitorRunner *service.ChannelMonitorRunner,
 	quotaFlusher *service.UserPlatformQuotaUsageFlusher,
-	tokenStatisticsScheduler *service.TokenStatisticsScheduler,
 ) func() {
 	return func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -380,12 +418,6 @@ func provideCleanup(
 		}
 
 		parallelSteps := []cleanupStep{
-			{"TokenStatisticsScheduler", func() error {
-				if tokenStatisticsScheduler != nil {
-					tokenStatisticsScheduler.Stop()
-				}
-				return nil
-			}},
 			{"OpsScheduledReportService", func() error {
 				if opsScheduledReport != nil {
 					opsScheduledReport.Stop()

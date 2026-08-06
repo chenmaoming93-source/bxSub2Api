@@ -572,33 +572,12 @@ const rawRoutes: RouteRecordRaw[] = [
     }
   },
   {
-    path: '/admin/token-usage/models',
-    name: 'AdminTokenUsageModels',
-    component: () => import('@/views/admin/token-usage/ModelTokenUsageView.vue'),
+    path: '/admin/token-statistics',
+    name: 'AdminTokenStatistics',
+    component: () => import('@/views/admin/TokenStatisticsView.vue'),
     meta: {
       requiresAuth: true,
-      title: 'Token Usage - Models',
-      titleKey: 'admin.tokenUsage.models'
-    }
-  },
-  {
-    path: '/admin/token-usage/routes',
-    name: 'AdminTokenUsageRoutes',
-    component: () => import('@/views/admin/token-usage/RouteTokenUsageView.vue'),
-    meta: {
-      requiresAuth: true,
-      title: 'Token Usage - Routes',
-      titleKey: 'admin.tokenUsage.routes'
-    }
-  },
-  {
-    path: '/admin/token-usage/users',
-    name: 'AdminTokenUsageUsers',
-    component: () => import('@/views/admin/token-usage/UserModelTokenUsageView.vue'),
-    meta: {
-      requiresAuth: true,
-      title: 'Token Usage - Users',
-      titleKey: 'admin.tokenUsage.users'
+      title: 'Configurable Token Statistics'
     }
   },
   {

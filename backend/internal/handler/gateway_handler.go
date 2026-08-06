@@ -298,8 +298,9 @@ func (h *GatewayHandler) Messages(c *gin.Context) {
 		}
 
 		for {
-			selection, err := h.gatewayService.SelectAccountWithLoadAwareness(c.Request.Context(), apiKey.GroupID, sessionKey, reqModel, fs.FailedAccountIDs, "", int64(0)) // Gemini 不使用会话限制
+			selection, err := h.gatewayService.SelectAccountWithLoadAwarenessForRequest(c.Request.Context(), apiKey.GroupID, sessionKey, reqModel, fs.FailedAccountIDs, "", service.DynamicTokenRequestIdentity{UserID: apiKey.UserID, APIKeyID: apiKey.ID}) // Gemini 不使用会话限制
 			if err != nil {
+				fs.AddSelectionFailures(service.ModelCandidateFailuresFromError(err))
 				if len(fs.FailedAccountIDs) == 0 {
 					markOpsRoutingCapacityLimitedIfNoAvailable(c, err)
 					reqLog.Warn("gateway.select_account_no_available",
@@ -309,11 +310,7 @@ func (h *GatewayHandler) Messages(c *gin.Context) {
 						zap.Error(err),
 					)
 					if errors.Is(err, service.ErrRoutedTokenQuotaExhausted) {
-						status, code, message, retryAfter := billingErrorDetails(err)
-						if retryAfter > 0 {
-							c.Header("Retry-After", strconv.Itoa(retryAfter))
-						}
-						h.handleStreamingAwareError(c, status, code, message, streamStarted)
+						h.handleModelCandidatesExhausted(c, fs.CandidateFailures, streamStarted)
 						return
 					}
 					h.handleStreamingAwareError(c, http.StatusServiceUnavailable, "api_error", "No available accounts: "+err.Error(), streamStarted)
@@ -328,7 +325,9 @@ func (h *GatewayHandler) Messages(c *gin.Context) {
 				case FailoverCanceled:
 					return
 				default: // FailoverExhausted
-					if fs.LastFailoverErr != nil {
+					if len(fs.CandidateFailures) > 0 {
+						h.handleModelCandidatesExhausted(c, fs.CandidateFailures, streamStarted)
+					} else if fs.LastFailoverErr != nil {
 						h.handleFailoverExhausted(c, fs.LastFailoverErr, service.PlatformGemini, streamStarted)
 					} else {
 						h.handleFailoverExhaustedSimple(c, 502, streamStarted)
@@ -458,6 +457,9 @@ func (h *GatewayHandler) Messages(c *gin.Context) {
 			if err != nil {
 				var failoverErr *service.UpstreamFailoverError
 				if errors.As(err, &failoverErr) {
+					if selection.RouteAlias != "" {
+						fs.RecordUpstreamFailure(account, forwardModel, failoverErr)
+					}
 					// 流式内容已写入客户端，无法撤销，禁止 failover 以防止流拼接腐化
 					if c.Writer.Size() != writerSizeBeforeForward {
 						h.handleFailoverExhausted(c, failoverErr, service.PlatformGemini, true)
@@ -468,7 +470,11 @@ func (h *GatewayHandler) Messages(c *gin.Context) {
 					case FailoverContinue:
 						continue
 					case FailoverExhausted:
-						h.handleFailoverExhausted(c, fs.LastFailoverErr, service.PlatformGemini, streamStarted)
+						if len(fs.CandidateFailures) > 0 {
+							h.handleModelCandidatesExhausted(c, fs.CandidateFailures, streamStarted)
+						} else {
+							h.handleFailoverExhausted(c, fs.LastFailoverErr, service.PlatformGemini, streamStarted)
+						}
 						return
 					case FailoverCanceled:
 						return
@@ -548,6 +554,7 @@ func (h *GatewayHandler) Messages(c *gin.Context) {
 					UserAgent:          userAgent,
 					IPAddress:          clientIP,
 					RequestPayloadHash: requestPayloadHash,
+					RouteAlias:         selection.RouteAlias,
 					ForceCacheBilling:  forceCacheBilling,
 					APIKeyService:      h.apiKeyService,
 					ChannelUsageFields: channelMapping.ToUsageFields(reqModel, result.UpstreamModel),
@@ -599,8 +606,9 @@ func (h *GatewayHandler) Messages(c *gin.Context) {
 				zap.Bool("has_bound_session", hasBoundSession),
 				zap.Int("failed_account_count", len(fs.FailedAccountIDs)),
 			)
-			selection, err := h.gatewayService.SelectAccountWithLoadAwareness(c.Request.Context(), currentAPIKey.GroupID, sessionKey, reqModel, fs.FailedAccountIDs, parsedReq.MetadataUserID, subject.UserID)
+			selection, err := h.gatewayService.SelectAccountWithLoadAwarenessForRequest(c.Request.Context(), currentAPIKey.GroupID, sessionKey, reqModel, fs.FailedAccountIDs, parsedReq.MetadataUserID, service.DynamicTokenRequestIdentity{UserID: subject.UserID, APIKeyID: currentAPIKey.ID})
 			if err != nil {
+				fs.AddSelectionFailures(service.ModelCandidateFailuresFromError(err))
 				if len(fs.FailedAccountIDs) == 0 {
 					markOpsRoutingCapacityLimitedIfNoAvailable(c, err)
 					reqLog.Warn("gateway.select_account_no_available",
@@ -611,11 +619,7 @@ func (h *GatewayHandler) Messages(c *gin.Context) {
 						zap.Error(err),
 					)
 					if errors.Is(err, service.ErrRoutedTokenQuotaExhausted) {
-						status, code, message, retryAfter := billingErrorDetails(err)
-						if retryAfter > 0 {
-							c.Header("Retry-After", strconv.Itoa(retryAfter))
-						}
-						h.handleStreamingAwareError(c, status, code, message, streamStarted)
+						h.handleModelCandidatesExhausted(c, fs.CandidateFailures, streamStarted)
 						return
 					}
 					h.handleStreamingAwareError(c, http.StatusServiceUnavailable, "api_error", "No available accounts: "+err.Error(), streamStarted)
@@ -630,7 +634,9 @@ func (h *GatewayHandler) Messages(c *gin.Context) {
 				case FailoverCanceled:
 					return
 				default: // FailoverExhausted
-					if fs.LastFailoverErr != nil {
+					if len(fs.CandidateFailures) > 0 {
+						h.handleModelCandidatesExhausted(c, fs.CandidateFailures, streamStarted)
+					} else if fs.LastFailoverErr != nil {
 						h.handleFailoverExhausted(c, fs.LastFailoverErr, platform, streamStarted)
 					} else {
 						h.handleFailoverExhaustedSimple(c, 502, streamStarted)
@@ -792,6 +798,7 @@ func (h *GatewayHandler) Messages(c *gin.Context) {
 			if selection.UpstreamModel != "" && selection.UpstreamModel != reqModel {
 				attemptParsedReq.UpstreamModel = selection.UpstreamModel
 			}
+			attemptParsedReq.RouteAlias = selection.RouteAlias
 			// Bedrock CC 兼容：清理 body 专有字段 + 过滤 anthropic-beta header，适用于所有转发路径
 			if err := attemptParsedReq.ReplaceBody(h.gatewayService.ApplyBedrockCCCompat(c, attemptParsedReq.Body.Bytes(), attemptParsedReq.Model, account, apiKey.GroupID)); err != nil {
 				h.errorResponse(c, http.StatusBadRequest, "invalid_request_error", "Failed to parse request body")
@@ -904,6 +911,9 @@ func (h *GatewayHandler) Messages(c *gin.Context) {
 				}
 				var failoverErr *service.UpstreamFailoverError
 				if errors.As(err, &failoverErr) {
+					if selection.RouteAlias != "" {
+						fs.RecordUpstreamFailure(account, forwardModel, failoverErr)
+					}
 					// 流式内容已写入客户端，无法撤销，禁止 failover 以防止流拼接腐化
 					if c.Writer.Size() != writerSizeBeforeForward {
 						h.handleFailoverExhausted(c, failoverErr, account.Platform, true)
@@ -914,7 +924,11 @@ func (h *GatewayHandler) Messages(c *gin.Context) {
 					case FailoverContinue:
 						continue
 					case FailoverExhausted:
-						h.handleFailoverExhausted(c, fs.LastFailoverErr, account.Platform, streamStarted)
+						if len(fs.CandidateFailures) > 0 {
+							h.handleModelCandidatesExhausted(c, fs.CandidateFailures, streamStarted)
+						} else {
+							h.handleFailoverExhausted(c, fs.LastFailoverErr, account.Platform, streamStarted)
+						}
 						return
 					case FailoverCanceled:
 						return
@@ -1004,6 +1018,7 @@ func (h *GatewayHandler) Messages(c *gin.Context) {
 					UserAgent:          userAgent,
 					IPAddress:          clientIP,
 					RequestPayloadHash: requestPayloadHash,
+					RouteAlias:         selection.RouteAlias,
 					ForceCacheBilling:  forceCacheBilling,
 					APIKeyService:      h.apiKeyService,
 					ChannelUsageFields: channelMapping.ToUsageFields(reqModel, result.UpstreamModel),
@@ -1609,6 +1624,39 @@ func (h *GatewayHandler) handleFailoverExhaustedSimple(c *gin.Context, statusCod
 	status, errType, errMsg := h.mapUpstreamError(statusCode)
 	service.SetOpsUpstreamError(c, statusCode, errMsg, "")
 	h.handleStreamingAwareError(c, status, errType, errMsg, streamStarted)
+}
+
+func (h *GatewayHandler) handleModelCandidatesExhausted(c *gin.Context, failures []service.ModelCandidateFailure, streamStarted bool) {
+	status, message := modelCandidatesExhaustedDetails(failures)
+	h.handleStreamingAwareError(c, status, "all_model_candidates_failed", message, streamStarted)
+}
+
+func modelCandidatesExhaustedDetails(failures []service.ModelCandidateFailure) (int, string) {
+	status := http.StatusBadGateway
+	allQuota := len(failures) > 0
+	parts := make([]string, 0, len(failures))
+	for _, failure := range failures {
+		if failure.Reason != "token_quota" {
+			allQuota = false
+		}
+		account := failure.AccountName
+		if account == "" {
+			account = fmt.Sprintf("account-%d", failure.AccountID)
+		}
+		message := strings.Join(strings.Fields(failure.Message), " ")
+		if len(message) > 1000 {
+			message = message[:1000] + "…"
+		}
+		parts = append(parts, fmt.Sprintf("account=%s(%d), model=%s, reason=%s, message=%s", account, failure.AccountID, failure.Model, failure.Reason, message))
+	}
+	if allQuota {
+		status = http.StatusTooManyRequests
+	}
+	message := "All attempted model candidates failed"
+	if len(parts) > 0 {
+		message += ": " + strings.Join(parts, "; ")
+	}
+	return status, message
 }
 
 func (h *GatewayHandler) mapUpstreamError(statusCode int) (int, string, string) {
