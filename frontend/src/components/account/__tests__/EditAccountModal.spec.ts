@@ -581,4 +581,40 @@ describe('EditAccountModal', () => {
 
     expect(updateAccountMock).not.toHaveBeenCalled()
   })
+
+  it('echoes model_attributes into the attributes section on open', async () => {
+    const account = buildAccount()
+    account.model_attributes = {
+      context_window: { description: '上下文窗口总大小（token）', value: 200000 },
+      supports_vision: { description: '支持图片输入', value: true }
+    }
+    const wrapper = mountModal(account)
+
+    const rows = wrapper.findAll('[data-testid="attribute-row"]')
+    expect(rows).toHaveLength(2)
+    expect((wrapper.findAll('[data-testid="row-key"]')[0].element as HTMLInputElement).value).toBe('context_window')
+    expect((wrapper.findAll('[data-testid="row-value"]')[0].element as HTMLInputElement).value).toBe('200000')
+    expect((wrapper.findAll('[data-testid="row-value"]')[1].element as HTMLInputElement).value).toBe('true')
+  })
+
+  it('submits model_attributes in the update payload', async () => {
+    const account = buildAccount()
+    account.model_attributes = {
+      context_window: { description: '上下文窗口总大小（token）', value: 200000 }
+    }
+    updateAccountMock.mockReset()
+    checkMixedChannelRiskMock.mockReset()
+    checkMixedChannelRiskMock.mockResolvedValue({ has_risk: false })
+    updateAccountMock.mockResolvedValue(account)
+
+    const wrapper = mountModal(account)
+
+    await wrapper.get('form#edit-account-form').trigger('submit.prevent')
+
+    expect(updateAccountMock).toHaveBeenCalledTimes(1)
+    const payload = updateAccountMock.mock.calls[0]?.[1]
+    expect(payload.model_attributes).toEqual({
+      context_window: { description: '上下文窗口总大小（token）', value: 200000 }
+    })
+  })
 })

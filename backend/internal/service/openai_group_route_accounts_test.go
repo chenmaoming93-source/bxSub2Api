@@ -34,7 +34,7 @@ func TestOpenAIListSchedulableAccountsIncludesExplicitRouteAccount(t *testing.T)
 		Hydrated:            true,
 		ModelRoutingEnabled: true,
 		ModelRouting: map[string][]domain.ModelRouteCandidate{
-			"test": {{Model: "deepseek-v4-pro", AccountIDs: []int64{3}}},
+			"test": {{AccountIDs: []int64{3}}},
 		},
 	}
 	ctx := context.WithValue(context.Background(), ctxkey.Group, group)

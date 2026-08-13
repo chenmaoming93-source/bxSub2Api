@@ -535,6 +535,7 @@
 |---|---|---|---|---|
 | POST | `/api/v1/integrations/api-keys/getOrCreate` | 外部集成密钥（独立于用户 RBAC） | 无站内页面（外部系统调用） | `integrations.go:27` |
 | POST | `/api/v1/integrations/model-routes/list` | 外部集成密钥（独立于用户 RBAC） | 无站内页面（外部系统调用） | `integrations.go:28` |
+| POST | `/api/v1/integrations/model-routes/list-attributes` | 外部集成密钥（独立于用户 RBAC） | 无站内页面（外部系统调用） | `integrations.go:29` |
 | POST | `/api/v1/integrations/token-usage/user-group-model/daily` | 外部集成密钥（独立于用户 RBAC） | 无站内页面（外部系统调用） | `integrations.go:30` |
 
 ## 模型网关接口

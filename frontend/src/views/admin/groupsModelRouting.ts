@@ -8,8 +8,6 @@ export type ModelRoutingValidationCode =
   | 'alias_required'
   | 'duplicate_alias'
   | 'candidate_required'
-  | 'model_required'
-  | 'duplicate_model'
   | 'account_ids_required'
   | 'invalid_account_id'
   | 'invalid_priority'
@@ -24,7 +22,6 @@ export interface ModelRoutingValidationIssue {
 
 function cloneCandidate(candidate: ModelRoutingCandidate): ModelRoutingCandidate {
   return {
-    model: candidate.model,
     account_ids: [...candidate.account_ids],
     priority: candidate.priority
   }
@@ -41,7 +38,6 @@ export function normalizeModelRouting(config: ModelRoutingConfig | null | undefi
           alias,
           candidates: [
             {
-              model: alias,
               account_ids: [...(value as number[])],
               priority: 0
             }
@@ -65,10 +61,7 @@ export function serializeModelRouting(rows: ModelRoutingRuleRow[]): Record<strin
       result[row.alias] = row.candidates
         .map((candidate, index) => ({ candidate: cloneCandidate(candidate), index }))
         .sort((left, right) => left.candidate.priority - right.candidate.priority || left.index - right.index)
-        .map(item => ({
-          ...item.candidate,
-          model: item.candidate.model.trim()
-        }))
+        .map(item => item.candidate)
       return result
     }, {})
 }
@@ -91,18 +84,8 @@ export function validateModelRouting(rows: ModelRoutingRuleRow[]): ModelRoutingV
       return
     }
 
-    const models = new Set<string>()
     const priorities = new Set<number>()
     row.candidates.forEach((candidate, candidateIndex) => {
-      const model = candidate.model.trim()
-      if (!model) {
-        issues.push({ code: 'model_required', ruleIndex, candidateIndex })
-      } else if (models.has(model)) {
-        issues.push({ code: 'duplicate_model', ruleIndex, candidateIndex, value: model })
-      } else {
-        models.add(model)
-      }
-
       if (candidate.account_ids.length === 0) {
         issues.push({ code: 'account_ids_required', ruleIndex, candidateIndex })
       } else if (candidate.account_ids.some(id => !Number.isInteger(id) || id <= 0)) {

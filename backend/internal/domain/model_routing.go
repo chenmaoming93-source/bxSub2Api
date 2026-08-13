@@ -12,11 +12,8 @@ import (
 // ErrInvalidModelRouting identifies malformed legacy or candidate routing JSON.
 var ErrInvalidModelRouting = errors.New("invalid model routing")
 
-// ModelRouteCandidate is one upstream model choice for a requested route alias.
-// Legacy entries keep Model empty so the caller can pass the requested model
-// through unchanged. Candidate token limits are stored separately.
+// ModelRouteCandidate is one account choice for a requested route alias.
 type ModelRouteCandidate struct {
-	Model      string  `json:"model"`
 	AccountIDs []int64 `json:"account_ids"`
 	Priority   int     `json:"priority"`
 	Legacy     bool    `json:"-"`
@@ -85,14 +82,13 @@ func ParseModelRoutingConfig(data []byte) (ModelRoutingConfig, error) {
 }
 
 // Match returns a copy of the candidates for an exact route first, then for a
-// deterministic trailing-star prefix match. Legacy candidates inherit the
-// requested model.
+// deterministic trailing-star prefix match.
 func (c ModelRoutingConfig) Match(requestedModel string) []ModelRouteCandidate {
 	if requestedModel == "" {
 		return nil
 	}
 	if candidates, ok := c[requestedModel]; ok {
-		return materializeLegacyModel(candidates, requestedModel)
+		return cloneRouteCandidates(candidates)
 	}
 
 	patterns := make([]string, 0, len(c))
@@ -110,7 +106,7 @@ func (c ModelRoutingConfig) Match(requestedModel string) []ModelRouteCandidate {
 	if len(patterns) == 0 {
 		return nil
 	}
-	return materializeLegacyModel(c[patterns[0]], requestedModel)
+	return cloneRouteCandidates(c[patterns[0]])
 }
 
 func parseRouteCandidates(pattern string, value json.RawMessage) ([]ModelRouteCandidate, error) {
@@ -135,10 +131,6 @@ func parseRouteCandidates(pattern string, value json.RawMessage) ([]ModelRouteCa
 	}
 	for i := range candidates {
 		candidate := &candidates[i]
-		candidate.Model = strings.TrimSpace(candidate.Model)
-		if candidate.Model == "" {
-			return nil, fmt.Errorf("%w: route %q candidate %d has no model", ErrInvalidModelRouting, pattern, i)
-		}
 		if candidate.Priority < 0 {
 			return nil, fmt.Errorf("%w: route %q candidate %d has negative priority", ErrInvalidModelRouting, pattern, i)
 		}
@@ -175,14 +167,11 @@ func validateAccountIDs(pattern string, candidateIndex int, accountIDs []int64) 
 	return nil
 }
 
-func materializeLegacyModel(candidates []ModelRouteCandidate, requestedModel string) []ModelRouteCandidate {
+func cloneRouteCandidates(candidates []ModelRouteCandidate) []ModelRouteCandidate {
 	result := make([]ModelRouteCandidate, len(candidates))
 	copy(result, candidates)
 	for i := range result {
 		result[i].AccountIDs = append([]int64(nil), result[i].AccountIDs...)
-		if result[i].Legacy {
-			result[i].Model = requestedModel
-		}
 	}
 	return result
 }

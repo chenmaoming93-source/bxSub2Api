@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/Wei-Shaw/sub2api/internal/config"
+	"github.com/Wei-Shaw/sub2api/internal/domain"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/logger"
 )
 
@@ -21,6 +22,7 @@ var (
 const (
 	outboxEventTimeout          = 2 * time.Minute
 	schedulerOutboxCleanupBatch = 5000
+	routeAccountWarmupBatchSize = 128
 )
 
 // batchSeenKey tracks which (groupID, platform) bucket sets have already been
@@ -163,6 +165,74 @@ func (s *SchedulerSnapshotService) GetAccount(ctx context.Context, accountID int
 	return s.accountRepo.GetByID(fallbackCtx, accountID)
 }
 
+// GetAccounts resolves explicit routing accounts in one cache round-trip and,
+// on partial misses, one guarded database batch. Database results are written
+// back best-effort so subsequent requests remain cache-only.
+func (s *SchedulerSnapshotService) GetAccounts(ctx context.Context, accountIDs []int64) (map[int64]*Account, error) {
+	result := make(map[int64]*Account, len(accountIDs))
+	ids := make([]int64, 0, len(accountIDs))
+	seen := make(map[int64]struct{}, len(accountIDs))
+	for _, id := range accountIDs {
+		if id <= 0 {
+			continue
+		}
+		if _, ok := seen[id]; ok {
+			continue
+		}
+		seen[id] = struct{}{}
+		ids = append(ids, id)
+	}
+	if len(ids) == 0 {
+		return result, nil
+	}
+
+	if batchCache, ok := s.cache.(SchedulerAccountBatchCache); ok {
+		cached, err := batchCache.GetAccounts(ctx, ids)
+		if err != nil {
+			logger.LegacyPrintf("service.scheduler_snapshot", "[Scheduler] batch account cache read failed: err=%v", err)
+		} else {
+			for id, account := range cached {
+				if account != nil {
+					result[id] = account
+				}
+			}
+		}
+	}
+
+	missing := make([]int64, 0, len(ids)-len(result))
+	for _, id := range ids {
+		if result[id] == nil {
+			missing = append(missing, id)
+		}
+	}
+	if len(missing) == 0 {
+		return result, nil
+	}
+	if s.accountRepo == nil {
+		return nil, ErrSchedulerCacheNotReady
+	}
+	if err := s.guardFallback(ctx); err != nil {
+		return nil, err
+	}
+	fallbackCtx, cancel := s.withFallbackTimeout(ctx)
+	defer cancel()
+	loaded, err := s.accountRepo.GetByIDs(fallbackCtx, missing)
+	if err != nil {
+		return nil, err
+	}
+	for _, account := range loaded {
+		if account != nil {
+			result[account.ID] = account
+		}
+	}
+	if batchCache, ok := s.cache.(SchedulerAccountBatchCache); ok && len(loaded) > 0 {
+		if err := batchCache.SetAccounts(fallbackCtx, loaded); err != nil {
+			logger.LegacyPrintf("service.scheduler_snapshot", "[Scheduler] batch account cache write failed: err=%v", err)
+		}
+	}
+	return result, nil
+}
+
 // GetGroupByID 获取分组信息（供调度器使用）
 func (s *SchedulerSnapshotService) GetGroupByID(ctx context.Context, groupID int64) (*Group, error) {
 	if s.groupRepo == nil {
@@ -185,6 +255,7 @@ func (s *SchedulerSnapshotService) runInitialRebuild() {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
 	defer cancel()
+	defer s.warmRouteAccounts(ctx)
 	buckets, err := s.cache.ListBuckets(ctx)
 	if err != nil {
 		logger.LegacyPrintf("service.scheduler_snapshot", "[Scheduler] list buckets failed: %v", err)
@@ -198,6 +269,67 @@ func (s *SchedulerSnapshotService) runInitialRebuild() {
 	}
 	if err := s.rebuildBuckets(ctx, buckets, "startup"); err != nil {
 		logger.LegacyPrintf("service.scheduler_snapshot", "[Scheduler] rebuild startup failed: %v", err)
+	}
+}
+
+// warmRouteAccounts restores account snapshots referenced only by model
+// routing. It deliberately scans active routing groups rather than all
+// accounts and processes IDs in bounded sequential batches.
+func (s *SchedulerSnapshotService) warmRouteAccounts(ctx context.Context) {
+	batchCache, ok := s.cache.(SchedulerAccountBatchCache)
+	if !ok || s.groupRepo == nil || s.accountRepo == nil {
+		return
+	}
+	groups, err := s.groupRepo.ListActive(ctx)
+	if err != nil {
+		logger.LegacyPrintf("service.scheduler_snapshot", "[Scheduler] route account warmup list groups failed: err=%v", err)
+		return
+	}
+	seen := make(map[int64]struct{})
+	ids := make([]int64, 0)
+	for i := range groups {
+		group := &groups[i]
+		if !group.ModelRoutingEnabled || group.ModelRouting == nil {
+			continue
+		}
+		data, err := json.Marshal(group.ModelRouting)
+		if err != nil {
+			logger.LegacyPrintf("service.scheduler_snapshot", "[Scheduler] route account warmup marshal failed: group_id=%d err=%v", group.ID, err)
+			continue
+		}
+		config, err := domain.ParseModelRoutingConfig(data)
+		if err != nil {
+			logger.LegacyPrintf("service.scheduler_snapshot", "[Scheduler] route account warmup invalid routing: group_id=%d err=%v", group.ID, err)
+			continue
+		}
+		for _, candidates := range config {
+			for _, candidate := range candidates {
+				for _, id := range candidate.AccountIDs {
+					if id <= 0 {
+						continue
+					}
+					if _, exists := seen[id]; exists {
+						continue
+					}
+					seen[id] = struct{}{}
+					ids = append(ids, id)
+				}
+			}
+		}
+	}
+	for start := 0; start < len(ids); start += routeAccountWarmupBatchSize {
+		end := start + routeAccountWarmupBatchSize
+		if end > len(ids) {
+			end = len(ids)
+		}
+		accounts, err := s.accountRepo.GetByIDs(ctx, ids[start:end])
+		if err != nil {
+			logger.LegacyPrintf("service.scheduler_snapshot", "[Scheduler] route account warmup DB batch failed: start=%d size=%d err=%v", start, end-start, err)
+			continue
+		}
+		if err := batchCache.SetAccounts(ctx, accounts); err != nil {
+			logger.LegacyPrintf("service.scheduler_snapshot", "[Scheduler] route account warmup cache batch failed: start=%d size=%d err=%v", start, end-start, err)
+		}
 	}
 }
 

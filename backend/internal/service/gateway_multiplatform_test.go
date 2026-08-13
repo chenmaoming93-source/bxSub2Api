@@ -3251,8 +3251,8 @@ func TestGroupedModelCandidateRoutingUsesCandidateModelForAccountFiltering(t *te
 				ModelRoutingEnabled: true,
 				ModelRouting: map[string][]domain.ModelRouteCandidate{
 					"alias-model": {
-						{Model: "actual-model", AccountIDs: []int64{2}, Priority: 1},
-						{Model: "fallback-model", AccountIDs: []int64{1}, Priority: 2},
+						{AccountIDs: []int64{2}, Priority: 1},
+						{AccountIDs: []int64{1}, Priority: 2},
 					},
 				},
 			},

@@ -68,3 +68,11 @@ type SchedulerCache interface {
 	// SetOutboxWatermark 保存 outbox 水位。
 	SetOutboxWatermark(ctx context.Context, id int64) error
 }
+
+// SchedulerAccountBatchCache is the optional batch extension used by explicit
+// model-routing account loads. The production Redis cache implements it while
+// existing lightweight SchedulerCache test doubles remain compatible.
+type SchedulerAccountBatchCache interface {
+	GetAccounts(ctx context.Context, accountIDs []int64) (map[int64]*Account, error)
+	SetAccounts(ctx context.Context, accounts []*Account) error
+}

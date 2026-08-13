@@ -2437,6 +2437,7 @@ type AccountMutation struct {
 	_type                       *string
 	credentials                 *map[string]interface{}
 	extra                       *map[string]interface{}
+	model_attributes            *domain.ModelAttributes
 	proxy_fallback_origin_id    *int64
 	addproxy_fallback_origin_id *int64
 	concurrency                 *int
@@ -2921,6 +2922,55 @@ func (m *AccountMutation) OldExtra(ctx context.Context) (v map[string]interface{
 // ResetExtra resets all changes to the "extra" field.
 func (m *AccountMutation) ResetExtra() {
 	m.extra = nil
+}
+
+// SetModelAttributes sets the "model_attributes" field.
+func (m *AccountMutation) SetModelAttributes(da domain.ModelAttributes) {
+	m.model_attributes = &da
+}
+
+// ModelAttributes returns the value of the "model_attributes" field in the mutation.
+func (m *AccountMutation) ModelAttributes() (r domain.ModelAttributes, exists bool) {
+	v := m.model_attributes
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldModelAttributes returns the old "model_attributes" field's value of the Account entity.
+// If the Account object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *AccountMutation) OldModelAttributes(ctx context.Context) (v domain.ModelAttributes, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldModelAttributes is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldModelAttributes requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldModelAttributes: %w", err)
+	}
+	return oldValue.ModelAttributes, nil
+}
+
+// ClearModelAttributes clears the value of the "model_attributes" field.
+func (m *AccountMutation) ClearModelAttributes() {
+	m.model_attributes = nil
+	m.clearedFields[account.FieldModelAttributes] = struct{}{}
+}
+
+// ModelAttributesCleared returns if the "model_attributes" field was cleared in this mutation.
+func (m *AccountMutation) ModelAttributesCleared() bool {
+	_, ok := m.clearedFields[account.FieldModelAttributes]
+	return ok
+}
+
+// ResetModelAttributes resets all changes to the "model_attributes" field.
+func (m *AccountMutation) ResetModelAttributes() {
+	m.model_attributes = nil
+	delete(m.clearedFields, account.FieldModelAttributes)
 }
 
 // SetProxyID sets the "proxy_id" field.
@@ -4096,7 +4146,7 @@ func (m *AccountMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *AccountMutation) Fields() []string {
-	fields := make([]string, 0, 29)
+	fields := make([]string, 0, 30)
 	if m.created_at != nil {
 		fields = append(fields, account.FieldCreatedAt)
 	}
@@ -4123,6 +4173,9 @@ func (m *AccountMutation) Fields() []string {
 	}
 	if m.extra != nil {
 		fields = append(fields, account.FieldExtra)
+	}
+	if m.model_attributes != nil {
+		fields = append(fields, account.FieldModelAttributes)
 	}
 	if m.proxy != nil {
 		fields = append(fields, account.FieldProxyID)
@@ -4210,6 +4263,8 @@ func (m *AccountMutation) Field(name string) (ent.Value, bool) {
 		return m.Credentials()
 	case account.FieldExtra:
 		return m.Extra()
+	case account.FieldModelAttributes:
+		return m.ModelAttributes()
 	case account.FieldProxyID:
 		return m.ProxyID()
 	case account.FieldProxyFallbackOriginID:
@@ -4277,6 +4332,8 @@ func (m *AccountMutation) OldField(ctx context.Context, name string) (ent.Value,
 		return m.OldCredentials(ctx)
 	case account.FieldExtra:
 		return m.OldExtra(ctx)
+	case account.FieldModelAttributes:
+		return m.OldModelAttributes(ctx)
 	case account.FieldProxyID:
 		return m.OldProxyID(ctx)
 	case account.FieldProxyFallbackOriginID:
@@ -4388,6 +4445,13 @@ func (m *AccountMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetExtra(v)
+		return nil
+	case account.FieldModelAttributes:
+		v, ok := value.(domain.ModelAttributes)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetModelAttributes(v)
 		return nil
 	case account.FieldProxyID:
 		v, ok := value.(int64)
@@ -4628,6 +4692,9 @@ func (m *AccountMutation) ClearedFields() []string {
 	if m.FieldCleared(account.FieldNotes) {
 		fields = append(fields, account.FieldNotes)
 	}
+	if m.FieldCleared(account.FieldModelAttributes) {
+		fields = append(fields, account.FieldModelAttributes)
+	}
 	if m.FieldCleared(account.FieldProxyID) {
 		fields = append(fields, account.FieldProxyID)
 	}
@@ -4689,6 +4756,9 @@ func (m *AccountMutation) ClearField(name string) error {
 		return nil
 	case account.FieldNotes:
 		m.ClearNotes()
+		return nil
+	case account.FieldModelAttributes:
+		m.ClearModelAttributes()
 		return nil
 	case account.FieldProxyID:
 		m.ClearProxyID()
@@ -4766,6 +4836,9 @@ func (m *AccountMutation) ResetField(name string) error {
 		return nil
 	case account.FieldExtra:
 		m.ResetExtra()
+		return nil
+	case account.FieldModelAttributes:
+		m.ResetModelAttributes()
 		return nil
 	case account.FieldProxyID:
 		m.ResetProxyID()

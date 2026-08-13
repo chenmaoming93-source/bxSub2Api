@@ -45,11 +45,7 @@ const usageLogInsertColumns = `
 	inbound_endpoint, upstream_endpoint, cache_ttl_overridden, channel_id,
 	model_mapping_chain, billing_tier, billing_mode, account_stats_cost, created_at`
 
-const rawUsageLogModelColumn = "model"
-
-// rawUsageLogModelColumn preserves the exact stored usage_logs.model semantics for direct filters.
-// Historical rows may contain upstream/billing model values, while newer rows store requested_model.
-// Requested/upstream/mapping analytics must use resolveModelDimensionExpression instead.
+const usageLogRequestedModelExpr = "COALESCE(NULLIF(TRIM(requested_model), ''), model)"
 
 // usageLogSuccessFilterUL 用于把"失败请求 usage log"（tokens=0、cost=0、不计费的占位记录）
 // 从统计性聚合中排除，避免污染 Dashboard / 用量拆分等指标。
@@ -83,14 +79,13 @@ func safeDateFormat(granularity string) string {
 	return "%Y-%m-%d"
 }
 
-// appendRawUsageLogModelWhereCondition keeps direct model filters on the raw model column for backward
-// compatibility with historical rows. Requested/upstream analytics must use
-// resolveModelDimensionExpression instead.
-func appendRawUsageLogModelWhereCondition(conditions []string, args []any, model string) ([]string, []any) {
+// appendUsageLogRequestedModelWhereCondition interprets the legacy HTTP model
+// filter as the client-requested model/route alias, with historical fallback.
+func appendUsageLogRequestedModelWhereCondition(conditions []string, args []any, model string) ([]string, []any) {
 	if strings.TrimSpace(model) == "" {
 		return conditions, args
 	}
-	conditions = append(conditions, fmt.Sprintf("%s = ?/*%d*/", rawUsageLogModelColumn, len(args)+1))
+	conditions = append(conditions, fmt.Sprintf("%s = ?/*%d*/", usageLogRequestedModelExpr, len(args)+1))
 	args = append(args, model)
 	return conditions, args
 }
@@ -113,14 +108,11 @@ func appendUsageLogBillingModeWhereCondition(conditions []string, args []any, bi
 	return conditions, args
 }
 
-// appendRawUsageLogModelQueryFilter keeps direct model filters on the raw model column for backward
-// compatibility with historical rows. Requested/upstream analytics must use
-// resolveModelDimensionExpression instead.
-func appendRawUsageLogModelQueryFilter(query string, args []any, model string) (string, []any) {
+func appendUsageLogRequestedModelQueryFilter(query string, args []any, model string) (string, []any) {
 	if strings.TrimSpace(model) == "" {
 		return query, args
 	}
-	query += fmt.Sprintf(" AND %s = ?/*%d*/", rawUsageLogModelColumn, len(args)+1)
+	query += fmt.Sprintf(" AND %s = ?/*%d*/", usageLogRequestedModelExpr, len(args)+1)
 	args = append(args, model)
 	return query, args
 }
@@ -1417,7 +1409,7 @@ func (r *usageLogRepository) GetModelStatsAggregated(ctx context.Context, modelN
 			COALESCE(AVG(COALESCE(duration_ms, 0)), 0) as avg_duration_ms
 		FROM usage_logs
 		WHERE %s = ? AND created_at >= ? AND created_at < ?
-	`, rawUsageLogModelColumn)
+	`, usageLogRequestedModelExpr)
 
 	var stats usagestats.UsageStats
 	if err := scanSingleRow(
@@ -1541,7 +1533,7 @@ func (r *usageLogRepository) ListByAccountAndTimeRange(ctx context.Context, acco
 }
 
 func (r *usageLogRepository) ListByModelAndTimeRange(ctx context.Context, modelName string, startTime, endTime time.Time) ([]service.UsageLog, *pagination.PaginationResult, error) {
-	query := fmt.Sprintf("SELECT %s FROM usage_logs WHERE %s = ? AND created_at >= ? AND created_at < ? ORDER BY id DESC LIMIT 10000", usageLogSelectColumns, rawUsageLogModelColumn)
+	query := fmt.Sprintf("SELECT %s FROM usage_logs WHERE %s = ? AND created_at >= ? AND created_at < ? ORDER BY id DESC LIMIT 10000", usageLogSelectColumns, usageLogRequestedModelExpr)
 	logs, err := r.queryUsageLogs(ctx, query, modelName, startTime, endTime)
 	return logs, nil, err
 }
@@ -2301,7 +2293,7 @@ func (r *usageLogRepository) ListWithFilters(ctx context.Context, params paginat
 		conditions = append(conditions, fmt.Sprintf("group_id = ?/*%d*/", len(args)+1))
 		args = append(args, filters.GroupID)
 	}
-	conditions, args = appendRawUsageLogModelWhereCondition(conditions, args, filters.Model)
+	conditions, args = appendUsageLogRequestedModelWhereCondition(conditions, args, filters.Model)
 	conditions, args = appendRequestTypeOrStreamWhereCondition(conditions, args, filters.RequestType, filters.Stream)
 	if filters.BillingType != nil {
 		conditions = append(conditions, fmt.Sprintf("billing_type = ?/*%d*/", len(args)+1))
@@ -2566,7 +2558,7 @@ func (r *usageLogRepository) GetUsageTrendWithFilters(ctx context.Context, start
 		query += fmt.Sprintf(" AND group_id = ?/*%d*/", len(args)+1)
 		args = append(args, groupID)
 	}
-	query, args = appendRawUsageLogModelQueryFilter(query, args, model)
+	query, args = appendUsageLogRequestedModelQueryFilter(query, args, model)
 	query, args = appendRequestTypeOrStreamQueryFilter(query, args, requestType, stream)
 	if billingType != nil {
 		query += fmt.Sprintf(" AND billing_type = ?/*%d*/", len(args)+1)
@@ -2951,7 +2943,7 @@ func (r *usageLogRepository) GetAllGroupUsageSummary(ctx context.Context, todayS
 
 // resolveModelDimensionExpression maps model source type to a safe SQL expression.
 func resolveModelDimensionExpression(modelType string) string {
-	requestedExpr := "COALESCE(NULLIF(TRIM(requested_model), ''), model)"
+	requestedExpr := usageLogRequestedModelExpr
 	switch usagestats.NormalizeModelSource(modelType) {
 	case usagestats.ModelSourceUpstream:
 		return fmt.Sprintf("COALESCE(NULLIF(TRIM(upstream_model), ''), %s)", requestedExpr)
@@ -3030,7 +3022,7 @@ func (r *usageLogRepository) GetStatsWithFilters(ctx context.Context, filters Us
 		conditions = append(conditions, fmt.Sprintf("group_id = ?/*%d*/", len(args)+1))
 		args = append(args, filters.GroupID)
 	}
-	conditions, args = appendRawUsageLogModelWhereCondition(conditions, args, filters.Model)
+	conditions, args = appendUsageLogRequestedModelWhereCondition(conditions, args, filters.Model)
 	conditions, args = appendRequestTypeOrStreamWhereCondition(conditions, args, filters.RequestType, filters.Stream)
 	if filters.BillingType != nil {
 		conditions = append(conditions, fmt.Sprintf("billing_type = ?/*%d*/", len(args)+1))
@@ -3195,7 +3187,7 @@ func (r *usageLogRepository) getEndpointStatsByColumnWithFilters(ctx context.Con
 		query += fmt.Sprintf(" AND group_id = ?/*%d*/", len(args)+1)
 		args = append(args, groupID)
 	}
-	query, args = appendRawUsageLogModelQueryFilter(query, args, model)
+	query, args = appendUsageLogRequestedModelQueryFilter(query, args, model)
 	query, args = appendRequestTypeOrStreamQueryFilter(query, args, requestType, stream)
 	if billingType != nil {
 		query += fmt.Sprintf(" AND billing_type = ?/*%d*/", len(args)+1)
@@ -3266,7 +3258,7 @@ func (r *usageLogRepository) getEndpointPathStatsWithFilters(ctx context.Context
 		query += fmt.Sprintf(" AND group_id = ?/*%d*/", len(args)+1)
 		args = append(args, groupID)
 	}
-	query, args = appendRawUsageLogModelQueryFilter(query, args, model)
+	query, args = appendUsageLogRequestedModelQueryFilter(query, args, model)
 	query, args = appendRequestTypeOrStreamQueryFilter(query, args, requestType, stream)
 	if billingType != nil {
 		query += fmt.Sprintf(" AND billing_type = ?/*%d*/", len(args)+1)
@@ -3546,7 +3538,7 @@ func usageLogOrderBy(params pagination.PaginationParams) string {
 	var column string
 	switch sortBy {
 	case "model":
-		column = "COALESCE(NULLIF(TRIM(requested_model), ''), model)"
+		column = usageLogRequestedModelExpr
 	case "created_at":
 		column = "created_at"
 	default:

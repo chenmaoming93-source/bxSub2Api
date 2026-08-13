@@ -1012,10 +1012,10 @@ func buildOpsErrorLogsWhere(filter *service.OpsErrorLogFilter) (string, []any) {
 	if m := strings.TrimSpace(filter.Model); m != "" {
 		if filter.ModelFuzzy {
 			args = append(args, "%"+escapeLikePattern(m)+"%")
-			clauses = append(clauses, "LOWER(COALESCE(e.requested_model, e.model, '')) LIKE LOWER(?)")
+			clauses = append(clauses, "LOWER(COALESCE(NULLIF(TRIM(e.requested_model), ''), e.model)) LIKE LOWER(?)")
 		} else {
 			args = append(args, m)
-			clauses = append(clauses, "COALESCE(e.requested_model, e.model, '') = ?")
+			clauses = append(clauses, "COALESCE(NULLIF(TRIM(e.requested_model), ''), e.model) = ?")
 		}
 	}
 	if filter.ExcludeCountTokens {

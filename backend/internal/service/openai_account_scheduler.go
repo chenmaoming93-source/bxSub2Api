@@ -1086,7 +1086,13 @@ func (s *defaultOpenAIAccountScheduler) isAccountRequestCompatible(ctx context.C
 	if paused, _ := shouldAutoPauseOpenAIAccountByQuota(ctx, account); paused {
 		return false
 	}
-	if req.RequestedModel != "" && !account.IsModelSupported(req.RequestedModel) {
+	if _, isRouteCandidate := routeAccountIDsFromContext(ctx)[account.ID]; isRouteCandidate {
+		// 模型路由候选账号：模型名由账号自身 model_mapping 决定，客户端请求名
+		// （路由别名）不需要命中账号白名单。
+		if account.FirstModelMappingValue() == "" {
+			return false
+		}
+	} else if req.RequestedModel != "" && !account.IsModelSupported(req.RequestedModel) {
 		return false
 	}
 	if req.GroupID != nil && s != nil && s.service != nil &&

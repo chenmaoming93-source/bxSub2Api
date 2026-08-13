@@ -16,6 +16,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/predicate"
 	"github.com/Wei-Shaw/sub2api/ent/proxy"
 	"github.com/Wei-Shaw/sub2api/ent/usagelog"
+	"github.com/Wei-Shaw/sub2api/internal/domain"
 )
 
 // AccountUpdate is the builder for updating Account entities.
@@ -128,6 +129,18 @@ func (_u *AccountUpdate) SetCredentials(v map[string]interface{}) *AccountUpdate
 // SetExtra sets the "extra" field.
 func (_u *AccountUpdate) SetExtra(v map[string]interface{}) *AccountUpdate {
 	_u.mutation.SetExtra(v)
+	return _u
+}
+
+// SetModelAttributes sets the "model_attributes" field.
+func (_u *AccountUpdate) SetModelAttributes(v domain.ModelAttributes) *AccountUpdate {
+	_u.mutation.SetModelAttributes(v)
+	return _u
+}
+
+// ClearModelAttributes clears the value of the "model_attributes" field.
+func (_u *AccountUpdate) ClearModelAttributes() *AccountUpdate {
+	_u.mutation.ClearModelAttributes()
 	return _u
 }
 
@@ -732,6 +745,12 @@ func (_u *AccountUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.Extra(); ok {
 		_spec.SetField(account.FieldExtra, field.TypeJSON, value)
 	}
+	if value, ok := _u.mutation.ModelAttributes(); ok {
+		_spec.SetField(account.FieldModelAttributes, field.TypeJSON, value)
+	}
+	if _u.mutation.ModelAttributesCleared() {
+		_spec.ClearField(account.FieldModelAttributes, field.TypeJSON)
+	}
 	if value, ok := _u.mutation.ProxyFallbackOriginID(); ok {
 		_spec.SetField(account.FieldProxyFallbackOriginID, field.TypeInt64, value)
 	}
@@ -1091,6 +1110,18 @@ func (_u *AccountUpdateOne) SetCredentials(v map[string]interface{}) *AccountUpd
 // SetExtra sets the "extra" field.
 func (_u *AccountUpdateOne) SetExtra(v map[string]interface{}) *AccountUpdateOne {
 	_u.mutation.SetExtra(v)
+	return _u
+}
+
+// SetModelAttributes sets the "model_attributes" field.
+func (_u *AccountUpdateOne) SetModelAttributes(v domain.ModelAttributes) *AccountUpdateOne {
+	_u.mutation.SetModelAttributes(v)
+	return _u
+}
+
+// ClearModelAttributes clears the value of the "model_attributes" field.
+func (_u *AccountUpdateOne) ClearModelAttributes() *AccountUpdateOne {
+	_u.mutation.ClearModelAttributes()
 	return _u
 }
 
@@ -1724,6 +1755,12 @@ func (_u *AccountUpdateOne) sqlSave(ctx context.Context) (_node *Account, err er
 	}
 	if value, ok := _u.mutation.Extra(); ok {
 		_spec.SetField(account.FieldExtra, field.TypeJSON, value)
+	}
+	if value, ok := _u.mutation.ModelAttributes(); ok {
+		_spec.SetField(account.FieldModelAttributes, field.TypeJSON, value)
+	}
+	if _u.mutation.ModelAttributesCleared() {
+		_spec.ClearField(account.FieldModelAttributes, field.TypeJSON)
 	}
 	if value, ok := _u.mutation.ProxyFallbackOriginID(); ok {
 		_spec.SetField(account.FieldProxyFallbackOriginID, field.TypeInt64, value)

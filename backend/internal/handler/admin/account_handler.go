@@ -101,6 +101,7 @@ type CreateAccountRequest struct {
 	Type                    string         `json:"type" binding:"required,oneof=oauth setup-token apikey upstream bedrock service_account"`
 	Credentials             map[string]any `json:"credentials" binding:"required"`
 	Extra                   map[string]any `json:"extra"`
+	ModelAttributes         domain.ModelAttributes `json:"model_attributes"` // 模型基本属性 map；nil = 未配置
 	ProxyID                 *int64         `json:"proxy_id"`
 	Concurrency             int            `json:"concurrency"`
 	Priority                int            `json:"priority"`
@@ -120,6 +121,7 @@ type UpdateAccountRequest struct {
 	Type                    string         `json:"type" binding:"omitempty,oneof=oauth setup-token apikey upstream bedrock service_account"`
 	Credentials             map[string]any `json:"credentials"`
 	Extra                   map[string]any `json:"extra"`
+	ModelAttributes         domain.ModelAttributes `json:"model_attributes"` // 模型基本属性 map；nil = 不改动，空 map = 清空
 	ProxyID                 *int64         `json:"proxy_id"`
 	Concurrency             *int           `json:"concurrency"`
 	Priority                *int           `json:"priority"`
@@ -558,6 +560,7 @@ func (h *AccountHandler) Create(c *gin.Context) {
 			Type:                  req.Type,
 			Credentials:           req.Credentials,
 			Extra:                 req.Extra,
+			ModelAttributes:       req.ModelAttributes,
 			ProxyID:               req.ProxyID,
 			Concurrency:           req.Concurrency,
 			Priority:              req.Priority,
@@ -636,6 +639,7 @@ func (h *AccountHandler) Update(c *gin.Context) {
 		Type:                  req.Type,
 		Credentials:           req.Credentials,
 		Extra:                 req.Extra,
+		ModelAttributes:       req.ModelAttributes,
 		ProxyID:               req.ProxyID,
 		Concurrency:           req.Concurrency, // 指针类型，nil 表示未提供
 		Priority:              req.Priority,    // 指针类型，nil 表示未提供

@@ -22,11 +22,11 @@ func TestTokenQuotaModelRoutingIntegrationContract(t *testing.T) {
 		t.Fatalf("parse candidate routing: %v", err)
 	}
 	candidates := modern.Match("chat")
-	if len(candidates) != 2 || candidates[0].Model != "claude-sonnet" || candidates[1].Model != "gpt-5" {
+	if len(candidates) != 2 || candidates[0].AccountIDs[0] != 8 || candidates[1].AccountIDs[0] != 4 {
 		t.Fatalf("candidate priority changed: %+v", candidates)
 	}
 
-	upstream := candidates[0].Model
+	upstream := "claude-sonnet"
 	usage := &service.UsageLog{
 		Model:               "chat",
 		RequestedModel:      "chat",

@@ -1,10 +1,11 @@
 export interface RoutingEditorAccount {
   id: number
   name: string
+  /** 该账号绑定的上游模型名（model_mapping 排序后第一个非空 key，与后端 FirstModelMappingKey 语义一致） */
+  upstreamModel?: string
 }
 
 export interface RoutingEditorCandidate {
-  model: string
   accounts: RoutingEditorAccount[]
   priority: number | string
 }
@@ -14,44 +15,8 @@ export interface RoutingEditorRule {
   candidates: RoutingEditorCandidate[]
 }
 
-export interface RoutingEditorModel {
-  id: string
-  display_name?: string
-}
-
-export function intersectAccountModels(
-  modelLists: ReadonlyArray<ReadonlyArray<RoutingEditorModel>>
-): RoutingEditorModel[] {
-  if (modelLists.length === 0 || modelLists.some(models => models.length === 0)) return []
-
-  const normalizedLists = modelLists.map(models => {
-    const byID = new Map<string, RoutingEditorModel>()
-    for (const model of models) {
-      const id = model.id.trim()
-      if (!id) continue
-      const existing = byID.get(id)
-      if (!existing) {
-        byID.set(id, model.display_name ? { id, display_name: model.display_name } : { id })
-      } else if (!existing.display_name && model.display_name) {
-        byID.set(id, { id, display_name: model.display_name })
-      }
-    }
-    return byID
-  })
-
-  const [first, ...rest] = normalizedLists
-  return [...first.values()]
-    .filter(model => rest.every(models => models.has(model.id)))
-    .map(model => {
-      if (model.display_name) return model
-      const displayName = rest.map(models => models.get(model.id)?.display_name).find(Boolean)
-      return displayName ? { id: model.id, display_name: displayName } : model
-    })
-    .sort((left, right) => left.id.localeCompare(right.id))
-}
-
 export function createEmptyRoutingCandidate(): RoutingEditorCandidate {
-  return { model: '', accounts: [], priority: 0 }
+  return { accounts: [], priority: 0 }
 }
 
 export function addRoutingCandidate(rule: RoutingEditorRule): void {
@@ -60,4 +25,22 @@ export function addRoutingCandidate(rule: RoutingEditorRule): void {
     ? 0
     : Math.max(...rule.candidates.map(item => Number(item.priority) || 0)) + 1
   rule.candidates.push(candidate)
+}
+
+/**
+ * 从账号 credentials 的 model_mapping 中提取路由用上游模型名。
+ * 语义与后端 Account.FirstModelMappingKey 一致：取去空白后按字典序升序的第一个非空 key。
+ * model_mapping 形如 { "请求模型/别名": "上游模型" }，路由绑定取 key 作为该账号的上游模型。
+ */
+export function extractUpstreamModel(credentials: Record<string, unknown> | undefined): string | undefined {
+  const raw = credentials?.model_mapping
+  if (!raw || typeof raw !== 'object') return undefined
+  const keys: string[] = []
+  for (const key of Object.keys(raw as Record<string, unknown>)) {
+    const trimmed = key.trim()
+    if (trimmed) keys.push(trimmed)
+  }
+  if (keys.length === 0) return undefined
+  keys.sort()
+  return keys[0]
 }

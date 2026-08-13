@@ -860,6 +860,17 @@ type GatewayDynamicTokenStatisticsConfig struct {
 	FlushIntervalMS int `mapstructure:"flush_interval_ms"`
 	// RedisTimeoutMS is the timeout of one Redis accounting operation.
 	RedisTimeoutMS int `mapstructure:"redis_timeout_ms"`
+	// TotalQuotaCheckTimeoutMS is the total timeout budget shared by all
+	// quota-rule counter reads within one request check (milliseconds). A
+	// request matching multiple rules must finish all sequential reads within
+	// this budget; any rule read that exceeds the remaining budget fails open.
+	// 0 or missing falls back to the default (300ms).
+	TotalQuotaCheckTimeoutMS int `mapstructure:"total_quota_check_timeout"`
+	// SingleQuotaCheckTimeoutMS is the per-rule timeout for one quota counter
+	// read (milliseconds). It is bounded by the remaining total budget, so the
+	// effective deadline of a single rule read is min(single, remaining total).
+	// 0 or missing falls back to the default (50ms).
+	SingleQuotaCheckTimeoutMS int `mapstructure:"single_quota_check_timeout"`
 	// RedisRetryCount is the retry count after a Redis accounting failure.
 	RedisRetryCount int `mapstructure:"redis_retry_count"`
 	// ShardCount distributes counters across Redis hash slots and dirty tracking.
@@ -898,6 +909,21 @@ func validateGatewayDynamicTokenStatistics(c GatewayDynamicTokenStatisticsConfig
 	for _, field := range positive {
 		if field.value <= 0 {
 			return fmt.Errorf("invalid gateway.dynamic_token_statistics.%s: value=%d, expected positive integer", field.name, field.value)
+		}
+	}
+	// total_quota_check_timeout / single_quota_check_timeout are optional:
+	// 0 or missing means the runtime default is used, so they only need to be
+	// non-negative here to keep existing deployments loadable.
+	optionalNonNegative := []struct {
+		name  string
+		value int
+	}{
+		{"total_quota_check_timeout", c.TotalQuotaCheckTimeoutMS},
+		{"single_quota_check_timeout", c.SingleQuotaCheckTimeoutMS},
+	}
+	for _, field := range optionalNonNegative {
+		if field.value < 0 {
+			return fmt.Errorf("invalid gateway.dynamic_token_statistics.%s: value=%d, expected non-negative integer", field.name, field.value)
 		}
 	}
 	if c.RedisRetryCount < 0 {
@@ -2106,6 +2132,8 @@ func setDefaults() {
 	viper.SetDefault("gateway.dynamic_token_statistics.flush_interval_ms", 50)
 	viper.SetDefault("gateway.dynamic_token_statistics.redis_timeout_ms", 300)
 	viper.SetDefault("gateway.dynamic_token_statistics.redis_retry_count", 2)
+	viper.SetDefault("gateway.dynamic_token_statistics.total_quota_check_timeout", 300)
+	viper.SetDefault("gateway.dynamic_token_statistics.single_quota_check_timeout", 50)
 	viper.SetDefault("gateway.dynamic_token_statistics.shard_count", 256)
 	viper.SetDefault("gateway.dynamic_token_statistics.sync_interval_minutes", 5)
 	viper.SetDefault("gateway.dynamic_token_statistics.mysql_batch_size", 500)

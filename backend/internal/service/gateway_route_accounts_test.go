@@ -35,7 +35,7 @@ func TestMergeExplicitRouteAccountsDoesNotRequireGroupMembership(t *testing.T) {
 	svc := &GatewayService{accountRepo: explicitRouteAccountRepo{accounts: map[int64]*Account{2: routed}}}
 
 	accounts, err := svc.mergeExplicitRouteAccounts(context.Background(), nil, []domain.ModelRouteCandidate{
-		{Model: "deepseek-v4-flash", AccountIDs: []int64{2}},
+		{AccountIDs: []int64{2}},
 	})
 
 	require.NoError(t, err)
@@ -48,7 +48,7 @@ func TestMergeExplicitRouteAccountsKeepsRuntimeSchedulability(t *testing.T) {
 	svc := &GatewayService{accountRepo: explicitRouteAccountRepo{accounts: map[int64]*Account{2: disabled}}}
 
 	accounts, err := svc.mergeExplicitRouteAccounts(context.Background(), nil, []domain.ModelRouteCandidate{
-		{Model: "deepseek-v4-flash", AccountIDs: []int64{2}},
+		{AccountIDs: []int64{2}},
 	})
 
 	require.NoError(t, err)

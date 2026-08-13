@@ -3,11 +3,22 @@ package tokenstat
 import (
 	"context"
 	"errors"
+	"reflect"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
 )
+
+type trackingQuotaReader struct {
+	values map[string]int64
+	fields []string
+}
+
+func (r *trackingQuotaReader) Read(_ context.Context, _ string, field string) (int64, error) {
+	r.fields = append(r.fields, field)
+	return r.values[field], nil
+}
 
 type quotaReaderStub struct {
 	value int64
@@ -62,4 +73,71 @@ func TestDynamicTokenQuotaTwoStageMatching(t *testing.T) {
 	})
 	require.Len(t, checker.Check(context.Background(), time.Now(), user), 1, "pre-scheduling only matches known dimensions")
 	require.Len(t, checker.Check(context.Background(), time.Now(), withAccount), 2, "post-selection matches account dimensions")
+}
+
+func TestDynamicTokenQuotaWildcardUsesConcreteRequestIdentityWithoutMutatingRule(t *testing.T) {
+	codes := []DimensionCode{DimensionGroupID, DimensionRouteAlias, DimensionAccountID}
+	ruleValues := map[DimensionCode]DimensionValue{
+		DimensionGroupID: Int64Value(3), DimensionRouteAlias: WildcardValue(), DimensionAccountID: Int64Value(18),
+	}
+	ruleSnapshot := map[DimensionCode]DimensionValue{
+		DimensionGroupID: Int64Value(3), DimensionRouteAlias: WildcardValue(), DimensionAccountID: Int64Value(18),
+	}
+	claude := map[DimensionCode]DimensionValue{
+		DimensionGroupID: Int64Value(3), DimensionRouteAlias: StringValue("claude-code"), DimensionAccountID: Int64Value(18),
+	}
+	gpt := map[DimensionCode]DimensionValue{
+		DimensionGroupID: Int64Value(3), DimensionRouteAlias: StringValue("gpt-code"), DimensionAccountID: Int64Value(18),
+	}
+	claudeID, _ := BuildDimensionIdentity(codes, claude)
+	gptID, _ := BuildDimensionIdentity(codes, gpt)
+	reader := &trackingQuotaReader{values: map[string]int64{
+		claudeID.HashHex() + ":total_tokens": 600_000,
+		gptID.HashHex() + ":total_tokens":    450_000,
+	}}
+	checker := NewQuotaChecker(reader, 16)
+	checker.ReplaceRules([]QuotaRule{{
+		ID: 1, ProjectionID: 9, DimensionCodes: codes, DimensionValues: ruleValues,
+		MetricCode: MetricTotalTokens, PeriodType: PeriodDay, LimitValue: 1_000_000, Mode: QuotaModeEnforce,
+	}})
+
+	claudeDecision := checker.Check(context.Background(), time.Now(), claude)
+	gptDecision := checker.Check(context.Background(), time.Now(), gpt)
+	require.Len(t, claudeDecision, 1)
+	require.Len(t, gptDecision, 1)
+	require.Equal(t, int64(600_000), claudeDecision[0].Used)
+	require.Equal(t, int64(450_000), gptDecision[0].Used)
+	require.False(t, claudeDecision[0].Enforced)
+	require.False(t, gptDecision[0].Enforced)
+	require.NotEqual(t, reader.fields[0], reader.fields[1], "different concrete route aliases must use different counters")
+	require.True(t, reflect.DeepEqual(ruleSnapshot, ruleValues), "wildcard rule values must not be rewritten")
+}
+
+func TestDynamicTokenQuotaWildcardRequiresActualValueAndDeduplicatesReads(t *testing.T) {
+	codes := []DimensionCode{DimensionGroupID, DimensionRouteAlias}
+	rule := QuotaRule{
+		ProjectionID: 9, DimensionCodes: codes,
+		DimensionValues: map[DimensionCode]DimensionValue{DimensionGroupID: Int64Value(3), DimensionRouteAlias: WildcardValue()},
+		MetricCode:      MetricTotalTokens, PeriodType: PeriodDay, LimitValue: 100, Mode: QuotaModeEnforce,
+	}
+	reader := &trackingQuotaReader{values: map[string]int64{}}
+	checker := NewQuotaChecker(reader, 16)
+	second := rule
+	second.ID = 2
+	rule.ID = 1
+	checker.ReplaceRules([]QuotaRule{rule, second})
+	require.Empty(t, checker.Check(context.Background(), time.Now(), map[DimensionCode]DimensionValue{DimensionGroupID: Int64Value(3)}))
+	require.Empty(t, reader.fields)
+
+	decisions := checker.Check(context.Background(), time.Now(), map[DimensionCode]DimensionValue{
+		DimensionGroupID: Int64Value(3), DimensionRouteAlias: StringValue("deepseek"),
+	})
+	require.Len(t, decisions, 2)
+	require.Len(t, reader.fields, 1, "same concrete lookup identity is read once per request")
+}
+
+func TestUsageEventRejectsWildcardDimension(t *testing.T) {
+	event := UsageEvent{OccurredAt: time.Now(), Dimensions: map[DimensionCode]DimensionValue{DimensionRouteAlias: WildcardValue()}}
+	require.Error(t, event.Validate())
+	require.NoError(t, validateQuotaDimensionValue(DimensionDefinition{Code: DimensionRouteAlias, ValueType: ValueTypeString}, WildcardValue()))
 }

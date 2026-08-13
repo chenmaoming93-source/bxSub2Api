@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/Wei-Shaw/sub2api/internal/domain"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/response"
 	"github.com/Wei-Shaw/sub2api/internal/service"
 	"github.com/gin-gonic/gin"
@@ -17,6 +18,7 @@ type ExternalProvisioningHandler struct {
 	svc interface {
 		EnsurePlatformKey(ctx context.Context, input service.EnsurePlatformKeyInput) (*service.EnsurePlatformKeyResult, error)
 		ListGroupModelRoutes(ctx context.Context, input service.ListGroupModelRoutesInput) ([]service.GroupModelRouteProjection, error)
+		ListGroupModelRoutesWithAttributes(ctx context.Context, input service.ListGroupModelRoutesInput) ([]service.GroupModelRoutesWithAttributesProjection, error)
 	}
 }
 
@@ -24,6 +26,7 @@ type ExternalProvisioningHandler struct {
 func NewExternalProvisioningHandler(svc interface {
 	EnsurePlatformKey(ctx context.Context, input service.EnsurePlatformKeyInput) (*service.EnsurePlatformKeyResult, error)
 	ListGroupModelRoutes(ctx context.Context, input service.ListGroupModelRoutesInput) ([]service.GroupModelRouteProjection, error)
+	ListGroupModelRoutesWithAttributes(ctx context.Context, input service.ListGroupModelRoutesInput) ([]service.GroupModelRoutesWithAttributesProjection, error)
 }) *ExternalProvisioningHandler {
 	return &ExternalProvisioningHandler{svc: svc}
 }
@@ -40,6 +43,22 @@ type GroupModelRouteResponse struct {
 type ListGroupModelRoutesResponse struct {
 	GroupName string                    `json:"group_name"`
 	Routes    []GroupModelRouteResponse `json:"routes"`
+}
+
+// GroupModelRouteItemResponse 是带属性的上游模型条目：模型名 + 该账号的模型基本属性。
+type GroupModelRouteItemResponse struct {
+	Model      string                 `json:"model"`
+	Attributes domain.ModelAttributes `json:"attributes"`
+}
+
+type GroupModelRouteWithAttributesResponse struct {
+	RouteAlias     string                        `json:"route_alias"`
+	UpstreamModels []GroupModelRouteItemResponse `json:"upstream_models"`
+}
+
+type ListGroupModelRoutesWithAttributesResponse struct {
+	GroupName string                                  `json:"group_name"`
+	Routes    []GroupModelRouteWithAttributesResponse `json:"routes"`
 }
 
 func (h *ExternalProvisioningHandler) ListGroupModelRoutes(c *gin.Context) {
@@ -72,6 +91,63 @@ func (h *ExternalProvisioningHandler) ListGroupModelRoutes(c *gin.Context) {
 	}
 	auditGroupRoutes(c, req.GroupName, "success", "")
 	response.Success(c, ListGroupModelRoutesResponse{GroupName: req.GroupName, Routes: items})
+}
+
+// ListGroupModelRoutesWithAttributes handles POST /api/v1/integrations/model-routes/list-attributes.
+// 与 ListGroupModelRoutes 逻辑一致，但 upstream_models 为 {model, attributes} 对象列表：
+// model 为上游模型名，attributes 为该账号的模型基本属性（未配置时为 {}）；
+// 不做模型名去重（每个候选账号一条，同名模型可重复）。
+func (h *ExternalProvisioningHandler) ListGroupModelRoutesWithAttributes(c *gin.Context) {
+	var req ListGroupModelRoutesRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, http.StatusBadRequest, "INVALID_REQUEST")
+		return
+	}
+	req.GroupName = strings.TrimSpace(req.GroupName)
+	if req.GroupName == "" {
+		response.Error(c, http.StatusBadRequest, "INVALID_REQUEST")
+		return
+	}
+
+	routes, err := h.svc.ListGroupModelRoutesWithAttributes(c.Request.Context(), service.ListGroupModelRoutesInput{GroupName: req.GroupName})
+	if err != nil {
+		if errors.Is(err, service.ErrGroupNotFound) {
+			auditGroupRoutesWithAttributes(c, req.GroupName, "failure", "group_not_found")
+			response.ErrorFrom(c, service.ErrGroupNotFound)
+			return
+		}
+		auditGroupRoutesWithAttributes(c, req.GroupName, "failure", "internal_error")
+		response.InternalError(c, "failed to list group model routes")
+		return
+	}
+
+	items := make([]GroupModelRouteWithAttributesResponse, 0, len(routes))
+	for _, route := range routes {
+		upstream := make([]GroupModelRouteItemResponse, 0, len(route.UpstreamModels))
+		for _, item := range route.UpstreamModels {
+			attributes := item.Attributes
+			if attributes == nil {
+				attributes = domain.ModelAttributes{} // 无属性时输出 {}（非 null）
+			}
+			upstream = append(upstream, GroupModelRouteItemResponse{Model: item.Model, Attributes: attributes})
+		}
+		items = append(items, GroupModelRouteWithAttributesResponse{RouteAlias: route.RouteAlias, UpstreamModels: upstream})
+	}
+	auditGroupRoutesWithAttributes(c, req.GroupName, "success", "")
+	response.Success(c, ListGroupModelRoutesWithAttributesResponse{GroupName: req.GroupName, Routes: items})
+}
+
+func auditGroupRoutesWithAttributes(c *gin.Context, groupName, result, reason string) {
+	attrs := []any{
+		slog.String("event", "provisioning.group_model_routes_list_attributes"),
+		slog.String("group_name", groupName),
+		slog.String("source_ip", clientIP(c)),
+		slog.String("result", result),
+	}
+	if reason != "" {
+		attrs = append(attrs, slog.String("reason", reason))
+	}
+	slog.Info("provisioning_group_model_routes_list_attributes", attrs...)
 }
 
 func auditGroupRoutes(c *gin.Context, groupName, result, reason string) {

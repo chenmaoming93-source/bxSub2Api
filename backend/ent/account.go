@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"github.com/Wei-Shaw/sub2api/ent/account"
 	"github.com/Wei-Shaw/sub2api/ent/proxy"
+	"github.com/Wei-Shaw/sub2api/internal/domain"
 )
 
 // Account is the model entity for the Account schema.
@@ -37,6 +38,8 @@ type Account struct {
 	Credentials map[string]interface{} `json:"credentials,omitempty"`
 	// Extra holds the value of the "extra" field.
 	Extra map[string]interface{} `json:"extra,omitempty"`
+	// Model basic attributes map: {attrName: {description, value}}.
+	ModelAttributes domain.ModelAttributes `json:"model_attributes,omitempty"`
 	// ProxyID holds the value of the "proxy_id" field.
 	ProxyID *int64 `json:"proxy_id,omitempty"`
 	// Original proxy id replaced by expiry-fallback; for manual revert. NULL = not in fallback.
@@ -141,7 +144,7 @@ func (*Account) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case account.FieldCredentials, account.FieldExtra:
+		case account.FieldCredentials, account.FieldExtra, account.FieldModelAttributes:
 			values[i] = new([]byte)
 		case account.FieldAutoPauseOnExpired, account.FieldSchedulable:
 			values[i] = new(sql.NullBool)
@@ -232,6 +235,14 @@ func (_m *Account) assignValues(columns []string, values []any) error {
 			} else if value != nil && len(*value) > 0 {
 				if err := json.Unmarshal(*value, &_m.Extra); err != nil {
 					return fmt.Errorf("unmarshal field extra: %w", err)
+				}
+			}
+		case account.FieldModelAttributes:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field model_attributes", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &_m.ModelAttributes); err != nil {
+					return fmt.Errorf("unmarshal field model_attributes: %w", err)
 				}
 			}
 		case account.FieldProxyID:
@@ -454,6 +465,9 @@ func (_m *Account) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("extra=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Extra))
+	builder.WriteString(", ")
+	builder.WriteString("model_attributes=")
+	builder.WriteString(fmt.Sprintf("%v", _m.ModelAttributes))
 	builder.WriteString(", ")
 	if v := _m.ProxyID; v != nil {
 		builder.WriteString("proxy_id=")

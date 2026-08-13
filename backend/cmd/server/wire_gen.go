@@ -265,7 +265,7 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 	handlerPaymentHandler := handler.NewPaymentHandler(paymentService, paymentConfigService, channelService)
 	paymentWebhookHandler := handler.NewPaymentWebhookHandler(paymentService, registry)
 	availableChannelHandler := handler.NewAvailableChannelHandler(channelService, apiKeyService, settingService)
-	externalProvisioningHandler := provideExternalProvisioningHandler(configConfig, client, userRepository, apiKeyRepository, apiKeyService, groupRepository)
+	externalProvisioningHandler := provideExternalProvisioningHandler(configConfig, client, userRepository, apiKeyRepository, apiKeyService, groupRepository, accountRepository)
 	externalTokenUsageDimensionLookup := repository.NewExternalTokenUsageDimensionRepository(client)
 	externalTokenUsageCurrentReader := repository.ProvideExternalTokenUsageCurrentReader(redisClient, configConfig)
 	externalTokenUsageService, err := service.ProvideExternalTokenUsageService(externalTokenUsageDimensionLookup, externalTokenUsageCurrentReader, projectionAdminService, configConfig)
@@ -315,14 +315,14 @@ type Application struct {
 	Cleanup func()
 }
 
-func provideExternalProvisioningHandler(cfg *config.Config, client *ent.Client, users service.UserRepository, keys service.APIKeyRepository, apiKeyService *service.APIKeyService, groups service.ExternalProvisioningGroupLookup) *handler.ExternalProvisioningHandler {
+func provideExternalProvisioningHandler(cfg *config.Config, client *ent.Client, users service.UserRepository, keys service.APIKeyRepository, apiKeyService *service.APIKeyService, groups service.ExternalProvisioningGroupLookup, accounts service.AccountRepository) *handler.ExternalProvisioningHandler {
 	platformKeys := service.NewPlatformAPIKeyService(keys, apiKeyService)
 	var directory service.ExternalProvisioningLDAPDirectory
 	if cfg.LDAP.Enabled {
 		directory = ldapauth.NewDefaultLDAPDirectory(cfg.LDAP)
 	}
 	provisioner := service.NewEntUserProvisioningService(client, users, apiKeyService)
-	return handler.NewExternalProvisioningHandler(service.NewExternalProvisioningService(users, directory, provisioner, platformKeys, groups))
+	return handler.NewExternalProvisioningHandler(service.NewExternalProvisioningService(users, directory, provisioner, platformKeys, groups, accounts))
 }
 
 type dynamicTokenStatisticsBootstrap struct{}
@@ -347,11 +347,16 @@ func provideDynamicTokenStatisticsBootstrap(client *ent.Client, db *sql.DB, redi
 	}
 	projections.AttachQuotaChecker(quotaChecker)
 	tokenstat.SetDefaultQuotaChecker(quotaChecker)
-	quotaTimeout := time.Duration(dynamic.RedisTimeoutMS) * time.Millisecond
-	if quotaTimeout <= 0 || quotaTimeout > 50*time.Millisecond {
-		quotaTimeout = 50 * time.Millisecond
+	totalQuotaTimeout := time.Duration(dynamic.TotalQuotaCheckTimeoutMS) * time.Millisecond
+	if totalQuotaTimeout <= 0 {
+		totalQuotaTimeout = 300 * time.Millisecond
 	}
-	tokenstat.SetDefaultQuotaTimeout(quotaTimeout)
+	tokenstat.SetDefaultQuotaTimeout(totalQuotaTimeout)
+	singleQuotaTimeout := time.Duration(dynamic.SingleQuotaCheckTimeoutMS) * time.Millisecond
+	if singleQuotaTimeout <= 0 {
+		singleQuotaTimeout = 50 * time.Millisecond
+	}
+	tokenstat.SetDefaultQuotaSingleTimeout(singleQuotaTimeout)
 	aggregates := tokenstat2.NewRepository(db)
 	syncEngine := tokenstat2.NewSyncEngine(redisClient, aggregates, dynamic.MySQLBatchSize)
 	syncEngine.Start(context.Background(), time.Duration(dynamic.SyncIntervalMinutes)*time.Minute)

@@ -72,16 +72,21 @@
               @click="selectApiKey(k)"
               class="w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700"
             >
-              <span class="truncate">{{ k.name || `#${k.id}` }}</span>
-              <span class="ml-2 text-xs text-gray-400">#{{ k.id }}</span>
+              <span class="block truncate">
+                <span class="font-medium text-gray-800 dark:text-gray-100">{{ k.name || `#${k.id}` }}</span>
+                <span class="ml-2 text-xs text-gray-400">#{{ k.id }}</span>
+              </span>
+              <span class="block truncate font-mono text-xs text-gray-500 dark:text-gray-400">
+                {{ k.masked_key }}<span v-if="k.user_name || k.user_email" class="ml-2 font-sans text-gray-400">{{ k.user_name || k.user_email }}</span>
+              </span>
             </button>
           </div>
         </div>
 
-        <!-- Model Filter -->
+        <!-- Route Alias Filter -->
         <div class="w-full sm:w-auto sm:min-w-[220px]">
-          <label class="input-label">{{ t('usage.model') }}</label>
-          <Select v-model="filters.model" :options="modelOptions" searchable @change="emitChange" />
+          <label class="input-label">{{ t('admin.usage.routeAlias') }}</label>
+          <Select v-model="filters.model" :options="modelOptions" searchable :search-placeholder="t('admin.usage.searchRouteAliasPlaceholder')" @change="emitChange" />
         </div>
 
         <!-- Account Filter -->
@@ -224,7 +229,7 @@ const showAccountDropdown = ref(false)
 let accountSearchTimeout: ReturnType<typeof setTimeout> | null = null
 
 const modelOptions = computed<SelectOption[]>(() => [
-  { value: null, label: t('admin.usage.allModels') },
+  { value: null, label: t('admin.usage.allRouteAliases') },
   ...(props.modelOptions ?? []).map((m) => ({ value: m, label: m })),
 ])
 const groupOptions = ref<SelectOption[]>([{ value: null, label: t('admin.usage.allGroups') }])

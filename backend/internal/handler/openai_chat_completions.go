@@ -3,8 +3,10 @@ package handler
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	pkghttputil "github.com/Wei-Shaw/sub2api/internal/pkg/httputil"
@@ -95,7 +97,8 @@ func (h *OpenAIGatewayHandler) ChatCompletions(c *gin.Context) {
 
 	// 解析渠道级模型映射
 	channelMapping, _ := h.gatewayService.ResolveChannelMappingAndRestrict(c.Request.Context(), apiKey.GroupID, reqModel)
-	routingModel, routingAccountIDs, routed, routeErr := h.gatewayService.ResolveQuotaAllowedGroupRoute(c.Request.Context(), apiKey.Group, reqModel, subject.UserID, nil)
+	routeCtx := c.Request.Context()
+	routingModel, routingAccountIDs, routed, routeErr := h.gatewayService.ResolveQuotaAllowedGroupRoute(routeCtx, apiKey.Group, reqModel, subject.UserID, nil)
 	if routeErr != nil {
 		status, code, message, retryAfter := billingErrorDetails(routeErr)
 		if retryAfter > 0 {
@@ -103,6 +106,15 @@ func (h *OpenAIGatewayHandler) ChatCompletions(c *gin.Context) {
 		}
 		h.handleStreamingAwareError(c, status, code, message, streamStarted)
 		return
+	}
+	// 模型路由命中：候选账号的模型支持由账号自身 model_mapping 决定，而非客户端请求名。
+	// 将候选账号 ID 集合写入 ctx，供 OpenAI 账号选择链路按账号模型判断候选。
+	if routed && len(routingAccountIDs) > 0 {
+		routeIDs := make(map[int64]struct{}, len(routingAccountIDs))
+		for _, id := range routingAccountIDs {
+			routeIDs[id] = struct{}{}
+		}
+		routeCtx = service.WithRouteAccountIDs(routeCtx, routeIDs)
 	}
 
 	if h.errorPassthroughService != nil {
@@ -152,7 +164,7 @@ func (h *OpenAIGatewayHandler) ChatCompletions(c *gin.Context) {
 			}
 			if allExcluded {
 				newModel, newIDs, _, reRouteErr := h.gatewayService.ResolveQuotaAllowedGroupRoute(
-					c.Request.Context(), apiKey.Group, reqModel, subject.UserID, failedAccountIDs)
+					routeCtx, apiKey.Group, reqModel, subject.UserID, failedAccountIDs)
 				if reRouteErr != nil {
 					if len(candidateFailures) > 0 {
 						status, message := modelCandidatesExhaustedDetails(candidateFailures)
@@ -166,12 +178,19 @@ func (h *OpenAIGatewayHandler) ChatCompletions(c *gin.Context) {
 				}
 				routingModel = newModel
 				routingAccountIDs = newIDs
+				if len(newIDs) > 0 {
+					routeIDs := make(map[int64]struct{}, len(newIDs))
+					for _, id := range newIDs {
+						routeIDs[id] = struct{}{}
+					}
+					routeCtx = service.WithRouteAccountIDs(routeCtx, routeIDs)
+				}
 			}
 		}
 
 		reqLog.Debug("openai_chat_completions.account_selecting", zap.Int("excluded_account_count", len(failedAccountIDs)))
 		selection, scheduleDecision, err := h.gatewayService.SelectAccountWithSchedulerForCapability(
-			c.Request.Context(),
+			routeCtx,
 			apiKey.GroupID,
 			"",
 			sessionHash,
@@ -193,7 +212,7 @@ func (h *OpenAIGatewayHandler) ChatCompletions(c *gin.Context) {
 				continue
 			}
 			markOpsRoutingCapacityLimitedIfNoAvailable(c, err)
-			h.handleStreamingAwareError(c, http.StatusServiceUnavailable, "api_error", "Service temporarily unavailable", streamStarted)
+			h.handleStreamingAwareError(c, http.StatusServiceUnavailable, "api_error", noAvailableAccountsMessage(reqModel, routed, apiKey.Group), streamStarted)
 			return
 		}
 		if selection == nil || selection.Account == nil {
@@ -204,7 +223,7 @@ func (h *OpenAIGatewayHandler) ChatCompletions(c *gin.Context) {
 				continue
 			}
 			markOpsRoutingCapacityLimited(c)
-			h.handleStreamingAwareError(c, http.StatusServiceUnavailable, "api_error", "No available accounts", streamStarted)
+			h.handleStreamingAwareError(c, http.StatusServiceUnavailable, "api_error", noAvailableAccountsMessage(reqModel, routed, apiKey.Group), streamStarted)
 			return
 		}
 		account := selection.Account
@@ -216,8 +235,13 @@ func (h *OpenAIGatewayHandler) ChatCompletions(c *gin.Context) {
 			continue
 		}
 		if routed {
+			// 模型路由：上游模型名固定取账号 model_mapping 第一个条目的 value，
+			// 与账号绑定模型路由（MVP-005 语义）一致，不再读取候选 model 字段。
+			if upstream := account.FirstModelMappingValue(); upstream != "" {
+				routingModel = upstream
+			}
 			quotaErr := service.CheckDynamicTokenRouteCandidate(
-				c.Request.Context(), apiKey.GroupID,
+				routeCtx, apiKey.GroupID,
 				service.DynamicTokenRequestIdentity{UserID: subject.UserID, APIKeyID: apiKey.ID},
 				reqModel, account, routingModel,
 			)
@@ -414,4 +438,23 @@ func resolveOpenAIUpstreamEndpoint(c *gin.Context, account *service.Account) str
 		return "/v1/chat/completions"
 	}
 	return GetUpstreamEndpoint(c, account.Platform)
+}
+
+// noAvailableAccountsMessage 构造“无可用账号”时的可读错误消息，帮助调用方定位原因：
+// 模型名是否被路由/白名单支持、分组下是否有可调度账号。
+func noAvailableAccountsMessage(reqModel string, routed bool, group *service.Group) string {
+	groupName := ""
+	if group != nil {
+		groupName = strings.TrimSpace(group.Name)
+	}
+	switch {
+	case routed && groupName != "":
+		return fmt.Sprintf("模型 %q 命中了分组 %q 的路由规则，但没有可用的路由账号（账号可能被禁用、限额已耗尽或不可调度），请检查分组账号配置", reqModel, groupName)
+	case routed:
+		return fmt.Sprintf("模型 %q 命中了路由规则，但没有可用的路由账号（账号可能被禁用、限额已耗尽或不可调度），请检查分组账号配置", reqModel)
+	case groupName != "":
+		return fmt.Sprintf("模型 %q 在分组 %q 中没有可用账号：请确认模型名是否已配置（路由别名或账号 model_mapping 白名单），以及账号是否可用", reqModel, groupName)
+	default:
+		return fmt.Sprintf("模型 %q 没有可用账号：请确认模型名是否正确、已配置路由或账号 model_mapping 白名单，以及账号是否可用", reqModel)
+	}
 }

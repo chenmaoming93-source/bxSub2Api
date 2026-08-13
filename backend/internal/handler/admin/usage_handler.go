@@ -407,21 +407,37 @@ func (h *UsageHandler) SearchAPIKeys(c *gin.Context) {
 
 	// Return simplified API key list (only id and name)
 	type SimpleAPIKey struct {
-		ID     int64  `json:"id"`
-		Name   string `json:"name"`
-		UserID int64  `json:"user_id"`
+		ID        int64  `json:"id"`
+		Name      string `json:"name"`
+		UserID    int64  `json:"user_id"`
+		UserEmail string `json:"user_email,omitempty"`
+		UserName  string `json:"user_name,omitempty"`
+		MaskedKey string `json:"masked_key"`
 	}
 
 	result := make([]SimpleAPIKey, len(keys))
 	for i, k := range keys {
 		result[i] = SimpleAPIKey{
-			ID:     k.ID,
-			Name:   k.Name,
-			UserID: k.UserID,
+			ID:        k.ID,
+			Name:      k.Name,
+			UserID:    k.UserID,
+			MaskedKey: maskUsageAPIKey(k.Key),
+		}
+		if k.User != nil {
+			result[i].UserEmail = k.User.Email
+			result[i].UserName = k.User.Username
 		}
 	}
 
 	response.Success(c, result)
+}
+
+func maskUsageAPIKey(key string) string {
+	key = strings.TrimSpace(key)
+	if len(key) <= 8 {
+		return "****"
+	}
+	return key[:4] + "****" + key[len(key)-4:]
 }
 
 // ListCleanupTasks handles listing usage cleanup tasks

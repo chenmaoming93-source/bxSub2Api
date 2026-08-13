@@ -33,6 +33,8 @@ const (
 	FieldCredentials = "credentials"
 	// FieldExtra holds the string denoting the extra field in the database.
 	FieldExtra = "extra"
+	// FieldModelAttributes holds the string denoting the model_attributes field in the database.
+	FieldModelAttributes = "model_attributes"
 	// FieldProxyID holds the string denoting the proxy_id field in the database.
 	FieldProxyID = "proxy_id"
 	// FieldProxyFallbackOriginID holds the string denoting the proxy_fallback_origin_id field in the database.
@@ -123,6 +125,7 @@ var Columns = []string{
 	FieldType,
 	FieldCredentials,
 	FieldExtra,
+	FieldModelAttributes,
 	FieldProxyID,
 	FieldProxyFallbackOriginID,
 	FieldConcurrency,

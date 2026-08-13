@@ -38,7 +38,20 @@ func (s *GatewayService) mergeExplicitRouteAccounts(ctx context.Context, account
 		return accounts, nil
 	}
 
-	routed, err := s.accountRepo.GetByIDs(ctx, ids)
+	var routed []*Account
+	var err error
+	if s.schedulerSnapshot != nil {
+		accountByID, loadErr := s.schedulerSnapshot.GetAccounts(ctx, ids)
+		err = loadErr
+		routed = make([]*Account, 0, len(ids))
+		for _, id := range ids {
+			if account := accountByID[id]; account != nil {
+				routed = append(routed, account)
+			}
+		}
+	} else {
+		routed, err = s.accountRepo.GetByIDs(ctx, ids)
+	}
 	if err != nil {
 		return nil, fmt.Errorf("query model routing accounts failed: %w", err)
 	}

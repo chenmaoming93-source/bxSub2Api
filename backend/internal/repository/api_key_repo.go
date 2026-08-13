@@ -574,7 +574,8 @@ func apiKeyListOrder(params pagination.PaginationParams) []func(*entsql.Selector
 	return []func(*entsql.Selector){dbent.Desc(field), dbent.Desc(apikey.FieldID)}
 }
 
-// SearchAPIKeys searches API keys by user ID and/or keyword (name)
+// SearchAPIKeys searches API keys by user ID and either a fuzzy name or an
+// exact concrete key. Exact key matching avoids broad secret scans.
 func (r *apiKeyRepository) SearchAPIKeys(ctx context.Context, userID int64, keyword string, limit int) ([]service.APIKey, error) {
 	q := r.activeQuery()
 	if userID > 0 {
@@ -582,10 +583,10 @@ func (r *apiKeyRepository) SearchAPIKeys(ctx context.Context, userID int64, keyw
 	}
 
 	if keyword != "" {
-		q = q.Where(apikey.NameContainsFold(keyword))
+		q = q.Where(apikey.Or(apikey.NameContainsFold(keyword), apikey.KeyEQ(keyword)))
 	}
 
-	keys, err := q.Limit(limit).Order(dbent.Desc(apikey.FieldID)).All(ctx)
+	keys, err := q.WithUser().Limit(limit).Order(dbent.Desc(apikey.FieldID)).All(ctx)
 	if err != nil {
 		return nil, err
 	}

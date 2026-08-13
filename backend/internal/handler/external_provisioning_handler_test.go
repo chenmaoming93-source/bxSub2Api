@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/Wei-Shaw/sub2api/internal/domain"
 	"github.com/Wei-Shaw/sub2api/internal/service"
 	"github.com/gin-gonic/gin"
 )
@@ -20,11 +21,20 @@ type externalProvisioningServiceStub struct {
 	routes      []service.GroupModelRouteProjection
 	routesErr   error
 	routesInput service.ListGroupModelRoutesInput
+
+	routesWithAttributes      []service.GroupModelRoutesWithAttributesProjection
+	routesWithAttributesErr   error
+	routesWithAttributesInput service.ListGroupModelRoutesInput
 }
 
 func (s *externalProvisioningServiceStub) ListGroupModelRoutes(_ context.Context, input service.ListGroupModelRoutesInput) ([]service.GroupModelRouteProjection, error) {
 	s.routesInput = input
 	return s.routes, s.routesErr
+}
+
+func (s *externalProvisioningServiceStub) ListGroupModelRoutesWithAttributes(_ context.Context, input service.ListGroupModelRoutesInput) ([]service.GroupModelRoutesWithAttributesProjection, error) {
+	s.routesWithAttributesInput = input
+	return s.routesWithAttributes, s.routesWithAttributesErr
 }
 
 func (s *externalProvisioningServiceStub) EnsurePlatformKey(_ context.Context, input service.EnsurePlatformKeyInput) (*service.EnsurePlatformKeyResult, error) {
@@ -189,6 +199,85 @@ func TestExternalProvisioningHandler_ListGroupModelRoutesErrors(t *testing.T) {
 		t.Fatalf("not found: status=%d body=%s", notFound.Code, notFound.Body.String())
 	}
 	internal := performListGroupModelRoutes(t, &externalProvisioningServiceStub{routesErr: errors.New("database details")}, `{"group_name":"target"}`)
+	if internal.Code != http.StatusInternalServerError || strings.Contains(internal.Body.String(), "database details") {
+		t.Fatalf("internal: status=%d body=%s", internal.Code, internal.Body.String())
+	}
+}
+
+func performListGroupModelRoutesWithAttributes(t *testing.T, svc *externalProvisioningServiceStub, body string) *httptest.ResponseRecorder {
+	t.Helper()
+	gin.SetMode(gin.TestMode)
+	recorder := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(recorder)
+	ctx.Request = httptest.NewRequest(http.MethodPost, "/api/v1/integrations/model-routes/list-attributes", strings.NewReader(body))
+	ctx.Request.Header.Set("Content-Type", "application/json")
+	NewExternalProvisioningHandler(svc).ListGroupModelRoutesWithAttributes(ctx)
+	return recorder
+}
+
+func TestExternalProvisioningHandler_ListGroupModelRoutesWithAttributesSuccess(t *testing.T) {
+	svc := &externalProvisioningServiceStub{routesWithAttributes: []service.GroupModelRoutesWithAttributesProjection{
+		{
+			RouteAlias: "coding",
+			UpstreamModels: []service.GroupModelRouteItemWithAttributes{
+				{Model: "model-a", Attributes: domain.ModelAttributes{"context_window": {Description: "上下文窗口", Value: 200000}}},
+				{Model: "model-a", Attributes: domain.ModelAttributes{}}, // 同名模型不去重
+				{Model: "model-b"},                                        // 无属性 → service 输出 {}
+			},
+		},
+	}}
+	res := performListGroupModelRoutesWithAttributes(t, svc, `{"group_name":" target "}`)
+	if res.Code != http.StatusOK || svc.routesWithAttributesInput.GroupName != "target" {
+		t.Fatalf("status=%d input=%+v body=%s", res.Code, svc.routesWithAttributesInput, res.Body.String())
+	}
+	var envelope struct {
+		Data ListGroupModelRoutesWithAttributesResponse `json:"data"`
+	}
+	if err := json.Unmarshal(res.Body.Bytes(), &envelope); err != nil {
+		t.Fatal(err)
+	}
+	if envelope.Data.GroupName != "target" || len(envelope.Data.Routes) != 1 || envelope.Data.Routes[0].RouteAlias != "coding" {
+		t.Fatalf("unexpected response: %+v", envelope)
+	}
+	models := envelope.Data.Routes[0].UpstreamModels
+	if len(models) != 3 || models[0].Model != "model-a" || models[1].Model != "model-a" || models[2].Model != "model-b" {
+		t.Fatalf("unexpected upstream_models: %+v", models)
+	}
+	if models[0].Attributes == nil || models[0].Attributes["context_window"].Value != float64(200000) {
+		t.Fatalf("expected attributes with context_window, got %+v", models[0].Attributes)
+	}
+	// 无属性条目输出空对象 {}（序列化后为 {}，非 null）
+	if models[2].Attributes == nil || len(models[2].Attributes) != 0 {
+		t.Fatalf("expected empty attributes object, got %+v", models[2].Attributes)
+	}
+	body := res.Body.String()
+	for _, forbidden := range []string{"account_ids", "priority", "daily_token_limit", "token"} {
+		if strings.Contains(strings.ToLower(body), forbidden) {
+			t.Fatalf("response leaked %q: %s", forbidden, body)
+		}
+	}
+}
+
+func TestExternalProvisioningHandler_ListGroupModelRoutesWithAttributesEmpty(t *testing.T) {
+	res := performListGroupModelRoutesWithAttributes(t, &externalProvisioningServiceStub{routesWithAttributes: []service.GroupModelRoutesWithAttributesProjection{}}, `{"group_name":"target"}`)
+	if res.Code != http.StatusOK || !strings.Contains(res.Body.String(), `"routes":[]`) {
+		t.Fatalf("expected empty routes array, status=%d body=%s", res.Code, res.Body.String())
+	}
+}
+
+func TestExternalProvisioningHandler_ListGroupModelRoutesWithAttributesErrors(t *testing.T) {
+	for _, body := range []string{`{`, `{}`, `{"group_name":"   "}`} {
+		res := performListGroupModelRoutesWithAttributes(t, &externalProvisioningServiceStub{}, body)
+		if res.Code != http.StatusBadRequest || !strings.Contains(res.Body.String(), "INVALID_REQUEST") {
+			t.Fatalf("body %q: status=%d response=%s", body, res.Code, res.Body.String())
+		}
+	}
+
+	notFound := performListGroupModelRoutesWithAttributes(t, &externalProvisioningServiceStub{routesWithAttributesErr: service.ErrGroupNotFound}, `{"group_name":"missing"}`)
+	if notFound.Code != http.StatusNotFound || !strings.Contains(notFound.Body.String(), "GROUP_NOT_FOUND") {
+		t.Fatalf("not found: status=%d body=%s", notFound.Code, notFound.Body.String())
+	}
+	internal := performListGroupModelRoutesWithAttributes(t, &externalProvisioningServiceStub{routesWithAttributesErr: errors.New("database details")}, `{"group_name":"target"}`)
 	if internal.Code != http.StatusInternalServerError || strings.Contains(internal.Body.String(), "database details") {
 		t.Fatalf("internal: status=%d body=%s", internal.Code, internal.Body.String())
 	}

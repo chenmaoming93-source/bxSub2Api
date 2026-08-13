@@ -24,6 +24,9 @@ type Account struct {
 	Type                    string
 	Credentials             map[string]any
 	Extra                   map[string]any
+	// ModelAttributes 模型基本属性（JSON map，属性名为 key，{description, value} 为值）。
+	// nil = 未配置；空 map = 显式空配置。后端信任前端，value 原样存储。
+	ModelAttributes         domain.ModelAttributes
 	ProxyID                 *int64
 	ProxyFallbackOriginID   *int64
 	ProxyFallbackOriginName *string // 仅展示用
@@ -485,6 +488,51 @@ func (a *Account) GetModelMapping() map[string]string {
 	a.modelMappingCacheRawLen = rawLen
 	a.modelMappingCacheRawSig = rawSig
 	return mapping
+}
+
+// FirstModelMappingKey returns the deterministic upstream model used only by
+// account-bound model routing. Other model mapping call paths keep their
+// existing behavior.
+func (a *Account) FirstModelMappingKey() string {
+	if a == nil {
+		return ""
+	}
+	mapping := a.GetModelMapping()
+	keys := make([]string, 0, len(mapping))
+	for key := range mapping {
+		if key = strings.TrimSpace(key); key != "" {
+			keys = append(keys, key)
+		}
+	}
+	if len(keys) == 0 {
+		return ""
+	}
+	sort.Strings(keys)
+	return keys[0]
+}
+
+// FirstModelMappingValue returns the value of the first (deterministic,
+// key-sorted) entry of the account's model_mapping. Account-bound model
+// routing uses this as the upstream model name so that both whitelist
+// (key == value) and mapping (key != value) configurations resolve to the
+// real upstream model; multi-entry legacy mappings still yield the first
+// sorted key's value.
+func (a *Account) FirstModelMappingValue() string {
+	if a == nil {
+		return ""
+	}
+	mapping := a.GetModelMapping()
+	keys := make([]string, 0, len(mapping))
+	for key := range mapping {
+		if key = strings.TrimSpace(key); key != "" {
+			keys = append(keys, key)
+		}
+	}
+	if len(keys) == 0 {
+		return ""
+	}
+	sort.Strings(keys)
+	return strings.TrimSpace(mapping[keys[0]])
 }
 
 func (a *Account) resolveModelMapping(rawMapping map[string]any) map[string]string {
