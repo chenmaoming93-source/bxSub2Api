@@ -260,6 +260,7 @@
         </div>
 
         <ModelAttributesSection v-model="modelAttributes" />
+        <ModelRouteReferencesSection :references="routeReferences" :loading="routeReferencesLoading" />
 
         <!-- Pool Mode Section -->
         <div class="border-t border-gray-200 pt-4 dark:border-dark-600">
@@ -562,6 +563,7 @@
       </div>
 
       <ModelAttributesSection v-if="account.platform === 'openai' && account.type === 'oauth'" v-model="modelAttributes" />
+      <ModelRouteReferencesSection v-if="account.platform === 'openai' && account.type === 'oauth'" :references="routeReferences" :loading="routeReferencesLoading" />
 
       <!-- Upstream fields (only for upstream type) -->
       <div v-if="account.type === 'upstream'" class="space-y-4">
@@ -807,6 +809,7 @@
       </div>
 
       <ModelAttributesSection v-if="(account.platform === 'gemini' || account.platform === 'anthropic') && account.type === 'service_account'" v-model="modelAttributes" />
+      <ModelRouteReferencesSection v-if="(account.platform === 'gemini' || account.platform === 'anthropic') && account.type === 'service_account'" :references="routeReferences" :loading="routeReferencesLoading" />
 
       <!-- Bedrock fields (for bedrock type, both SigV4 and API Key modes) -->
       <div v-if="account.type === 'bedrock'" class="space-y-4">
@@ -950,6 +953,7 @@
         </div>
 
         <ModelAttributesSection v-model="modelAttributes" />
+        <ModelRouteReferencesSection :references="routeReferences" :loading="routeReferencesLoading" />
 
         <!-- Pool Mode Section for Bedrock -->
         <div class="border-t border-gray-200 pt-4 dark:border-dark-600">
@@ -1117,7 +1121,8 @@
         </div>
       </div>
 
-      <ModelAttributesSection v-if="account.platform === 'antigravity'" v-model="modelAttributes" />
+        <ModelAttributesSection v-if="account.platform === 'antigravity'" v-model="modelAttributes" />
+        <ModelRouteReferencesSection v-if="account.platform === 'antigravity'" :references="routeReferences" :loading="routeReferencesLoading" />
 
       <!-- Temp Unschedulable Rules -->
       <div class="border-t border-gray-200 pt-4 dark:border-dark-600 space-y-4">
@@ -2397,6 +2402,7 @@ import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores/app'
 import { useAuthStore } from '@/stores/auth'
 import { adminAPI } from '@/api/admin'
+import type { GroupModelRouteReference } from '@/api/admin/accounts'
 import { useQuotaNotifyState } from '@/composables/useQuotaNotifyState'
 import type {
   Account,
@@ -2417,6 +2423,7 @@ import ProxyAdBanner from '@/components/common/ProxyAdBanner.vue'
 import GroupSelector from '@/components/common/GroupSelector.vue'
 import ModelWhitelistSelector from '@/components/account/ModelWhitelistSelector.vue'
 import ModelAttributesSection from '@/components/account/ModelAttributesSection.vue'
+import ModelRouteReferencesSection from '@/components/account/ModelRouteReferencesSection.vue'
 import QuotaLimitCard from '@/components/account/QuotaLimitCard.vue'
 import { applyInterceptWarmup } from '@/components/account/credentialsBuilder'
 import { formatDateTime, formatDateTimeLocalInput, parseDateTimeLocalInput } from '@/utils/format'
@@ -2886,6 +2893,20 @@ const form = reactive({
   expires_at: null as number | null
 })
 
+const routeReferences = ref<GroupModelRouteReference[]>([])
+const routeReferencesLoading = ref(false)
+
+async function loadRouteReferences(accountId: number) {
+  routeReferencesLoading.value = true
+  try {
+    routeReferences.value = await adminAPI.accounts.getModelRouteReferences(accountId)
+  } catch {
+    routeReferences.value = []
+  } finally {
+    routeReferencesLoading.value = false
+  }
+}
+
 // 模型基本属性（JSON map，属性名为 key；打开弹窗时从账户回显，保存时整体提交）
 const modelAttributes = ref<ModelAttributes>({})
 
@@ -3244,6 +3265,7 @@ watch(
     if (!wasShow || newAccount !== previousAccount) {
       syncFormFromAccount(newAccount)
       loadTLSProfiles()
+      loadRouteReferences(newAccount.id)
     }
   },
   { immediate: true }

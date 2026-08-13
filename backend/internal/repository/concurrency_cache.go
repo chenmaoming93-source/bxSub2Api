@@ -36,6 +36,9 @@ const (
 	defaultSlotTTLMinutes = 15
 )
 
+const routeSlotKeyPrefix = "concurrency:route:"
+const routeConfigKeyPrefix = "concurrency:route-config:"
+
 var (
 	// acquireScript 使用有序集合计数并在未达上限时添加槽位
 	// 使用 Redis TIME 命令获取服务器时间，避免多实例时钟不同步问题
@@ -254,6 +257,41 @@ func (c *concurrencyCache) AcquireAccountSlot(ctx context.Context, accountID int
 func (c *concurrencyCache) ReleaseAccountSlot(ctx context.Context, accountID int64, requestID string) error {
 	key := accountSlotKey(accountID)
 	return c.rdb.ZRem(ctx, key, requestID).Err()
+}
+
+func (c *concurrencyCache) AcquireRouteSlot(ctx context.Context, key string, maxConcurrency int, requestID string) (bool, error) {
+	result, err := acquireScript.Run(ctx, c.rdb, []string{routeSlotKeyPrefix + key}, maxConcurrency, c.slotTTLSeconds, requestID).Int()
+	return result == 1, err
+}
+
+func (c *concurrencyCache) ReleaseRouteSlot(ctx context.Context, key, requestID string) error {
+	return c.rdb.ZRem(ctx, routeSlotKeyPrefix+key, requestID).Err()
+}
+
+func (c *concurrencyCache) GetRouteConcurrencyLimit(ctx context.Context, key string) (*int, bool, error) {
+	value, err := c.rdb.Get(ctx, routeConfigKeyPrefix+key).Result()
+	if errors.Is(err, redis.Nil) {
+		return nil, false, nil
+	}
+	if err != nil {
+		return nil, false, err
+	}
+	if value == "unlimited" {
+		return nil, true, nil
+	}
+	limit, err := strconv.Atoi(value)
+	if err != nil {
+		return nil, true, err
+	}
+	return &limit, true, nil
+}
+
+func (c *concurrencyCache) SetRouteConcurrencyLimit(ctx context.Context, key string, limit *int) error {
+	value := "unlimited"
+	if limit != nil {
+		value = strconv.Itoa(*limit)
+	}
+	return c.rdb.Set(ctx, routeConfigKeyPrefix+key, value, 0).Err()
 }
 
 func (c *concurrencyCache) GetAccountConcurrency(ctx context.Context, accountID int64) (int, error) {

@@ -69,6 +69,21 @@
               {{ t("admin.groups.sortOrder") }}
             </button>
             <button
+              v-permission="'groups.update'"
+              @click="rebuildModelRouteReferences"
+              :disabled="rebuildingModelRouteReferences"
+              class="btn btn-secondary"
+              title="同步模型路由引用"
+            >
+              <Icon
+                name="refresh"
+                size="md"
+                class="mr-2"
+                :class="rebuildingModelRouteReferences ? 'animate-spin' : ''"
+              />
+              {{ rebuildingModelRouteReferences ? "同步中..." : "同步模型路由引用" }}
+            </button>
+            <button
               v-permission="'groups.create'"
               @click="openCreateModal"
               class="btn btn-primary"
@@ -1657,6 +1672,7 @@
           v-model:enabled="editForm.model_routing_enabled"
           v-model:rules="editModelRoutingRules"
           :platform="editForm.platform"
+          :group-id="editingGroup?.id"
         />
         <div v-if="false" class="border-t pt-4">
           <div class="mb-1.5 flex items-center gap-1">
@@ -3003,6 +3019,7 @@ import GroupModelRoutingEditor from "@/components/admin/group/GroupModelRoutingE
 import GroupCapacityBadge from "@/components/common/GroupCapacityBadge.vue";
 import { VueDraggable } from "vue-draggable-plus";
 import { createStableObjectKeyResolver } from "@/utils/stableObjectKey";
+import { extractApiErrorMessage } from "@/utils/apiError";
 import { useKeyedDebouncedSearch } from "@/composables/useKeyedDebouncedSearch";
 import { getPersistedPageSize } from "@/composables/usePersistedPageSize";
 import {
@@ -3211,6 +3228,7 @@ const copyAccountsGroupOptionsForEdit = computed(() => {
 
 const groups = ref<AdminGroup[]>([]);
 const loading = ref(false);
+const rebuildingModelRouteReferences = ref(false);
 const usageMap = ref<Map<number, { today_cost: number; total_cost: number }>>(
   new Map(),
 );
@@ -3336,11 +3354,11 @@ interface ModelRoutingRule {
 
 // 创建表单的模型路由规则
 const createModelRoutingRules = ref<ModelRoutingRule[]>([]);
-const createRoutingEditor = ref<{ isValid: () => boolean } | null>(null);
+const createRoutingEditor = ref<{ isValid: () => boolean; getConcurrencyUpdates: () => Array<{ route_alias: string; account_id: number; max_concurrency: number | null }> } | null>(null);
 
 // 编辑表单的模型路由规则
 const editModelRoutingRules = ref<ModelRoutingRule[]>([]);
-const editRoutingEditor = ref<{ isValid: () => boolean } | null>(null);
+const editRoutingEditor = ref<{ isValid: () => boolean; getConcurrencyUpdates: () => Array<{ route_alias: string; account_id: number; max_concurrency: number | null }> } | null>(null);
 
 // 规则对象稳定 key（避免使用 index 导致状态错位）
 const resolveCreateRuleKey =
@@ -3674,6 +3692,7 @@ const routingValidationFallbacks: Record<ModelRoutingValidationCode, string> = {
   duplicate_alias: "Route aliases must be unique",
   candidate_required: "At least one candidate is required",
   account_ids_required: "Select at least one account for each candidate",
+	candidate_multiple_accounts: "每个候选只能选择一个模型账号",
   invalid_account_id: "Candidate accounts are invalid",
   invalid_priority: "Priority must be a non-negative integer",
   duplicate_priority: "Candidate priorities must be unique within an alias",
@@ -3851,6 +3870,19 @@ const loadGroups = async () => {
   }
 };
 
+const rebuildModelRouteReferences = async () => {
+  if (rebuildingModelRouteReferences.value) return;
+  rebuildingModelRouteReferences.value = true;
+  try {
+    await adminAPI.groups.rebuildModelRouteReferences();
+    appStore.showSuccess("模型路由引用同步完成");
+  } catch (error: any) {
+    appStore.showError(error?.response?.data?.message || error?.message || "模型路由引用同步失败");
+  } finally {
+    rebuildingModelRouteReferences.value = false;
+  }
+};
+
 const formatCost = (cost: number): string => {
   if (cost >= 1000) return cost.toFixed(0);
   if (cost >= 100) return cost.toFixed(1);
@@ -4018,6 +4050,13 @@ const handleCreateGroup = async () => {
   }
   submitting.value = true;
   try {
+	  let concurrencyUpdates;
+	  try {
+	    concurrencyUpdates = createRoutingEditor.value?.getConcurrencyUpdates?.() ?? [];
+	  } catch (error: any) {
+	    appStore.showError(error?.message || '最大并发配置不合法');
+	    return;
+	  }
     // 构建请求数据，包含模型路由配置
     const requestData = {
       ...createForm,
@@ -4048,6 +4087,7 @@ const handleCreateGroup = async () => {
               exact_model_mappings: createForm.exact_model_mappings,
             })
           : undefined,
+	  model_route_concurrency_updates: concurrencyUpdates,
     };
     // v-model.number 清空输入框时产生 ""，转为 null 让后端设为无限制
     const emptyToNull = (v: any) => (v === "" ? null : v);
@@ -4066,9 +4106,7 @@ const handleCreateGroup = async () => {
       onboardingStore.nextStep(500);
     }
   } catch (error: any) {
-    appStore.showError(
-      error.response?.data?.detail || t("admin.groups.failedToCreate"),
-    );
+    appStore.showError(extractApiErrorMessage(error, t("admin.groups.failedToCreate")));
     console.error("Error creating group:", error);
     // Don't advance tour on error
   } finally {
@@ -4159,6 +4197,13 @@ const handleUpdateGroup = async () => {
 
   submitting.value = true;
   try {
+    let concurrencyUpdates;
+    try {
+      concurrencyUpdates = editRoutingEditor.value?.getConcurrencyUpdates?.() ?? [];
+    } catch (error: any) {
+      appStore.showError(error?.message || '最大并发配置不合法');
+      return;
+    }
     // 转换 fallback_group_id: null -> 0 (后端使用 0 表示清除)
     const payload = {
       ...editForm,
@@ -4195,6 +4240,7 @@ const handleUpdateGroup = async () => {
               exact_model_mappings: editForm.exact_model_mappings,
             })
           : undefined,
+      model_route_concurrency_updates: concurrencyUpdates,
     };
     // v-model.number 清空输入框时产生 ""，转为 null 让后端设为无限制
     const emptyToNull = (v: any) => (v === "" ? null : v);
@@ -4209,9 +4255,7 @@ const handleUpdateGroup = async () => {
     closeEditModal();
     loadGroups();
   } catch (error: any) {
-    appStore.showError(
-      error.response?.data?.detail || t("admin.groups.failedToUpdate"),
-    );
+    appStore.showError(extractApiErrorMessage(error, t("admin.groups.failedToUpdate")));
     console.error("Error updating group:", error);
   } finally {
     submitting.value = false;

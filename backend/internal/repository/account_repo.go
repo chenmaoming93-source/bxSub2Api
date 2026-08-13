@@ -310,12 +310,28 @@ func (r *accountRepository) Update(ctx context.Context, account *service.Account
 	if account == nil {
 		return nil
 	}
+	previous, err := r.client.Account.Query().Where(dbaccount.IDEQ(account.ID)).Select(dbaccount.FieldConcurrency).Only(ctx)
+	if err != nil {
+		return translatePersistenceError(err, service.ErrAccountNotFound, nil)
+	}
 	schedulable := account.Schedulable
 	if account.Status == service.StatusError {
 		schedulable = false
 	}
 
-	builder := r.client.Account.UpdateOneID(account.ID).
+	tx, txErr := r.client.Tx(ctx)
+	if txErr != nil && !errors.Is(txErr, dbent.ErrTxStarted) {
+		return txErr
+	}
+	txClient := r.client
+	var exec sqlExecutor = r.sql
+	if txErr == nil {
+		defer func() { _ = tx.Rollback() }()
+		txClient = tx.Client()
+		exec = tx
+	}
+
+	builder := txClient.Account.UpdateOneID(account.ID).
 		SetName(account.Name).
 		SetNillableNotes(account.Notes).
 		SetPlatform(account.Platform).
@@ -397,9 +413,19 @@ func (r *accountRepository) Update(ctx context.Context, account *service.Account
 	if err != nil {
 		return translatePersistenceError(err, service.ErrAccountNotFound, nil)
 	}
+	if previous.Concurrency != account.Concurrency {
+		if err := rescaleAccountModelRouteAllocations(ctx, exec, account.ID, previous.Concurrency, account.Concurrency); err != nil {
+			return err
+		}
+	}
 	account.UpdatedAt = updated.UpdatedAt
-	if err := enqueueSchedulerOutbox(ctx, r.sql, service.SchedulerOutboxEventAccountChanged, &account.ID, nil, buildSchedulerGroupPayload(account.GroupIDs)); err != nil {
+	if err := enqueueSchedulerOutbox(ctx, exec, service.SchedulerOutboxEventAccountChanged, &account.ID, nil, buildSchedulerGroupPayload(account.GroupIDs)); err != nil {
 		logger.LegacyPrintf("repository.account", "[SchedulerOutbox] enqueue account update failed: account=%d err=%v", account.ID, err)
+	}
+	if txErr == nil {
+		if err := tx.Commit(); err != nil {
+			return err
+		}
 	}
 	// 普通账号编辑也需要立即刷新单账号快照。
 	r.syncSchedulerAccountSnapshot(ctx, account.ID)
@@ -1458,6 +1484,17 @@ func (r *accountRepository) BulkUpdate(ctx context.Context, ids []int64, updates
 		return 0, nil
 	}
 
+	previousConcurrency := make(map[int64]int)
+	if updates.Concurrency != nil {
+		for _, id := range ids {
+			value, err := querySingleInt(ctx, r.sql, "SELECT concurrency FROM accounts WHERE id = ?", id)
+			if err != nil {
+				return 0, err
+			}
+			previousConcurrency[id] = value
+		}
+	}
+
 	setClauses := make([]string, 0, 8)
 	args := make([]any, 0, 8)
 
@@ -1542,6 +1579,13 @@ func (r *accountRepository) BulkUpdate(ctx context.Context, ids []int64, updates
 		return 0, err
 	}
 	if rows > 0 {
+		if updates.Concurrency != nil {
+			for _, id := range ids {
+				if err := rescaleAccountModelRouteAllocations(ctx, r.sql, id, previousConcurrency[id], *updates.Concurrency); err != nil {
+					return 0, err
+				}
+			}
+		}
 		payload := map[string]any{"account_ids": ids}
 		if err := enqueueSchedulerOutbox(ctx, r.sql, service.SchedulerOutboxEventAccountBulkChanged, nil, nil, payload); err != nil {
 			logger.LegacyPrintf("repository.account", "[SchedulerOutbox] enqueue bulk update failed: err=%v", err)

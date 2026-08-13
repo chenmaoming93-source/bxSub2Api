@@ -52,6 +52,14 @@ type ConcurrencyCache interface {
 	CleanupStaleProcessSlots(ctx context.Context, activeRequestPrefix string) error
 }
 
+// RouteConcurrencyCache is optional so existing test doubles remain compatible.
+type RouteConcurrencyCache interface {
+	AcquireRouteSlot(context.Context, string, int, string) (bool, error)
+	ReleaseRouteSlot(context.Context, string, string) error
+	GetRouteConcurrencyLimit(context.Context, string) (*int, bool, error)
+	SetRouteConcurrencyLimit(context.Context, string, *int) error
+}
+
 var (
 	requestIDPrefix  = initRequestIDPrefix()
 	requestIDCounter atomic.Uint64
@@ -196,6 +204,45 @@ func (s *ConcurrencyService) AcquireAccountSlot(ctx context.Context, accountID i
 		Acquired:    false,
 		ReleaseFunc: nil,
 	}, nil
+}
+
+func (s *ConcurrencyService) AcquireRouteSlot(ctx context.Context, key string, maxConcurrency int) (*AcquireResult, error) {
+	if maxConcurrency <= 0 {
+		return &AcquireResult{Acquired: true, ReleaseFunc: func() {}}, nil
+	}
+	c, ok := s.cache.(RouteConcurrencyCache)
+	if !ok {
+		return &AcquireResult{Acquired: true, ReleaseFunc: func() {}}, nil
+	}
+	requestID := generateRequestID()
+	acquired, err := c.AcquireRouteSlot(ctx, key, maxConcurrency, requestID)
+	if err != nil {
+		return nil, err
+	}
+	if !acquired {
+		return &AcquireResult{Acquired: false}, nil
+	}
+	return &AcquireResult{Acquired: true, ReleaseFunc: func() {
+		bgCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		_ = c.ReleaseRouteSlot(bgCtx, key, requestID)
+	}}, nil
+}
+
+func (s *ConcurrencyService) GetRouteConcurrencyLimit(ctx context.Context, key string) (*int, bool, error) {
+	c, ok := s.cache.(RouteConcurrencyCache)
+	if !ok {
+		return nil, false, nil
+	}
+	return c.GetRouteConcurrencyLimit(ctx, key)
+}
+
+func (s *ConcurrencyService) SetRouteConcurrencyLimit(ctx context.Context, key string, limit *int) error {
+	c, ok := s.cache.(RouteConcurrencyCache)
+	if !ok {
+		return nil
+	}
+	return c.SetRouteConcurrencyLimit(ctx, key, limit)
 }
 
 // AcquireUserSlot attempts to acquire a concurrency slot for a user.

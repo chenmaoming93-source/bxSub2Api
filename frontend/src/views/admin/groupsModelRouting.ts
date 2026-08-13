@@ -9,6 +9,7 @@ export type ModelRoutingValidationCode =
   | 'duplicate_alias'
   | 'candidate_required'
   | 'account_ids_required'
+	| 'candidate_multiple_accounts'
   | 'invalid_account_id'
   | 'invalid_priority'
   | 'duplicate_priority'
@@ -88,6 +89,8 @@ export function validateModelRouting(rows: ModelRoutingRuleRow[]): ModelRoutingV
     row.candidates.forEach((candidate, candidateIndex) => {
       if (candidate.account_ids.length === 0) {
         issues.push({ code: 'account_ids_required', ruleIndex, candidateIndex })
+	  } else if (candidate.account_ids.length > 1) {
+	    issues.push({ code: 'candidate_multiple_accounts', ruleIndex, candidateIndex })
       } else if (candidate.account_ids.some(id => !Number.isInteger(id) || id <= 0)) {
         issues.push({ code: 'invalid_account_id', ruleIndex, candidateIndex })
       }

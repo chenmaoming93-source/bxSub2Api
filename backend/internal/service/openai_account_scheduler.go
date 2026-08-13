@@ -14,6 +14,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/Wei-Shaw/sub2api/internal/pkg/ctxkey"
 	"golang.org/x/sync/singleflight"
 )
 
@@ -1273,6 +1274,15 @@ func (s *OpenAIGatewayService) selectAccountWithScheduler(
 ) (*AccountSelectionResult, OpenAIAccountScheduleDecision, error) {
 	ctx = s.withOpenAIQuotaAutoPauseContext(ctx)
 	decision := OpenAIAccountScheduleDecision{}
+	// Explicit groups.model_routing candidates must use the route-aware selector
+	// regardless of whether the optional advanced OpenAI scheduler is enabled.
+	// The latter only understands account-wide concurrency and would otherwise
+	// bypass the group/route/account candidate slot.
+	if group, _ := ctx.Value(ctxkey.Group).(*Group); group != nil && groupID != nil && group.ID == *groupID && len(group.GetRoutingCandidates(requestedModel)) > 0 {
+		decision.Layer = openAIAccountScheduleLayerLoadBalance
+		selection, err := s.selectAccountWithLoadAwareness(ctx, groupID, sessionHash, requestedModel, excludedIDs, requireCompact, requiredCapability)
+		return selection, decision, err
+	}
 	scheduler := s.getOpenAIAccountScheduler(ctx)
 	if scheduler == nil {
 		decision.Layer = openAIAccountScheduleLayerLoadBalance

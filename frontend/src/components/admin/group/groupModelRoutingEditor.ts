@@ -1,6 +1,7 @@
 export interface RoutingEditorAccount {
   id: number
   name: string
+  concurrency?: number
   /** 该账号绑定的上游模型名（model_mapping 排序后第一个非空 key，与后端 FirstModelMappingKey 语义一致） */
   upstreamModel?: string
 }
@@ -8,6 +9,10 @@ export interface RoutingEditorAccount {
 export interface RoutingEditorCandidate {
   accounts: RoutingEditorAccount[]
   priority: number | string
+  maxConcurrency?: number | string | null
+  accountConcurrency?: number
+  allocatedConcurrency?: number
+	otherAllocatedConcurrency?: number
 }
 
 export interface RoutingEditorRule {
@@ -16,7 +21,7 @@ export interface RoutingEditorRule {
 }
 
 export function createEmptyRoutingCandidate(): RoutingEditorCandidate {
-  return { accounts: [], priority: 0 }
+  return { accounts: [], priority: 0, maxConcurrency: null }
 }
 
 export function addRoutingCandidate(rule: RoutingEditorRule): void {

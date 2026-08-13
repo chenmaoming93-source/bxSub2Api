@@ -1856,7 +1856,7 @@ func (s *GatewayService) SelectAccountWithLoadAwarenessForRequest(ctx context.Co
 	if len(routeCandidates) > 0 {
 		var candidateFailures []ModelCandidateFailure
 		for _, routeCandidate := range routeCandidates {
-			result, ok, err := s.trySelectRouteCandidateAccounts(ctx, groupID, identity, requestedModel, sessionHash, stickyAccountID, routeCandidate.AccountIDs, accountByID, isExcluded, platform, useMixed, cfg, &candidateFailures)
+			result, ok, err := s.trySelectRouteCandidateAccountsWithModel(ctx, groupID, identity, requestedModel, routeCandidate.Model, sessionHash, stickyAccountID, routeCandidate.AccountIDs, accountByID, isExcluded, platform, useMixed, cfg, &candidateFailures)
 			if err != nil {
 				return nil, err
 			}
@@ -2382,9 +2382,16 @@ func (s *GatewayService) SelectAccountWithLoadAwarenessForRequest(ctx context.Co
 }
 
 func (s *GatewayService) trySelectRouteCandidateAccounts(ctx context.Context, groupID *int64, identity DynamicTokenRequestIdentity, requestedModel, sessionHash string, stickyAccountID int64, routingAccountIDs []int64, accountByID map[int64]*Account, isExcluded func(int64) bool, platform string, useMixed bool, cfg config.GatewaySchedulingConfig, candidateFailures *[]ModelCandidateFailure) (*AccountSelectionResult, bool, error) {
+	return s.trySelectRouteCandidateAccountsWithModel(ctx, groupID, identity, requestedModel, requestedModel, sessionHash, stickyAccountID, routingAccountIDs, accountByID, isExcluded, platform, useMixed, cfg, candidateFailures)
+}
+
+func (s *GatewayService) trySelectRouteCandidateAccountsWithModel(ctx context.Context, groupID *int64, identity DynamicTokenRequestIdentity, requestedModel, candidateModel, sessionHash string, stickyAccountID int64, routingAccountIDs []int64, accountByID map[int64]*Account, isExcluded func(int64) bool, platform string, useMixed bool, cfg config.GatewaySchedulingConfig, candidateFailures *[]ModelCandidateFailure) (*AccountSelectionResult, bool, error) {
 	if len(routingAccountIDs) == 0 || s.concurrencyService == nil {
 		return nil, false, nil
 	}
+	// A model-route candidate has exactly one account and must always pass the
+	// candidate concurrency gate. Sticky preference has no selection value here.
+	stickyAccountID = 0
 	var routingCandidates []*Account
 	accountModels := make(map[int64]string, len(routingAccountIDs))
 	var filteredExcluded, filteredMissing, filteredUnsched, filteredPlatform, filteredModelScope, filteredModelMapping, filteredWindowCost int
@@ -2590,10 +2597,27 @@ func (s *GatewayService) trySelectRouteCandidateAccounts(ctx context.Context, gr
 	})
 	shuffleWithinSortGroups(routingAvailable)
 
+	routeConcurrencyLimited := make([]ModelCandidateFailure, 0, len(routingAvailable))
 	for _, item := range routingAvailable {
 		routingModel := accountModels[item.account.ID]
+		routeResult, routeErr := s.tryAcquireRouteSlot(ctx, groupID, requestedModel, item.account.ID)
+		if routeErr != nil {
+			return nil, false, routeErr
+		}
+		if !routeResult.Acquired {
+			routeConcurrencyLimited = append(routeConcurrencyLimited, ModelCandidateFailure{
+				AccountID:   item.account.ID,
+				AccountName: item.account.Name,
+				Model:       candidateModel,
+				Reason:      "route_concurrency",
+				Message:     "candidate concurrency limit reached",
+			})
+			continue
+		}
 		result, err := s.tryAcquireAccountSlot(ctx, item.account.ID, item.account.Concurrency)
 		if err == nil && result.Acquired {
+			originalRelease := result.ReleaseFunc
+			result.ReleaseFunc = func() { routeResult.ReleaseFunc(); originalRelease() }
 			if !s.checkAndRegisterSession(ctx, item.account, sessionHash) {
 				result.ReleaseFunc()
 				continue
@@ -2607,24 +2631,15 @@ func (s *GatewayService) trySelectRouteCandidateAccounts(ctx context.Context, gr
 			selection, err := s.newSelectionResult(ctx, item.account, true, result.ReleaseFunc, nil)
 			return withSelectionModelIdentity(selection, requestedModel, routingModel), true, err
 		}
+		routeResult.ReleaseFunc()
+	}
+	if len(routeConcurrencyLimited) == len(routingAvailable) && len(routeConcurrencyLimited) > 0 {
+		return nil, false, &ModelCandidatesExhaustedError{Failures: routeConcurrencyLimited}
 	}
 
-	for _, item := range routingAvailable {
-		routingModel := accountModels[item.account.ID]
-		if !s.checkAndRegisterSession(ctx, item.account, sessionHash) {
-			continue
-		}
-		if s.debugModelRoutingEnabled() {
-			logger.LegacyPrintf("service.gateway", "[ModelRoutingDebug] routed wait: group_id=%v route=%s model=%s session=%s account=%d", derefGroupID(groupID), requestedModel, routingModel, shortSessionHash(sessionHash), item.account.ID)
-		}
-		selection, err := s.newSelectionResult(ctx, item.account, false, nil, &AccountWaitPlan{
-			AccountID:      item.account.ID,
-			MaxConcurrency: item.account.Concurrency,
-			Timeout:        cfg.StickySessionWaitTimeout,
-			MaxWaiting:     cfg.StickySessionMaxWaiting,
-		})
-		return withSelectionModelIdentity(selection, requestedModel, routingModel), true, err
-	}
+	// Model-route candidates never wait on an account. The caller proceeds to
+	// the next configured candidate; if none can acquire both slots, the request
+	// is rejected instead of bypassing the candidate limit.
 	return nil, false, nil
 }
 
@@ -2952,6 +2967,36 @@ func (s *GatewayService) tryAcquireAccountSlot(ctx context.Context, accountID in
 		return &AcquireResult{Acquired: true, ReleaseFunc: func() {}}, nil
 	}
 	return s.concurrencyService.AcquireAccountSlot(ctx, accountID, maxConcurrency)
+}
+
+type routeConcurrencyLookup interface {
+	GetGroupModelRouteConcurrency(context.Context, int64, string, int64) (*int, error)
+}
+
+func (s *GatewayService) tryAcquireRouteSlot(ctx context.Context, groupID *int64, routeAlias string, accountID int64) (*AcquireResult, error) {
+	if groupID == nil || s.concurrencyService == nil {
+		return &AcquireResult{Acquired: true, ReleaseFunc: func() {}}, nil
+	}
+	key := fmt.Sprintf("%d|%s|%d", *groupID, routeAlias, accountID)
+	limit, hit, err := s.concurrencyService.GetRouteConcurrencyLimit(ctx, "group:"+key)
+	if err != nil {
+		return nil, err
+	}
+	if !hit {
+		lookup, ok := s.groupRepo.(routeConcurrencyLookup)
+		if !ok {
+			return &AcquireResult{Acquired: true, ReleaseFunc: func() {}}, nil
+		}
+		limit, err = lookup.GetGroupModelRouteConcurrency(ctx, *groupID, routeAlias, accountID)
+		if err != nil {
+			return nil, err
+		}
+		_ = s.concurrencyService.SetRouteConcurrencyLimit(ctx, "group:"+key, limit)
+	}
+	if limit == nil {
+		return &AcquireResult{Acquired: true, ReleaseFunc: func() {}}, nil
+	}
+	return s.concurrencyService.AcquireRouteSlot(ctx, "group:"+key, *limit)
 }
 
 type usageLogWindowStatsBatchProvider interface {

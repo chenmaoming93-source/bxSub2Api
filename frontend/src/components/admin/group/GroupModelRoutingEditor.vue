@@ -15,7 +15,9 @@
       </button>
       <span class="text-sm text-gray-500 dark:text-gray-400">{{ enabled ? t('admin.groups.modelRouting.enabled') : t('admin.groups.modelRouting.disabled') }}</span>
     </div>
-    <p class="mb-3 text-xs text-gray-500 dark:text-gray-400">{{ t(enabled ? 'admin.groups.modelRouting.noRulesHint' : 'admin.groups.modelRouting.disabledHint') }}</p>
+    <div class="mb-3 flex items-center justify-between gap-3">
+      <p class="text-xs text-gray-500 dark:text-gray-400">{{ t(enabled ? 'admin.groups.modelRouting.noRulesHint' : 'admin.groups.modelRouting.disabledHint') }}</p>
+    </div>
     <div v-if="enabled" class="space-y-3">
       <div v-for="rule in rules" :key="ruleKey(rule)" class="rounded-lg border border-gray-200 p-3 dark:border-dark-600">
         <div class="flex items-start gap-3">
@@ -33,16 +35,31 @@
                 </span>
               </div>
               <div class="relative account-search-container">
-                <input v-model="keywords[candidateKey(candidate)]" type="text" class="input text-sm" :placeholder="t('admin.groups.modelRouting.searchAccountPlaceholder')" @input="search(candidate)" @focus="focus(candidate)" />
-                <div v-if="dropdowns[candidateKey(candidate)] && results[candidateKey(candidate)]?.length" class="absolute z-50 mt-1 max-h-48 w-full overflow-auto rounded-lg border bg-white shadow-lg dark:border-dark-600 dark:bg-dark-800">
-                  <button v-for="account in results[candidateKey(candidate)]" :key="account.id" type="button" class="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-dark-700" :disabled="candidate.accounts.some(item => item.id === account.id)" @click="select(candidate, account)">
+                <input v-model="keywords[candidateKey(candidate)]" type="text" class="input text-sm" :placeholder="t('admin.groups.modelRouting.searchAccountPlaceholder')" @input="search(candidate)" @focus="focus(candidate)" @pointerdown="toggleDropdown(candidate, $event)" @keydown.esc.prevent="closeAllDropdowns" />
+                <div v-if="dropdowns[candidateKey(candidate)]" class="absolute z-50 mt-1 max-h-48 w-full overflow-auto rounded-lg border bg-white shadow-lg dark:border-dark-600 dark:bg-dark-800">
+                  <div v-if="loading[candidateKey(candidate)]" class="flex items-center justify-center gap-2 px-3 py-4 text-sm text-gray-500 dark:text-gray-400">
+                    <Icon name="refresh" size="sm" class="animate-spin" />
+                    <span>加载中...</span>
+                  </div>
+                  <button v-else v-for="account in results[candidateKey(candidate)] || []" :key="account.id" type="button" class="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-dark-700" :disabled="candidate.accounts.some(item => item.id === account.id)" @click="select(candidate, account)">
                     <span class="truncate">{{ account.name }} <span class="text-xs text-gray-400">#{{ account.id }}</span></span>
                     <span v-if="account.upstreamModel" class="shrink-0 rounded bg-gray-100 px-1.5 py-0.5 text-[10px] text-gray-500 dark:bg-dark-600 dark:text-gray-400">{{ account.upstreamModel }}</span>
                   </button>
+                  <div v-if="!loading[candidateKey(candidate)] && !results[candidateKey(candidate)]?.length" class="px-3 py-4 text-center text-sm text-gray-500 dark:text-gray-400">暂无匹配账号</div>
                 </div>
               </div>
+			  <p v-if="selectionErrors[candidateKey(candidate)]" class="text-xs text-red-500">{{ selectionErrors[candidateKey(candidate)] }}</p>
               <div class="grid min-w-0 gap-2 md:grid-cols-3">
                 <div><label class="input-label text-xs">{{ t('admin.groups.modelRouting.priority', 'Priority') }}</label><input v-model.number="candidate.priority" type="number" min="0" step="1" class="input text-sm" /></div>
+                <div>
+                  <label class="input-label text-xs">最大并发</label>
+                  <input v-model.number="candidate.maxConcurrency" @change="markConcurrencyDirty" type="number" min="1" step="1" class="input text-sm" placeholder="不限" />
+                  <p v-if="candidate.maxConcurrency == null" class="mt-1 text-[10px] text-gray-500">无限制，不参与账号额度分配</p>
+                  <p v-else-if="accountConcurrency(candidate) !== null" class="mt-1 text-[10px] text-gray-500">
+                    其他分组已占用 {{ candidate.allocatedConcurrency ?? 0 }} / {{ accountConcurrency(candidate) }}，本分组配置 {{ groupAccountConcurrency(candidate) }}
+                    （{{ candidateConcurrencyPercentage(candidate) }}%）
+                  </p>
+                </div>
               </div>
               <p v-if="invalid(candidate)" class="text-xs text-red-500">{{ t('admin.groups.modelRouting.candidateValidation', 'Account and non-negative integer priority are required') }}</p>
               <button type="button" class="absolute right-2 top-2 text-gray-400 hover:text-red-500" @click="removeCandidate(rule, candidate)"><Icon name="x" size="xs" /></button>
@@ -58,7 +75,7 @@
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from 'vue'
+import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { adminAPI } from '@/api/admin'
 import Icon from '@/components/icons/Icon.vue'
@@ -66,7 +83,7 @@ import { createStableObjectKeyResolver } from '@/utils/stableObjectKey'
 import { useKeyedDebouncedSearch } from '@/composables/useKeyedDebouncedSearch'
 import { addRoutingCandidate, createEmptyRoutingCandidate, extractUpstreamModel, type RoutingEditorAccount, type RoutingEditorCandidate, type RoutingEditorRule } from './groupModelRoutingEditor'
 
-const props = defineProps<{ platform: string }>()
+const props = defineProps<{ platform: string; groupId?: number }>()
 const enabled = defineModel<boolean>('enabled', { required: true })
 const rules = defineModel<RoutingEditorRule[]>('rules', { required: true })
 const { t } = useI18n()
@@ -76,15 +93,52 @@ const ruleKey = (rule: RoutingEditorRule) => resolveRuleKey(rule)
 const candidateKey = (candidate: RoutingEditorCandidate) => resolveCandidateKey(candidate)
 const keywords = ref<Record<string, string>>({})
 const results = ref<Record<string, RoutingEditorAccount[]>>({})
+const loading = ref<Record<string, boolean>>({})
 const dropdowns = ref<Record<string, boolean>>({})
+const selectionErrors = ref<Record<string, string>>({})
+const concurrencyDirty = ref(false)
 const runner = useKeyedDebouncedSearch<RoutingEditorAccount[]>({ delay: 300, search: async (keyword, { signal }) => {
   const response = await adminAPI.accounts.list(1, 20, { search: keyword, platform: props.platform as never }, { signal })
-  return response.items.map(account => ({ id: account.id, name: account.name, upstreamModel: extractUpstreamModel(account.credentials) }))
-}, onSuccess: (key, value) => { results.value[key] = value }, onError: key => { results.value[key] = [] } })
-const search = (candidate: RoutingEditorCandidate) => runner.trigger(candidateKey(candidate), keywords.value[candidateKey(candidate)] || '')
+  return response.items.map(account => ({ id: account.id, name: account.name, concurrency: account.concurrency, upstreamModel: extractUpstreamModel(account.credentials) }))
+}, onSuccess: (key, value) => { results.value[key] = value; loading.value[key] = false }, onError: key => { results.value[key] = []; loading.value[key] = false } })
+const search = (candidate: RoutingEditorCandidate) => {
+  const key = candidateKey(candidate)
+  loading.value[key] = true
+  runner.trigger(key, keywords.value[key] || '')
+}
 const focus = (candidate: RoutingEditorCandidate) => { dropdowns.value[candidateKey(candidate)] = true; if (!results.value[candidateKey(candidate)]?.length) search(candidate) }
+const closeAllDropdowns = () => { dropdowns.value = {} }
+const toggleDropdown = (candidate: RoutingEditorCandidate, event: PointerEvent) => {
+  const key = candidateKey(candidate)
+  if (!dropdowns.value[key]) return
+  // Keep focus from immediately reopening the dropdown after closing it.
+  event.preventDefault()
+  dropdowns.value[key] = false
+}
+const loadAccountAllocation = async (candidate: RoutingEditorCandidate, account: RoutingEditorAccount) => {
+  try {
+    const refs = await adminAPI.accounts.getModelRouteReferences(account.id)
+    const reference = refs[0]
+    candidate.accountConcurrency = reference?.account_concurrency ?? account.concurrency
+    candidate.allocatedConcurrency = props.groupId
+      ? refs
+          .filter(item => item.group_id !== props.groupId && item.max_concurrency != null)
+          .reduce((total, item) => total + Number(item.max_concurrency), 0)
+      : reference?.allocated_concurrency ?? 0
+  } catch {
+    // Keep the input usable when the reference lookup is temporarily unavailable.
+  }
+}
 const select = (candidate: RoutingEditorCandidate, account: RoutingEditorAccount) => {
-  if (!candidate.accounts.some(item => item.id === account.id)) candidate.accounts.push(account)
+	if (candidate.accounts.length > 0 && !candidate.accounts.some(item => item.id === account.id)) {
+	  selectionErrors.value[candidateKey(candidate)] = '每个候选只能选择一个模型账号'
+	  return
+	}
+	selectionErrors.value[candidateKey(candidate)] = ''
+  if (!candidate.accounts.some(item => item.id === account.id)) {
+    candidate.accounts.push(account)
+    void loadAccountAllocation(candidate, account)
+  }
   keywords.value[candidateKey(candidate)] = ''
   dropdowns.value[candidateKey(candidate)] = false
 }
@@ -101,14 +155,62 @@ const removeRule = (rule: RoutingEditorRule) => { rules.value.splice(rules.value
 const invalid = (candidate: RoutingEditorCandidate) => {
   return !candidate.accounts.length || !Number.isInteger(Number(candidate.priority)) || Number(candidate.priority) < 0
 }
-const isValid = () => !enabled.value || (rules.value.length > 0 && rules.value.every(rule => rule.alias.trim() && rule.candidates.length > 0 && rule.candidates.every(candidate => !invalid(candidate))))
-defineExpose({ isValid })
-const closeDropdowns = (event: MouseEvent) => { if (!(event.target as HTMLElement).closest('.account-search-container')) dropdowns.value = {} }
+const accountConcurrency = (candidate: RoutingEditorCandidate): number | null => candidate.accountConcurrency ?? candidate.accounts[0]?.concurrency ?? null
+const groupAccountConcurrency = (candidate: RoutingEditorCandidate): number => {
+  const accountIDs = new Set(candidate.accounts.map(account => account.id))
+  let total = 0
+  for (const rule of rules.value) {
+    for (const item of rule.candidates) {
+      if (!item.accounts.some(account => accountIDs.has(account.id))) continue
+      const max = item.maxConcurrency === '' || item.maxConcurrency == null ? null : Number(item.maxConcurrency)
+      if (max !== null && Number.isFinite(max)) total += max
+    }
+  }
+  return total
+}
+const candidateConcurrencyPercentage = (candidate: RoutingEditorCandidate): number | string => {
+  const total = accountConcurrency(candidate)
+  return total !== null && total > 0 ? Math.round(groupAccountConcurrency(candidate) * 100 / total) : '不适用'
+}
+const markConcurrencyDirty = () => { concurrencyDirty.value = true }
+const getConcurrencyUpdates = (): Array<{ route_alias: string; account_id: number; max_concurrency: number | null }> => {
+  const updates: Array<{ route_alias: string; account_id: number; max_concurrency: number | null }> = []
+  for (const rule of rules.value) for (const candidate of rule.candidates) {
+    const max = candidate.maxConcurrency === '' || candidate.maxConcurrency == null ? null : Number(candidate.maxConcurrency)
+    if (max !== null && (!Number.isInteger(max) || max <= 0)) throw new Error('最大并发数必须是正整数或留空')
+    for (const account of candidate.accounts) updates.push({ route_alias: rule.alias.trim(), account_id: account.id, max_concurrency: max })
+  }
+  return updates
+}
+watch(() => props.groupId, async (groupId) => {
+  if (!groupId) return
+  try {
+    const refs = await adminAPI.groups.listModelRouteReferences(groupId)
+    for (const rule of rules.value) {
+      for (const candidate of rule.candidates) {
+        const account = candidate.accounts[0]
+        if (!account) continue
+        const match = refs.find(item => item.route_alias === rule.alias && item.account_id === account.id)
+        if (match) {
+          candidate.maxConcurrency = match.max_concurrency
+          candidate.accountConcurrency = match.account_concurrency
+          candidate.allocatedConcurrency = match.allocated_concurrency
+        }
+      }
+    }
+  } catch { /* the editor still works when the projection is not initialized */ }
+  concurrencyDirty.value = false
+}, { immediate: true })
+const isValid = () => !enabled.value || (rules.value.length > 0 && rules.value.every(rule => rule.alias.trim() && rule.candidates.length > 0 && rule.candidates.every(candidate => !invalid(candidate) && candidate.accounts.length === 1)))
+defineExpose({ isValid, getConcurrencyUpdates })
+const closeDropdowns = (event: PointerEvent) => {
+  if (!(event.target as HTMLElement).closest('.account-search-container')) closeAllDropdowns()
+}
 onMounted(() => {
-  document.addEventListener('click', closeDropdowns)
+  document.addEventListener('pointerdown', closeDropdowns, true)
 })
 onBeforeUnmount(() => {
-  document.removeEventListener('click', closeDropdowns)
+  document.removeEventListener('pointerdown', closeDropdowns, true)
   runner.clearAll()
 })
 </script>

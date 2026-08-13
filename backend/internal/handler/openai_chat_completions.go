@@ -201,6 +201,15 @@ func (h *OpenAIGatewayHandler) ChatCompletions(c *gin.Context) {
 			false,
 		)
 		if err != nil {
+			if failures := service.ModelCandidateFailuresFromError(err); routed && len(failures) > 0 {
+				for _, failure := range failures {
+					candidateFailures = appendModelCandidateFailure(candidateFailures, failure)
+				}
+				for _, id := range routingAccountIDs {
+					failedAccountIDs[id] = struct{}{}
+				}
+				continue
+			}
 			reqLog.Warn("openai_chat_completions.account_select_failed",
 				zap.Error(err),
 				zap.Int("excluded_account_count", len(failedAccountIDs)),
