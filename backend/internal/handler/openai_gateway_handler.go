@@ -334,6 +334,9 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 			requireCompact,
 		)
 		if err != nil {
+			if h.handleOpenAIModelRouteSelectionError(c, err, streamStarted) {
+				return
+			}
 			reqLog.Warn("openai.account_select_failed",
 				zap.Error(err),
 				zap.Int("excluded_account_count", len(failedAccountIDs)),
@@ -780,6 +783,11 @@ func (h *OpenAIGatewayHandler) Messages(c *gin.Context) {
 			false,
 		)
 		if err != nil {
+			if failures := service.ModelCandidateFailuresFromError(err); len(failures) > 0 {
+				status, message := modelCandidatesExhaustedDetails(failures)
+				h.anthropicStreamingAwareError(c, status, "rate_limit_error", message, streamStarted)
+				return
+			}
 			reqLog.Warn("openai_messages.account_select_failed",
 				zap.Error(err),
 				zap.Int("excluded_account_count", len(failedAccountIDs)),
@@ -1925,6 +1933,16 @@ func (h *OpenAIGatewayHandler) handleStreamingAwareError(c *gin.Context, status 
 
 	// Normal case: return JSON response with proper status code
 	h.errorResponse(c, status, errType, message)
+}
+
+func (h *OpenAIGatewayHandler) handleOpenAIModelRouteSelectionError(c *gin.Context, err error, streamStarted bool) bool {
+	failures := service.ModelCandidateFailuresFromError(err)
+	if len(failures) == 0 {
+		return false
+	}
+	status, message := modelCandidatesExhaustedDetails(failures)
+	h.handleStreamingAwareError(c, status, "rate_limit_error", message, streamStarted)
+	return true
 }
 
 // ensureForwardErrorResponse 在 Forward 返回错误但尚未写响应时补写统一错误响应。

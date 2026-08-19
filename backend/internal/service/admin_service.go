@@ -233,7 +233,8 @@ type CreateGroupInput struct {
 	// RPMLimit 分组 RPM 上限（0 = 不限制）
 	RPMLimit int
 	// 从指定分组复制账号（创建分组后在同一事务内绑定）
-	CopyAccountsFromGroupIDs []int64
+	CopyAccountsFromGroupIDs     []int64
+	ModelRouteConcurrencyUpdates []ModelRouteConcurrencyUpdate
 }
 
 type UpdateGroupInput struct {
@@ -274,7 +275,8 @@ type UpdateGroupInput struct {
 	// RPMLimit 分组 RPM 上限（0 = 不限制），nil 表示未提供不改动。
 	RPMLimit *int
 	// 从指定分组复制账号（同步操作：先清空当前分组的账号绑定，再绑定源分组的账号）
-	CopyAccountsFromGroupIDs []int64
+	CopyAccountsFromGroupIDs     []int64
+	ModelRouteConcurrencyUpdates []ModelRouteConcurrencyUpdate
 }
 
 type CreateAccountInput struct {
@@ -561,9 +563,15 @@ type adminServiceImpl struct {
 	userSubRepo          UserSubscriptionRepository
 	privacyClientFactory PrivacyClientFactory
 	runtimeBlocker       AccountRuntimeBlocker
+	concurrencyService   *ConcurrencyService
 	userProvisioning     *UserProvisioningService
 
 	createGroupMu sync.Mutex
+}
+
+// SetRouteConcurrencyService wires the shared Redis-backed route config cache after construction.
+func (s *adminServiceImpl) SetRouteConcurrencyService(concurrencyService *ConcurrencyService) {
+	s.concurrencyService = concurrencyService
 }
 
 func (s *adminServiceImpl) SetUserProvisioningService(provisioning *UserProvisioningService) {
@@ -572,6 +580,96 @@ func (s *adminServiceImpl) SetUserProvisioningService(provisioning *UserProvisio
 
 type userGroupRateBatchReader interface {
 	GetByUserIDs(ctx context.Context, userIDs []int64) (map[int64]map[int64]float64, error)
+}
+
+type groupModelRouteReferenceRebuilder interface {
+	RebuildGroupModelRouteAccounts(context.Context, *int64) (any, error)
+}
+
+type groupModelRouteReferenceReader interface {
+	ListGroupModelRouteReferences(context.Context, int64) (any, error)
+}
+
+type ModelRouteReference struct {
+	GroupID              int64  `json:"group_id"`
+	GroupName            string `json:"group_name"`
+	RouteAlias           string `json:"route_alias"`
+	AccountID            int64  `json:"account_id"`
+	MaxConcurrency       *int   `json:"max_concurrency"`
+	AccountConcurrency   int    `json:"account_concurrency"`
+	AllocatedConcurrency int    `json:"allocated_concurrency"`
+}
+
+type ModelRouteConcurrencyUpdate struct {
+	RouteAlias     string
+	AccountID      int64
+	MaxConcurrency *int
+}
+
+type groupModelRouteGroupReader interface {
+	ListGroupModelRouteReferencesByGroup(context.Context, int64) (any, error)
+}
+
+type groupModelRouteConcurrencyUpdater interface {
+	UpdateGroupModelRouteConcurrency(context.Context, int64, string, int64, *int) error
+	UpdateGroupModelRouteConcurrencyBatch(context.Context, int64, []ModelRouteConcurrencyUpdate) error
+}
+
+// RebuildGroupModelRouteAccounts rebuilds the normalized model-routing projection.
+func (s *adminServiceImpl) RebuildGroupModelRouteAccounts(ctx context.Context, groupID *int64) (any, error) {
+	rebuilder, ok := s.groupRepo.(groupModelRouteReferenceRebuilder)
+	if !ok {
+		return nil, fmt.Errorf("group repository does not support model-route reference rebuild")
+	}
+	return rebuilder.RebuildGroupModelRouteAccounts(ctx, groupID)
+}
+
+func (s *adminServiceImpl) ListGroupModelRouteReferences(ctx context.Context, accountID int64) (any, error) {
+	reader, ok := s.groupRepo.(groupModelRouteReferenceReader)
+	if !ok {
+		return nil, fmt.Errorf("group repository does not support model-route reference lookup")
+	}
+	return reader.ListGroupModelRouteReferences(ctx, accountID)
+}
+
+func (s *adminServiceImpl) ListGroupModelRouteReferencesByGroup(ctx context.Context, groupID int64) (any, error) {
+	reader, ok := s.groupRepo.(groupModelRouteGroupReader)
+	if !ok {
+		return nil, fmt.Errorf("group repository does not support group reference lookup")
+	}
+	return reader.ListGroupModelRouteReferencesByGroup(ctx, groupID)
+}
+
+func (s *adminServiceImpl) UpdateGroupModelRouteConcurrency(ctx context.Context, groupID int64, routeAlias string, accountID int64, maxConcurrency *int) error {
+	updater, ok := s.groupRepo.(groupModelRouteConcurrencyUpdater)
+	if !ok {
+		return fmt.Errorf("group repository does not support concurrency configuration")
+	}
+	if err := updater.UpdateGroupModelRouteConcurrency(ctx, groupID, routeAlias, accountID, maxConcurrency); err != nil {
+		return err
+	}
+	if s.concurrencyService != nil {
+		key := fmt.Sprintf("group:%d|%s|%d", groupID, routeAlias, accountID)
+		_ = s.concurrencyService.SetRouteConcurrencyLimit(ctx, key, maxConcurrency)
+	}
+	return nil
+}
+
+func (s *adminServiceImpl) UpdateGroupModelRouteConcurrencyBatch(ctx context.Context, groupID int64, updates []ModelRouteConcurrencyUpdate) error {
+	updater, ok := s.groupRepo.(groupModelRouteConcurrencyUpdater)
+	if !ok {
+		return fmt.Errorf("group repository does not support concurrency configuration")
+	}
+	if err := updater.UpdateGroupModelRouteConcurrencyBatch(ctx, groupID, updates); err != nil {
+		return err
+	}
+	if s.concurrencyService != nil {
+		for _, update := range updates {
+			key := fmt.Sprintf("group:%d|%s|%d", groupID, update.RouteAlias, update.AccountID)
+			_ = s.concurrencyService.SetRouteConcurrencyLimit(ctx, key, update.MaxConcurrency)
+		}
+	}
+	return nil
 }
 
 // NewAdminService creates a new AdminService
@@ -1930,6 +2028,7 @@ func (s *adminServiceImpl) CreateGroup(ctx context.Context, input *CreateGroupIn
 		MessagesDispatchModelConfig:     normalizeOpenAIMessagesDispatchModelConfig(input.MessagesDispatchModelConfig),
 		ModelsListConfig:                normalizeGroupModelsListConfig(input.ModelsListConfig),
 		RPMLimit:                        input.RPMLimit,
+		ModelRouteConcurrencyUpdates:    input.ModelRouteConcurrencyUpdates,
 	}
 	sanitizeGroupMessagesDispatchFields(group)
 
@@ -1973,6 +2072,12 @@ func (s *adminServiceImpl) CreateGroup(ctx context.Context, input *CreateGroupIn
 			return nil, fmt.Errorf("failed to bind accounts to new group: %w", err)
 		}
 		group.AccountCount = int64(len(accountIDsToCopy))
+	}
+	if s.concurrencyService != nil {
+		for _, update := range input.ModelRouteConcurrencyUpdates {
+			key := fmt.Sprintf("group:%d|%s|%d", group.ID, update.RouteAlias, update.AccountID)
+			_ = s.concurrencyService.SetRouteConcurrencyLimit(ctx, key, update.MaxConcurrency)
+		}
 	}
 
 	return group, nil
@@ -2192,10 +2297,17 @@ func (s *adminServiceImpl) UpdateGroup(ctx context.Context, id int64, input *Upd
 	if input.RPMLimit != nil {
 		group.RPMLimit = *input.RPMLimit
 	}
+	group.ModelRouteConcurrencyUpdates = input.ModelRouteConcurrencyUpdates
 	sanitizeGroupMessagesDispatchFields(group)
 
 	if err := s.groupRepo.Update(ctx, group); err != nil {
 		return nil, err
+	}
+	if s.concurrencyService != nil {
+		for _, update := range input.ModelRouteConcurrencyUpdates {
+			key := fmt.Sprintf("group:%d|%s|%d", id, update.RouteAlias, update.AccountID)
+			_ = s.concurrencyService.SetRouteConcurrencyLimit(ctx, key, update.MaxConcurrency)
+		}
 	}
 
 	if s.authCacheInvalidator != nil {
@@ -2718,6 +2830,7 @@ func (s *adminServiceImpl) UpdateAccount(ctx context.Context, id int64, input *U
 	if err != nil {
 		return nil, err
 	}
+	oldConcurrency := account.Concurrency
 	wasOveragesEnabled := account.IsOveragesEnabled()
 
 	if input.Name != "" {
@@ -2834,6 +2947,11 @@ func (s *adminServiceImpl) UpdateAccount(ctx context.Context, id int64, input *U
 	if err := s.accountRepo.Update(ctx, account); err != nil {
 		return nil, err
 	}
+	if oldConcurrency != account.Concurrency {
+		if err := s.refreshAccountRouteConcurrencyCache(ctx, account.ID); err != nil {
+			return nil, err
+		}
+	}
 
 	// 绑定分组
 	if input.GroupIDs != nil {
@@ -2848,6 +2966,31 @@ func (s *adminServiceImpl) UpdateAccount(ctx context.Context, id int64, input *U
 		return nil, err
 	}
 	return updated, nil
+}
+
+func (s *adminServiceImpl) refreshAccountRouteConcurrencyCache(ctx context.Context, accountID int64) error {
+	if s.concurrencyService == nil {
+		return nil
+	}
+	reader, ok := s.groupRepo.(groupModelRouteReferenceReader)
+	if !ok {
+		return nil
+	}
+	value, err := reader.ListGroupModelRouteReferences(ctx, accountID)
+	if err != nil {
+		return err
+	}
+	references, ok := value.([]ModelRouteReference)
+	if !ok {
+		return fmt.Errorf("unexpected model-route reference result type")
+	}
+	for _, ref := range references {
+		key := fmt.Sprintf("group:%d|%s|%d", ref.GroupID, ref.RouteAlias, ref.AccountID)
+		if err := s.concurrencyService.SetRouteConcurrencyLimit(ctx, key, ref.MaxConcurrency); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // UpdateAccountExtra 仅对 Extra JSONB 做 key 级合并，避免覆盖其它运行态键

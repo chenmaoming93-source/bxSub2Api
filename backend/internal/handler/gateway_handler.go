@@ -1636,7 +1636,7 @@ func modelCandidatesExhaustedDetails(failures []service.ModelCandidateFailure) (
 	allQuota := len(failures) > 0
 	parts := make([]string, 0, len(failures))
 	for _, failure := range failures {
-		if failure.Reason != "token_quota" {
+		if failure.Reason != "token_quota" && failure.Reason != "route_concurrency" {
 			allQuota = false
 		}
 		account := failure.AccountName

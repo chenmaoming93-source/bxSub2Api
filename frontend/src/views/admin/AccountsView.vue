@@ -276,6 +276,35 @@
           <template #cell-groups="{ row }">
             <AccountGroupsCell :groups="row.groups" :max-display="4" />
           </template>
+          <template #cell-model_route_references="{ row }">
+            <div v-if="routeReferenceLoading[row.id]" class="text-xs text-gray-400">加载中</div>
+            <div v-else-if="routeReferencesByAccount[row.id]?.length" class="flex min-w-0 max-w-full flex-wrap items-center gap-1">
+              <span
+                v-for="item in (expandedRouteReferences[row.id] ? routeReferencesByAccount[row.id] : routeReferencesByAccount[row.id].slice(0, 2))"
+                :key="`${item.group_id}-${item.route_alias}-${item.account_id}`"
+                class="inline-flex min-w-0 max-w-full items-center overflow-hidden rounded-md bg-indigo-100 px-1.5 py-1 text-[10px] font-medium leading-tight text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300"
+                :title="`${item.group_name} / ${item.route_alias}`"
+              >
+                <span class="max-w-full truncate whitespace-nowrap">
+                  <span class="font-semibold">{{ item.group_name }}</span>
+                  <span class="font-normal"> / {{ item.route_alias }}</span>
+                  <span class="ml-1 text-indigo-600/80 dark:text-indigo-300/80">
+                    · {{ item.max_concurrency == null ? '不限' : `${item.max_concurrency}/${item.account_concurrency} (${item.account_concurrency > 0 ? Math.round(item.max_concurrency * 100 / item.account_concurrency) : '不适用'}%)` }}
+                  </span>
+                </span>
+              </span>
+              <button
+                v-if="routeReferencesByAccount[row.id].length > 2"
+                type="button"
+                class="inline-flex shrink-0 items-center rounded-md bg-gray-100 px-1.5 py-1 text-[10px] font-medium text-gray-600 hover:bg-gray-200 dark:bg-dark-700 dark:text-gray-300 dark:hover:bg-dark-600"
+                :title="expandedRouteReferences[row.id] ? '收起引用' : '展示全部引用'"
+                @click="toggleRouteReferences(row.id)"
+              >
+                {{ expandedRouteReferences[row.id] ? '收起' : `+${routeReferencesByAccount[row.id].length - 2}` }}
+              </button>
+            </div>
+            <span v-else class="text-xs text-gray-400">未被引用</span>
+          </template>
           <template #header-usage="{ column }">
             <div class="flex items-center">
               <span>{{ column.label }}</span>
@@ -432,6 +461,7 @@ import AccountGroupsCell from '@/components/account/AccountGroupsCell.vue'
 import AccountCapacityCell from '@/components/account/AccountCapacityCell.vue'
 import PlatformTypeBadge from '@/components/common/PlatformTypeBadge.vue'
 import Icon from '@/components/icons/Icon.vue'
+import type { Column } from '@/components/common/types'
 import ErrorPassthroughRulesModal from '@/components/admin/ErrorPassthroughRulesModal.vue'
 import TLSFingerprintProfilesModal from '@/components/admin/TLSFingerprintProfilesModal.vue'
 import { buildOpenAIUsageRefreshKey } from '@/utils/accountUsageRefresh'
@@ -761,6 +791,38 @@ const {
   }
 })
 
+const routeReferencesByAccount = reactive<Record<number, Awaited<ReturnType<typeof adminAPI.accounts.getModelRouteReferences>>>>({})
+const routeReferenceLoading = reactive<Record<number, boolean>>({})
+const expandedRouteReferences = reactive<Record<number, boolean>>({})
+
+const toggleRouteReferences = (accountId: number) => {
+  expandedRouteReferences[accountId] = !expandedRouteReferences[accountId]
+}
+
+const refreshRouteReferences = async (rows: Account[] = accounts.value) => {
+  await Promise.all(rows.map(async (row) => {
+    routeReferenceLoading[row.id] = true
+    try {
+      routeReferencesByAccount[row.id] = await adminAPI.accounts.getModelRouteReferences(row.id)
+    } catch {
+      routeReferencesByAccount[row.id] = []
+    } finally {
+      routeReferenceLoading[row.id] = false
+    }
+  }))
+}
+
+watch(accounts, (rows) => {
+  for (const row of rows) {
+    if (routeReferencesByAccount[row.id] || routeReferenceLoading[row.id]) continue
+    routeReferenceLoading[row.id] = true
+    adminAPI.accounts.getModelRouteReferences(row.id)
+      .then(value => { routeReferencesByAccount[row.id] = value })
+      .catch(() => { routeReferencesByAccount[row.id] = [] })
+      .finally(() => { routeReferenceLoading[row.id] = false })
+  }
+}, { immediate: true })
+
 const {
   selectedIds: selIds,
   allVisibleSelected,
@@ -812,6 +874,7 @@ const load = async () => {
     delete requestParams.lite
   }
   await refreshTodayStatsBatch()
+  await refreshRouteReferences()
 }
 
 const reload = async () => {
@@ -820,6 +883,7 @@ const reload = async () => {
   pendingTodayStatsRefresh.value = false
   await baseReload()
   await refreshTodayStatsBatch()
+  await refreshRouteReferences()
 }
 
 const debouncedReload = () => {
@@ -1137,7 +1201,7 @@ function getAntigravityTierClass(row: any): string {
 
 // All available columns
 const allColumns = computed(() => {
-  const c = [
+  const c: Column[] = [
     { key: 'select', label: '', sortable: false },
     { key: 'name', label: t('admin.accounts.columns.name'), sortable: true },
     { key: 'id', label: t('admin.accounts.columns.id'), sortable: true },
@@ -1151,6 +1215,7 @@ const allColumns = computed(() => {
     c.push({ key: 'groups', label: t('admin.accounts.columns.groups'), sortable: false })
   }
   c.push(
+    { key: 'model_route_references', label: '被分组路由引用', sortable: false, class: 'w-[280px] max-w-[280px]' },
     { key: 'usage', label: t('admin.accounts.columns.usageWindows'), sortable: false },
     { key: 'proxy', label: t('admin.accounts.columns.proxy'), sortable: false },
     { key: 'priority', label: t('admin.accounts.columns.priority'), sortable: true },
@@ -1516,6 +1581,7 @@ const patchAccountInList = (updatedAccount: Account) => {
 }
 const handleAccountUpdated = (updatedAccount: Account) => {
   patchAccountInList(updatedAccount)
+  void refreshRouteReferences([updatedAccount])
   enterAutoRefreshSilentWindow()
 }
 const formatExportTimestamp = () => {

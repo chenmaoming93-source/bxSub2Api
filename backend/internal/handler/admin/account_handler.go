@@ -95,43 +95,43 @@ func NewAccountHandler(
 
 // CreateAccountRequest represents create account request
 type CreateAccountRequest struct {
-	Name                    string         `json:"name" binding:"required"`
-	Notes                   *string        `json:"notes"`
-	Platform                string         `json:"platform" binding:"required"`
-	Type                    string         `json:"type" binding:"required,oneof=oauth setup-token apikey upstream bedrock service_account"`
-	Credentials             map[string]any `json:"credentials" binding:"required"`
-	Extra                   map[string]any `json:"extra"`
+	Name                    string                 `json:"name" binding:"required"`
+	Notes                   *string                `json:"notes"`
+	Platform                string                 `json:"platform" binding:"required"`
+	Type                    string                 `json:"type" binding:"required,oneof=oauth setup-token apikey upstream bedrock service_account"`
+	Credentials             map[string]any         `json:"credentials" binding:"required"`
+	Extra                   map[string]any         `json:"extra"`
 	ModelAttributes         domain.ModelAttributes `json:"model_attributes"` // 模型基本属性 map；nil = 未配置
-	ProxyID                 *int64         `json:"proxy_id"`
-	Concurrency             int            `json:"concurrency"`
-	Priority                int            `json:"priority"`
-	RateMultiplier          *float64       `json:"rate_multiplier"`
-	LoadFactor              *int           `json:"load_factor"`
-	GroupIDs                []int64        `json:"group_ids"`
-	ExpiresAt               *int64         `json:"expires_at"`
-	AutoPauseOnExpired      *bool          `json:"auto_pause_on_expired"`
-	ConfirmMixedChannelRisk *bool          `json:"confirm_mixed_channel_risk"` // 用户确认混合渠道风险
+	ProxyID                 *int64                 `json:"proxy_id"`
+	Concurrency             int                    `json:"concurrency"`
+	Priority                int                    `json:"priority"`
+	RateMultiplier          *float64               `json:"rate_multiplier"`
+	LoadFactor              *int                   `json:"load_factor"`
+	GroupIDs                []int64                `json:"group_ids"`
+	ExpiresAt               *int64                 `json:"expires_at"`
+	AutoPauseOnExpired      *bool                  `json:"auto_pause_on_expired"`
+	ConfirmMixedChannelRisk *bool                  `json:"confirm_mixed_channel_risk"` // 用户确认混合渠道风险
 }
 
 // UpdateAccountRequest represents update account request
 // 使用指针类型来区分"未提供"和"设置为0"
 type UpdateAccountRequest struct {
-	Name                    string         `json:"name"`
-	Notes                   *string        `json:"notes"`
-	Type                    string         `json:"type" binding:"omitempty,oneof=oauth setup-token apikey upstream bedrock service_account"`
-	Credentials             map[string]any `json:"credentials"`
-	Extra                   map[string]any `json:"extra"`
+	Name                    string                 `json:"name"`
+	Notes                   *string                `json:"notes"`
+	Type                    string                 `json:"type" binding:"omitempty,oneof=oauth setup-token apikey upstream bedrock service_account"`
+	Credentials             map[string]any         `json:"credentials"`
+	Extra                   map[string]any         `json:"extra"`
 	ModelAttributes         domain.ModelAttributes `json:"model_attributes"` // 模型基本属性 map；nil = 不改动，空 map = 清空
-	ProxyID                 *int64         `json:"proxy_id"`
-	Concurrency             *int           `json:"concurrency"`
-	Priority                *int           `json:"priority"`
-	RateMultiplier          *float64       `json:"rate_multiplier"`
-	LoadFactor              *int           `json:"load_factor"`
-	Status                  string         `json:"status" binding:"omitempty,oneof=active inactive error"`
-	GroupIDs                *[]int64       `json:"group_ids"`
-	ExpiresAt               *int64         `json:"expires_at"`
-	AutoPauseOnExpired      *bool          `json:"auto_pause_on_expired"`
-	ConfirmMixedChannelRisk *bool          `json:"confirm_mixed_channel_risk"` // 用户确认混合渠道风险
+	ProxyID                 *int64                 `json:"proxy_id"`
+	Concurrency             *int                   `json:"concurrency"`
+	Priority                *int                   `json:"priority"`
+	RateMultiplier          *float64               `json:"rate_multiplier"`
+	LoadFactor              *int                   `json:"load_factor"`
+	Status                  string                 `json:"status" binding:"omitempty,oneof=active inactive error"`
+	GroupIDs                *[]int64               `json:"group_ids"`
+	ExpiresAt               *int64                 `json:"expires_at"`
+	AutoPauseOnExpired      *bool                  `json:"auto_pause_on_expired"`
+	ConfirmMixedChannelRisk *bool                  `json:"confirm_mixed_channel_risk"` // 用户确认混合渠道风险
 }
 
 // BulkUpdateAccountsRequest represents the payload for bulk editing accounts
@@ -466,6 +466,28 @@ func (h *AccountHandler) GetByID(c *gin.Context) {
 	}
 
 	response.Success(c, h.buildAccountResponseWithRuntime(c.Request.Context(), account))
+}
+
+// GetModelRouteReferences returns the groups/routes that reference an account.
+func (h *AccountHandler) GetModelRouteReferences(c *gin.Context) {
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil || id <= 0 {
+		response.BadRequest(c, "Invalid account ID")
+		return
+	}
+	reader, ok := h.adminService.(interface {
+		ListGroupModelRouteReferences(context.Context, int64) (any, error)
+	})
+	if !ok {
+		response.InternalError(c, "model-route reference lookup is unavailable")
+		return
+	}
+	result, err := reader.ListGroupModelRouteReferences(c.Request.Context(), id)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, result)
 }
 
 // GetCredentials returns the raw (unredacted) credentials for an account.

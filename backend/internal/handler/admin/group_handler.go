@@ -2,6 +2,7 @@ package admin
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -21,6 +22,16 @@ type GroupHandler struct {
 	adminService         service.AdminService
 	dashboardService     *service.DashboardService
 	groupCapacityService *service.GroupCapacityService
+}
+
+type updateModelRouteConcurrencyRequest struct {
+	RouteAlias     string `json:"route_alias" binding:"required"`
+	AccountID      int64  `json:"account_id" binding:"required"`
+	MaxConcurrency *int   `json:"max_concurrency"`
+}
+
+type updateModelRouteConcurrencyBatchRequest struct {
+	Updates []updateModelRouteConcurrencyRequest `json:"updates" binding:"required,min=1"`
 }
 
 type optionalLimitField struct {
@@ -118,7 +129,8 @@ type CreateGroupRequest struct {
 	// 分组 RPM 上限（0 = 不限制）
 	RPMLimit int `json:"rpm_limit"`
 	// 从指定分组复制账号（创建后自动绑定）
-	CopyAccountsFromGroupIDs []int64 `json:"copy_accounts_from_group_ids"`
+	CopyAccountsFromGroupIDs     []int64                              `json:"copy_accounts_from_group_ids"`
+	ModelRouteConcurrencyUpdates []updateModelRouteConcurrencyRequest `json:"model_route_concurrency_updates"`
 }
 
 // UpdateGroupRequest represents update group request
@@ -159,7 +171,8 @@ type UpdateGroupRequest struct {
 	// 分组 RPM 上限（0 = 不限制）；nil 表示未提供不改动
 	RPMLimit *int `json:"rpm_limit"`
 	// 从指定分组复制账号（同步操作：先清空当前分组的账号绑定，再绑定源分组的账号）
-	CopyAccountsFromGroupIDs []int64 `json:"copy_accounts_from_group_ids"`
+	CopyAccountsFromGroupIDs     []int64                              `json:"copy_accounts_from_group_ids"`
+	ModelRouteConcurrencyUpdates []updateModelRouteConcurrencyRequest `json:"model_route_concurrency_updates"`
 }
 
 // List handles listing all groups with pagination
@@ -269,6 +282,83 @@ func (h *GroupHandler) GetModelsListCandidates(c *gin.Context) {
 	response.Success(c, gin.H{"models": models})
 }
 
+// RebuildModelRouteReferences rebuilds the normalized account-reference projection.
+// POST /api/v1/admin/groups/:id/model-route-references/rebuild or /admin/model-route-references/rebuild
+func (h *GroupHandler) RebuildModelRouteReferences(c *gin.Context) {
+	var groupID *int64
+	if raw := strings.TrimSpace(c.Param("id")); raw != "" {
+		id, err := strconv.ParseInt(raw, 10, 64)
+		if err != nil || id <= 0 {
+			response.BadRequest(c, "Invalid group ID")
+			return
+		}
+		groupID = &id
+	}
+	rebuilder, ok := h.adminService.(interface {
+		RebuildGroupModelRouteAccounts(context.Context, *int64) (any, error)
+	})
+	if !ok {
+		response.InternalError(c, "model-route reference rebuild is unavailable")
+		return
+	}
+	result, err := rebuilder.RebuildGroupModelRouteAccounts(c.Request.Context(), groupID)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, result)
+}
+
+func (h *GroupHandler) UpdateModelRouteConcurrency(c *gin.Context) {
+	groupID, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil || groupID <= 0 {
+		response.BadRequest(c, "Invalid group ID")
+		return
+	}
+	var req updateModelRouteConcurrencyBatchRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+	updater, ok := h.adminService.(interface {
+		UpdateGroupModelRouteConcurrencyBatch(context.Context, int64, []service.ModelRouteConcurrencyUpdate) error
+	})
+	if !ok {
+		response.InternalError(c, "concurrency configuration is unavailable")
+		return
+	}
+	updates := make([]service.ModelRouteConcurrencyUpdate, 0, len(req.Updates))
+	for _, item := range req.Updates {
+		updates = append(updates, service.ModelRouteConcurrencyUpdate{RouteAlias: strings.TrimSpace(item.RouteAlias), AccountID: item.AccountID, MaxConcurrency: item.MaxConcurrency})
+	}
+	if err := updater.UpdateGroupModelRouteConcurrencyBatch(c.Request.Context(), groupID, updates); err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, gin.H{"message": "concurrency updated"})
+}
+
+func (h *GroupHandler) ListModelRouteReferences(c *gin.Context) {
+	groupID, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil || groupID <= 0 {
+		response.BadRequest(c, "Invalid group ID")
+		return
+	}
+	reader, ok := h.adminService.(interface {
+		ListGroupModelRouteReferencesByGroup(context.Context, int64) (any, error)
+	})
+	if !ok {
+		response.InternalError(c, "group reference lookup is unavailable")
+		return
+	}
+	result, err := reader.ListGroupModelRouteReferencesByGroup(c.Request.Context(), groupID)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, result)
+}
+
 // Create handles creating a new group
 // POST /api/v1/admin/groups
 func (h *GroupHandler) Create(c *gin.Context) {
@@ -280,6 +370,14 @@ func (h *GroupHandler) Create(c *gin.Context) {
 	if err := validateModelRoutingJSON(req.ModelRouting); err != nil {
 		response.BadRequest(c, "Invalid model_routing: "+err.Error())
 		return
+	}
+	concurrencyUpdates := make([]service.ModelRouteConcurrencyUpdate, 0, len(req.ModelRouteConcurrencyUpdates))
+	for _, item := range req.ModelRouteConcurrencyUpdates {
+		concurrencyUpdates = append(concurrencyUpdates, service.ModelRouteConcurrencyUpdate{
+			RouteAlias:     strings.TrimSpace(item.RouteAlias),
+			AccountID:      item.AccountID,
+			MaxConcurrency: item.MaxConcurrency,
+		})
 	}
 
 	group, err := h.adminService.CreateGroup(c.Request.Context(), &service.CreateGroupInput{
@@ -313,6 +411,7 @@ func (h *GroupHandler) Create(c *gin.Context) {
 		ModelsListConfig:                req.ModelsListConfig,
 		RPMLimit:                        req.RPMLimit,
 		CopyAccountsFromGroupIDs:        req.CopyAccountsFromGroupIDs,
+		ModelRouteConcurrencyUpdates:    concurrencyUpdates,
 	})
 	if err != nil {
 		response.ErrorFrom(c, err)
@@ -339,6 +438,14 @@ func (h *GroupHandler) Update(c *gin.Context) {
 	if err := validateModelRoutingJSON(req.ModelRouting); err != nil {
 		response.BadRequest(c, "Invalid model_routing: "+err.Error())
 		return
+	}
+	concurrencyUpdates := make([]service.ModelRouteConcurrencyUpdate, 0, len(req.ModelRouteConcurrencyUpdates))
+	for _, item := range req.ModelRouteConcurrencyUpdates {
+		concurrencyUpdates = append(concurrencyUpdates, service.ModelRouteConcurrencyUpdate{
+			RouteAlias:     strings.TrimSpace(item.RouteAlias),
+			AccountID:      item.AccountID,
+			MaxConcurrency: item.MaxConcurrency,
+		})
 	}
 
 	group, err := h.adminService.UpdateGroup(c.Request.Context(), groupID, &service.UpdateGroupInput{
@@ -373,6 +480,7 @@ func (h *GroupHandler) Update(c *gin.Context) {
 		ModelsListConfig:                req.ModelsListConfig,
 		RPMLimit:                        req.RPMLimit,
 		CopyAccountsFromGroupIDs:        req.CopyAccountsFromGroupIDs,
+		ModelRouteConcurrencyUpdates:    concurrencyUpdates,
 	})
 	if err != nil {
 		response.ErrorFrom(c, err)
@@ -386,8 +494,18 @@ func validateModelRoutingJSON(value json.RawMessage) error {
 	if value == nil {
 		return nil
 	}
-	_, err := domain.ParseModelRoutingConfig(value)
-	return err
+	config, err := domain.ParseModelRoutingConfig(value)
+	if err != nil {
+		return err
+	}
+	for routeAlias, candidates := range config {
+		for index, candidate := range candidates {
+			if !candidate.Legacy && len(candidate.AccountIDs) > 1 {
+				return fmt.Errorf("路由别名 %q 的第 %d 个候选只能选择一个模型账号", routeAlias, index+1)
+			}
+		}
+	}
+	return nil
 }
 
 // Delete handles deleting a group

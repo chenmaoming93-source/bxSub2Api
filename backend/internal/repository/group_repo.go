@@ -46,7 +46,18 @@ func (r *groupRepository) Create(ctx context.Context, groupIn *service.Group) er
 	if err != nil {
 		return err
 	}
-	builder := r.client.Group.Create().
+	tx, txErr := r.client.Tx(ctx)
+	if txErr != nil && !errors.Is(txErr, dbent.ErrTxStarted) {
+		return txErr
+	}
+	txClient := r.client
+	var exec sqlExecutor = r.sql
+	if txErr == nil {
+		defer func() { _ = tx.Rollback() }()
+		txClient = tx.Client()
+		exec = tx
+	}
+	builder := txClient.Group.Create().
 		SetName(groupIn.Name).
 		SetDescription(groupIn.Description).
 		SetPlatform(groupIn.Platform).
@@ -88,6 +99,19 @@ func (r *groupRepository) Create(ctx context.Context, groupIn *service.Group) er
 
 	created, err := builder.Save(ctx)
 	if err == nil {
+		if syncErr := syncGroupModelRouteAccounts(ctx, exec, created.ID, routing); syncErr != nil {
+			return syncErr
+		}
+		if len(groupIn.ModelRouteConcurrencyUpdates) > 0 {
+			if concurrencyErr := updateGroupModelRouteConcurrencyOnExec(ctx, exec, created.ID, groupIn.ModelRouteConcurrencyUpdates); concurrencyErr != nil {
+				return concurrencyErr
+			}
+		}
+		if txErr == nil {
+			if err := tx.Commit(); err != nil {
+				return err
+			}
+		}
 		groupIn.ID = created.ID
 		groupIn.CreatedAt = created.CreatedAt
 		groupIn.UpdatedAt = created.UpdatedAt
@@ -145,7 +169,18 @@ func (r *groupRepository) Update(ctx context.Context, groupIn *service.Group) er
 	if err != nil {
 		return err
 	}
-	builder := r.client.Group.UpdateOneID(groupIn.ID).
+	tx, txErr := r.client.Tx(ctx)
+	if txErr != nil && !errors.Is(txErr, dbent.ErrTxStarted) {
+		return txErr
+	}
+	txClient := r.client
+	var exec sqlExecutor = r.sql
+	if txErr == nil {
+		defer func() { _ = tx.Rollback() }()
+		txClient = tx.Client()
+		exec = tx
+	}
+	builder := txClient.Group.UpdateOneID(groupIn.ID).
 		SetName(groupIn.Name).
 		SetDescription(groupIn.Description).
 		SetPlatform(groupIn.Platform).
@@ -232,6 +267,19 @@ func (r *groupRepository) Update(ctx context.Context, groupIn *service.Group) er
 	updated, err := builder.Save(ctx)
 	if err != nil {
 		return translatePersistenceError(err, service.ErrGroupNotFound, service.ErrGroupExists)
+	}
+	if err := syncGroupModelRouteAccounts(ctx, exec, updated.ID, routing); err != nil {
+		return err
+	}
+	if len(groupIn.ModelRouteConcurrencyUpdates) > 0 {
+		if err := updateGroupModelRouteConcurrencyOnExec(ctx, exec, updated.ID, groupIn.ModelRouteConcurrencyUpdates); err != nil {
+			return err
+		}
+	}
+	if txErr == nil {
+		if err := tx.Commit(); err != nil {
+			return err
+		}
 	}
 	groupIn.UpdatedAt = updated.UpdatedAt
 	if err := enqueueSchedulerOutbox(ctx, r.sql, service.SchedulerOutboxEventGroupChanged, nil, &groupIn.ID, nil); err != nil {

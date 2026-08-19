@@ -14,9 +14,28 @@ var ErrInvalidModelRouting = errors.New("invalid model routing")
 
 // ModelRouteCandidate is one account choice for a requested route alias.
 type ModelRouteCandidate struct {
+	Model      string  `json:"-"`
 	AccountIDs []int64 `json:"account_ids"`
 	Priority   int     `json:"priority"`
 	Legacy     bool    `json:"-"`
+}
+
+// UnmarshalJSON reads the candidate model for routing bookkeeping while
+// keeping the historical persistence contract that model is not re-emitted.
+func (c *ModelRouteCandidate) UnmarshalJSON(data []byte) error {
+	type candidateWire struct {
+		Model      string  `json:"model,omitempty"`
+		AccountIDs []int64 `json:"account_ids"`
+		Priority   int     `json:"priority"`
+	}
+	var wire candidateWire
+	if err := json.Unmarshal(data, &wire); err != nil {
+		return err
+	}
+	c.Model = wire.Model
+	c.AccountIDs = wire.AccountIDs
+	c.Priority = wire.Priority
+	return nil
 }
 
 // ModelRoutingConfig maps an exact model or a trailing-star prefix pattern to

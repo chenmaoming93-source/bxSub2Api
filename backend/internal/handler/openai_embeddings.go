@@ -119,6 +119,9 @@ func (h *OpenAIGatewayHandler) Embeddings(c *gin.Context) {
 			false,
 		)
 		if err != nil {
+			if h.handleOpenAIModelRouteSelectionError(c, err, false) {
+				return
+			}
 			reqLog.Warn("openai_embeddings.account_select_failed",
 				zap.Error(err),
 				zap.Int("excluded_account_count", len(failedAccountIDs)),

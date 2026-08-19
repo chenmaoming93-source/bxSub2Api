@@ -13,13 +13,13 @@ describe('GroupModelRoutingEditor', () => {
   beforeEach(() => list.mockReset())
 
   it('creates account-only candidates and increments priority', () => {
-    expect(createEmptyRoutingCandidate()).toEqual({ accounts: [], priority: 0 })
+    expect(createEmptyRoutingCandidate()).toEqual({ accounts: [], priority: 0, maxConcurrency: null })
     const rule: RoutingEditorRule = {
       alias: 'coding',
       candidates: [{ accounts: [{ id: 1, name: 'one' }], priority: 4 }]
     }
     addRoutingCandidate(rule)
-    expect(rule.candidates.at(-1)).toEqual({ accounts: [], priority: 5 })
+    expect(rule.candidates.at(-1)).toEqual({ accounts: [], priority: 5, maxConcurrency: null })
   })
 
   it('renders only alias, accounts and priority and validates without loading models', () => {

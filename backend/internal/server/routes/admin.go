@@ -367,6 +367,10 @@ func registerGroupRoutes(admin *gin.RouterGroup, h *handler.Handlers, routes *rb
 		adminGET(routes, groups, "/usage-summary", rbac.PermissionGroupsRead, h.Admin.Group.GetUsageSummary)
 		adminGET(routes, groups, "/capacity-summary", rbac.PermissionGroupsRead, h.Admin.Group.GetCapacitySummary)
 		adminPUT(routes, groups, "/sort-order", rbac.PermissionGroupsUpdate, h.Admin.Group.UpdateSortOrder)
+		adminPOST(routes, groups, "/model-route-references/rebuild", rbac.PermissionGroupsUpdate, h.Admin.Group.RebuildModelRouteReferences)
+		adminPOST(routes, groups, "/:id/model-route-references/rebuild", rbac.PermissionGroupsUpdate, h.Admin.Group.RebuildModelRouteReferences)
+		adminPUT(routes, groups, "/:id/model-route-references/concurrency", rbac.PermissionGroupsUpdate, h.Admin.Group.UpdateModelRouteConcurrency)
+		adminGET(routes, groups, "/:id/model-route-references", rbac.PermissionGroupsRead, h.Admin.Group.ListModelRouteReferences)
 		adminGET(routes, groups, "/:id/models-list-candidates", rbac.PermissionGroupsRead, h.Admin.Group.GetModelsListCandidates)
 		adminGET(routes, groups, "/:id", rbac.PermissionGroupsRead, h.Admin.Group.GetByID)
 		adminPOST(routes, groups, "", rbac.PermissionGroupsCreate, h.Admin.Group.Create)
@@ -387,6 +391,7 @@ func registerAccountRoutes(admin *gin.RouterGroup, h *handler.Handlers, routes *
 	{
 		adminGET(routes, accounts, "", rbac.PermissionAccountsRead, h.Admin.Account.List)
 		adminGET(routes, accounts, "/:id", rbac.PermissionAccountsRead, h.Admin.Account.GetByID)
+		adminGET(routes, accounts, "/:id/model-route-references", rbac.PermissionAccountsRead, h.Admin.Account.GetModelRouteReferences)
 		adminGET(routes, accounts, "/:id/credentials", rbac.PermissionAccountsCredentialsRead, h.Admin.Account.GetCredentials)
 		adminPOST(routes, accounts, "", rbac.PermissionAccountsCreate, h.Admin.Account.Create)
 		adminPOST(routes, accounts, "/check-mixed-channel", rbac.PermissionAccountsRead, h.Admin.Account.CheckMixedChannel)

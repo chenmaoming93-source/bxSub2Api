@@ -14,6 +14,23 @@ import type {
 
 export type { ModelRoutingCandidate, ModelRoutingConfig, ModelRoutingRuleRow } from '@/types'
 
+export async function updateModelRouteConcurrency(
+  groupId: number,
+  input: { updates: Array<{ route_alias: string; account_id: number; max_concurrency: number | null }> }
+): Promise<void> {
+  await apiClient.put(`/admin/groups/${groupId}/model-route-references/concurrency`, input)
+}
+
+export async function listModelRouteReferences(groupId: number) {
+  const { data } = await apiClient.get<Array<{ route_alias: string; account_id: number; max_concurrency: number | null; account_concurrency: number; allocated_concurrency: number }>>(`/admin/groups/${groupId}/model-route-references`)
+  return data
+}
+
+export async function rebuildModelRouteReferences(): Promise<unknown> {
+  const { data } = await apiClient.post('/admin/groups/model-route-references/rebuild')
+  return data
+}
+
 /**
  * List all groups with pagination
  * @param page - Page number (default: 1)
@@ -340,6 +357,9 @@ export const groupsAPI = {
   getModelsListCandidates,
   create,
   update,
+  updateModelRouteConcurrency,
+  listModelRouteReferences,
+  rebuildModelRouteReferences,
   delete: deleteGroup,
   toggleStatus,
   getStats,

@@ -22,6 +22,21 @@ import type {
   CheckMixedChannelResponse
 } from '@/types'
 
+export interface GroupModelRouteReference {
+  group_id: number
+  group_name: string
+  route_alias: string
+  account_id: number
+  max_concurrency: number | null
+  account_concurrency: number
+  allocated_concurrency: number
+}
+
+export async function getModelRouteReferences(accountId: number): Promise<GroupModelRouteReference[]> {
+  const { data } = await apiClient.get<GroupModelRouteReference[]>(`/admin/accounts/${accountId}/model-route-references`)
+  return data
+}
+
 /**
  * List all accounts with pagination
  * @param page - Page number (default: 1)
@@ -806,6 +821,7 @@ export const accountsAPI = {
   list,
   listWithEtag,
   getById,
+  getModelRouteReferences,
   getCredentials,
   create,
   update,

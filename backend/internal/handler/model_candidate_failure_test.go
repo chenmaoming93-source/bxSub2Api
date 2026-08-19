@@ -55,6 +55,14 @@ func TestModelCandidatesExhaustedDetailsUses429WhenAllQuotaLimited(t *testing.T)
 	require.Equal(t, http.StatusTooManyRequests, status)
 }
 
+func TestModelCandidatesExhaustedDetailsUses429WhenAllRouteConcurrencyLimited(t *testing.T) {
+	status, message := modelCandidatesExhaustedDetails([]service.ModelCandidateFailure{
+		{AccountID: 1, Model: "model-a", Reason: "route_concurrency", Message: "candidate concurrency limit reached"},
+	})
+	require.Equal(t, http.StatusTooManyRequests, status)
+	require.Contains(t, message, "candidate concurrency limit reached")
+}
+
 func TestFailoverStateCombinesUpstreamAndSelectionFailures(t *testing.T) {
 	state := NewFailoverState(2, false)
 	state.RecordUpstreamFailure(&service.Account{ID: 1, Name: "primary"}, "model-a", &service.UpstreamFailoverError{
