@@ -1806,6 +1806,10 @@ func (s *GatewayService) SelectAccountWithLoadAwarenessForRequest(ctx context.Co
 		routeCandidates = group.GetRoutingCandidates(requestedModel)
 		if len(routeCandidates) > 0 {
 			routingAccountIDs = routeCandidates[0].AccountIDs
+			if routeCandidates[0].Legacy {
+			} else {
+			}
+		} else {
 		}
 	}
 
@@ -1853,15 +1857,25 @@ func (s *GatewayService) SelectAccountWithLoadAwarenessForRequest(ctx context.Co
 	}
 
 	// ============ Layer 1: 模型路由优先选择（优先级高于粘性会话） ============
-	if len(routeCandidates) > 0 {
+	if len(routeCandidates) > 0 && !routeCandidates[0].Legacy {
 		var candidateFailures []ModelCandidateFailure
-		for _, routeCandidate := range routeCandidates {
-			result, ok, err := s.trySelectRouteCandidateAccountsWithModel(ctx, groupID, identity, requestedModel, routeCandidate.Model, sessionHash, stickyAccountID, routeCandidate.AccountIDs, accountByID, isExcluded, platform, useMixed, cfg, &candidateFailures)
+		tiers, tierErr := domain.GroupCandidatesByPriority(routeCandidates)
+		if tierErr != nil {
+			return nil, tierErr
+		}
+		for _, tier := range tiers {
+			if s.debugModelRoutingEnabled() {
+				logger.LegacyPrintf("service.gateway", "[ModelRoutingDebug] priority tier attempt: group_id=%v route=%s priority=%d account_ids=%v", derefGroupID(groupID), requestedModel, tier.Priority, tier.AccountIDs)
+			}
+			result, ok, err := s.trySelectRouteCandidateAccountsWithModel(ctx, groupID, identity, requestedModel, requestedModel, sessionHash, stickyAccountID, tier.AccountIDs, accountByID, isExcluded, platform, useMixed, cfg, &candidateFailures)
 			if err != nil {
 				return nil, err
 			}
 			if ok {
 				return result, nil
+			}
+			if s.debugModelRoutingEnabled() {
+				logger.LegacyPrintf("service.gateway", "[ModelRoutingDebug] priority tier exhausted: group_id=%v route=%s priority=%d account_ids=%v", derefGroupID(groupID), requestedModel, tier.Priority, tier.AccountIDs)
 			}
 		}
 		if len(candidateFailures) > 0 {
@@ -1945,6 +1959,9 @@ func (s *GatewayService) SelectAccountWithLoadAwarenessForRequest(ctx context.Co
 			quotaAllowed = append(quotaAllowed, candidateAccount)
 		}
 		routingCandidates = quotaAllowed
+		if len(routingCandidates) == 0 {
+			return nil, ErrNoAvailableAccounts
+		}
 
 		if len(routingCandidates) > 0 {
 			// 1.5. 在路由账号范围内检查粘性会话
@@ -2060,7 +2077,6 @@ func (s *GatewayService) SelectAccountWithLoadAwarenessForRequest(ctx context.Co
 					routingAvailable = append(routingAvailable, accountWithLoad{account: acc, loadInfo: loadInfo})
 				}
 			}
-
 			if len(routingAvailable) > 0 {
 				// 排序：优先级 > 负载率 > 最后使用时间
 				sort.SliceStable(routingAvailable, func(i, j int) bool {
@@ -2124,7 +2140,8 @@ func (s *GatewayService) SelectAccountWithLoadAwarenessForRequest(ctx context.Co
 				// 所有路由账号会话限制都已满，继续到 Layer 2 回退
 			}
 			// 路由列表中的账号都不可用（负载率 >= 100），继续到 Layer 2 回退
-			logger.LegacyPrintf("service.gateway", "[ModelRouting] All routed accounts unavailable for model=%s, falling back to normal selection", requestedModel)
+			logger.LegacyPrintf("service.gateway", "[ModelRouting] All routed accounts unavailable for model=%s", requestedModel)
+			return nil, ErrNoAvailableAccounts
 		}
 	}
 
@@ -2389,8 +2406,9 @@ func (s *GatewayService) trySelectRouteCandidateAccountsWithModel(ctx context.Co
 	if len(routingAccountIDs) == 0 || s.concurrencyService == nil {
 		return nil, false, nil
 	}
-	// A model-route candidate has exactly one account and must always pass the
-	// candidate concurrency gate. Sticky preference has no selection value here.
+	// A model-route priority tier may contain multiple accounts and must always
+	// pass the candidate concurrency gate. Sticky preference has no selection
+	// value here.
 	stickyAccountID = 0
 	var routingCandidates []*Account
 	accountModels := make(map[int64]string, len(routingAccountIDs))
@@ -2541,13 +2559,37 @@ func (s *GatewayService) trySelectRouteCandidateAccountsWithModel(ctx context.Co
 	}
 
 	routingLoads := make([]AccountWithConcurrency, 0, len(routingCandidates))
+	routeLoadRequests := make([]RouteLoadRequest, 0, len(routingCandidates))
 	for _, acc := range routingCandidates {
 		routingLoads = append(routingLoads, AccountWithConcurrency{
 			ID:             acc.ID,
 			MaxConcurrency: acc.EffectiveLoadFactor(),
 		})
+		limit, err := s.getRouteConcurrencyLimit(ctx, groupID, requestedModel, acc.ID)
+		if err != nil {
+			return nil, false, err
+		}
+		routeKey := routeConcurrencyKey(groupID, requestedModel, acc.ID)
+		routeLoadRequests = append(routeLoadRequests, RouteLoadRequest{
+			Key:                   routeKey,
+			AccountID:             acc.ID,
+			MaxConcurrency:        limit,
+			AccountMaxConcurrency: acc.EffectiveLoadFactor(),
+		})
 	}
-	routingLoadMap, _ := s.concurrencyService.GetAccountsLoadBatch(ctx, routingLoads)
+
+	routingLoadMap, loadErr := s.concurrencyService.GetAccountsLoadBatch(ctx, routingLoads)
+	routeLoadMap, routeLoadErr := s.concurrencyService.GetRouteLoadsBatch(ctx, routeLoadRequests)
+	if routeLoadErr != nil {
+		// Optional cache implementations and older test doubles may not expose
+		// route counters. Keep the account-wide metric as a safe compatibility
+		// fallback while the concrete Redis cache uses route-level load.
+		logger.LegacyPrintf("service.gateway", "[ModelRouting] route load unavailable, using account load fallback: %v", routeLoadErr)
+		routeLoadMap = nil
+	}
+	if loadErr != nil {
+		return nil, false, loadErr
+	}
 
 	var routingAvailable []accountWithLoad
 	for _, acc := range routingCandidates {
@@ -2563,6 +2605,14 @@ func (s *GatewayService) trySelectRouteCandidateAccountsWithModel(ctx context.Co
 			}
 		}
 		loadInfo := routingLoadMap[acc.ID]
+		routeKey := routeConcurrencyKey(groupID, requestedModel, acc.ID)
+		if routeInfo, ok := routeLoadMap[routeKey]; ok {
+			loadInfo = &AccountLoadInfo{
+				AccountID:          acc.ID,
+				CurrentConcurrency: routeInfo.CurrentConcurrency,
+				LoadRate:           routeInfo.LoadRate,
+			}
+		}
 		if loadInfo == nil {
 			loadInfo = &AccountLoadInfo{AccountID: acc.ID}
 		}
@@ -2578,9 +2628,6 @@ func (s *GatewayService) trySelectRouteCandidateAccountsWithModel(ctx context.Co
 
 	sort.SliceStable(routingAvailable, func(i, j int) bool {
 		a, b := routingAvailable[i], routingAvailable[j]
-		if a.account.Priority != b.account.Priority {
-			return a.account.Priority < b.account.Priority
-		}
 		if a.loadInfo.LoadRate != b.loadInfo.LoadRate {
 			return a.loadInfo.LoadRate < b.loadInfo.LoadRate
 		}
@@ -2624,9 +2671,6 @@ func (s *GatewayService) trySelectRouteCandidateAccountsWithModel(ctx context.Co
 			}
 			if sessionHash != "" && s.cache != nil {
 				_ = s.cache.SetSessionAccountID(ctx, derefGroupID(groupID), sessionHash, item.account.ID, stickySessionTTL)
-			}
-			if s.debugModelRoutingEnabled() {
-				logger.LegacyPrintf("service.gateway", "[ModelRoutingDebug] routed select: group_id=%v route=%s model=%s session=%s account=%d", derefGroupID(groupID), requestedModel, routingModel, shortSessionHash(sessionHash), item.account.ID)
 			}
 			selection, err := s.newSelectionResult(ctx, item.account, true, result.ReleaseFunc, nil)
 			return withSelectionModelIdentity(selection, requestedModel, routingModel), true, err
@@ -2973,30 +3017,50 @@ type routeConcurrencyLookup interface {
 	GetGroupModelRouteConcurrency(context.Context, int64, string, int64) (*int, error)
 }
 
+func routeConcurrencyKey(groupID *int64, routeAlias string, accountID int64) string {
+	if groupID == nil {
+		return fmt.Sprintf("%s|%d", routeAlias, accountID)
+	}
+	return fmt.Sprintf("group:%d|%s|%d", *groupID, routeAlias, accountID)
+}
+
+func (s *GatewayService) getRouteConcurrencyLimit(ctx context.Context, groupID *int64, routeAlias string, accountID int64) (*int, error) {
+	if groupID == nil || s.concurrencyService == nil {
+		return nil, nil
+	}
+	key := routeConcurrencyKey(groupID, routeAlias, accountID)
+	limit, hit, err := s.concurrencyService.GetRouteConcurrencyLimit(ctx, key)
+	if err != nil {
+		return nil, err
+	}
+	if hit {
+		return limit, nil
+	}
+	lookup, ok := s.groupRepo.(routeConcurrencyLookup)
+	if !ok {
+		return nil, nil
+	}
+	limit, err = lookup.GetGroupModelRouteConcurrency(ctx, *groupID, routeAlias, accountID)
+	if err != nil {
+		return nil, err
+	}
+	_ = s.concurrencyService.SetRouteConcurrencyLimit(ctx, key, limit)
+	return limit, nil
+}
+
 func (s *GatewayService) tryAcquireRouteSlot(ctx context.Context, groupID *int64, routeAlias string, accountID int64) (*AcquireResult, error) {
 	if groupID == nil || s.concurrencyService == nil {
 		return &AcquireResult{Acquired: true, ReleaseFunc: func() {}}, nil
 	}
-	key := fmt.Sprintf("%d|%s|%d", *groupID, routeAlias, accountID)
-	limit, hit, err := s.concurrencyService.GetRouteConcurrencyLimit(ctx, "group:"+key)
+	key := routeConcurrencyKey(groupID, routeAlias, accountID)
+	limit, err := s.getRouteConcurrencyLimit(ctx, groupID, routeAlias, accountID)
 	if err != nil {
 		return nil, err
-	}
-	if !hit {
-		lookup, ok := s.groupRepo.(routeConcurrencyLookup)
-		if !ok {
-			return &AcquireResult{Acquired: true, ReleaseFunc: func() {}}, nil
-		}
-		limit, err = lookup.GetGroupModelRouteConcurrency(ctx, *groupID, routeAlias, accountID)
-		if err != nil {
-			return nil, err
-		}
-		_ = s.concurrencyService.SetRouteConcurrencyLimit(ctx, "group:"+key, limit)
 	}
 	if limit == nil {
 		return &AcquireResult{Acquired: true, ReleaseFunc: func() {}}, nil
 	}
-	return s.concurrencyService.AcquireRouteSlot(ctx, "group:"+key, *limit)
+	return s.concurrencyService.AcquireRouteSlot(ctx, key, *limit)
 }
 
 type usageLogWindowStatsBatchProvider interface {

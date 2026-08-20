@@ -81,6 +81,15 @@ func (s *ProjectionAdminService) ActiveProjections() []ProjectionDefinition {
 	return append([]ProjectionDefinition(nil), current...)
 }
 
+// ActiveQuotaRules returns the currently enabled quota rules used by the
+// request-path quota checker.
+func (s *ProjectionAdminService) ActiveQuotaRules() []QuotaRule {
+	if s == nil || s.quotaChecker == nil {
+		return nil
+	}
+	return s.quotaChecker.ActiveRules()
+}
+
 func (s *ProjectionAdminService) RefreshActive(ctx context.Context) error {
 	active, err := s.client.TokenStatProjection.Query().
 		Where(tokenstatprojection.StatusEQ(ProjectionStatusActive)).All(ctx)

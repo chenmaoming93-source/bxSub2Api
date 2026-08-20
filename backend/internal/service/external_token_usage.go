@@ -12,6 +12,7 @@ import (
 )
 
 var ErrRouteAliasNotFound = infraerrors.NotFound("ROUTE_ALIAS_NOT_FOUND", "route alias not found")
+
 // ErrAPIKeyMismatch 表示 API Key 值存在，但不属于请求中的用户或分组。
 // 与 ErrAPIKeyNotFound（值不存在或已删除）区分，便于调用方定位参数组合问题；
 // 消息不泄露该 Key 实际归属。
@@ -42,6 +43,7 @@ type ExternalTokenUsageService struct {
 	lookup      ExternalTokenUsageDimensionLookup
 	reader      ExternalTokenUsageCurrentReader
 	projections ExternalTokenUsageProjectionProvider
+	quotaRules  ExternalTokenUsageQuotaProvider
 	location    *time.Location
 	now         func() time.Time
 }
@@ -61,6 +63,10 @@ type ExternalTokenUsageProjectionProvider interface {
 	ActiveProjections() []tokenstat.ProjectionDefinition
 }
 
+type ExternalTokenUsageQuotaProvider interface {
+	ActiveQuotaRules() []tokenstat.QuotaRule
+}
+
 type ExternalTokenUsagePeriodResult struct {
 	PeriodType          tokenstat.PeriodType `json:"period_type"`
 	PeriodStart         time.Time            `json:"period_start"`
@@ -68,6 +74,7 @@ type ExternalTokenUsagePeriodResult struct {
 	DimensionConfigured bool                 `json:"dimension_configured"`
 	DataPresent         bool                 `json:"data_present"`
 	TotalTokens         *int64               `json:"total_tokens"`
+	EnforcedLimit       *int64               `json:"enforced_limit"`
 	Message             string               `json:"message"`
 }
 
@@ -82,6 +89,10 @@ type ExternalTokenUsageResult struct {
 
 func (s *ExternalTokenUsageService) ConfigureCurrentUsage(reader ExternalTokenUsageCurrentReader, projections ExternalTokenUsageProjectionProvider, location *time.Location) {
 	s.reader, s.projections, s.location = reader, projections, location
+}
+
+func (s *ExternalTokenUsageService) ConfigureQuotaRules(provider ExternalTokenUsageQuotaProvider) {
+	s.quotaRules = provider
 }
 
 func (s *ExternalTokenUsageService) SetClockForTest(now func() time.Time) { s.now = now }
@@ -146,8 +157,26 @@ func (s *ExternalTokenUsageService) QueryCurrentUsage(ctx context.Context, input
 	if s.now != nil {
 		now = s.now
 	}
-	periods := tokenstat.NaturalPeriods(now(), s.location)
+	at := now()
+	periods := tokenstat.NaturalPeriods(at, s.location)
 	result := ExternalTokenUsageResult{Dimensions: dimensions, Metric: tokenstat.MetricTotalTokens, Timezone: s.location.String()}
+	available := map[tokenstat.DimensionCode]tokenstat.DimensionValue{
+		tokenstat.DimensionUserID:     tokenstat.Int64Value(dimensions.UserID),
+		tokenstat.DimensionAPIKeyID:   tokenstat.Int64Value(dimensions.APIKeyID),
+		tokenstat.DimensionGroupID:    tokenstat.Int64Value(dimensions.GroupID),
+		tokenstat.DimensionRouteAlias: tokenstat.StringValue(dimensions.RouteAlias),
+	}
+	var quotaRules []tokenstat.QuotaRule
+	if s.quotaRules != nil && tokenstat.RuntimeEnabled() {
+		quotaRules = s.quotaRules.ActiveQuotaRules()
+	}
+	enforcedLimit := func(periodType tokenstat.PeriodType) *int64 {
+		limit, ok := tokenstat.MinEnforcedQuotaLimit(at, periodType, tokenstat.MetricTotalTokens, quotaRules, available)
+		if !ok {
+			return nil
+		}
+		return &limit
+	}
 
 	target := []tokenstat.DimensionCode{tokenstat.DimensionUserID, tokenstat.DimensionAPIKeyID, tokenstat.DimensionGroupID, tokenstat.DimensionRouteAlias}
 	targetSignature, _ := tokenstat.DimensionSignature(target)
@@ -164,6 +193,9 @@ func (s *ExternalTokenUsageService) QueryCurrentUsage(ctx context.Context, input
 		assignExternalPeriods(&result, periods, func(period tokenstat.Period) ExternalTokenUsagePeriodResult {
 			return ExternalTokenUsagePeriodResult{PeriodType: period.Type, PeriodStart: period.Start, PeriodEnd: period.End, Message: "统计维度未配置"}
 		})
+		result.Day.EnforcedLimit = enforcedLimit(result.Day.PeriodType)
+		result.Week.EnforcedLimit = enforcedLimit(result.Week.PeriodType)
+		result.Month.EnforcedLimit = enforcedLimit(result.Month.PeriodType)
 		return result, nil
 	}
 	identity, err := tokenstat.BuildDimensionIdentity(projection.DimensionCodes, map[tokenstat.DimensionCode]tokenstat.DimensionValue{
@@ -181,6 +213,7 @@ func (s *ExternalTokenUsageService) QueryCurrentUsage(ctx context.Context, input
 		}
 		tokens := value.Value
 		values[i] = ExternalTokenUsagePeriodResult{PeriodType: period.Type, PeriodStart: period.Start, PeriodEnd: period.End, DimensionConfigured: true, DataPresent: value.Exists, TotalTokens: &tokens}
+		values[i].EnforcedLimit = enforcedLimit(period.Type)
 		if !value.Exists {
 			values[i].Message = "统计维度已配置，当前周期暂无数据"
 		}

@@ -606,6 +606,12 @@ type ModelRouteConcurrencyUpdate struct {
 	MaxConcurrency *int
 }
 
+type ModelRouteConcurrencySnapshot struct {
+	ModelRouteReference
+	CurrentConcurrency      int  `json:"current_concurrency"`
+	EffectiveMaxConcurrency *int `json:"effective_max_concurrency"`
+}
+
 type groupModelRouteGroupReader interface {
 	ListGroupModelRouteReferencesByGroup(context.Context, int64) (any, error)
 }
@@ -638,6 +644,55 @@ func (s *adminServiceImpl) ListGroupModelRouteReferencesByGroup(ctx context.Cont
 		return nil, fmt.Errorf("group repository does not support group reference lookup")
 	}
 	return reader.ListGroupModelRouteReferencesByGroup(ctx, groupID)
+}
+
+func (s *adminServiceImpl) ListGroupModelRouteConcurrency(ctx context.Context, groupID int64) ([]ModelRouteConcurrencySnapshot, error) {
+	if s.concurrencyService == nil {
+		return nil, fmt.Errorf("concurrency service is unavailable")
+	}
+	refsAny, err := s.ListGroupModelRouteReferencesByGroup(ctx, groupID)
+	if err != nil {
+		return nil, err
+	}
+	refs, ok := refsAny.([]ModelRouteReference)
+	if !ok {
+		return nil, fmt.Errorf("unexpected model-route reference result type")
+	}
+	requests := make([]RouteLoadRequest, 0, len(refs))
+	for _, ref := range refs {
+		requests = append(requests, RouteLoadRequest{
+			Key:                   fmt.Sprintf("group:%d|%s|%d", groupID, ref.RouteAlias, ref.AccountID),
+			AccountID:             ref.AccountID,
+			MaxConcurrency:        ref.MaxConcurrency,
+			AccountMaxConcurrency: ref.AccountConcurrency,
+		})
+	}
+	loads, err := s.concurrencyService.GetRouteLoadsBatch(ctx, requests)
+	if err != nil {
+		return nil, err
+	}
+	keys := make([]string, 0, len(refs))
+	for _, ref := range refs {
+		keys = append(keys, fmt.Sprintf("group:%d|%s|%d", groupID, ref.RouteAlias, ref.AccountID))
+	}
+	effectiveLimits, err := s.concurrencyService.GetRouteConcurrencyLimitsBatch(ctx, keys)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]ModelRouteConcurrencySnapshot, 0, len(refs))
+	for _, ref := range refs {
+		key := fmt.Sprintf("group:%d|%s|%d", groupID, ref.RouteAlias, ref.AccountID)
+		item := ModelRouteConcurrencySnapshot{ModelRouteReference: ref}
+		if load, ok := loads[key]; ok {
+			item.CurrentConcurrency = load.CurrentConcurrency
+		}
+		item.EffectiveMaxConcurrency = ref.MaxConcurrency
+		if limit, ok := effectiveLimits[key]; ok && limit.Hit {
+			item.EffectiveMaxConcurrency = limit.Limit
+		}
+		result = append(result, item)
+	}
+	return result, nil
 }
 
 func (s *adminServiceImpl) UpdateGroupModelRouteConcurrency(ctx context.Context, groupID int64, routeAlias string, accountID int64, maxConcurrency *int) error {

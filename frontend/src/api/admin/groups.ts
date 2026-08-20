@@ -26,6 +26,53 @@ export async function listModelRouteReferences(groupId: number) {
   return data
 }
 
+export async function listModelRouteConcurrency(groupId: number) {
+  const { data } = await apiClient.get<Array<{ route_alias: string; account_id: number; max_concurrency: number | null; account_concurrency: number; allocated_concurrency: number; current_concurrency: number; effective_max_concurrency: number | null }>>(`/admin/groups/${groupId}/model-route-concurrency`)
+  return data
+}
+
+export interface ModelRouteConcurrencySchedule {
+  id?: number
+  start: string
+  end: string
+  max_concurrency: number | null
+}
+
+export async function listModelRouteConcurrencySchedules(
+  groupId: number,
+  routeAlias: string,
+  accountId: number
+): Promise<ModelRouteConcurrencySchedule[]> {
+  const { data } = await apiClient.get<ModelRouteConcurrencySchedule[]>(
+    `/admin/groups/${groupId}/model-route-references/concurrency-schedules`,
+    { params: { route_alias: routeAlias, account_id: accountId } }
+  )
+  return data || []
+}
+
+export async function replaceModelRouteConcurrencySchedules(
+  groupId: number,
+  input: { route_alias: string; account_id: number; schedules: ModelRouteConcurrencySchedule[] }
+): Promise<void> {
+  await apiClient.put(`/admin/groups/${groupId}/model-route-references/concurrency-schedules`, input)
+}
+
+export interface ModelRouteConcurrencyScheduleRefreshResponse {
+  task_id: string
+  message: string
+}
+
+export async function refreshModelRouteConcurrencySchedules(
+  groupId?: number
+): Promise<ModelRouteConcurrencyScheduleRefreshResponse> {
+  const { data } = await apiClient.post<ModelRouteConcurrencyScheduleRefreshResponse>(
+    groupId
+      ? `/admin/groups/${groupId}/model-route-references/concurrency-schedules/refresh`
+      : '/admin/groups/model-route-references/concurrency-schedules/refresh'
+  )
+  return data
+}
+
 export async function rebuildModelRouteReferences(): Promise<unknown> {
   const { data } = await apiClient.post('/admin/groups/model-route-references/rebuild')
   return data
@@ -359,6 +406,10 @@ export const groupsAPI = {
   update,
   updateModelRouteConcurrency,
   listModelRouteReferences,
+  listModelRouteConcurrency,
+  listModelRouteConcurrencySchedules,
+  replaceModelRouteConcurrencySchedules,
+  refreshModelRouteConcurrencySchedules,
   rebuildModelRouteReferences,
   delete: deleteGroup,
   toggleStatus,

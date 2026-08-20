@@ -39,6 +39,26 @@ func ScaleModelRouteConcurrencyAllocations(oldConcurrency, newConcurrency int, a
 	return scaleToTarget(result, target)
 }
 
+// ScaleModelRouteConcurrencyValue scales one concrete candidate value when
+// the account's finite concurrency changes. Unlimited values are represented
+// by nil and are intentionally preserved. If either account limit is
+// unlimited/non-positive, there is no finite ratio to apply, so the value is
+// preserved as well.
+func ScaleModelRouteConcurrencyValue(oldConcurrency, newConcurrency int, value *int) *int {
+	if value == nil {
+		return nil
+	}
+	result := *value
+	if oldConcurrency <= 0 || newConcurrency <= 0 {
+		return &result
+	}
+	result = int(math.Round(float64(result) * float64(newConcurrency) / float64(oldConcurrency)))
+	if result < 1 {
+		result = 1
+	}
+	return &result
+}
+
 // CandidateConcurrencyShare returns the display percentage for a concrete
 // candidate. The boolean is false when the account is unlimited or the
 // candidate is unlimited/unconfigured.

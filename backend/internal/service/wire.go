@@ -22,6 +22,7 @@ func ProvideExternalTokenUsageService(lookup ExternalTokenUsageDimensionLookup, 
 	}
 	svc := NewExternalTokenUsageService(lookup)
 	svc.ConfigureCurrentUsage(reader, projections, location)
+	svc.ConfigureQuotaRules(projections)
 	return svc, nil
 }
 
@@ -231,6 +232,19 @@ func ProvideConcurrencyService(cache ConcurrencyCache, accountRepo AccountReposi
 		svc.SetAccountLoadBatchCacheTTL(time.Duration(cfg.Gateway.Scheduling.LoadBatchCacheTTLMS) * time.Millisecond)
 		svc.StartSlotCleanupWorker(accountRepo, cfg.Gateway.Scheduling.SlotCleanupInterval)
 	}
+	return svc
+}
+
+// ProvideModelRouteConcurrencyScheduleRefresher creates and starts the
+// minute-aligned materializer. It is intentionally independent of request
+// handling; the request path only consumes the Redis projection.
+func ProvideModelRouteConcurrencyScheduleRefresher(
+	repo ModelRouteConcurrencyScheduleRefreshRepository,
+	concurrency *ConcurrencyService,
+	cfg *config.Config,
+) *ModelRouteConcurrencyScheduleRefresher {
+	svc := NewModelRouteConcurrencyScheduleRefresher(repo, concurrency, cfg)
+	svc.Start()
 	return svc
 }
 
@@ -549,11 +563,12 @@ func ProvideAdminService(
 	entClient *dbent.Client, settingService *SettingService, defaultSubAssigner DefaultSubscriptionAssigner,
 	userSubRepo UserSubscriptionRepository, privacyClientFactory PrivacyClientFactory,
 	runtimeBlocker AccountRuntimeBlocker,
-	apiKeyService *APIKeyService,
+	apiKeyService *APIKeyService, concurrencyService *ConcurrencyService,
 ) AdminService {
 	svc := NewAdminService(userRepo, groupRepo, accountRepo, proxyRepo, apiKeyRepo, redeemCodeRepo, userGroupRateRepo, userRPMCache, billingCacheService, proxyProber, proxyLatencyCache, authCacheInvalidator, entClient, settingService, defaultSubAssigner, userSubRepo, privacyClientFactory, runtimeBlocker)
 	if impl, ok := svc.(*adminServiceImpl); ok {
 		impl.SetUserProvisioningService(NewEntUserProvisioningService(entClient, userRepo, apiKeyService))
+		impl.SetRouteConcurrencyService(concurrencyService)
 	}
 	return svc
 }
@@ -617,6 +632,7 @@ var ProviderSet = wire.NewSet(
 	NewSubscriptionService,
 	wire.Bind(new(DefaultSubscriptionAssigner), new(*SubscriptionService)),
 	ProvideConcurrencyService,
+	ProvideModelRouteConcurrencyScheduleRefresher,
 	ProvideUserMessageQueueService,
 	NewUsageRecordWorkerPool,
 	ProvideSchedulerSnapshotService,

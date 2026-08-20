@@ -823,7 +823,8 @@ type GatewayConfig struct {
 	AntigravityFallbackCooldownMinutes int `mapstructure:"antigravity_fallback_cooldown_minutes"`
 
 	// Scheduling: 账号调度相关配置
-	Scheduling GatewaySchedulingConfig `mapstructure:"scheduling"`
+	Scheduling         GatewaySchedulingConfig  `mapstructure:"scheduling"`
+	ModelRouteSchedule ModelRouteScheduleConfig `mapstructure:"model_route_schedule"`
 
 	// TLSFingerprint: TLS指纹伪装配置
 	TLSFingerprint TLSFingerprintConfig `mapstructure:"tls_fingerprint"`
@@ -841,6 +842,15 @@ type GatewayConfig struct {
 	// UserMessageQueue: 用户消息串行队列配置
 	// 对 role:"user" 的真实用户消息实施账号级串行化 + RPM 自适应延迟
 	UserMessageQueue UserMessageQueueConfig `mapstructure:"user_message_queue"`
+}
+
+// ModelRouteScheduleConfig controls the distributed refresh lease for
+// minute-aligned candidate concurrency schedule materialization.
+type ModelRouteScheduleConfig struct {
+	// RefreshLockTTLSeconds is the initial lease duration for one refresh task.
+	RefreshLockTTLSeconds int `mapstructure:"refresh_lock_ttl_seconds"`
+	// RefreshLockRenewIntervalSeconds is the lease renewal interval while a task runs.
+	RefreshLockRenewIntervalSeconds int `mapstructure:"refresh_lock_renew_interval_seconds"`
 }
 
 // GatewayDynamicTokenStatisticsConfig controls the independent configurable
@@ -2085,6 +2095,9 @@ func setDefaults() {
 	viper.SetDefault("gateway.max_upstream_clients", 5000)
 	viper.SetDefault("gateway.client_idle_ttl_seconds", 900)
 	viper.SetDefault("gateway.concurrency_slot_ttl_minutes", 30) // 并发槽位过期时间（支持超长请求）
+	// 分时段候选并发配置刷新锁：默认 5 分钟租约，每 30 秒续租。
+	viper.SetDefault("gateway.model_route_schedule.refresh_lock_ttl_seconds", 300)
+	viper.SetDefault("gateway.model_route_schedule.refresh_lock_renew_interval_seconds", 30)
 	viper.SetDefault("gateway.stream_data_interval_timeout", 180)
 	viper.SetDefault("gateway.stream_keepalive_interval", 10)
 	viper.SetDefault("gateway.image_stream_data_interval_timeout", 900)
@@ -2971,6 +2984,15 @@ func (c *Config) Validate() error {
 		if c.Gateway.UsageRecord.AutoScaleCooldownSeconds < 0 {
 			return fmt.Errorf("gateway.usage_record.auto_scale_cooldown_seconds must be non-negative")
 		}
+	}
+	if c.Gateway.ModelRouteSchedule.RefreshLockTTLSeconds <= 0 {
+		return fmt.Errorf("gateway.model_route_schedule.refresh_lock_ttl_seconds must be positive")
+	}
+	if c.Gateway.ModelRouteSchedule.RefreshLockRenewIntervalSeconds <= 0 {
+		return fmt.Errorf("gateway.model_route_schedule.refresh_lock_renew_interval_seconds must be positive")
+	}
+	if c.Gateway.ModelRouteSchedule.RefreshLockRenewIntervalSeconds >= c.Gateway.ModelRouteSchedule.RefreshLockTTLSeconds {
+		return fmt.Errorf("gateway.model_route_schedule.refresh_lock_renew_interval_seconds must be less than refresh_lock_ttl_seconds")
 	}
 	if c.Gateway.UserGroupRateCacheTTLSeconds <= 0 {
 		return fmt.Errorf("gateway.user_group_rate_cache_ttl_seconds must be positive")

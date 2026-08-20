@@ -77,6 +77,7 @@ func ProvideRBACPermissionService(db *sql.DB, rdb *redis.Client, cfg *config.Con
 var ProviderSet = wire.NewSet(
 	wire.Bind(new(service.RBACRoleRepository), new(*RBACRepository)),
 	wire.Bind(new(service.GroupRepository), new(*groupRepository)),
+	wire.Bind(new(service.ModelRouteConcurrencyScheduleRefreshRepository), new(*groupRepository)),
 	wire.Bind(new(service.ExternalProvisioningGroupLookup), new(*groupRepository)),
 	NewUserRepository,
 	NewAPIKeyRepository,

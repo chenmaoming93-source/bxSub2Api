@@ -89,6 +89,19 @@ func ProvideAdminHandlers(
 	}
 }
 
+// ProvideAdminGroupHandler wires the background schedule refresher into the
+// existing group handler without changing direct test constructors.
+func ProvideAdminGroupHandler(
+	adminService service.AdminService,
+	dashboardService *service.DashboardService,
+	groupCapacityService *service.GroupCapacityService,
+	refresher *service.ModelRouteConcurrencyScheduleRefresher,
+) *admin.GroupHandler {
+	h := admin.NewGroupHandler(adminService, dashboardService, groupCapacityService)
+	h.SetModelRouteConcurrencyScheduleRefresher(refresher)
+	return h
+}
+
 // ProvideSystemHandler creates admin.SystemHandler with UpdateService
 func ProvideSystemHandler(updateService *service.UpdateService, lockService *service.SystemOperationLockService) *admin.SystemHandler {
 	return admin.NewSystemHandler(updateService, lockService)
@@ -176,7 +189,7 @@ var ProviderSet = wire.NewSet(
 	// Admin handlers
 	admin.NewDashboardHandler,
 	admin.NewUserHandler,
-	admin.NewGroupHandler,
+	ProvideAdminGroupHandler,
 	admin.NewAccountHandler,
 	admin.NewAnnouncementHandler,
 	admin.NewDataManagementHandler,

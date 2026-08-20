@@ -42,6 +42,14 @@ func (c *ModelRouteCandidate) UnmarshalJSON(data []byte) error {
 // its ordered candidates.
 type ModelRoutingConfig map[string][]ModelRouteCandidate
 
+// ModelRoutePriorityTier groups candidates with the same priority while
+// preserving the priority order returned by ParseModelRoutingConfig.
+type ModelRoutePriorityTier struct {
+	Priority   int
+	Candidates []ModelRouteCandidate
+	AccountIDs []int64
+}
+
 // ModelRoutingJSON is an opaque JSON object used by persistence layers. It
 // preserves whether each route uses the legacy or candidate representation.
 type ModelRoutingJSON struct {
@@ -126,6 +134,46 @@ func (c ModelRoutingConfig) Match(requestedModel string) []ModelRouteCandidate {
 		return nil
 	}
 	return cloneRouteCandidates(c[patterns[0]])
+}
+
+// GroupCandidatesByPriority groups ordered candidates into priority tiers.
+// Accounts repeated within the same tier are kept only at their first
+// occurrence. The returned slices are independent copies.
+func GroupCandidatesByPriority(candidates []ModelRouteCandidate) ([]ModelRoutePriorityTier, error) {
+	if len(candidates) == 0 {
+		return nil, nil
+	}
+
+	tiers := make([]ModelRoutePriorityTier, 0)
+	priorityIndex := make(map[int]int)
+	accountPriority := make(map[int64]int)
+	for _, candidate := range candidates {
+		index, ok := priorityIndex[candidate.Priority]
+		if !ok {
+			index = len(tiers)
+			priorityIndex[candidate.Priority] = index
+			tiers = append(tiers, ModelRoutePriorityTier{Priority: candidate.Priority})
+		}
+
+		candidateCopy := candidate
+		candidateCopy.AccountIDs = nil
+		for _, accountID := range candidate.AccountIDs {
+			if previousPriority, exists := accountPriority[accountID]; exists {
+				if previousPriority != candidate.Priority {
+					return nil, fmt.Errorf("%w: account %d appears in route priorities %d and %d", ErrInvalidModelRouting, accountID, previousPriority, candidate.Priority)
+				}
+				continue
+			}
+			accountPriority[accountID] = candidate.Priority
+			candidateCopy.AccountIDs = append(candidateCopy.AccountIDs, accountID)
+			tiers[index].AccountIDs = append(tiers[index].AccountIDs, accountID)
+		}
+		if len(candidateCopy.AccountIDs) > 0 {
+			tiers[index].Candidates = append(tiers[index].Candidates, candidateCopy)
+		}
+	}
+
+	return tiers, nil
 }
 
 func parseRouteCandidates(pattern string, value json.RawMessage) ([]ModelRouteCandidate, error) {

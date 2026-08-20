@@ -40,6 +40,7 @@ func TestExternalTokenUsageHandlerContract(t *testing.T) {
 	require.Equal(t, http.StatusOK, response.Code)
 	require.Contains(t, response.Body.String(), `"username":"u@example.com"`)
 	require.Contains(t, response.Body.String(), `"periods"`)
+	require.Contains(t, response.Body.String(), `"enforced_limit":null`)
 	require.Contains(t, response.Body.String(), `"user_id":1`)
 	// 回显只含脱敏后的 API Key，不得泄露完整明文。
 	require.Contains(t, response.Body.String(), `"api_key":"sk-t****7890"`)

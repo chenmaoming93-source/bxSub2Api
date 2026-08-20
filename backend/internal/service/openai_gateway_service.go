@@ -21,6 +21,7 @@ import (
 	"time"
 
 	"github.com/Wei-Shaw/sub2api/internal/config"
+	"github.com/Wei-Shaw/sub2api/internal/domain"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/apicompat"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/ctxkey"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/ip"
@@ -1924,7 +1925,51 @@ func (s *OpenAIGatewayService) selectAccountWithLoadAwareness(ctx context.Contex
 	// through to the next candidate and the last full candidate is rejected.
 	if group, _ := ctx.Value(ctxkey.Group).(*Group); group != nil && groupID != nil && group.ID == *groupID {
 		routeCandidates := group.GetRoutingCandidates(requestedModel)
+		if len(routeCandidates) > 0 && !routeCandidates[0].Legacy {
+			tiers, tierErr := domain.GroupCandidatesByPriority(routeCandidates)
+			if tierErr != nil {
+				return nil, tierErr
+			}
+			activeRouteAccountIDs := routeAccountIDsFromContext(ctx)
+			tierIndexes := make([]int, 0, len(tiers))
+			if len(activeRouteAccountIDs) > 0 {
+				for index, tier := range tiers {
+					if hasAnyAccountID(tier.AccountIDs, activeRouteAccountIDs) {
+						tierIndexes = append(tierIndexes, index)
+						break
+					}
+				}
+			} else {
+				for index := range tiers {
+					tierIndexes = append(tierIndexes, index)
+				}
+			}
+			if len(tierIndexes) == 0 {
+				return nil, ErrNoAvailableAccounts
+			}
+			failures := make([]ModelCandidateFailure, 0)
+			for _, tierIndex := range tierIndexes {
+				tier := tiers[tierIndex]
+				selection, ok, err := s.trySelectOpenAIRoutePriorityTier(ctx, groupID, sessionHash, requestedModel, excludedIDs, requireCompact, requiredCapability, needsUpstreamCheck, tier, activeRouteAccountIDs, accounts, &failures)
+				if err != nil {
+					return nil, err
+				}
+				if ok {
+					return selection, nil
+				}
+				if len(activeRouteAccountIDs) > 0 {
+					break
+				}
+				if tierIndex+1 < len(tiers) {
+				}
+			}
+			if len(failures) > 0 {
+				return nil, &ModelCandidatesExhaustedError{Failures: failures}
+			}
+			return nil, ErrNoAvailableAccounts
+		}
 		if len(routeCandidates) > 0 {
+			// 同 priority 候选统一按 LoadRate 排序的分配逻辑。
 			// The OpenAI handler resolves one priority candidate at a time and
 			// stores that candidate's account IDs in context. Only inspect that
 			// candidate here; a concurrency failure is returned to the handler,
@@ -2253,6 +2298,180 @@ func (s *OpenAIGatewayService) selectAccountWithLoadAwareness(ctx context.Contex
 	return nil, ErrNoAvailableAccounts
 }
 
+func hasAnyAccountID(accountIDs []int64, candidates map[int64]struct{}) bool {
+	for _, accountID := range accountIDs {
+		if _, ok := candidates[accountID]; ok {
+			return true
+		}
+	}
+	return false
+}
+
+func (s *OpenAIGatewayService) trySelectOpenAIRoutePriorityTier(
+	ctx context.Context,
+	groupID *int64,
+	sessionHash string,
+	requestedModel string,
+	excludedIDs map[int64]struct{},
+	requireCompact bool,
+	requiredCapability OpenAIEndpointCapability,
+	needsUpstreamCheck bool,
+	tier domain.ModelRoutePriorityTier,
+	activeRouteAccountIDs map[int64]struct{},
+	accounts []Account,
+	candidateFailures *[]ModelCandidateFailure,
+) (*AccountSelectionResult, bool, error) {
+	accountByID := make(map[int64]*Account, len(accounts))
+	for i := range accounts {
+		accountByID[accounts[i].ID] = &accounts[i]
+	}
+	isExcluded := func(accountID int64) bool {
+		_, excluded := excludedIDs[accountID]
+		return excluded
+	}
+
+	var routingCandidates []*Account
+	for _, accountID := range tier.AccountIDs {
+		if len(activeRouteAccountIDs) > 0 {
+			if _, active := activeRouteAccountIDs[accountID]; !active {
+				continue
+			}
+		}
+		if isExcluded(accountID) {
+			continue
+		}
+		account := accountByID[accountID]
+		if account == nil && s.accountRepo != nil {
+			resolved, err := s.accountRepo.GetByID(ctx, accountID)
+			if err != nil {
+				return nil, false, err
+			}
+			account = resolved
+		}
+		if account == nil {
+			*candidateFailures = append(*candidateFailures, ModelCandidateFailure{AccountID: accountID, Reason: "account_missing", Message: "candidate account not found"})
+			continue
+		}
+		candidateCtx := withRouteAccountIDs(ctx, map[int64]struct{}{accountID: {}})
+		if !isOpenAIAccountEligibleForRequest(candidateCtx, account, requestedModel, requireCompact, requiredCapability) {
+			*candidateFailures = append(*candidateFailures, ModelCandidateFailure{AccountID: account.ID, AccountName: account.Name, Model: account.FirstModelMappingValue(), Reason: "account_unavailable", Message: "candidate account is not schedulable for this request"})
+			continue
+		}
+		if s.isOpenAIAccountRuntimeBlocked(account) {
+			*candidateFailures = append(*candidateFailures, ModelCandidateFailure{AccountID: account.ID, AccountName: account.Name, Model: account.FirstModelMappingValue(), Reason: "account_runtime_blocked", Message: "candidate account is temporarily unavailable"})
+			continue
+		}
+		if needsUpstreamCheck && groupID != nil && s.isUpstreamModelRestrictedByChannel(ctx, *groupID, account, requestedModel, requireCompact) {
+			*candidateFailures = append(*candidateFailures, ModelCandidateFailure{AccountID: account.ID, AccountName: account.Name, Model: account.FirstModelMappingValue(), Reason: "account_unavailable", Message: "upstream channel model restriction"})
+			continue
+		}
+		routingCandidates = append(routingCandidates, account)
+	}
+
+	if len(routingCandidates) == 0 {
+		return nil, false, nil
+	}
+
+	routingLoads := make([]AccountWithConcurrency, 0, len(routingCandidates))
+	routeLoadRequests := make([]RouteLoadRequest, 0, len(routingCandidates))
+	for _, account := range routingCandidates {
+		routingLoads = append(routingLoads, AccountWithConcurrency{ID: account.ID, MaxConcurrency: account.EffectiveLoadFactor()})
+		limit, err := s.getOpenAIRouteConcurrencyLimit(ctx, groupID, requestedModel, account.ID)
+		if err != nil {
+			return nil, false, err
+		}
+		key := routeConcurrencyKey(groupID, requestedModel, account.ID)
+		routeLoadRequests = append(routeLoadRequests, RouteLoadRequest{
+			Key:                   key,
+			AccountID:             account.ID,
+			MaxConcurrency:        limit,
+			AccountMaxConcurrency: account.EffectiveLoadFactor(),
+		})
+	}
+
+	accountLoadMap, loadErr := s.concurrencyService.GetAccountsLoadBatch(ctx, routingLoads)
+	routeLoadMap, routeLoadErr := s.concurrencyService.GetRouteLoadsBatch(ctx, routeLoadRequests)
+	if routeLoadErr != nil {
+		routeLoadMap = nil
+	}
+	if loadErr != nil {
+		return nil, false, loadErr
+	}
+
+	available := make([]accountWithLoad, 0, len(routingCandidates))
+	for _, account := range routingCandidates {
+		key := routeConcurrencyKey(groupID, requestedModel, account.ID)
+		loadInfo := accountLoadMap[account.ID]
+		if routeInfo, ok := routeLoadMap[key]; ok {
+			loadInfo = &AccountLoadInfo{
+				AccountID:          account.ID,
+				CurrentConcurrency: routeInfo.CurrentConcurrency,
+				LoadRate:           routeInfo.LoadRate,
+			}
+		}
+		if loadInfo == nil {
+			loadInfo = &AccountLoadInfo{AccountID: account.ID}
+		}
+		if loadInfo.LoadRate < 100 {
+			available = append(available, accountWithLoad{account: account, loadInfo: loadInfo})
+		}
+	}
+	if len(available) == 0 {
+		return nil, false, nil
+	}
+
+	sort.SliceStable(available, func(i, j int) bool {
+		left, right := available[i], available[j]
+		if left.loadInfo.LoadRate != right.loadInfo.LoadRate {
+			return left.loadInfo.LoadRate < right.loadInfo.LoadRate
+		}
+		switch {
+		case left.account.LastUsedAt == nil && right.account.LastUsedAt != nil:
+			return true
+		case left.account.LastUsedAt != nil && right.account.LastUsedAt == nil:
+			return false
+		case left.account.LastUsedAt == nil && right.account.LastUsedAt == nil:
+			return false
+		default:
+			return left.account.LastUsedAt.Before(*right.account.LastUsedAt)
+		}
+	})
+	shuffleWithinSortGroups(available)
+
+	for _, item := range available {
+		routeSlot, routeErr := s.tryAcquireRouteSlot(ctx, groupID, requestedModel, item.account.ID)
+		if routeErr != nil {
+			return nil, false, routeErr
+		}
+		if !routeSlot.Acquired {
+			*candidateFailures = append(*candidateFailures, ModelCandidateFailure{AccountID: item.account.ID, AccountName: item.account.Name, Model: item.account.FirstModelMappingValue(), Reason: "route_concurrency", Message: "candidate concurrency limit reached"})
+			continue
+		}
+		accountSlot, accountErr := s.tryAcquireAccountSlot(ctx, item.account.ID, item.account.Concurrency)
+		if accountErr != nil {
+			routeSlot.ReleaseFunc()
+			return nil, false, accountErr
+		}
+		if !accountSlot.Acquired {
+			routeSlot.ReleaseFunc()
+			*candidateFailures = append(*candidateFailures, ModelCandidateFailure{AccountID: item.account.ID, AccountName: item.account.Name, Model: item.account.FirstModelMappingValue(), Reason: "account_concurrency", Message: "account concurrency limit reached"})
+			continue
+		}
+		releaseAccount := accountSlot.ReleaseFunc
+		accountSlot.ReleaseFunc = func() { routeSlot.ReleaseFunc(); releaseAccount() }
+		selection, selectErr := s.newAcquiredSelectionResult(ctx, item.account, accountSlot.ReleaseFunc)
+		if selectErr != nil {
+			accountSlot.ReleaseFunc()
+			return nil, false, selectErr
+		}
+		if sessionHash != "" {
+			_ = s.setStickySessionAccountID(ctx, groupID, sessionHash, item.account.ID, openaiStickySessionTTL)
+		}
+		return selection, true, nil
+	}
+	return nil, false, nil
+}
+
 func (s *OpenAIGatewayService) listSchedulableAccounts(ctx context.Context, groupID *int64) ([]Account, error) {
 	var accounts []Account
 	var err error
@@ -2321,29 +2540,37 @@ func (s *OpenAIGatewayService) tryAcquireAccountSlot(ctx context.Context, accoun
 }
 
 func (s *OpenAIGatewayService) tryAcquireRouteSlot(ctx context.Context, groupID *int64, routeAlias string, accountID int64) (*AcquireResult, error) {
-	if groupID == nil || s.concurrencyService == nil {
+	limit, err := s.getOpenAIRouteConcurrencyLimit(ctx, groupID, routeAlias, accountID)
+	if err != nil {
+		return nil, err
+	}
+	if limit == nil {
 		return &AcquireResult{Acquired: true, ReleaseFunc: func() {}}, nil
 	}
-	key := fmt.Sprintf("%d|%s|%d", *groupID, routeAlias, accountID)
-	limit, hit, err := s.concurrencyService.GetRouteConcurrencyLimit(ctx, "group:"+key)
+	return s.concurrencyService.AcquireRouteSlot(ctx, routeConcurrencyKey(groupID, routeAlias, accountID), *limit)
+}
+
+func (s *OpenAIGatewayService) getOpenAIRouteConcurrencyLimit(ctx context.Context, groupID *int64, routeAlias string, accountID int64) (*int, error) {
+	if groupID == nil || s.concurrencyService == nil {
+		return nil, nil
+	}
+	key := routeConcurrencyKey(groupID, routeAlias, accountID)
+	limit, hit, err := s.concurrencyService.GetRouteConcurrencyLimit(ctx, key)
 	if err != nil {
 		return nil, err
 	}
 	if !hit {
 		lookup, ok := s.groupRepo.(routeConcurrencyLookup)
 		if !ok {
-			return &AcquireResult{Acquired: true, ReleaseFunc: func() {}}, nil
+			return nil, nil
 		}
 		limit, err = lookup.GetGroupModelRouteConcurrency(ctx, *groupID, routeAlias, accountID)
 		if err != nil {
 			return nil, err
 		}
-		_ = s.concurrencyService.SetRouteConcurrencyLimit(ctx, "group:"+key, limit)
+		_ = s.concurrencyService.SetRouteConcurrencyLimit(ctx, key, limit)
 	}
-	if limit == nil {
-		return &AcquireResult{Acquired: true, ReleaseFunc: func() {}}, nil
-	}
-	return s.concurrencyService.AcquireRouteSlot(ctx, "group:"+key, *limit)
+	return limit, nil
 }
 
 func (s *OpenAIGatewayService) resolveFreshSchedulableOpenAIAccount(ctx context.Context, account *Account, requestedModel string, requireCompact bool, requiredCapability OpenAIEndpointCapability) *Account {

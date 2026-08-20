@@ -86,6 +86,12 @@ run_mode: "standard"
 timezone: "Asia/Shanghai"
 
 gateway:
+
+  # 候选分时段最大并发配置的全量刷新锁。默认 5 分钟租约，每 30 秒续租。
+  model_route_schedule:
+    refresh_lock_ttl_seconds: 300
+    refresh_lock_renew_interval_seconds: 30
+
   # 可配置多维 Token 统计与限额。关闭时不启动实时统计、限额检查和后台同步。
   dynamic_token_statistics:
     # 是否启用整套可配置统计与限额流水线。

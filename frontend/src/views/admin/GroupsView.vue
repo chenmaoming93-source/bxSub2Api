@@ -84,6 +84,24 @@
               {{ rebuildingModelRouteReferences ? "同步中..." : "同步模型路由引用" }}
             </button>
             <button
+              v-permission="'groups.update'"
+              @click="refreshModelRouteConcurrencySchedules"
+              :disabled="refreshingModelRouteConcurrencySchedules"
+              class="btn btn-secondary"
+              data-test="refresh-model-route-concurrency-schedules"
+              :title="t('admin.groups.modelRouting.refreshAllSchedulesHint')"
+            >
+              <Icon
+                name="refresh"
+                size="md"
+                class="mr-2"
+                :class="refreshingModelRouteConcurrencySchedules ? 'animate-spin' : ''"
+              />
+              {{ refreshingModelRouteConcurrencySchedules
+                ? t('admin.groups.modelRouting.refreshingAllSchedules')
+                : t('admin.groups.modelRouting.refreshAllSchedules') }}
+            </button>
+            <button
               v-permission="'groups.create'"
               @click="openCreateModal"
               class="btn btn-primary"
@@ -311,6 +329,13 @@
               >
                 <Icon name="edit" size="sm" />
                 <span class="text-xs">{{ t("common.edit") }}</span>
+              </button>
+              <button
+                @click="handleConcurrencyView(row)"
+                class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-emerald-600 dark:hover:bg-dark-700 dark:hover:text-emerald-400"
+              >
+                <Icon name="chartBar" size="sm" />
+                <span class="text-xs">{{ t("admin.groups.concurrencyView.button") }}</span>
               </button>
               <button
                 @click="handleRateMultipliers(row)"
@@ -2985,6 +3010,12 @@
       @close="showRPMOverridesModal = false"
       @success="loadGroups"
     />
+
+    <GroupConcurrencyViewModal
+      :show="showConcurrencyViewModal"
+      :group="concurrencyViewGroup"
+      @close="showConcurrencyViewModal = false"
+    />
   </AppLayout>
 </template>
 
@@ -3015,7 +3046,9 @@ import PlatformIcon from "@/components/common/PlatformIcon.vue";
 import Icon from "@/components/icons/Icon.vue";
 import GroupRateMultipliersModal from "@/components/admin/group/GroupRateMultipliersModal.vue";
 import GroupRPMOverridesModal from "@/components/admin/group/GroupRPMOverridesModal.vue";
+import GroupConcurrencyViewModal from "@/components/admin/group/GroupConcurrencyViewModal.vue";
 import GroupModelRoutingEditor from "@/components/admin/group/GroupModelRoutingEditor.vue";
+import type { RoutingEditorScheduleUpdate } from "@/components/admin/group/groupModelRoutingEditor";
 import GroupCapacityBadge from "@/components/common/GroupCapacityBadge.vue";
 import { VueDraggable } from "vue-draggable-plus";
 import { createStableObjectKeyResolver } from "@/utils/stableObjectKey";
@@ -3229,6 +3262,7 @@ const copyAccountsGroupOptionsForEdit = computed(() => {
 const groups = ref<AdminGroup[]>([]);
 const loading = ref(false);
 const rebuildingModelRouteReferences = ref(false);
+const refreshingModelRouteConcurrencySchedules = ref(false);
 const usageMap = ref<Map<number, { today_cost: number; total_cost: number }>>(
   new Map(),
 );
@@ -3276,6 +3310,8 @@ const deletingGroup = ref<AdminGroup | null>(null);
 const showRateMultipliersModal = ref(false);
 const rateMultipliersGroup = ref<AdminGroup | null>(null);
 const showRPMOverridesModal = ref(false);
+const showConcurrencyViewModal = ref(false);
+const concurrencyViewGroup = ref<AdminGroup | null>(null);
 const rpmOverridesGroup = ref<AdminGroup | null>(null);
 const sortableGroups = ref<AdminGroup[]>([]);
 const createMessagesDispatchDefaults = createDefaultMessagesDispatchFormState();
@@ -3345,6 +3381,7 @@ interface ModelRoutingCandidateForm {
   model: string;
   accounts: SimpleAccount[];
   priority: number | string;
+  schedules?: import("@/components/admin/group/modelRouteConcurrencySchedule").ScheduleDraft[];
 }
 
 interface ModelRoutingRule {
@@ -3354,11 +3391,11 @@ interface ModelRoutingRule {
 
 // 创建表单的模型路由规则
 const createModelRoutingRules = ref<ModelRoutingRule[]>([]);
-const createRoutingEditor = ref<{ isValid: () => boolean; getConcurrencyUpdates: () => Array<{ route_alias: string; account_id: number; max_concurrency: number | null }> } | null>(null);
+const createRoutingEditor = ref<{ isValid: () => boolean; getConcurrencyUpdates: () => Array<{ route_alias: string; account_id: number; max_concurrency: number | null }>; getConcurrencyScheduleUpdates: () => RoutingEditorScheduleUpdate[] } | null>(null);
 
 // 编辑表单的模型路由规则
 const editModelRoutingRules = ref<ModelRoutingRule[]>([]);
-const editRoutingEditor = ref<{ isValid: () => boolean; getConcurrencyUpdates: () => Array<{ route_alias: string; account_id: number; max_concurrency: number | null }> } | null>(null);
+const editRoutingEditor = ref<{ isValid: () => boolean; getConcurrencyUpdates: () => Array<{ route_alias: string; account_id: number; max_concurrency: number | null }>; getConcurrencyScheduleUpdates: () => RoutingEditorScheduleUpdate[] } | null>(null);
 
 // 规则对象稳定 key（避免使用 index 导致状态错位）
 const resolveCreateRuleKey =
@@ -3692,10 +3729,10 @@ const routingValidationFallbacks: Record<ModelRoutingValidationCode, string> = {
   duplicate_alias: "Route aliases must be unique",
   candidate_required: "At least one candidate is required",
   account_ids_required: "Select at least one account for each candidate",
-	candidate_multiple_accounts: "每个候选只能选择一个模型账号",
+  candidate_multiple_accounts: "Each candidate can select only one account",
   invalid_account_id: "Candidate accounts are invalid",
   invalid_priority: "Priority must be a non-negative integer",
-  duplicate_priority: "Candidate priorities must be unique within an alias",
+  account_priority_conflict: "The same account cannot be assigned to different priorities",
 };
 
 const validateRoutingForm = (rules: ModelRoutingRule[]): boolean => {
@@ -3883,6 +3920,24 @@ const rebuildModelRouteReferences = async () => {
   }
 };
 
+const refreshModelRouteConcurrencySchedules = async () => {
+  if (refreshingModelRouteConcurrencySchedules.value) return;
+  refreshingModelRouteConcurrencySchedules.value = true;
+  try {
+    const result = await adminAPI.groups.refreshModelRouteConcurrencySchedules();
+    appStore.showSuccess(`${t("admin.groups.modelRouting.refreshAllStarted")} (${result.task_id})`);
+  } catch (error: any) {
+    appStore.showError(
+      extractApiErrorMessage(
+        error,
+        t("admin.groups.modelRouting.refreshAllFailed"),
+      ),
+    );
+  } finally {
+    refreshingModelRouteConcurrencySchedules.value = false;
+  }
+};
+
 const formatCost = (cost: number): string => {
   if (cost >= 1000) return cost.toFixed(0);
   if (cost >= 100) return cost.toFixed(1);
@@ -4051,10 +4106,12 @@ const handleCreateGroup = async () => {
   submitting.value = true;
   try {
 	  let concurrencyUpdates;
+	  let concurrencyScheduleUpdates: RoutingEditorScheduleUpdate[] = [];
 	  try {
 	    concurrencyUpdates = createRoutingEditor.value?.getConcurrencyUpdates?.() ?? [];
+	    concurrencyScheduleUpdates = createRoutingEditor.value?.getConcurrencyScheduleUpdates?.() ?? [];
 	  } catch (error: any) {
-	    appStore.showError(error?.message || '最大并发配置不合法');
+	    appStore.showError(error?.message || '并发配置不合法');
 	    return;
 	  }
     // 构建请求数据，包含模型路由配置
@@ -4097,7 +4154,19 @@ const handleCreateGroup = async () => {
     requestData.image_rate_multiplier = normalizeImageRateMultiplier(
       requestData.image_rate_multiplier,
     );
-    await adminAPI.groups.create(requestData);
+	    const createdGroup = await adminAPI.groups.create(requestData);
+    if (concurrencyScheduleUpdates.length > 0) {
+      try {
+        await Promise.all(concurrencyScheduleUpdates.map(update =>
+          adminAPI.groups.replaceModelRouteConcurrencySchedules(createdGroup.id, update),
+        ));
+      } catch (error: any) {
+        appStore.showError(extractApiErrorMessage(error, t("admin.groups.modelRouting.scheduleSaveFailedAfterCreate")));
+        closeCreateModal();
+        loadGroups();
+        return;
+      }
+    }
     appStore.showSuccess(t("admin.groups.groupCreated"));
     closeCreateModal();
     loadGroups();
@@ -4294,6 +4363,11 @@ const handleRateMultipliers = (group: AdminGroup) => {
 const handleRPMOverrides = (group: AdminGroup) => {
   rpmOverridesGroup.value = group;
   showRPMOverridesModal.value = true;
+};
+
+const handleConcurrencyView = (group: AdminGroup) => {
+  concurrencyViewGroup.value = group;
+  showConcurrencyViewModal.value = true;
 };
 
 const handleDelete = (group: AdminGroup) => {

@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"net/http"
 	"strconv"
 	"strings"
 
@@ -22,6 +24,7 @@ type GroupHandler struct {
 	adminService         service.AdminService
 	dashboardService     *service.DashboardService
 	groupCapacityService *service.GroupCapacityService
+	scheduleRefresher    *service.ModelRouteConcurrencyScheduleRefresher
 }
 
 type updateModelRouteConcurrencyRequest struct {
@@ -32,6 +35,25 @@ type updateModelRouteConcurrencyRequest struct {
 
 type updateModelRouteConcurrencyBatchRequest struct {
 	Updates []updateModelRouteConcurrencyRequest `json:"updates" binding:"required,min=1"`
+}
+
+type modelRouteConcurrencyScheduleRequest struct {
+	Start          string `json:"start" binding:"required"`
+	End            string `json:"end" binding:"required"`
+	MaxConcurrency *int   `json:"max_concurrency"`
+}
+
+type replaceModelRouteConcurrencySchedulesRequest struct {
+	RouteAlias string                                 `json:"route_alias" binding:"required"`
+	AccountID  int64                                  `json:"account_id" binding:"required"`
+	Schedules  []modelRouteConcurrencyScheduleRequest `json:"schedules"`
+}
+
+type modelRouteConcurrencyScheduleResponse struct {
+	ID             int64  `json:"id,omitempty"`
+	Start          string `json:"start"`
+	End            string `json:"end"`
+	MaxConcurrency *int   `json:"max_concurrency"`
 }
 
 type optionalLimitField struct {
@@ -90,6 +112,10 @@ func NewGroupHandler(adminService service.AdminService, dashboardService *servic
 		dashboardService:     dashboardService,
 		groupCapacityService: groupCapacityService,
 	}
+}
+
+func (h *GroupHandler) SetModelRouteConcurrencyScheduleRefresher(refresher *service.ModelRouteConcurrencyScheduleRefresher) {
+	h.scheduleRefresher = refresher
 }
 
 // CreateGroupRequest represents create group request
@@ -357,6 +383,151 @@ func (h *GroupHandler) ListModelRouteReferences(c *gin.Context) {
 		return
 	}
 	response.Success(c, result)
+}
+
+func (h *GroupHandler) ListModelRouteConcurrency(c *gin.Context) {
+	groupID, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil || groupID <= 0 {
+		response.BadRequest(c, "Invalid group ID")
+		return
+	}
+	reader, ok := h.adminService.(interface {
+		ListGroupModelRouteConcurrency(context.Context, int64) ([]service.ModelRouteConcurrencySnapshot, error)
+	})
+	if !ok {
+		response.InternalError(c, "group route concurrency lookup is unavailable")
+		return
+	}
+	result, err := reader.ListGroupModelRouteConcurrency(c.Request.Context(), groupID)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, result)
+}
+
+func (h *GroupHandler) ListModelRouteConcurrencySchedules(c *gin.Context) {
+	groupID, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil || groupID <= 0 {
+		response.BadRequest(c, "Invalid group ID")
+		return
+	}
+	routeAlias := strings.TrimSpace(c.Query("route_alias"))
+	accountID, err := strconv.ParseInt(c.Query("account_id"), 10, 64)
+	if routeAlias == "" || err != nil || accountID <= 0 {
+		response.BadRequest(c, "route_alias and account_id are required")
+		return
+	}
+	reader, ok := h.adminService.(interface {
+		ListGroupModelRouteConcurrencySchedules(context.Context, int64, string, int64) ([]service.ModelRouteConcurrencySchedule, error)
+	})
+	if !ok {
+		response.InternalError(c, "schedule configuration is unavailable")
+		return
+	}
+	schedules, err := reader.ListGroupModelRouteConcurrencySchedules(c.Request.Context(), groupID, routeAlias, accountID)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	out := make([]modelRouteConcurrencyScheduleResponse, 0, len(schedules))
+	for _, schedule := range schedules {
+		start, startErr := service.FormatDailyScheduleMinute(schedule.StartMinute)
+		end, endErr := service.FormatDailyScheduleMinute(schedule.EndMinute)
+		if startErr != nil || endErr != nil {
+			response.InternalError(c, "stored schedule contains an invalid time")
+			return
+		}
+		out = append(out, modelRouteConcurrencyScheduleResponse{ID: schedule.ID, Start: start, End: end, MaxConcurrency: schedule.MaxConcurrency})
+	}
+	response.Success(c, out)
+}
+
+func (h *GroupHandler) ReplaceModelRouteConcurrencySchedules(c *gin.Context) {
+	groupID, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil || groupID <= 0 {
+		response.BadRequest(c, "Invalid group ID")
+		return
+	}
+	var req replaceModelRouteConcurrencySchedulesRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+	routeAlias := strings.TrimSpace(req.RouteAlias)
+	if routeAlias == "" || req.AccountID <= 0 {
+		response.BadRequest(c, "route_alias and account_id are required")
+		return
+	}
+	schedules := make([]service.ModelRouteConcurrencySchedule, 0, len(req.Schedules))
+	for _, item := range req.Schedules {
+		start, startErr := service.ParseDailyScheduleMinute(item.Start, false)
+		end, endErr := service.ParseDailyScheduleMinute(item.End, true)
+		if startErr != nil || endErr != nil {
+			response.BadRequest(c, "schedule start/end must use valid HH:mm values; end may be 24:00")
+			return
+		}
+		schedules = append(schedules, service.ModelRouteConcurrencySchedule{
+			GroupID:        groupID,
+			RouteAlias:     routeAlias,
+			AccountID:      req.AccountID,
+			StartMinute:    start,
+			EndMinute:      end,
+			MaxConcurrency: item.MaxConcurrency,
+		})
+	}
+	if err := service.ValidateModelRouteConcurrencySchedules(schedules); err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+	writer, ok := h.adminService.(interface {
+		ReplaceGroupModelRouteConcurrencySchedules(context.Context, int64, string, int64, []service.ModelRouteConcurrencySchedule) error
+	})
+	if !ok {
+		response.InternalError(c, "schedule configuration is unavailable")
+		return
+	}
+	if err := writer.ReplaceGroupModelRouteConcurrencySchedules(c.Request.Context(), groupID, routeAlias, req.AccountID, schedules); err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, gin.H{"message": "schedule configuration updated"})
+}
+
+// RefreshModelRouteConcurrencySchedules starts one global refresh immediately.
+// The group path is used because the button lives in group model-route admin;
+// the refresh itself intentionally rebuilds all scheduled candidates.
+func (h *GroupHandler) RefreshModelRouteConcurrencySchedules(c *gin.Context) {
+	groupID, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil || groupID <= 0 {
+		response.BadRequest(c, "Invalid group ID")
+		return
+	}
+	h.startModelRouteConcurrencyScheduleRefresh(c)
+}
+
+// RefreshAllModelRouteConcurrencySchedules starts the global refresh without
+// requiring a group identifier. The refresh materializes every scheduled
+// candidate, so this is the endpoint used by the groups management page.
+func (h *GroupHandler) RefreshAllModelRouteConcurrencySchedules(c *gin.Context) {
+	h.startModelRouteConcurrencyScheduleRefresh(c)
+}
+
+func (h *GroupHandler) startModelRouteConcurrencyScheduleRefresh(c *gin.Context) {
+	if h.scheduleRefresher == nil {
+		response.InternalError(c, "schedule refresh is unavailable")
+		return
+	}
+	result, err := h.scheduleRefresher.StartImmediate(c.Request.Context())
+	if errors.Is(err, service.ErrModelRouteConcurrencyScheduleRefreshInProgress) {
+		response.Error(c, http.StatusConflict, "refresh task is already running")
+		return
+	}
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Accepted(c, gin.H{"task_id": result.TaskID, "message": "refresh task started"})
 }
 
 // Create handles creating a new group

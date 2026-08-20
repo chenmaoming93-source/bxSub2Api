@@ -96,6 +96,35 @@ func (c *QuotaChecker) ReplaceRules(rules []QuotaRule) {
 	c.rules.Store(append([]QuotaRule(nil), rules...))
 }
 
+// ActiveRules returns a snapshot of the currently enabled quota rules.
+// Callers must treat the returned rules as read-only.
+func (c *QuotaChecker) ActiveRules() []QuotaRule {
+	if c == nil {
+		return nil
+	}
+	rules, _ := c.rules.Load().([]QuotaRule)
+	return append([]QuotaRule(nil), rules...)
+}
+
+// MinEnforcedQuotaLimit returns the smallest enabled ENFORCE limit matching
+// the supplied request dimensions and natural period. Current usage is not
+// considered; the result is the threshold at which the request is blocked.
+func MinEnforcedQuotaLimit(at time.Time, periodType PeriodType, metric MetricCode, rules []QuotaRule, available map[DimensionCode]DimensionValue) (int64, bool) {
+	var minimum int64
+	found := false
+	for _, rule := range rules {
+		if rule.Mode != QuotaModeEnforce || rule.MetricCode != metric || rule.PeriodType != periodType ||
+			!ruleEffective(rule, at) || !ruleMatches(rule, available) {
+			continue
+		}
+		if !found || rule.LimitValue < minimum {
+			minimum = rule.LimitValue
+			found = true
+		}
+	}
+	return minimum, found
+}
+
 // Check is fail-open: only a successful Redis read that proves an ENFORCE
 // rule is exceeded returns Enforced=true.
 func (c *QuotaChecker) Check(ctx context.Context, at time.Time, available map[DimensionCode]DimensionValue) []QuotaDecision {

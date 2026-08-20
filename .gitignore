@@ -144,3 +144,4 @@ aicodex
 output/
 backend/.gomodcache/
 .VSCodeCounter/
+call_chat_completions.py
