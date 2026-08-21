@@ -2618,6 +2618,17 @@ func (s *GatewayService) trySelectRouteCandidateAccountsWithModel(ctx context.Co
 		}
 		if loadInfo.LoadRate < 100 {
 			routingAvailable = append(routingAvailable, accountWithLoad{account: acc, loadInfo: loadInfo})
+		} else {
+			reason := "account_concurrency"
+			message := "account concurrency limit reached"
+			if _, routeHasLoad := routeLoadMap[routeKey]; routeHasLoad {
+				reason = "route_concurrency"
+				message = "candidate concurrency limit reached"
+			}
+			*candidateFailures = append(*candidateFailures, ModelCandidateFailure{
+				AccountID: acc.ID, AccountName: acc.Name, Model: routingModel,
+				Reason: reason, Message: message,
+			})
 		}
 	}
 
@@ -2675,6 +2686,10 @@ func (s *GatewayService) trySelectRouteCandidateAccountsWithModel(ctx context.Co
 			selection, err := s.newSelectionResult(ctx, item.account, true, result.ReleaseFunc, nil)
 			return withSelectionModelIdentity(selection, requestedModel, routingModel), true, err
 		}
+		*candidateFailures = append(*candidateFailures, ModelCandidateFailure{
+			AccountID: item.account.ID, AccountName: item.account.Name, Model: routingModel,
+			Reason: "account_concurrency", Message: "account concurrency limit reached",
+		})
 		routeResult.ReleaseFunc()
 	}
 	if len(routeConcurrencyLimited) == len(routingAvailable) && len(routeConcurrencyLimited) > 0 {

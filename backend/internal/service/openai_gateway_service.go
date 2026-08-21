@@ -2402,7 +2402,8 @@ func (s *OpenAIGatewayService) trySelectOpenAIRoutePriorityTier(
 	for _, account := range routingCandidates {
 		key := routeConcurrencyKey(groupID, requestedModel, account.ID)
 		loadInfo := accountLoadMap[account.ID]
-		if routeInfo, ok := routeLoadMap[key]; ok {
+		routeInfo, routeHasLoad := routeLoadMap[key]
+		if routeHasLoad {
 			loadInfo = &AccountLoadInfo{
 				AccountID:          account.ID,
 				CurrentConcurrency: routeInfo.CurrentConcurrency,
@@ -2414,6 +2415,17 @@ func (s *OpenAIGatewayService) trySelectOpenAIRoutePriorityTier(
 		}
 		if loadInfo.LoadRate < 100 {
 			available = append(available, accountWithLoad{account: account, loadInfo: loadInfo})
+		} else {
+			reason := "account_concurrency"
+			message := "account concurrency limit reached"
+			if routeHasLoad {
+				reason = "route_concurrency"
+				message = "candidate concurrency limit reached"
+			}
+			*candidateFailures = append(*candidateFailures, ModelCandidateFailure{
+				AccountID: account.ID, AccountName: account.Name, Model: account.FirstModelMappingValue(),
+				Reason: reason, Message: message,
+			})
 		}
 	}
 	if len(available) == 0 {
