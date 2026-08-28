@@ -3,7 +3,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 
 import UsageView from '../UsageView.vue'
 
-const { list, getStats, getSnapshotV2, getById, getModelStats, listErrorLogs } = vi.hoisted(() => {
+const { list, getStats, getSnapshotV2, getById, getModelStats, listErrorLogs, querySceneAccountDaily } = vi.hoisted(() => {
   vi.stubGlobal('localStorage', {
     getItem: vi.fn(() => null),
     setItem: vi.fn(),
@@ -17,6 +17,7 @@ const { list, getStats, getSnapshotV2, getById, getModelStats, listErrorLogs } =
     getById: vi.fn(),
     getModelStats: vi.fn(),
     listErrorLogs: vi.fn(),
+    querySceneAccountDaily: vi.fn(),
   }
 })
 
@@ -53,6 +54,7 @@ vi.mock('@/api/admin', () => ({
 vi.mock('@/api/admin/usage', () => ({
   adminUsageAPI: {
     list: vi.fn(),
+    querySceneAccountDaily,
   },
 }))
 
@@ -124,6 +126,16 @@ describe('admin UsageView distribution metric toggles', () => {
     getSnapshotV2.mockReset()
     getById.mockReset()
     getModelStats.mockReset()
+    querySceneAccountDaily.mockReset()
+    querySceneAccountDaily.mockResolvedValue({
+      timezone: 'Asia/Shanghai',
+      start_date: '2026-08-01',
+      end_date: '2026-08-01',
+      complete: true,
+      consistency: 'mysql_eventual',
+      projection_id: 7,
+      days: [],
+    })
 
     list.mockResolvedValue({
       items: [],
@@ -429,5 +441,33 @@ describe('admin UsageView errors tab filter forwarding', () => {
       account_id: 7,
       group_id: 3,
     }))
+  })
+
+  it('renders scene token usage grouped by technical group and account model', async () => {
+    querySceneAccountDaily.mockResolvedValueOnce({
+      timezone: 'Asia/Shanghai', start_date: '2026-08-01', end_date: '2026-08-01',
+      complete: false, consistency: 'mysql_eventual', projection_id: 7,
+      last_synced_at: '2026-08-01T12:00:00+08:00',
+      days: [{ date: '2026-08-01', scenes: [{
+        group_id: 3, group_name: 'technical-a', scene_name: '同名场景', total_tokens: 12,
+        accounts: [{ account_id: 8, account_name: 'account-a', upstream_model: 'model-a', total_tokens: 12 }],
+      }] }],
+    })
+    const wrapper = mount(UsageView, {
+      global: { stubs: {
+        AppLayout: AppLayoutStub, UsageStatsCards: true, UsageFilters: UsageFiltersStub,
+        UsageTable: true, UsageExportProgress: true, UsageCleanupDialog: true,
+        UserBalanceHistoryModal: true, AuditLogModal: true, Pagination: true, Select: true,
+        DateRangePicker: true, Icon: true, TokenUsageTrend: true,
+        ModelDistributionChart: true, GroupDistributionChart: true, EndpointDistributionChart: true,
+        OpsErrorLogTable: true, OpsErrorDetailModal: true,
+      } },
+    })
+    vi.advanceTimersByTime(120)
+    await flushPromises()
+
+    expect(wrapper.find('[data-test="scene-token-usage"]').text()).toContain('technical-a')
+    expect(wrapper.find('[data-test="scene-token-usage"]').text()).toContain('account-a')
+    expect(wrapper.find('[data-test="scene-token-usage"]').text()).toContain('model-a')
   })
 })

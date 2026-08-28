@@ -38,6 +38,7 @@ func newGroupRepositoryWithSQL(client *dbent.Client, sqlq sqlExecutor) *groupRep
 }
 
 func (r *groupRepository) Create(ctx context.Context, groupIn *service.Group) error {
+	groupIn.SecurityCheckConfig = domain.NormalizeSecurityCheckConfig(groupIn.SecurityCheckConfig)
 	routing, err := modelRoutingRaw(groupIn.ModelRouting)
 	if err != nil {
 		return err
@@ -59,6 +60,7 @@ func (r *groupRepository) Create(ctx context.Context, groupIn *service.Group) er
 	}
 	builder := txClient.Group.Create().
 		SetName(groupIn.Name).
+		SetSceneName(groupIn.SceneName).
 		SetDescription(groupIn.Description).
 		SetPlatform(groupIn.Platform).
 		SetRateMultiplier(groupIn.RateMultiplier).
@@ -87,7 +89,8 @@ func (r *groupRepository) Create(ctx context.Context, groupIn *service.Group) er
 		SetDefaultMappedModel(groupIn.DefaultMappedModel).
 		SetMessagesDispatchModelConfig(groupIn.MessagesDispatchModelConfig).
 		SetModelsListConfig(groupIn.ModelsListConfig).
-		SetRpmLimit(groupIn.RPMLimit)
+		SetRpmLimit(groupIn.RPMLimit).
+		SetSecurityCheckConfig(groupIn.SecurityCheckConfig)
 
 	// 设置模型路由配置
 	if groupIn.ModelRouting != nil {
@@ -150,6 +153,28 @@ func (r *groupRepository) GetByIDLite(ctx context.Context, id int64) (*service.G
 }
 
 // GetByNameExact 按清理后的名称精确查询未软删除分组。
+func (r *groupRepository) GetSecurityCheckConfig(ctx context.Context, groupID int64) (domain.SecurityCheckConfig, error) {
+	m, err := r.client.Group.Query().
+		Where(group.IDEQ(groupID)).
+		Select(group.FieldSecurityCheckConfig).
+		Only(ctx)
+	if err != nil {
+		return domain.DefaultSecurityCheckConfig(), translatePersistenceError(err, service.ErrGroupNotFound, nil)
+	}
+	return domain.NormalizeSecurityCheckConfig(m.SecurityCheckConfig), nil
+}
+
+func (r *groupRepository) UpdateSecurityCheckConfig(ctx context.Context, groupID int64, config domain.SecurityCheckConfig) error {
+	config = domain.NormalizeSecurityCheckConfig(config)
+	if err := domain.ValidateSecurityCheckConfig(config); err != nil {
+		return err
+	}
+	_, err := r.client.Group.UpdateOneID(groupID).
+		SetSecurityCheckConfig(config).
+		Save(ctx)
+	return translatePersistenceError(err, service.ErrGroupNotFound, nil)
+}
+
 func (r *groupRepository) GetByNameExact(ctx context.Context, name string) (*service.Group, error) {
 	m, err := r.client.Group.Query().
 		Where(group.NameEQ(strings.TrimSpace(name)), group.DeletedAtIsNil()).
@@ -161,6 +186,7 @@ func (r *groupRepository) GetByNameExact(ctx context.Context, name string) (*ser
 }
 
 func (r *groupRepository) Update(ctx context.Context, groupIn *service.Group) error {
+	groupIn.SecurityCheckConfig = domain.NormalizeSecurityCheckConfig(groupIn.SecurityCheckConfig)
 	routing, err := modelRoutingRaw(groupIn.ModelRouting)
 	if err != nil {
 		return err
@@ -182,6 +208,7 @@ func (r *groupRepository) Update(ctx context.Context, groupIn *service.Group) er
 	}
 	builder := txClient.Group.UpdateOneID(groupIn.ID).
 		SetName(groupIn.Name).
+		SetSceneName(groupIn.SceneName).
 		SetDescription(groupIn.Description).
 		SetPlatform(groupIn.Platform).
 		SetRateMultiplier(groupIn.RateMultiplier).
@@ -207,7 +234,8 @@ func (r *groupRepository) Update(ctx context.Context, groupIn *service.Group) er
 		SetDefaultMappedModel(groupIn.DefaultMappedModel).
 		SetMessagesDispatchModelConfig(groupIn.MessagesDispatchModelConfig).
 		SetModelsListConfig(groupIn.ModelsListConfig).
-		SetRpmLimit(groupIn.RPMLimit)
+		SetRpmLimit(groupIn.RPMLimit).
+		SetSecurityCheckConfig(groupIn.SecurityCheckConfig)
 
 	// 显式处理可空字段：nil 需要 clear，非 nil 需要 set。
 	if groupIn.DailyLimitUSD != nil {

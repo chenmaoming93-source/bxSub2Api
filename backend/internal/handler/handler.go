@@ -38,29 +38,31 @@ type AdminHandlers struct {
 	Affiliate              *admin.AffiliateHandler
 	Compliance             *admin.ComplianceHandler
 	DynamicTokenStatistics *admin.DynamicTokenStatisticsHandler
+	SceneAccountUsage      *admin.SceneAccountDailyUsageHandler
 	RBAC                   *admin.RBACHandler
 }
 
 // Handlers contains all HTTP handlers
 type Handlers struct {
-	Auth                 *AuthHandler
-	User                 *UserHandler
-	APIKey               *APIKeyHandler
-	Usage                *UsageHandler
-	Redeem               *RedeemHandler
-	Subscription         *SubscriptionHandler
-	Announcement         *AnnouncementHandler
-	ChannelMonitor       *ChannelMonitorUserHandler
-	Admin                *AdminHandlers
-	Gateway              *GatewayHandler
-	OpenAIGateway        *OpenAIGatewayHandler
-	Setting              *SettingHandler
-	Totp                 *TotpHandler
-	Payment              *PaymentHandler
-	PaymentWebhook       *PaymentWebhookHandler
-	AvailableChannel     *AvailableChannelHandler
-	ExternalProvisioning *ExternalProvisioningHandler
-	ExternalTokenUsage   *ExternalTokenUsageHandler
+	Auth                      *AuthHandler
+	User                      *UserHandler
+	APIKey                    *APIKeyHandler
+	Usage                     *UsageHandler
+	Redeem                    *RedeemHandler
+	Subscription              *SubscriptionHandler
+	Announcement              *AnnouncementHandler
+	ChannelMonitor            *ChannelMonitorUserHandler
+	Admin                     *AdminHandlers
+	Gateway                   *GatewayHandler
+	OpenAIGateway             *OpenAIGatewayHandler
+	Setting                   *SettingHandler
+	Totp                      *TotpHandler
+	Payment                   *PaymentHandler
+	PaymentWebhook            *PaymentWebhookHandler
+	AvailableChannel          *AvailableChannelHandler
+	ExternalProvisioning      *ExternalProvisioningHandler
+	ExternalTokenUsage        *ExternalTokenUsageHandler
+	ExternalSceneAccountUsage *ExternalSceneAccountDailyUsageHandler
 }
 
 // BuildInfo contains build-time information

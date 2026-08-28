@@ -34,6 +34,9 @@ type OpenAIGatewayHandler struct {
 	usageRecordWorkerPool    *service.UsageRecordWorkerPool
 	errorPassthroughService  *service.ErrorPassthroughService
 	contentModerationService *service.ContentModerationService
+	securityCheckService     *service.SecurityCheckService
+	securityConfigProvider   *service.SecurityConfigProvider
+	securityCheckCollector   *service.SecurityCheckCollector
 	opsService               *service.OpsService
 	concurrencyHelper        *ConcurrencyHelper
 	imageLimiter             *imageConcurrencyLimiter
@@ -246,6 +249,10 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 
 	if decision := h.checkContentModeration(c, reqLog, apiKey, subject, service.ContentModerationProtocolOpenAIResponses, reqModel, body); decision != nil && decision.Blocked {
 		h.errorResponse(c, contentModerationStatus(decision), contentModerationErrorCode(decision), decision.Message)
+		return
+	}
+	if result := h.checkSecurityCheck(c, reqLog, apiKey, subject, service.ContentModerationProtocolOpenAIResponses, reqModel, body); securityCheckBlocked(result) {
+		h.errorResponse(c, http.StatusForbidden, securityCheckErrorCode, securityCheckErrorMessage)
 		return
 	}
 
@@ -716,6 +723,10 @@ func (h *OpenAIGatewayHandler) Messages(c *gin.Context) {
 
 	if decision := h.checkContentModeration(c, reqLog, apiKey, subject, service.ContentModerationProtocolAnthropicMessages, reqModel, body); decision != nil && decision.Blocked {
 		h.anthropicErrorResponse(c, contentModerationStatus(decision), contentModerationErrorCode(decision), decision.Message)
+		return
+	}
+	if result := h.checkSecurityCheck(c, reqLog, apiKey, subject, service.ContentModerationProtocolAnthropicMessages, reqModel, body); securityCheckBlocked(result) {
+		h.anthropicErrorResponse(c, http.StatusForbidden, securityCheckErrorCode, securityCheckErrorMessage)
 		return
 	}
 
@@ -1298,6 +1309,11 @@ func (h *OpenAIGatewayHandler) ResponsesWebSocket(c *gin.Context) {
 		closeOpenAIClientWS(wsConn, coderws.StatusPolicyViolation, decision.Message)
 		return
 	}
+	if result := h.checkSecurityCheck(c, reqLog, apiKey, subject, service.ContentModerationProtocolOpenAIResponses, reqModel, firstMessage); securityCheckBlocked(result) {
+		writeSecurityCheckWSError(ctx, wsConn)
+		closeOpenAIClientWS(wsConn, coderws.StatusPolicyViolation, securityCheckErrorMessage)
+		return
+	}
 
 	if service.IsImageGenerationIntent("/v1/responses", reqModel, firstMessage) && !service.GroupAllowsImageGeneration(apiKey.Group) {
 		closeOpenAIClientWS(wsConn, coderws.StatusPolicyViolation, service.ImageGenerationPermissionMessage())
@@ -1482,6 +1498,10 @@ func (h *OpenAIGatewayHandler) ResponsesWebSocket(c *gin.Context) {
 				if decision := h.checkContentModeration(c, reqLog, apiKey, subject, service.ContentModerationProtocolOpenAIResponses, model, payload); decision != nil && decision.Blocked {
 					writeContentModerationWSError(ctx, wsConn, decision)
 					return service.NewOpenAIWSClientCloseError(coderws.StatusPolicyViolation, decision.Message, nil)
+				}
+				if result := h.checkSecurityCheck(c, reqLog, apiKey, subject, service.ContentModerationProtocolOpenAIResponses, model, payload); securityCheckBlocked(result) {
+					writeSecurityCheckWSError(ctx, wsConn)
+					return service.NewOpenAIWSClientCloseError(coderws.StatusPolicyViolation, securityCheckErrorMessage, nil)
 				}
 				return nil
 			},
@@ -2104,6 +2124,30 @@ func writeContentModerationWSError(ctx context.Context, conn *coderws.Conn, deci
 	})
 	if err != nil {
 		payload = []byte(`{"event_id":"evt_content_moderation_blocked","type":"error","error":{"type":"invalid_request_error","code":"content_policy_violation","message":"content moderation blocked this request"}}`)
+	}
+	writeCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
+	defer cancel()
+	_ = conn.Write(writeCtx, coderws.MessageText, payload)
+}
+
+func writeSecurityCheckWSError(ctx context.Context, conn *coderws.Conn) {
+	if conn == nil {
+		return
+	}
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	payload, err := json.Marshal(gin.H{
+		"event_id": "evt_security_check_blocked",
+		"type":     "error",
+		"error": gin.H{
+			"type":    "invalid_request_error",
+			"code":    securityCheckErrorCode,
+			"message": securityCheckErrorMessage,
+		},
+	})
+	if err != nil {
+		payload = []byte(`{"event_id":"evt_security_check_blocked","type":"error","error":{"type":"invalid_request_error","code":"security_policy_violation","message":"request blocked by security policy"}}`)
 	}
 	writeCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
 	defer cancel()

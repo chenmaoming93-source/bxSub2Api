@@ -9,6 +9,44 @@ import type { EndpointStat } from '@/types'
 
 // ==================== Types ====================
 
+export interface SceneAccountDailyUsageAccount {
+  account_id: number
+  account_name: string
+  upstream_model: string
+  total_tokens: number
+}
+
+export interface SceneAccountDailyUsageScene {
+  group_id: number
+  group_name: string
+  scene_name: string
+  total_tokens: number
+  accounts: SceneAccountDailyUsageAccount[]
+}
+
+export interface SceneAccountDailyUsageDay {
+  date: string
+  scenes: SceneAccountDailyUsageScene[]
+}
+
+export interface SceneAccountDailyUsageResponse {
+  timezone: string
+  start_date: string
+  end_date: string
+  complete: boolean
+  consistency: string
+  projection_id: number
+  projection_enabled_at?: string
+  last_synced_at?: string
+  days: SceneAccountDailyUsageDay[]
+}
+
+export interface SceneAccountDailyUsageParams {
+  start_date: string
+  end_date: string
+  group_name?: string
+}
+
 export interface AdminUsageStatsResponse {
   total_requests: number
   total_input_tokens: number
@@ -204,8 +242,18 @@ export async function cancelCleanupTask(taskId: number): Promise<{ id: number; s
   return data
 }
 
+export async function querySceneAccountDaily(
+  params: SceneAccountDailyUsageParams
+): Promise<SceneAccountDailyUsageResponse> {
+  const { data } = await apiClient.get<SceneAccountDailyUsageResponse>('/admin/usage/scene-account/daily', {
+    params
+  })
+  return data
+}
+
 export const adminUsageAPI = {
   list,
+  querySceneAccountDaily,
   getStats,
   searchUsers,
   searchApiKeys,

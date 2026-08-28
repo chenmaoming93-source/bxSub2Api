@@ -24,6 +24,8 @@ const (
 	FieldDeletedAt = "deleted_at"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
+	// FieldSceneName holds the string denoting the scene_name field in the database.
+	FieldSceneName = "scene_name"
 	// FieldDescription holds the string denoting the description field in the database.
 	FieldDescription = "description"
 	// FieldRateMultiplier holds the string denoting the rate_multiplier field in the database.
@@ -86,6 +88,8 @@ const (
 	FieldModelsListConfig = "models_list_config"
 	// FieldRpmLimit holds the string denoting the rpm_limit field in the database.
 	FieldRpmLimit = "rpm_limit"
+	// FieldSecurityCheckConfig holds the string denoting the security_check_config field in the database.
+	FieldSecurityCheckConfig = "security_check_config"
 	// EdgeAPIKeys holds the string denoting the api_keys edge name in mutations.
 	EdgeAPIKeys = "api_keys"
 	// EdgeRedeemCodes holds the string denoting the redeem_codes edge name in mutations.
@@ -165,6 +169,7 @@ var Columns = []string{
 	FieldUpdatedAt,
 	FieldDeletedAt,
 	FieldName,
+	FieldSceneName,
 	FieldDescription,
 	FieldRateMultiplier,
 	FieldIsExclusive,
@@ -196,6 +201,7 @@ var Columns = []string{
 	FieldMessagesDispatchModelConfig,
 	FieldModelsListConfig,
 	FieldRpmLimit,
+	FieldSecurityCheckConfig,
 }
 
 var (
@@ -233,6 +239,8 @@ var (
 	UpdateDefaultUpdatedAt func() time.Time
 	// NameValidator is a validator for the "name" field. It is called by the builders before save.
 	NameValidator func(string) error
+	// SceneNameValidator is a validator for the "scene_name" field. It is called by the builders before save.
+	SceneNameValidator func(string) error
 	// DefaultRateMultiplier holds the default value on creation for the "rate_multiplier" field.
 	DefaultRateMultiplier float64
 	// DefaultIsExclusive holds the default value on creation for the "is_exclusive" field.
@@ -283,6 +291,8 @@ var (
 	DefaultModelsListConfig domain.GroupModelsListConfig
 	// DefaultRpmLimit holds the default value on creation for the "rpm_limit" field.
 	DefaultRpmLimit int
+	// DefaultSecurityCheckConfig holds the default value on creation for the "security_check_config" field.
+	DefaultSecurityCheckConfig domain.SecurityCheckConfig
 )
 
 // OrderOption defines the ordering options for the Group queries.
@@ -311,6 +321,11 @@ func ByDeletedAt(opts ...sql.OrderTermOption) OrderOption {
 // ByName orders the results by the name field.
 func ByName(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldName, opts...).ToFunc()
+}
+
+// BySceneName orders the results by the scene_name field.
+func BySceneName(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldSceneName, opts...).ToFunc()
 }
 
 // ByDescription orders the results by the description field.

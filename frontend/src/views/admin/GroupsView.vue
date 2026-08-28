@@ -1,4 +1,4 @@
-﻿<template>
+<template>
   <AppLayout>
     <TablePageLayout>
       <template #filters>
@@ -102,6 +102,15 @@
                 : t('admin.groups.modelRouting.refreshAllSchedules') }}
             </button>
             <button
+              v-permission="'groups.read'"
+              @click="showSecurityLogsModal = true"
+              class="btn btn-secondary"
+              data-test="security-check-logs"
+            >
+              <Icon name="shield" size="md" class="mr-2" />
+              安全日志
+            </button>
+            <button
               v-permission="'groups.create'"
               @click="openCreateModal"
               class="btn btn-primary"
@@ -128,6 +137,12 @@
             <span class="font-medium text-gray-900 dark:text-white">{{
               value
             }}</span>
+          </template>
+
+          <template #cell-scene_name="{ value }">
+            <span class="text-sm text-gray-700 dark:text-gray-300">
+              {{ value || t("admin.groups.form.sceneNameUnset") }}
+            </span>
           </template>
 
           <template #cell-platform="{ value }">
@@ -331,6 +346,15 @@
                 <span class="text-xs">{{ t("common.edit") }}</span>
               </button>
               <button
+                v-permission="'groups.update'"
+                @click="openSecurityCheck(row)"
+                class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-indigo-600 dark:hover:bg-dark-700 dark:hover:text-indigo-400"
+                data-test="group-security-check"
+              >
+                <Icon name="shield" size="sm" />
+                <span class="text-xs">安全检查</span>
+              </button>
+              <button
                 @click="handleConcurrencyView(row)"
                 class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-emerald-600 dark:hover:bg-dark-700 dark:hover:text-emerald-400"
               >
@@ -410,6 +434,15 @@
             class="input"
             :placeholder="t('admin.groups.enterGroupName')"
             data-tour="group-form-name"
+          />
+        </div>
+        <div>
+          <label class="input-label">{{ t("admin.groups.form.sceneName") }}</label>
+          <input
+            v-model="createForm.scene_name"
+            type="text"
+            class="input"
+            :placeholder="t('admin.groups.form.sceneNamePlaceholder')"
           />
         </div>
         <div>
@@ -1665,6 +1698,15 @@
             required
             class="input"
             data-tour="edit-group-form-name"
+          />
+        </div>
+        <div>
+          <label class="input-label">{{ t("admin.groups.form.sceneName") }}</label>
+          <input
+            v-model="editForm.scene_name"
+            type="text"
+            class="input"
+            :placeholder="t('admin.groups.form.sceneNamePlaceholder')"
           />
         </div>
         <div>
@@ -2995,6 +3037,14 @@
       </template>
     </BaseDialog>
 
+    <GroupSecurityCheckModal
+      :show="showSecurityCheckModal"
+      :group="securityCheckGroup"
+      @close="showSecurityCheckModal = false"
+      @success="handleSecurityCheckSuccess"
+    />
+    <SecurityCheckLogsModal :show="showSecurityLogsModal" @close="showSecurityLogsModal = false" />
+
     <!-- Group Rate Multipliers Modal -->
     <GroupRateMultipliersModal
       :show="showRateMultipliersModal"
@@ -3048,6 +3098,8 @@ import GroupRateMultipliersModal from "@/components/admin/group/GroupRateMultipl
 import GroupRPMOverridesModal from "@/components/admin/group/GroupRPMOverridesModal.vue";
 import GroupConcurrencyViewModal from "@/components/admin/group/GroupConcurrencyViewModal.vue";
 import GroupModelRoutingEditor from "@/components/admin/group/GroupModelRoutingEditor.vue";
+import GroupSecurityCheckModal from "@/components/admin/group/GroupSecurityCheckModal.vue";
+import SecurityCheckLogsModal from "@/components/admin/group/SecurityCheckLogsModal.vue";
 import type { RoutingEditorScheduleUpdate } from "@/components/admin/group/groupModelRoutingEditor";
 import GroupCapacityBadge from "@/components/common/GroupCapacityBadge.vue";
 import { VueDraggable } from "vue-draggable-plus";
@@ -3086,6 +3138,7 @@ const onboardingStore = useOnboardingStore();
 
 const columns = computed<Column[]>(() => [
   { key: "name", label: t("admin.groups.columns.name"), sortable: true },
+  { key: "scene_name", label: t("admin.groups.columns.sceneName"), sortable: true },
   {
     key: "platform",
     label: t("admin.groups.columns.platform"),
@@ -3312,6 +3365,9 @@ const rateMultipliersGroup = ref<AdminGroup | null>(null);
 const showRPMOverridesModal = ref(false);
 const showConcurrencyViewModal = ref(false);
 const concurrencyViewGroup = ref<AdminGroup | null>(null);
+const showSecurityCheckModal = ref(false);
+const securityCheckGroup = ref<AdminGroup | null>(null);
+const showSecurityLogsModal = ref(false);
 const rpmOverridesGroup = ref<AdminGroup | null>(null);
 const sortableGroups = ref<AdminGroup[]>([]);
 const createMessagesDispatchDefaults = createDefaultMessagesDispatchFormState();
@@ -3330,6 +3386,7 @@ const editModelsListSelectedCount = computed(
 
 const createForm = reactive({
   name: "",
+  scene_name: "",
   description: "",
   platform: "openai" as GroupPlatform,
   rate_multiplier: 1.0,
@@ -3749,6 +3806,7 @@ const validateRoutingForm = (rules: ModelRoutingRule[]): boolean => {
 
 const editForm = reactive({
   name: "",
+  scene_name: "",
   description: "",
   platform: "openai" as GroupPlatform,
   rate_multiplier: 1.0,
@@ -4035,6 +4093,7 @@ const closeCreateModal = () => {
   });
   clearAllAccountSearchState();
   createForm.name = "";
+  createForm.scene_name = "";
   createForm.description = "";
   createForm.platform = "openai";
   createForm.rate_multiplier = 1.0;
@@ -4186,6 +4245,7 @@ const handleCreateGroup = async () => {
 const handleEdit = async (group: AdminGroup) => {
   editingGroup.value = group;
   editForm.name = group.name;
+  editForm.scene_name = group.scene_name || "";
   editForm.description = group.description || "";
   editForm.platform = group.platform;
   editForm.rate_multiplier = group.rate_multiplier;
@@ -4368,6 +4428,17 @@ const handleRPMOverrides = (group: AdminGroup) => {
 const handleConcurrencyView = (group: AdminGroup) => {
   concurrencyViewGroup.value = group;
   showConcurrencyViewModal.value = true;
+};
+
+const openSecurityCheck = (group: AdminGroup) => {
+  securityCheckGroup.value = group;
+  showSecurityCheckModal.value = true;
+};
+
+const handleSecurityCheckSuccess = (group: AdminGroup) => {
+  const index = groups.value.findIndex((item) => item.id === group.id);
+  if (index >= 0) groups.value[index] = group;
+  appStore.showSuccess('安全检查配置已保存');
 };
 
 const handleDelete = (group: AdminGroup) => {

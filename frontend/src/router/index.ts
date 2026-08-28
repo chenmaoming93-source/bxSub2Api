@@ -572,6 +572,15 @@ const rawRoutes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/admin/security-check-logs',
+    name: 'AdminSecurityCheckLogs',
+    component: () => import('@/views/admin/SecurityCheckLogsView.vue'),
+    meta: {
+      requiresAuth: true,
+      title: 'Security Check Logs'
+    }
+  },
+  {
     path: '/admin/token-statistics',
     name: 'AdminTokenStatistics',
     component: () => import('@/views/admin/TokenStatisticsView.vue'),

@@ -252,15 +252,24 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 	projectionAdminService := tokenstat.NewProjectionAdminService(client, redisClient)
 	runtimeController := tokenstat.NewRuntimeController(redisClient, configConfig)
 	dynamicTokenStatisticsHandler := admin.NewDynamicTokenStatisticsHandler(projectionAdminService, runtimeController)
+	sceneAccountDailyUsageService, err := service.ProvideSceneAccountDailyUsageService(client, projectionAdminService, runtimeController, configConfig)
+	if err != nil {
+		return nil, err
+	}
+	sceneAccountDailyUsageHandler := admin.NewSceneAccountDailyUsageHandler(sceneAccountDailyUsageService)
 	rbacRepository := repository.NewRBACRepository(db)
 	rbacRoleService := service.NewRBACRoleService(rbacRepository, permissionService)
 	rbacHandler := admin.NewRBACHandler(rbacRoleService)
-	adminHandlers := handler.ProvideAdminHandlers(dashboardHandler, adminUserHandler, groupHandler, accountHandler, adminAnnouncementHandler, dataManagementHandler, backupHandler, oAuthHandler, openAIOAuthHandler, geminiOAuthHandler, antigravityOAuthHandler, proxyHandler, adminRedeemHandler, promoHandler, settingHandler, opsHandler, systemHandler, adminSubscriptionHandler, adminUsageHandler, userAttributeHandler, errorPassthroughHandler, tlsFingerprintProfileHandler, adminAPIKeyHandler, scheduledTestHandler, channelHandler, channelMonitorHandler, channelMonitorRequestTemplateHandler, contentModerationHandler, paymentHandler, affiliateHandler, complianceHandler, dynamicTokenStatisticsHandler, rbacHandler)
+	adminHandlers := handler.ProvideAdminHandlers(dashboardHandler, adminUserHandler, groupHandler, accountHandler, adminAnnouncementHandler, dataManagementHandler, backupHandler, oAuthHandler, openAIOAuthHandler, geminiOAuthHandler, antigravityOAuthHandler, proxyHandler, adminRedeemHandler, promoHandler, settingHandler, opsHandler, systemHandler, adminSubscriptionHandler, adminUsageHandler, userAttributeHandler, errorPassthroughHandler, tlsFingerprintProfileHandler, adminAPIKeyHandler, scheduledTestHandler, channelHandler, channelMonitorHandler, channelMonitorRequestTemplateHandler, contentModerationHandler, paymentHandler, affiliateHandler, complianceHandler, dynamicTokenStatisticsHandler, sceneAccountDailyUsageHandler, rbacHandler)
 	usageRecordWorkerPool := service.NewUsageRecordWorkerPool(configConfig)
 	userMsgQueueCache := repository.NewUserMsgQueueCache(redisClient)
 	userMessageQueueService := service.ProvideUserMessageQueueService(userMsgQueueCache, rpmCache, configConfig)
 	gatewayHandler := handler.NewGatewayHandler(gatewayService, geminiMessagesCompatService, antigravityGatewayService, userService, concurrencyService, billingCacheService, usageService, apiKeyService, usageRecordWorkerPool, errorPassthroughService, contentModerationService, userMessageQueueService, configConfig, settingService)
 	openAIGatewayHandler := handler.NewOpenAIGatewayHandler(openAIGatewayService, concurrencyService, billingCacheService, apiKeyService, usageRecordWorkerPool, errorPassthroughService, contentModerationService, opsService, configConfig)
+	singGuardClient := service.ProvideSingGuardClient(configConfig)
+	securityCheckService := service.ProvideSecurityCheckService(singGuardClient)
+	securityConfigProvider := service.ProvideSecurityConfigProvider(redisClient, groupRepository)
+	securityCheckCollector := service.ProvideSecurityCheckCollector(groupRepository)
 	handlerSettingHandler := handler.ProvideSettingHandler(settingService, buildInfo, notificationEmailService)
 	totpHandler := handler.NewTotpHandler(totpService)
 	handlerPaymentHandler := handler.NewPaymentHandler(paymentService, paymentConfigService, channelService)
@@ -274,9 +283,10 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 		return nil, err
 	}
 	externalTokenUsageHandler := handler.NewExternalTokenUsageHandler(externalTokenUsageService)
+	externalSceneAccountDailyUsageHandler := handler.NewExternalSceneAccountDailyUsageHandler(sceneAccountDailyUsageService)
 	idempotencyCoordinator := service.ProvideIdempotencyCoordinator(idempotencyRepository, configConfig)
 	idempotencyCleanupService := service.ProvideIdempotencyCleanupService(idempotencyRepository, configConfig)
-	handlers := handler.ProvideHandlers(authHandler, userHandler, apiKeyHandler, usageHandler, redeemHandler, subscriptionHandler, announcementHandler, channelMonitorUserHandler, adminHandlers, gatewayHandler, openAIGatewayHandler, handlerSettingHandler, totpHandler, handlerPaymentHandler, paymentWebhookHandler, availableChannelHandler, externalProvisioningHandler, externalTokenUsageHandler, idempotencyCoordinator, idempotencyCleanupService)
+	handlers := handler.ProvideHandlers(authHandler, userHandler, apiKeyHandler, usageHandler, redeemHandler, subscriptionHandler, announcementHandler, channelMonitorUserHandler, adminHandlers, gatewayHandler, openAIGatewayHandler, securityCheckService, securityConfigProvider, securityCheckCollector, groupRepository, handlerSettingHandler, totpHandler, handlerPaymentHandler, paymentWebhookHandler, availableChannelHandler, externalProvisioningHandler, externalTokenUsageHandler, externalSceneAccountDailyUsageHandler, idempotencyCoordinator, idempotencyCleanupService)
 	jwtAuthMiddleware := middleware.NewJWTAuthMiddleware(authService, userService)
 	adminAuthMiddleware := middleware.NewAdminAuthMiddleware(authService, userService, settingService)
 	adminIdentityAuthMiddleware := middleware.NewAdminIdentityAuthMiddleware(authService, userService, settingService)

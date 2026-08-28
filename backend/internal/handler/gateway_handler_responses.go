@@ -108,6 +108,10 @@ func (h *GatewayHandler) Responses(c *gin.Context) {
 		h.responsesErrorResponse(c, contentModerationStatus(decision), contentModerationErrorCode(decision), decision.Message)
 		return
 	}
+	if result := h.checkSecurityCheck(c, reqLog, apiKey, subject, service.ContentModerationProtocolOpenAIResponses, reqModel, body); securityCheckBlocked(result) {
+		h.responsesErrorResponse(c, http.StatusForbidden, securityCheckErrorCode, securityCheckErrorMessage)
+		return
+	}
 
 	// Error passthrough binding
 	if h.errorPassthroughService != nil {

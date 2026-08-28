@@ -93,8 +93,12 @@ gateway:
     refresh_lock_renew_interval_seconds: 30
 
   # 可配置多维 Token 统计与限额。关闭时不启动实时统计、限额检查和后台同步。
+  # 场景 Token 每日查询复用本配置，不新增独立的 scene_usage 配置项。
+  # 使用场景查询前需将 enabled 设为 true，并在 /admin/token-statistics 创建并启用：
+  #   维度：group_id + account_id + upstream_model；指标：total_tokens；周期：D；状态：ACTIVE。
+  # 查询接口的 group_name 过滤始终使用技术分组 name，而不是 scene_name。
   dynamic_token_statistics:
-    # 是否启用整套可配置统计与限额流水线。
+    # 是否启用整套可配置统计与限额流水线；false 时场景查询会明确返回配置未启用错误。
     enabled: false
     # 自然日、自然周和自然月的周期边界时区，必须是有效的 IANA 时区。
     timezone: Asia/Shanghai

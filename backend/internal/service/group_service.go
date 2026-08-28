@@ -46,6 +46,7 @@ type GroupSortOrderUpdate struct {
 // CreateGroupRequest 创建分组请求
 type CreateGroupRequest struct {
 	Name                 string   `json:"name"`
+	SceneName            string   `json:"scene_name"`
 	Description          string   `json:"description"`
 	RateMultiplier       float64  `json:"rate_multiplier"`
 	IsExclusive          bool     `json:"is_exclusive"`
@@ -57,6 +58,7 @@ type CreateGroupRequest struct {
 // UpdateGroupRequest 更新分组请求
 type UpdateGroupRequest struct {
 	Name                 *string  `json:"name"`
+	SceneName            *string  `json:"scene_name"`
 	Description          *string  `json:"description"`
 	RateMultiplier       *float64 `json:"rate_multiplier"`
 	IsExclusive          *bool    `json:"is_exclusive"`
@@ -101,6 +103,7 @@ func (s *GroupService) Create(ctx context.Context, req CreateGroupRequest) (*Gro
 	// 创建分组
 	group := &Group{
 		Name:                 req.Name,
+		SceneName:            req.SceneName,
 		Description:          req.Description,
 		Platform:             PlatformAnthropic,
 		RateMultiplier:       req.RateMultiplier,
@@ -166,6 +169,9 @@ func (s *GroupService) Update(ctx context.Context, id int64, req UpdateGroupRequ
 		group.Name = *req.Name
 	}
 
+	if req.SceneName != nil {
+		group.SceneName = *req.SceneName
+	}
 	if req.Description != nil {
 		group.Description = *req.Description
 	}

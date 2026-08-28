@@ -59,11 +59,17 @@ const (
 // 可通过 gateway.upstream_response_read_max_bytes 配置项覆盖。
 const DefaultUpstreamResponseReadMaxBytes int64 = 128 * 1024 * 1024
 
+// SingGuardConfig contains deployment-level settings for the internal safety checker.
+type SingGuardConfig struct {
+	BaseURL string `mapstructure:"base_url"`
+}
+
 type Config struct {
 	Server                     ServerConfig                     `mapstructure:"server"`
 	Log                        LogConfig                        `mapstructure:"log"`
 	CORS                       CORSConfig                       `mapstructure:"cors"`
 	Security                   SecurityConfig                   `mapstructure:"security"`
+	SingGuard                  SingGuardConfig                  `mapstructure:"singguard"`
 	Billing                    BillingConfig                    `mapstructure:"billing"`
 	Turnstile                  TurnstileConfig                  `mapstructure:"turnstile"`
 	Database                   DatabaseConfig                   `mapstructure:"database"`

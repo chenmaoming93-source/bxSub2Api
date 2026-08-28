@@ -76,6 +76,26 @@ func (_u *GroupUpdate) SetNillableName(v *string) *GroupUpdate {
 	return _u
 }
 
+// SetSceneName sets the "scene_name" field.
+func (_u *GroupUpdate) SetSceneName(v string) *GroupUpdate {
+	_u.mutation.SetSceneName(v)
+	return _u
+}
+
+// SetNillableSceneName sets the "scene_name" field if the given value is not nil.
+func (_u *GroupUpdate) SetNillableSceneName(v *string) *GroupUpdate {
+	if v != nil {
+		_u.SetSceneName(*v)
+	}
+	return _u
+}
+
+// ClearSceneName clears the value of the "scene_name" field.
+func (_u *GroupUpdate) ClearSceneName() *GroupUpdate {
+	_u.mutation.ClearSceneName()
+	return _u
+}
+
 // SetDescription sets the "description" field.
 func (_u *GroupUpdate) SetDescription(v string) *GroupUpdate {
 	_u.mutation.SetDescription(v)
@@ -659,6 +679,20 @@ func (_u *GroupUpdate) AddRpmLimit(v int) *GroupUpdate {
 	return _u
 }
 
+// SetSecurityCheckConfig sets the "security_check_config" field.
+func (_u *GroupUpdate) SetSecurityCheckConfig(v domain.SecurityCheckConfig) *GroupUpdate {
+	_u.mutation.SetSecurityCheckConfig(v)
+	return _u
+}
+
+// SetNillableSecurityCheckConfig sets the "security_check_config" field if the given value is not nil.
+func (_u *GroupUpdate) SetNillableSecurityCheckConfig(v *domain.SecurityCheckConfig) *GroupUpdate {
+	if v != nil {
+		_u.SetSecurityCheckConfig(*v)
+	}
+	return _u
+}
+
 // AddAPIKeyIDs adds the "api_keys" edge to the APIKey entity by IDs.
 func (_u *GroupUpdate) AddAPIKeyIDs(ids ...int64) *GroupUpdate {
 	_u.mutation.AddAPIKeyIDs(ids...)
@@ -929,6 +963,11 @@ func (_u *GroupUpdate) check() error {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Group.name": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.SceneName(); ok {
+		if err := group.SceneNameValidator(v); err != nil {
+			return &ValidationError{Name: "scene_name", err: fmt.Errorf(`ent: validator failed for field "Group.scene_name": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.Status(); ok {
 		if err := group.StatusValidator(v); err != nil {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "Group.status": %w`, err)}
@@ -975,6 +1014,12 @@ func (_u *GroupUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(group.FieldName, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.SceneName(); ok {
+		_spec.SetField(group.FieldSceneName, field.TypeString, value)
+	}
+	if _u.mutation.SceneNameCleared() {
+		_spec.ClearField(group.FieldSceneName, field.TypeString)
 	}
 	if value, ok := _u.mutation.Description(); ok {
 		_spec.SetField(group.FieldDescription, field.TypeString, value)
@@ -1142,6 +1187,9 @@ func (_u *GroupUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.AddedRpmLimit(); ok {
 		_spec.AddField(group.FieldRpmLimit, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.SecurityCheckConfig(); ok {
+		_spec.SetField(group.FieldSecurityCheckConfig, field.TypeJSON, value)
 	}
 	if _u.mutation.APIKeysCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -1494,6 +1542,26 @@ func (_u *GroupUpdateOne) SetNillableName(v *string) *GroupUpdateOne {
 	if v != nil {
 		_u.SetName(*v)
 	}
+	return _u
+}
+
+// SetSceneName sets the "scene_name" field.
+func (_u *GroupUpdateOne) SetSceneName(v string) *GroupUpdateOne {
+	_u.mutation.SetSceneName(v)
+	return _u
+}
+
+// SetNillableSceneName sets the "scene_name" field if the given value is not nil.
+func (_u *GroupUpdateOne) SetNillableSceneName(v *string) *GroupUpdateOne {
+	if v != nil {
+		_u.SetSceneName(*v)
+	}
+	return _u
+}
+
+// ClearSceneName clears the value of the "scene_name" field.
+func (_u *GroupUpdateOne) ClearSceneName() *GroupUpdateOne {
+	_u.mutation.ClearSceneName()
 	return _u
 }
 
@@ -2080,6 +2148,20 @@ func (_u *GroupUpdateOne) AddRpmLimit(v int) *GroupUpdateOne {
 	return _u
 }
 
+// SetSecurityCheckConfig sets the "security_check_config" field.
+func (_u *GroupUpdateOne) SetSecurityCheckConfig(v domain.SecurityCheckConfig) *GroupUpdateOne {
+	_u.mutation.SetSecurityCheckConfig(v)
+	return _u
+}
+
+// SetNillableSecurityCheckConfig sets the "security_check_config" field if the given value is not nil.
+func (_u *GroupUpdateOne) SetNillableSecurityCheckConfig(v *domain.SecurityCheckConfig) *GroupUpdateOne {
+	if v != nil {
+		_u.SetSecurityCheckConfig(*v)
+	}
+	return _u
+}
+
 // AddAPIKeyIDs adds the "api_keys" edge to the APIKey entity by IDs.
 func (_u *GroupUpdateOne) AddAPIKeyIDs(ids ...int64) *GroupUpdateOne {
 	_u.mutation.AddAPIKeyIDs(ids...)
@@ -2363,6 +2445,11 @@ func (_u *GroupUpdateOne) check() error {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Group.name": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.SceneName(); ok {
+		if err := group.SceneNameValidator(v); err != nil {
+			return &ValidationError{Name: "scene_name", err: fmt.Errorf(`ent: validator failed for field "Group.scene_name": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.Status(); ok {
 		if err := group.StatusValidator(v); err != nil {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "Group.status": %w`, err)}
@@ -2426,6 +2513,12 @@ func (_u *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error)
 	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(group.FieldName, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.SceneName(); ok {
+		_spec.SetField(group.FieldSceneName, field.TypeString, value)
+	}
+	if _u.mutation.SceneNameCleared() {
+		_spec.ClearField(group.FieldSceneName, field.TypeString)
 	}
 	if value, ok := _u.mutation.Description(); ok {
 		_spec.SetField(group.FieldDescription, field.TypeString, value)
@@ -2593,6 +2686,9 @@ func (_u *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error)
 	}
 	if value, ok := _u.mutation.AddedRpmLimit(); ok {
 		_spec.AddField(group.FieldRpmLimit, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.SecurityCheckConfig(); ok {
+		_spec.SetField(group.FieldSecurityCheckConfig, field.TypeJSON, value)
 	}
 	if _u.mutation.APIKeysCleared() {
 		edge := &sqlgraph.EdgeSpec{

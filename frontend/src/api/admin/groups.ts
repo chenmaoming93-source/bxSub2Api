@@ -153,6 +153,60 @@ export async function getById(id: number): Promise<AdminGroup> {
   return data
 }
 
+export async function updateSecurityCheck(
+  id: number,
+  config: import('@/types').SecurityCheckConfig
+): Promise<AdminGroup> {
+  const { data } = await apiClient.put<AdminGroup>(`/admin/groups/${id}/security-check`, config)
+  return data
+}
+
+export interface SecurityCheckLogSummary {
+  id: number
+  event_id: string
+  request_id?: string
+  group_id?: number
+  group_name?: string
+  model?: string
+  protocol?: string
+  check_status: string
+  decision: string
+  is_unsafe: boolean
+  triggered_rules: Array<{ dimension: string; threshold: number; action: string; risk_prob: number }>
+  latency_ms?: number
+  created_at: string
+  request_body_original_bytes: number
+  request_body_stored_bytes: number
+  request_body_truncated: boolean
+}
+
+export interface SecurityCheckLogPage {
+  items: SecurityCheckLogSummary[]
+  total: number
+  page: number
+  page_size: number
+}
+
+export async function listSecurityCheckLogs(params?: Record<string, string | number>): Promise<SecurityCheckLogPage> {
+  const { data } = await apiClient.get<SecurityCheckLogPage>('/admin/groups/security-check/logs', { params })
+  return data
+}
+
+export async function getSecurityCheckLog(id: number) {
+  const { data } = await apiClient.get(`/admin/groups/security-check/logs/${id}`)
+  return data as SecurityCheckLogSummary & { config_version: number; rules_snapshot: unknown[]; request_body?: string; singguard_response?: string; exception_type?: string; exception_message?: string }
+}
+
+export async function getSecurityCheckCollectionStatus() {
+  const { data } = await apiClient.get<{ circuit_open: boolean; failure_count: number }>('/admin/groups/security-check/collection-status')
+  return data
+}
+
+export async function reopenSecurityCheckCollection() {
+  const { data } = await apiClient.post<{ reopened: boolean }>('/admin/groups/security-check/collection-reopen')
+  return data
+}
+
 /**
  * Get candidate models for custom /v1/models list.
  * id=0 returns platform default models for create flow.
@@ -401,6 +455,11 @@ export const groupsAPI = {
   getByPlatform,
   getAllIncludingInactive,
   getById,
+  updateSecurityCheck,
+  listSecurityCheckLogs,
+  getSecurityCheckLog,
+  getSecurityCheckCollectionStatus,
+  reopenSecurityCheckCollection,
   getModelsListCandidates,
   create,
   update,

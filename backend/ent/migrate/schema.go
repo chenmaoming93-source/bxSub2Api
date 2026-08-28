@@ -650,6 +650,7 @@ var (
 		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
 		{Name: "deleted_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"mysql": "datetime(6)"}},
 		{Name: "name", Type: field.TypeString, Size: 100},
+		{Name: "scene_name", Type: field.TypeString, Nullable: true, Size: 100},
 		{Name: "description", Type: field.TypeString, Nullable: true, SchemaType: map[string]string{"mysql": "text"}},
 		{Name: "rate_multiplier", Type: field.TypeFloat64, Default: 1, SchemaType: map[string]string{"mysql": "decimal(10,4)"}},
 		{Name: "is_exclusive", Type: field.TypeBool, Default: false},
@@ -681,6 +682,7 @@ var (
 		{Name: "messages_dispatch_model_config", Type: field.TypeJSON, SchemaType: map[string]string{"mysql": "json"}},
 		{Name: "models_list_config", Type: field.TypeJSON, SchemaType: map[string]string{"mysql": "json"}},
 		{Name: "rpm_limit", Type: field.TypeInt, Default: 0},
+		{Name: "security_check_config", Type: field.TypeJSON, SchemaType: map[string]string{"mysql": "json"}},
 	}
 	// GroupsTable holds the schema information for the "groups" table.
 	GroupsTable = &schema.Table{
@@ -691,22 +693,22 @@ var (
 			{
 				Name:    "group_status",
 				Unique:  false,
-				Columns: []*schema.Column{GroupsColumns[8]},
+				Columns: []*schema.Column{GroupsColumns[9]},
 			},
 			{
 				Name:    "group_platform",
 				Unique:  false,
-				Columns: []*schema.Column{GroupsColumns[9]},
+				Columns: []*schema.Column{GroupsColumns[10]},
 			},
 			{
 				Name:    "group_subscription_type",
 				Unique:  false,
-				Columns: []*schema.Column{GroupsColumns[10]},
+				Columns: []*schema.Column{GroupsColumns[11]},
 			},
 			{
 				Name:    "group_is_exclusive",
 				Unique:  false,
-				Columns: []*schema.Column{GroupsColumns[7]},
+				Columns: []*schema.Column{GroupsColumns[8]},
 			},
 			{
 				Name:    "group_deleted_at",
@@ -716,7 +718,7 @@ var (
 			{
 				Name:    "group_sort_order",
 				Unique:  false,
-				Columns: []*schema.Column{GroupsColumns[28]},
+				Columns: []*schema.Column{GroupsColumns[29]},
 			},
 		},
 	}
@@ -1457,6 +1459,67 @@ var (
 				Name:    "redeemcode_expires_at",
 				Unique:  false,
 				Columns: []*schema.Column{RedeemCodesColumns[8]},
+			},
+		},
+	}
+	// SecurityCheckLogsColumns holds the columns for the "security_check_logs" table.
+	SecurityCheckLogsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "event_id", Type: field.TypeString, Size: 64},
+		{Name: "request_id", Type: field.TypeString, Nullable: true, Size: 64},
+		{Name: "client_request_id", Type: field.TypeString, Nullable: true, Size: 64},
+		{Name: "user_id", Type: field.TypeInt64, Nullable: true},
+		{Name: "api_key_id", Type: field.TypeInt64, Nullable: true},
+		{Name: "api_key_name", Type: field.TypeString, Nullable: true, Size: 100},
+		{Name: "group_id", Type: field.TypeInt64, Nullable: true},
+		{Name: "group_name", Type: field.TypeString, Nullable: true, Size: 100},
+		{Name: "model", Type: field.TypeString, Nullable: true, Size: 100},
+		{Name: "provider", Type: field.TypeString, Nullable: true, Size: 50},
+		{Name: "protocol", Type: field.TypeString, Nullable: true, Size: 32},
+		{Name: "endpoint", Type: field.TypeString, Nullable: true, Size: 255},
+		{Name: "config_version", Type: field.TypeInt64, Default: 1},
+		{Name: "rules_snapshot", Type: field.TypeJSON},
+		{Name: "request_body", Type: field.TypeBytes, Nullable: true},
+		{Name: "request_body_original_bytes", Type: field.TypeInt64, Default: 0},
+		{Name: "request_body_stored_bytes", Type: field.TypeInt64, Default: 0},
+		{Name: "request_body_truncated", Type: field.TypeBool, Default: false},
+		{Name: "singguard_response", Type: field.TypeString, Nullable: true, SchemaType: map[string]string{"mysql": "mediumtext"}},
+		{Name: "check_status", Type: field.TypeString, Size: 16},
+		{Name: "decision", Type: field.TypeString, Size: 16},
+		{Name: "is_unsafe", Type: field.TypeBool, Default: false},
+		{Name: "triggered_rules", Type: field.TypeJSON},
+		{Name: "latency_ms", Type: field.TypeInt, Nullable: true},
+		{Name: "singguard_latency_ms", Type: field.TypeInt, Nullable: true},
+		{Name: "queue_delay_ms", Type: field.TypeInt, Nullable: true},
+		{Name: "exception_type", Type: field.TypeString, Nullable: true, Size: 32},
+		{Name: "exception_message", Type: field.TypeString, Nullable: true},
+		{Name: "created_at", Type: field.TypeTime},
+	}
+	// SecurityCheckLogsTable holds the schema information for the "security_check_logs" table.
+	SecurityCheckLogsTable = &schema.Table{
+		Name:       "security_check_logs",
+		Columns:    SecurityCheckLogsColumns,
+		PrimaryKey: []*schema.Column{SecurityCheckLogsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "securitychecklog_event_id",
+				Unique:  true,
+				Columns: []*schema.Column{SecurityCheckLogsColumns[1]},
+			},
+			{
+				Name:    "securitychecklog_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{SecurityCheckLogsColumns[29]},
+			},
+			{
+				Name:    "securitychecklog_group_id_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{SecurityCheckLogsColumns[7], SecurityCheckLogsColumns[29]},
+			},
+			{
+				Name:    "securitychecklog_decision_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{SecurityCheckLogsColumns[21], SecurityCheckLogsColumns[29]},
 			},
 		},
 	}
@@ -2247,6 +2310,7 @@ var (
 		RbacUserRolesTable,
 		RbacUserVersionsTable,
 		RedeemCodesTable,
+		SecurityCheckLogsTable,
 		SecuritySecretsTable,
 		SettingsTable,
 		SubscriptionPlansTable,
@@ -2385,6 +2449,9 @@ func init() {
 	RedeemCodesTable.ForeignKeys[1].RefTable = UsersTable
 	RedeemCodesTable.Annotation = &entsql.Annotation{
 		Table: "redeem_codes",
+	}
+	SecurityCheckLogsTable.Annotation = &entsql.Annotation{
+		Table: "security_check_logs",
 	}
 	SecuritySecretsTable.Annotation = &entsql.Annotation{
 		Table: "security_secrets",

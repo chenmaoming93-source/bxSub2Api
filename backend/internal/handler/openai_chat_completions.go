@@ -91,6 +91,10 @@ func (h *OpenAIGatewayHandler) ChatCompletions(c *gin.Context) {
 		h.errorResponse(c, contentModerationStatus(decision), contentModerationErrorCode(decision), decision.Message)
 		return
 	}
+	if result := h.checkSecurityCheck(c, reqLog, apiKey, subject, service.ContentModerationProtocolOpenAIChat, reqModel, body); securityCheckBlocked(result) {
+		h.errorResponse(c, http.StatusForbidden, securityCheckErrorCode, securityCheckErrorMessage)
+		return
+	}
 	if h.rejectIfCyberSessionBlocked(c, apiKey, body, reqModel, cyberBlockFormatChat) {
 		return
 	}

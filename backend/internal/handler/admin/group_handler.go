@@ -21,10 +21,12 @@ import (
 
 // GroupHandler handles admin group management
 type GroupHandler struct {
-	adminService         service.AdminService
-	dashboardService     *service.DashboardService
-	groupCapacityService *service.GroupCapacityService
-	scheduleRefresher    *service.ModelRouteConcurrencyScheduleRefresher
+	adminService           service.AdminService
+	dashboardService       *service.DashboardService
+	groupCapacityService   *service.GroupCapacityService
+	scheduleRefresher      *service.ModelRouteConcurrencyScheduleRefresher
+	securityCheckLogStore  service.SecurityCheckLogStore
+	securityCheckCollector *service.SecurityCheckCollector
 }
 
 type updateModelRouteConcurrencyRequest struct {
@@ -121,6 +123,7 @@ func (h *GroupHandler) SetModelRouteConcurrencyScheduleRefresher(refresher *serv
 // CreateGroupRequest represents create group request
 type CreateGroupRequest struct {
 	Name             string             `json:"name" binding:"required"`
+	SceneName        string             `json:"scene_name"`
 	Description      string             `json:"description"`
 	Platform         string             `json:"platform" binding:"omitempty,oneof=anthropic openai gemini antigravity"`
 	RateMultiplier   float64            `json:"rate_multiplier"`
@@ -162,6 +165,7 @@ type CreateGroupRequest struct {
 // UpdateGroupRequest represents update group request
 type UpdateGroupRequest struct {
 	Name             string             `json:"name"`
+	SceneName        *string            `json:"scene_name"`
 	Description      *string            `json:"description"`
 	Platform         string             `json:"platform" binding:"omitempty,oneof=anthropic openai gemini antigravity"`
 	RateMultiplier   *float64           `json:"rate_multiplier"`
@@ -553,6 +557,7 @@ func (h *GroupHandler) Create(c *gin.Context) {
 
 	group, err := h.adminService.CreateGroup(c.Request.Context(), &service.CreateGroupInput{
 		Name:                            req.Name,
+		SceneName:                       req.SceneName,
 		Description:                     req.Description,
 		Platform:                        req.Platform,
 		RateMultiplier:                  req.RateMultiplier,
@@ -621,6 +626,7 @@ func (h *GroupHandler) Update(c *gin.Context) {
 
 	group, err := h.adminService.UpdateGroup(c.Request.Context(), groupID, &service.UpdateGroupInput{
 		Name:                            req.Name,
+		SceneName:                       req.SceneName,
 		Description:                     req.Description,
 		Platform:                        req.Platform,
 		RateMultiplier:                  req.RateMultiplier,

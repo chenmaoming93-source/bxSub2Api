@@ -198,6 +198,7 @@ type AdminBoundAuthIdentityChannel struct {
 
 type CreateGroupInput struct {
 	Name             string
+	SceneName        string
 	Description      string
 	Platform         string
 	RateMultiplier   float64
@@ -239,6 +240,7 @@ type CreateGroupInput struct {
 
 type UpdateGroupInput struct {
 	Name             string
+	SceneName        *string
 	Description      *string
 	Platform         string
 	RateMultiplier   *float64 // 使用指针以支持设置为0
@@ -274,6 +276,8 @@ type UpdateGroupInput struct {
 	ModelsListConfig            *GroupModelsListConfig
 	// RPMLimit 分组 RPM 上限（0 = 不限制），nil 表示未提供不改动。
 	RPMLimit *int
+	// 分组级 SingGuard 请求安全检查配置。
+	SecurityCheckConfig *domain.SecurityCheckConfig
 	// 从指定分组复制账号（同步操作：先清空当前分组的账号绑定，再绑定源分组的账号）
 	CopyAccountsFromGroupIDs     []int64
 	ModelRouteConcurrencyUpdates []ModelRouteConcurrencyUpdate
@@ -2054,6 +2058,7 @@ func (s *adminServiceImpl) CreateGroup(ctx context.Context, input *CreateGroupIn
 
 	group := &Group{
 		Name:                            input.Name,
+		SceneName:                       input.SceneName,
 		Description:                     input.Description,
 		Platform:                        platform,
 		RateMultiplier:                  input.RateMultiplier,
@@ -2232,6 +2237,9 @@ func (s *adminServiceImpl) UpdateGroup(ctx context.Context, id int64, input *Upd
 	if input.Name != "" {
 		group.Name = input.Name
 	}
+	if input.SceneName != nil {
+		group.SceneName = *input.SceneName
+	}
 	if input.Description != nil {
 		group.Description = *input.Description
 	}
@@ -2313,6 +2321,19 @@ func (s *adminServiceImpl) UpdateGroup(ctx context.Context, id int64, input *Upd
 		}
 	}
 	group.FallbackGroupIDOnInvalidRequest = fallbackOnInvalidRequest
+
+	// 分组级请求安全检查配置
+	if input.SecurityCheckConfig != nil {
+		config := domain.NormalizeSecurityCheckConfig(*input.SecurityCheckConfig)
+		if err := domain.ValidateSecurityCheckConfig(config); err != nil {
+			return nil, err
+		}
+		config.Version = group.SecurityCheckConfig.Version + 1
+		if config.Version <= 1 {
+			config.Version = 1
+		}
+		group.SecurityCheckConfig = config
+	}
 
 	// 模型路由配置
 	if input.ModelRouting != nil {

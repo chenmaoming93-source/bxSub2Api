@@ -50,6 +50,7 @@ func ProvideAdminHandlers(
 	affiliateHandler *admin.AffiliateHandler,
 	complianceHandler *admin.ComplianceHandler,
 	dynamicTokenStatisticsHandler *admin.DynamicTokenStatisticsHandler,
+	sceneAccountUsageHandler *admin.SceneAccountDailyUsageHandler,
 	rbacHandler *admin.RBACHandler,
 ) *AdminHandlers {
 	return &AdminHandlers{
@@ -85,6 +86,7 @@ func ProvideAdminHandlers(
 		Affiliate:              affiliateHandler,
 		Compliance:             complianceHandler,
 		DynamicTokenStatistics: dynamicTokenStatisticsHandler,
+		SceneAccountUsage:      sceneAccountUsageHandler,
 		RBAC:                   rbacHandler,
 	}
 }
@@ -134,6 +136,10 @@ func ProvideHandlers(
 	adminHandlers *AdminHandlers,
 	gatewayHandler *GatewayHandler,
 	openaiGatewayHandler *OpenAIGatewayHandler,
+	securityCheckService *service.SecurityCheckService,
+	securityConfigProvider *service.SecurityConfigProvider,
+	securityCheckCollector *service.SecurityCheckCollector,
+	securityCheckLogStore service.SecurityCheckLogStore,
 	settingHandler *SettingHandler,
 	totpHandler *TotpHandler,
 	paymentHandler *PaymentHandler,
@@ -141,28 +147,33 @@ func ProvideHandlers(
 	availableChannelHandler *AvailableChannelHandler,
 	externalProvisioningHandler *ExternalProvisioningHandler,
 	externalTokenUsageHandler *ExternalTokenUsageHandler,
+	externalSceneAccountUsageHandler *ExternalSceneAccountDailyUsageHandler,
 	_ *service.IdempotencyCoordinator,
 	_ *service.IdempotencyCleanupService,
 ) *Handlers {
+	gatewayHandler.SetSecurityCheckDependencies(securityCheckService, securityConfigProvider, securityCheckCollector)
+	openaiGatewayHandler.SetSecurityCheckDependencies(securityCheckService, securityConfigProvider, securityCheckCollector)
+	adminHandlers.Group.SetSecurityCheckLogDependencies(securityCheckLogStore, securityCheckCollector)
 	return &Handlers{
-		Auth:                 authHandler,
-		User:                 userHandler,
-		APIKey:               apiKeyHandler,
-		Usage:                usageHandler,
-		Redeem:               redeemHandler,
-		Subscription:         subscriptionHandler,
-		Announcement:         announcementHandler,
-		ChannelMonitor:       channelMonitorUserHandler,
-		Admin:                adminHandlers,
-		Gateway:              gatewayHandler,
-		OpenAIGateway:        openaiGatewayHandler,
-		Setting:              settingHandler,
-		Totp:                 totpHandler,
-		Payment:              paymentHandler,
-		PaymentWebhook:       paymentWebhookHandler,
-		AvailableChannel:     availableChannelHandler,
-		ExternalProvisioning: externalProvisioningHandler,
-		ExternalTokenUsage:   externalTokenUsageHandler,
+		Auth:                      authHandler,
+		User:                      userHandler,
+		APIKey:                    apiKeyHandler,
+		Usage:                     usageHandler,
+		Redeem:                    redeemHandler,
+		Subscription:              subscriptionHandler,
+		Announcement:              announcementHandler,
+		ChannelMonitor:            channelMonitorUserHandler,
+		Admin:                     adminHandlers,
+		Gateway:                   gatewayHandler,
+		OpenAIGateway:             openaiGatewayHandler,
+		Setting:                   settingHandler,
+		Totp:                      totpHandler,
+		Payment:                   paymentHandler,
+		PaymentWebhook:            paymentWebhookHandler,
+		AvailableChannel:          availableChannelHandler,
+		ExternalProvisioning:      externalProvisioningHandler,
+		ExternalTokenUsage:        externalTokenUsageHandler,
+		ExternalSceneAccountUsage: externalSceneAccountUsageHandler,
 	}
 }
 
@@ -220,6 +231,8 @@ var ProviderSet = wire.NewSet(
 	admin.NewAffiliateHandler,
 	admin.NewComplianceHandler,
 	admin.NewDynamicTokenStatisticsHandler,
+	admin.NewSceneAccountDailyUsageHandler,
+	NewExternalSceneAccountDailyUsageHandler,
 	tokenstat.NewRuntimeController,
 	tokenstat.NewProjectionAdminService,
 

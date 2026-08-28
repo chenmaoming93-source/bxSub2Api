@@ -43,6 +43,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/rbacuserrole"
 	"github.com/Wei-Shaw/sub2api/ent/rbacuserversion"
 	"github.com/Wei-Shaw/sub2api/ent/redeemcode"
+	"github.com/Wei-Shaw/sub2api/ent/securitychecklog"
 	"github.com/Wei-Shaw/sub2api/ent/securitysecret"
 	"github.com/Wei-Shaw/sub2api/ent/setting"
 	"github.com/Wei-Shaw/sub2api/ent/subscriptionplan"
@@ -102,6 +103,7 @@ const (
 	TypeRBACUserRole                  = "RBACUserRole"
 	TypeRBACUserVersion               = "RBACUserVersion"
 	TypeRedeemCode                    = "RedeemCode"
+	TypeSecurityCheckLog              = "SecurityCheckLog"
 	TypeSecuritySecret                = "SecuritySecret"
 	TypeSetting                       = "Setting"
 	TypeSubscriptionPlan              = "SubscriptionPlan"
@@ -15277,6 +15279,7 @@ type GroupMutation struct {
 	updated_at                              *time.Time
 	deleted_at                              *time.Time
 	name                                    *string
+	scene_name                              *string
 	description                             *string
 	rate_multiplier                         *float64
 	addrate_multiplier                      *float64
@@ -15322,6 +15325,7 @@ type GroupMutation struct {
 	models_list_config                      *domain.GroupModelsListConfig
 	rpm_limit                               *int
 	addrpm_limit                            *int
+	security_check_config                   *domain.SecurityCheckConfig
 	clearedFields                           map[string]struct{}
 	api_keys                                map[int64]struct{}
 	removedapi_keys                         map[int64]struct{}
@@ -15599,6 +15603,55 @@ func (m *GroupMutation) OldName(ctx context.Context) (v string, err error) {
 // ResetName resets all changes to the "name" field.
 func (m *GroupMutation) ResetName() {
 	m.name = nil
+}
+
+// SetSceneName sets the "scene_name" field.
+func (m *GroupMutation) SetSceneName(s string) {
+	m.scene_name = &s
+}
+
+// SceneName returns the value of the "scene_name" field in the mutation.
+func (m *GroupMutation) SceneName() (r string, exists bool) {
+	v := m.scene_name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSceneName returns the old "scene_name" field's value of the Group entity.
+// If the Group object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GroupMutation) OldSceneName(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSceneName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSceneName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSceneName: %w", err)
+	}
+	return oldValue.SceneName, nil
+}
+
+// ClearSceneName clears the value of the "scene_name" field.
+func (m *GroupMutation) ClearSceneName() {
+	m.scene_name = nil
+	m.clearedFields[group.FieldSceneName] = struct{}{}
+}
+
+// SceneNameCleared returns if the "scene_name" field was cleared in this mutation.
+func (m *GroupMutation) SceneNameCleared() bool {
+	_, ok := m.clearedFields[group.FieldSceneName]
+	return ok
+}
+
+// ResetSceneName resets all changes to the "scene_name" field.
+func (m *GroupMutation) ResetSceneName() {
+	m.scene_name = nil
+	delete(m.clearedFields, group.FieldSceneName)
 }
 
 // SetDescription sets the "description" field.
@@ -17130,6 +17183,42 @@ func (m *GroupMutation) ResetRpmLimit() {
 	m.addrpm_limit = nil
 }
 
+// SetSecurityCheckConfig sets the "security_check_config" field.
+func (m *GroupMutation) SetSecurityCheckConfig(dcc domain.SecurityCheckConfig) {
+	m.security_check_config = &dcc
+}
+
+// SecurityCheckConfig returns the value of the "security_check_config" field in the mutation.
+func (m *GroupMutation) SecurityCheckConfig() (r domain.SecurityCheckConfig, exists bool) {
+	v := m.security_check_config
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSecurityCheckConfig returns the old "security_check_config" field's value of the Group entity.
+// If the Group object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GroupMutation) OldSecurityCheckConfig(ctx context.Context) (v domain.SecurityCheckConfig, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSecurityCheckConfig is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSecurityCheckConfig requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSecurityCheckConfig: %w", err)
+	}
+	return oldValue.SecurityCheckConfig, nil
+}
+
+// ResetSecurityCheckConfig resets all changes to the "security_check_config" field.
+func (m *GroupMutation) ResetSecurityCheckConfig() {
+	m.security_check_config = nil
+}
+
 // AddAPIKeyIDs adds the "api_keys" edge to the APIKey entity by ids.
 func (m *GroupMutation) AddAPIKeyIDs(ids ...int64) {
 	if m.api_keys == nil {
@@ -17488,7 +17577,7 @@ func (m *GroupMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *GroupMutation) Fields() []string {
-	fields := make([]string, 0, 35)
+	fields := make([]string, 0, 37)
 	if m.created_at != nil {
 		fields = append(fields, group.FieldCreatedAt)
 	}
@@ -17500,6 +17589,9 @@ func (m *GroupMutation) Fields() []string {
 	}
 	if m.name != nil {
 		fields = append(fields, group.FieldName)
+	}
+	if m.scene_name != nil {
+		fields = append(fields, group.FieldSceneName)
 	}
 	if m.description != nil {
 		fields = append(fields, group.FieldDescription)
@@ -17594,6 +17686,9 @@ func (m *GroupMutation) Fields() []string {
 	if m.rpm_limit != nil {
 		fields = append(fields, group.FieldRpmLimit)
 	}
+	if m.security_check_config != nil {
+		fields = append(fields, group.FieldSecurityCheckConfig)
+	}
 	return fields
 }
 
@@ -17610,6 +17705,8 @@ func (m *GroupMutation) Field(name string) (ent.Value, bool) {
 		return m.DeletedAt()
 	case group.FieldName:
 		return m.Name()
+	case group.FieldSceneName:
+		return m.SceneName()
 	case group.FieldDescription:
 		return m.Description()
 	case group.FieldRateMultiplier:
@@ -17672,6 +17769,8 @@ func (m *GroupMutation) Field(name string) (ent.Value, bool) {
 		return m.ModelsListConfig()
 	case group.FieldRpmLimit:
 		return m.RpmLimit()
+	case group.FieldSecurityCheckConfig:
+		return m.SecurityCheckConfig()
 	}
 	return nil, false
 }
@@ -17689,6 +17788,8 @@ func (m *GroupMutation) OldField(ctx context.Context, name string) (ent.Value, e
 		return m.OldDeletedAt(ctx)
 	case group.FieldName:
 		return m.OldName(ctx)
+	case group.FieldSceneName:
+		return m.OldSceneName(ctx)
 	case group.FieldDescription:
 		return m.OldDescription(ctx)
 	case group.FieldRateMultiplier:
@@ -17751,6 +17852,8 @@ func (m *GroupMutation) OldField(ctx context.Context, name string) (ent.Value, e
 		return m.OldModelsListConfig(ctx)
 	case group.FieldRpmLimit:
 		return m.OldRpmLimit(ctx)
+	case group.FieldSecurityCheckConfig:
+		return m.OldSecurityCheckConfig(ctx)
 	}
 	return nil, fmt.Errorf("unknown Group field %s", name)
 }
@@ -17787,6 +17890,13 @@ func (m *GroupMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetName(v)
+		return nil
+	case group.FieldSceneName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSceneName(v)
 		return nil
 	case group.FieldDescription:
 		v, ok := value.(string)
@@ -18005,6 +18115,13 @@ func (m *GroupMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetRpmLimit(v)
 		return nil
+	case group.FieldSecurityCheckConfig:
+		v, ok := value.(domain.SecurityCheckConfig)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSecurityCheckConfig(v)
+		return nil
 	}
 	return fmt.Errorf("unknown Group field %s", name)
 }
@@ -18197,6 +18314,9 @@ func (m *GroupMutation) ClearedFields() []string {
 	if m.FieldCleared(group.FieldDeletedAt) {
 		fields = append(fields, group.FieldDeletedAt)
 	}
+	if m.FieldCleared(group.FieldSceneName) {
+		fields = append(fields, group.FieldSceneName)
+	}
 	if m.FieldCleared(group.FieldDescription) {
 		fields = append(fields, group.FieldDescription)
 	}
@@ -18243,6 +18363,9 @@ func (m *GroupMutation) ClearField(name string) error {
 	switch name {
 	case group.FieldDeletedAt:
 		m.ClearDeletedAt()
+		return nil
+	case group.FieldSceneName:
+		m.ClearSceneName()
 		return nil
 	case group.FieldDescription:
 		m.ClearDescription()
@@ -18293,6 +18416,9 @@ func (m *GroupMutation) ResetField(name string) error {
 		return nil
 	case group.FieldName:
 		m.ResetName()
+		return nil
+	case group.FieldSceneName:
+		m.ResetSceneName()
 		return nil
 	case group.FieldDescription:
 		m.ResetDescription()
@@ -18386,6 +18512,9 @@ func (m *GroupMutation) ResetField(name string) error {
 		return nil
 	case group.FieldRpmLimit:
 		m.ResetRpmLimit()
+		return nil
+	case group.FieldSecurityCheckConfig:
+		m.ResetSecurityCheckConfig()
 		return nil
 	}
 	return fmt.Errorf("unknown Group field %s", name)
@@ -35621,6 +35750,2527 @@ func (m *RedeemCodeMutation) ResetEdge(name string) error {
 		return nil
 	}
 	return fmt.Errorf("unknown RedeemCode edge %s", name)
+}
+
+// SecurityCheckLogMutation represents an operation that mutates the SecurityCheckLog nodes in the graph.
+type SecurityCheckLogMutation struct {
+	config
+	op                             Op
+	typ                            string
+	id                             *int64
+	event_id                       *string
+	request_id                     *string
+	client_request_id              *string
+	user_id                        *int64
+	adduser_id                     *int64
+	api_key_id                     *int64
+	addapi_key_id                  *int64
+	api_key_name                   *string
+	group_id                       *int64
+	addgroup_id                    *int64
+	group_name                     *string
+	model                          *string
+	provider                       *string
+	protocol                       *string
+	endpoint                       *string
+	config_version                 *int64
+	addconfig_version              *int64
+	rules_snapshot                 *[]domain.SecurityCheckRule
+	appendrules_snapshot           []domain.SecurityCheckRule
+	request_body                   *[]byte
+	request_body_original_bytes    *int64
+	addrequest_body_original_bytes *int64
+	request_body_stored_bytes      *int64
+	addrequest_body_stored_bytes   *int64
+	request_body_truncated         *bool
+	singguard_response             *string
+	check_status                   *string
+	decision                       *string
+	is_unsafe                      *bool
+	triggered_rules                *[]domain.SecurityCheckTriggeredRule
+	appendtriggered_rules          []domain.SecurityCheckTriggeredRule
+	latency_ms                     *int
+	addlatency_ms                  *int
+	singguard_latency_ms           *int
+	addsingguard_latency_ms        *int
+	queue_delay_ms                 *int
+	addqueue_delay_ms              *int
+	exception_type                 *string
+	exception_message              *string
+	created_at                     *time.Time
+	clearedFields                  map[string]struct{}
+	done                           bool
+	oldValue                       func(context.Context) (*SecurityCheckLog, error)
+	predicates                     []predicate.SecurityCheckLog
+}
+
+var _ ent.Mutation = (*SecurityCheckLogMutation)(nil)
+
+// securitychecklogOption allows management of the mutation configuration using functional options.
+type securitychecklogOption func(*SecurityCheckLogMutation)
+
+// newSecurityCheckLogMutation creates new mutation for the SecurityCheckLog entity.
+func newSecurityCheckLogMutation(c config, op Op, opts ...securitychecklogOption) *SecurityCheckLogMutation {
+	m := &SecurityCheckLogMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeSecurityCheckLog,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withSecurityCheckLogID sets the ID field of the mutation.
+func withSecurityCheckLogID(id int64) securitychecklogOption {
+	return func(m *SecurityCheckLogMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *SecurityCheckLog
+		)
+		m.oldValue = func(ctx context.Context) (*SecurityCheckLog, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().SecurityCheckLog.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withSecurityCheckLog sets the old SecurityCheckLog of the mutation.
+func withSecurityCheckLog(node *SecurityCheckLog) securitychecklogOption {
+	return func(m *SecurityCheckLogMutation) {
+		m.oldValue = func(context.Context) (*SecurityCheckLog, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m SecurityCheckLogMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m SecurityCheckLogMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *SecurityCheckLogMutation) ID() (id int64, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *SecurityCheckLogMutation) IDs(ctx context.Context) ([]int64, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int64{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().SecurityCheckLog.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetEventID sets the "event_id" field.
+func (m *SecurityCheckLogMutation) SetEventID(s string) {
+	m.event_id = &s
+}
+
+// EventID returns the value of the "event_id" field in the mutation.
+func (m *SecurityCheckLogMutation) EventID() (r string, exists bool) {
+	v := m.event_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEventID returns the old "event_id" field's value of the SecurityCheckLog entity.
+// If the SecurityCheckLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SecurityCheckLogMutation) OldEventID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEventID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEventID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEventID: %w", err)
+	}
+	return oldValue.EventID, nil
+}
+
+// ResetEventID resets all changes to the "event_id" field.
+func (m *SecurityCheckLogMutation) ResetEventID() {
+	m.event_id = nil
+}
+
+// SetRequestID sets the "request_id" field.
+func (m *SecurityCheckLogMutation) SetRequestID(s string) {
+	m.request_id = &s
+}
+
+// RequestID returns the value of the "request_id" field in the mutation.
+func (m *SecurityCheckLogMutation) RequestID() (r string, exists bool) {
+	v := m.request_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRequestID returns the old "request_id" field's value of the SecurityCheckLog entity.
+// If the SecurityCheckLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SecurityCheckLogMutation) OldRequestID(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRequestID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRequestID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRequestID: %w", err)
+	}
+	return oldValue.RequestID, nil
+}
+
+// ClearRequestID clears the value of the "request_id" field.
+func (m *SecurityCheckLogMutation) ClearRequestID() {
+	m.request_id = nil
+	m.clearedFields[securitychecklog.FieldRequestID] = struct{}{}
+}
+
+// RequestIDCleared returns if the "request_id" field was cleared in this mutation.
+func (m *SecurityCheckLogMutation) RequestIDCleared() bool {
+	_, ok := m.clearedFields[securitychecklog.FieldRequestID]
+	return ok
+}
+
+// ResetRequestID resets all changes to the "request_id" field.
+func (m *SecurityCheckLogMutation) ResetRequestID() {
+	m.request_id = nil
+	delete(m.clearedFields, securitychecklog.FieldRequestID)
+}
+
+// SetClientRequestID sets the "client_request_id" field.
+func (m *SecurityCheckLogMutation) SetClientRequestID(s string) {
+	m.client_request_id = &s
+}
+
+// ClientRequestID returns the value of the "client_request_id" field in the mutation.
+func (m *SecurityCheckLogMutation) ClientRequestID() (r string, exists bool) {
+	v := m.client_request_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldClientRequestID returns the old "client_request_id" field's value of the SecurityCheckLog entity.
+// If the SecurityCheckLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SecurityCheckLogMutation) OldClientRequestID(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldClientRequestID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldClientRequestID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldClientRequestID: %w", err)
+	}
+	return oldValue.ClientRequestID, nil
+}
+
+// ClearClientRequestID clears the value of the "client_request_id" field.
+func (m *SecurityCheckLogMutation) ClearClientRequestID() {
+	m.client_request_id = nil
+	m.clearedFields[securitychecklog.FieldClientRequestID] = struct{}{}
+}
+
+// ClientRequestIDCleared returns if the "client_request_id" field was cleared in this mutation.
+func (m *SecurityCheckLogMutation) ClientRequestIDCleared() bool {
+	_, ok := m.clearedFields[securitychecklog.FieldClientRequestID]
+	return ok
+}
+
+// ResetClientRequestID resets all changes to the "client_request_id" field.
+func (m *SecurityCheckLogMutation) ResetClientRequestID() {
+	m.client_request_id = nil
+	delete(m.clearedFields, securitychecklog.FieldClientRequestID)
+}
+
+// SetUserID sets the "user_id" field.
+func (m *SecurityCheckLogMutation) SetUserID(i int64) {
+	m.user_id = &i
+	m.adduser_id = nil
+}
+
+// UserID returns the value of the "user_id" field in the mutation.
+func (m *SecurityCheckLogMutation) UserID() (r int64, exists bool) {
+	v := m.user_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUserID returns the old "user_id" field's value of the SecurityCheckLog entity.
+// If the SecurityCheckLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SecurityCheckLogMutation) OldUserID(ctx context.Context) (v *int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUserID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUserID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUserID: %w", err)
+	}
+	return oldValue.UserID, nil
+}
+
+// AddUserID adds i to the "user_id" field.
+func (m *SecurityCheckLogMutation) AddUserID(i int64) {
+	if m.adduser_id != nil {
+		*m.adduser_id += i
+	} else {
+		m.adduser_id = &i
+	}
+}
+
+// AddedUserID returns the value that was added to the "user_id" field in this mutation.
+func (m *SecurityCheckLogMutation) AddedUserID() (r int64, exists bool) {
+	v := m.adduser_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearUserID clears the value of the "user_id" field.
+func (m *SecurityCheckLogMutation) ClearUserID() {
+	m.user_id = nil
+	m.adduser_id = nil
+	m.clearedFields[securitychecklog.FieldUserID] = struct{}{}
+}
+
+// UserIDCleared returns if the "user_id" field was cleared in this mutation.
+func (m *SecurityCheckLogMutation) UserIDCleared() bool {
+	_, ok := m.clearedFields[securitychecklog.FieldUserID]
+	return ok
+}
+
+// ResetUserID resets all changes to the "user_id" field.
+func (m *SecurityCheckLogMutation) ResetUserID() {
+	m.user_id = nil
+	m.adduser_id = nil
+	delete(m.clearedFields, securitychecklog.FieldUserID)
+}
+
+// SetAPIKeyID sets the "api_key_id" field.
+func (m *SecurityCheckLogMutation) SetAPIKeyID(i int64) {
+	m.api_key_id = &i
+	m.addapi_key_id = nil
+}
+
+// APIKeyID returns the value of the "api_key_id" field in the mutation.
+func (m *SecurityCheckLogMutation) APIKeyID() (r int64, exists bool) {
+	v := m.api_key_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAPIKeyID returns the old "api_key_id" field's value of the SecurityCheckLog entity.
+// If the SecurityCheckLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SecurityCheckLogMutation) OldAPIKeyID(ctx context.Context) (v *int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAPIKeyID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAPIKeyID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAPIKeyID: %w", err)
+	}
+	return oldValue.APIKeyID, nil
+}
+
+// AddAPIKeyID adds i to the "api_key_id" field.
+func (m *SecurityCheckLogMutation) AddAPIKeyID(i int64) {
+	if m.addapi_key_id != nil {
+		*m.addapi_key_id += i
+	} else {
+		m.addapi_key_id = &i
+	}
+}
+
+// AddedAPIKeyID returns the value that was added to the "api_key_id" field in this mutation.
+func (m *SecurityCheckLogMutation) AddedAPIKeyID() (r int64, exists bool) {
+	v := m.addapi_key_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearAPIKeyID clears the value of the "api_key_id" field.
+func (m *SecurityCheckLogMutation) ClearAPIKeyID() {
+	m.api_key_id = nil
+	m.addapi_key_id = nil
+	m.clearedFields[securitychecklog.FieldAPIKeyID] = struct{}{}
+}
+
+// APIKeyIDCleared returns if the "api_key_id" field was cleared in this mutation.
+func (m *SecurityCheckLogMutation) APIKeyIDCleared() bool {
+	_, ok := m.clearedFields[securitychecklog.FieldAPIKeyID]
+	return ok
+}
+
+// ResetAPIKeyID resets all changes to the "api_key_id" field.
+func (m *SecurityCheckLogMutation) ResetAPIKeyID() {
+	m.api_key_id = nil
+	m.addapi_key_id = nil
+	delete(m.clearedFields, securitychecklog.FieldAPIKeyID)
+}
+
+// SetAPIKeyName sets the "api_key_name" field.
+func (m *SecurityCheckLogMutation) SetAPIKeyName(s string) {
+	m.api_key_name = &s
+}
+
+// APIKeyName returns the value of the "api_key_name" field in the mutation.
+func (m *SecurityCheckLogMutation) APIKeyName() (r string, exists bool) {
+	v := m.api_key_name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAPIKeyName returns the old "api_key_name" field's value of the SecurityCheckLog entity.
+// If the SecurityCheckLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SecurityCheckLogMutation) OldAPIKeyName(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAPIKeyName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAPIKeyName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAPIKeyName: %w", err)
+	}
+	return oldValue.APIKeyName, nil
+}
+
+// ClearAPIKeyName clears the value of the "api_key_name" field.
+func (m *SecurityCheckLogMutation) ClearAPIKeyName() {
+	m.api_key_name = nil
+	m.clearedFields[securitychecklog.FieldAPIKeyName] = struct{}{}
+}
+
+// APIKeyNameCleared returns if the "api_key_name" field was cleared in this mutation.
+func (m *SecurityCheckLogMutation) APIKeyNameCleared() bool {
+	_, ok := m.clearedFields[securitychecklog.FieldAPIKeyName]
+	return ok
+}
+
+// ResetAPIKeyName resets all changes to the "api_key_name" field.
+func (m *SecurityCheckLogMutation) ResetAPIKeyName() {
+	m.api_key_name = nil
+	delete(m.clearedFields, securitychecklog.FieldAPIKeyName)
+}
+
+// SetGroupID sets the "group_id" field.
+func (m *SecurityCheckLogMutation) SetGroupID(i int64) {
+	m.group_id = &i
+	m.addgroup_id = nil
+}
+
+// GroupID returns the value of the "group_id" field in the mutation.
+func (m *SecurityCheckLogMutation) GroupID() (r int64, exists bool) {
+	v := m.group_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldGroupID returns the old "group_id" field's value of the SecurityCheckLog entity.
+// If the SecurityCheckLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SecurityCheckLogMutation) OldGroupID(ctx context.Context) (v *int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldGroupID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldGroupID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldGroupID: %w", err)
+	}
+	return oldValue.GroupID, nil
+}
+
+// AddGroupID adds i to the "group_id" field.
+func (m *SecurityCheckLogMutation) AddGroupID(i int64) {
+	if m.addgroup_id != nil {
+		*m.addgroup_id += i
+	} else {
+		m.addgroup_id = &i
+	}
+}
+
+// AddedGroupID returns the value that was added to the "group_id" field in this mutation.
+func (m *SecurityCheckLogMutation) AddedGroupID() (r int64, exists bool) {
+	v := m.addgroup_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearGroupID clears the value of the "group_id" field.
+func (m *SecurityCheckLogMutation) ClearGroupID() {
+	m.group_id = nil
+	m.addgroup_id = nil
+	m.clearedFields[securitychecklog.FieldGroupID] = struct{}{}
+}
+
+// GroupIDCleared returns if the "group_id" field was cleared in this mutation.
+func (m *SecurityCheckLogMutation) GroupIDCleared() bool {
+	_, ok := m.clearedFields[securitychecklog.FieldGroupID]
+	return ok
+}
+
+// ResetGroupID resets all changes to the "group_id" field.
+func (m *SecurityCheckLogMutation) ResetGroupID() {
+	m.group_id = nil
+	m.addgroup_id = nil
+	delete(m.clearedFields, securitychecklog.FieldGroupID)
+}
+
+// SetGroupName sets the "group_name" field.
+func (m *SecurityCheckLogMutation) SetGroupName(s string) {
+	m.group_name = &s
+}
+
+// GroupName returns the value of the "group_name" field in the mutation.
+func (m *SecurityCheckLogMutation) GroupName() (r string, exists bool) {
+	v := m.group_name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldGroupName returns the old "group_name" field's value of the SecurityCheckLog entity.
+// If the SecurityCheckLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SecurityCheckLogMutation) OldGroupName(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldGroupName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldGroupName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldGroupName: %w", err)
+	}
+	return oldValue.GroupName, nil
+}
+
+// ClearGroupName clears the value of the "group_name" field.
+func (m *SecurityCheckLogMutation) ClearGroupName() {
+	m.group_name = nil
+	m.clearedFields[securitychecklog.FieldGroupName] = struct{}{}
+}
+
+// GroupNameCleared returns if the "group_name" field was cleared in this mutation.
+func (m *SecurityCheckLogMutation) GroupNameCleared() bool {
+	_, ok := m.clearedFields[securitychecklog.FieldGroupName]
+	return ok
+}
+
+// ResetGroupName resets all changes to the "group_name" field.
+func (m *SecurityCheckLogMutation) ResetGroupName() {
+	m.group_name = nil
+	delete(m.clearedFields, securitychecklog.FieldGroupName)
+}
+
+// SetModel sets the "model" field.
+func (m *SecurityCheckLogMutation) SetModel(s string) {
+	m.model = &s
+}
+
+// Model returns the value of the "model" field in the mutation.
+func (m *SecurityCheckLogMutation) Model() (r string, exists bool) {
+	v := m.model
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldModel returns the old "model" field's value of the SecurityCheckLog entity.
+// If the SecurityCheckLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SecurityCheckLogMutation) OldModel(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldModel is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldModel requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldModel: %w", err)
+	}
+	return oldValue.Model, nil
+}
+
+// ClearModel clears the value of the "model" field.
+func (m *SecurityCheckLogMutation) ClearModel() {
+	m.model = nil
+	m.clearedFields[securitychecklog.FieldModel] = struct{}{}
+}
+
+// ModelCleared returns if the "model" field was cleared in this mutation.
+func (m *SecurityCheckLogMutation) ModelCleared() bool {
+	_, ok := m.clearedFields[securitychecklog.FieldModel]
+	return ok
+}
+
+// ResetModel resets all changes to the "model" field.
+func (m *SecurityCheckLogMutation) ResetModel() {
+	m.model = nil
+	delete(m.clearedFields, securitychecklog.FieldModel)
+}
+
+// SetProvider sets the "provider" field.
+func (m *SecurityCheckLogMutation) SetProvider(s string) {
+	m.provider = &s
+}
+
+// Provider returns the value of the "provider" field in the mutation.
+func (m *SecurityCheckLogMutation) Provider() (r string, exists bool) {
+	v := m.provider
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldProvider returns the old "provider" field's value of the SecurityCheckLog entity.
+// If the SecurityCheckLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SecurityCheckLogMutation) OldProvider(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldProvider is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldProvider requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldProvider: %w", err)
+	}
+	return oldValue.Provider, nil
+}
+
+// ClearProvider clears the value of the "provider" field.
+func (m *SecurityCheckLogMutation) ClearProvider() {
+	m.provider = nil
+	m.clearedFields[securitychecklog.FieldProvider] = struct{}{}
+}
+
+// ProviderCleared returns if the "provider" field was cleared in this mutation.
+func (m *SecurityCheckLogMutation) ProviderCleared() bool {
+	_, ok := m.clearedFields[securitychecklog.FieldProvider]
+	return ok
+}
+
+// ResetProvider resets all changes to the "provider" field.
+func (m *SecurityCheckLogMutation) ResetProvider() {
+	m.provider = nil
+	delete(m.clearedFields, securitychecklog.FieldProvider)
+}
+
+// SetProtocol sets the "protocol" field.
+func (m *SecurityCheckLogMutation) SetProtocol(s string) {
+	m.protocol = &s
+}
+
+// Protocol returns the value of the "protocol" field in the mutation.
+func (m *SecurityCheckLogMutation) Protocol() (r string, exists bool) {
+	v := m.protocol
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldProtocol returns the old "protocol" field's value of the SecurityCheckLog entity.
+// If the SecurityCheckLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SecurityCheckLogMutation) OldProtocol(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldProtocol is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldProtocol requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldProtocol: %w", err)
+	}
+	return oldValue.Protocol, nil
+}
+
+// ClearProtocol clears the value of the "protocol" field.
+func (m *SecurityCheckLogMutation) ClearProtocol() {
+	m.protocol = nil
+	m.clearedFields[securitychecklog.FieldProtocol] = struct{}{}
+}
+
+// ProtocolCleared returns if the "protocol" field was cleared in this mutation.
+func (m *SecurityCheckLogMutation) ProtocolCleared() bool {
+	_, ok := m.clearedFields[securitychecklog.FieldProtocol]
+	return ok
+}
+
+// ResetProtocol resets all changes to the "protocol" field.
+func (m *SecurityCheckLogMutation) ResetProtocol() {
+	m.protocol = nil
+	delete(m.clearedFields, securitychecklog.FieldProtocol)
+}
+
+// SetEndpoint sets the "endpoint" field.
+func (m *SecurityCheckLogMutation) SetEndpoint(s string) {
+	m.endpoint = &s
+}
+
+// Endpoint returns the value of the "endpoint" field in the mutation.
+func (m *SecurityCheckLogMutation) Endpoint() (r string, exists bool) {
+	v := m.endpoint
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEndpoint returns the old "endpoint" field's value of the SecurityCheckLog entity.
+// If the SecurityCheckLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SecurityCheckLogMutation) OldEndpoint(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEndpoint is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEndpoint requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEndpoint: %w", err)
+	}
+	return oldValue.Endpoint, nil
+}
+
+// ClearEndpoint clears the value of the "endpoint" field.
+func (m *SecurityCheckLogMutation) ClearEndpoint() {
+	m.endpoint = nil
+	m.clearedFields[securitychecklog.FieldEndpoint] = struct{}{}
+}
+
+// EndpointCleared returns if the "endpoint" field was cleared in this mutation.
+func (m *SecurityCheckLogMutation) EndpointCleared() bool {
+	_, ok := m.clearedFields[securitychecklog.FieldEndpoint]
+	return ok
+}
+
+// ResetEndpoint resets all changes to the "endpoint" field.
+func (m *SecurityCheckLogMutation) ResetEndpoint() {
+	m.endpoint = nil
+	delete(m.clearedFields, securitychecklog.FieldEndpoint)
+}
+
+// SetConfigVersion sets the "config_version" field.
+func (m *SecurityCheckLogMutation) SetConfigVersion(i int64) {
+	m.config_version = &i
+	m.addconfig_version = nil
+}
+
+// ConfigVersion returns the value of the "config_version" field in the mutation.
+func (m *SecurityCheckLogMutation) ConfigVersion() (r int64, exists bool) {
+	v := m.config_version
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldConfigVersion returns the old "config_version" field's value of the SecurityCheckLog entity.
+// If the SecurityCheckLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SecurityCheckLogMutation) OldConfigVersion(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldConfigVersion is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldConfigVersion requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldConfigVersion: %w", err)
+	}
+	return oldValue.ConfigVersion, nil
+}
+
+// AddConfigVersion adds i to the "config_version" field.
+func (m *SecurityCheckLogMutation) AddConfigVersion(i int64) {
+	if m.addconfig_version != nil {
+		*m.addconfig_version += i
+	} else {
+		m.addconfig_version = &i
+	}
+}
+
+// AddedConfigVersion returns the value that was added to the "config_version" field in this mutation.
+func (m *SecurityCheckLogMutation) AddedConfigVersion() (r int64, exists bool) {
+	v := m.addconfig_version
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetConfigVersion resets all changes to the "config_version" field.
+func (m *SecurityCheckLogMutation) ResetConfigVersion() {
+	m.config_version = nil
+	m.addconfig_version = nil
+}
+
+// SetRulesSnapshot sets the "rules_snapshot" field.
+func (m *SecurityCheckLogMutation) SetRulesSnapshot(dcr []domain.SecurityCheckRule) {
+	m.rules_snapshot = &dcr
+	m.appendrules_snapshot = nil
+}
+
+// RulesSnapshot returns the value of the "rules_snapshot" field in the mutation.
+func (m *SecurityCheckLogMutation) RulesSnapshot() (r []domain.SecurityCheckRule, exists bool) {
+	v := m.rules_snapshot
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRulesSnapshot returns the old "rules_snapshot" field's value of the SecurityCheckLog entity.
+// If the SecurityCheckLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SecurityCheckLogMutation) OldRulesSnapshot(ctx context.Context) (v []domain.SecurityCheckRule, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRulesSnapshot is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRulesSnapshot requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRulesSnapshot: %w", err)
+	}
+	return oldValue.RulesSnapshot, nil
+}
+
+// AppendRulesSnapshot adds dcr to the "rules_snapshot" field.
+func (m *SecurityCheckLogMutation) AppendRulesSnapshot(dcr []domain.SecurityCheckRule) {
+	m.appendrules_snapshot = append(m.appendrules_snapshot, dcr...)
+}
+
+// AppendedRulesSnapshot returns the list of values that were appended to the "rules_snapshot" field in this mutation.
+func (m *SecurityCheckLogMutation) AppendedRulesSnapshot() ([]domain.SecurityCheckRule, bool) {
+	if len(m.appendrules_snapshot) == 0 {
+		return nil, false
+	}
+	return m.appendrules_snapshot, true
+}
+
+// ResetRulesSnapshot resets all changes to the "rules_snapshot" field.
+func (m *SecurityCheckLogMutation) ResetRulesSnapshot() {
+	m.rules_snapshot = nil
+	m.appendrules_snapshot = nil
+}
+
+// SetRequestBody sets the "request_body" field.
+func (m *SecurityCheckLogMutation) SetRequestBody(b []byte) {
+	m.request_body = &b
+}
+
+// RequestBody returns the value of the "request_body" field in the mutation.
+func (m *SecurityCheckLogMutation) RequestBody() (r []byte, exists bool) {
+	v := m.request_body
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRequestBody returns the old "request_body" field's value of the SecurityCheckLog entity.
+// If the SecurityCheckLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SecurityCheckLogMutation) OldRequestBody(ctx context.Context) (v []byte, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRequestBody is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRequestBody requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRequestBody: %w", err)
+	}
+	return oldValue.RequestBody, nil
+}
+
+// ClearRequestBody clears the value of the "request_body" field.
+func (m *SecurityCheckLogMutation) ClearRequestBody() {
+	m.request_body = nil
+	m.clearedFields[securitychecklog.FieldRequestBody] = struct{}{}
+}
+
+// RequestBodyCleared returns if the "request_body" field was cleared in this mutation.
+func (m *SecurityCheckLogMutation) RequestBodyCleared() bool {
+	_, ok := m.clearedFields[securitychecklog.FieldRequestBody]
+	return ok
+}
+
+// ResetRequestBody resets all changes to the "request_body" field.
+func (m *SecurityCheckLogMutation) ResetRequestBody() {
+	m.request_body = nil
+	delete(m.clearedFields, securitychecklog.FieldRequestBody)
+}
+
+// SetRequestBodyOriginalBytes sets the "request_body_original_bytes" field.
+func (m *SecurityCheckLogMutation) SetRequestBodyOriginalBytes(i int64) {
+	m.request_body_original_bytes = &i
+	m.addrequest_body_original_bytes = nil
+}
+
+// RequestBodyOriginalBytes returns the value of the "request_body_original_bytes" field in the mutation.
+func (m *SecurityCheckLogMutation) RequestBodyOriginalBytes() (r int64, exists bool) {
+	v := m.request_body_original_bytes
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRequestBodyOriginalBytes returns the old "request_body_original_bytes" field's value of the SecurityCheckLog entity.
+// If the SecurityCheckLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SecurityCheckLogMutation) OldRequestBodyOriginalBytes(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRequestBodyOriginalBytes is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRequestBodyOriginalBytes requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRequestBodyOriginalBytes: %w", err)
+	}
+	return oldValue.RequestBodyOriginalBytes, nil
+}
+
+// AddRequestBodyOriginalBytes adds i to the "request_body_original_bytes" field.
+func (m *SecurityCheckLogMutation) AddRequestBodyOriginalBytes(i int64) {
+	if m.addrequest_body_original_bytes != nil {
+		*m.addrequest_body_original_bytes += i
+	} else {
+		m.addrequest_body_original_bytes = &i
+	}
+}
+
+// AddedRequestBodyOriginalBytes returns the value that was added to the "request_body_original_bytes" field in this mutation.
+func (m *SecurityCheckLogMutation) AddedRequestBodyOriginalBytes() (r int64, exists bool) {
+	v := m.addrequest_body_original_bytes
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetRequestBodyOriginalBytes resets all changes to the "request_body_original_bytes" field.
+func (m *SecurityCheckLogMutation) ResetRequestBodyOriginalBytes() {
+	m.request_body_original_bytes = nil
+	m.addrequest_body_original_bytes = nil
+}
+
+// SetRequestBodyStoredBytes sets the "request_body_stored_bytes" field.
+func (m *SecurityCheckLogMutation) SetRequestBodyStoredBytes(i int64) {
+	m.request_body_stored_bytes = &i
+	m.addrequest_body_stored_bytes = nil
+}
+
+// RequestBodyStoredBytes returns the value of the "request_body_stored_bytes" field in the mutation.
+func (m *SecurityCheckLogMutation) RequestBodyStoredBytes() (r int64, exists bool) {
+	v := m.request_body_stored_bytes
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRequestBodyStoredBytes returns the old "request_body_stored_bytes" field's value of the SecurityCheckLog entity.
+// If the SecurityCheckLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SecurityCheckLogMutation) OldRequestBodyStoredBytes(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRequestBodyStoredBytes is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRequestBodyStoredBytes requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRequestBodyStoredBytes: %w", err)
+	}
+	return oldValue.RequestBodyStoredBytes, nil
+}
+
+// AddRequestBodyStoredBytes adds i to the "request_body_stored_bytes" field.
+func (m *SecurityCheckLogMutation) AddRequestBodyStoredBytes(i int64) {
+	if m.addrequest_body_stored_bytes != nil {
+		*m.addrequest_body_stored_bytes += i
+	} else {
+		m.addrequest_body_stored_bytes = &i
+	}
+}
+
+// AddedRequestBodyStoredBytes returns the value that was added to the "request_body_stored_bytes" field in this mutation.
+func (m *SecurityCheckLogMutation) AddedRequestBodyStoredBytes() (r int64, exists bool) {
+	v := m.addrequest_body_stored_bytes
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetRequestBodyStoredBytes resets all changes to the "request_body_stored_bytes" field.
+func (m *SecurityCheckLogMutation) ResetRequestBodyStoredBytes() {
+	m.request_body_stored_bytes = nil
+	m.addrequest_body_stored_bytes = nil
+}
+
+// SetRequestBodyTruncated sets the "request_body_truncated" field.
+func (m *SecurityCheckLogMutation) SetRequestBodyTruncated(b bool) {
+	m.request_body_truncated = &b
+}
+
+// RequestBodyTruncated returns the value of the "request_body_truncated" field in the mutation.
+func (m *SecurityCheckLogMutation) RequestBodyTruncated() (r bool, exists bool) {
+	v := m.request_body_truncated
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRequestBodyTruncated returns the old "request_body_truncated" field's value of the SecurityCheckLog entity.
+// If the SecurityCheckLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SecurityCheckLogMutation) OldRequestBodyTruncated(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRequestBodyTruncated is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRequestBodyTruncated requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRequestBodyTruncated: %w", err)
+	}
+	return oldValue.RequestBodyTruncated, nil
+}
+
+// ResetRequestBodyTruncated resets all changes to the "request_body_truncated" field.
+func (m *SecurityCheckLogMutation) ResetRequestBodyTruncated() {
+	m.request_body_truncated = nil
+}
+
+// SetSingguardResponse sets the "singguard_response" field.
+func (m *SecurityCheckLogMutation) SetSingguardResponse(s string) {
+	m.singguard_response = &s
+}
+
+// SingguardResponse returns the value of the "singguard_response" field in the mutation.
+func (m *SecurityCheckLogMutation) SingguardResponse() (r string, exists bool) {
+	v := m.singguard_response
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSingguardResponse returns the old "singguard_response" field's value of the SecurityCheckLog entity.
+// If the SecurityCheckLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SecurityCheckLogMutation) OldSingguardResponse(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSingguardResponse is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSingguardResponse requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSingguardResponse: %w", err)
+	}
+	return oldValue.SingguardResponse, nil
+}
+
+// ClearSingguardResponse clears the value of the "singguard_response" field.
+func (m *SecurityCheckLogMutation) ClearSingguardResponse() {
+	m.singguard_response = nil
+	m.clearedFields[securitychecklog.FieldSingguardResponse] = struct{}{}
+}
+
+// SingguardResponseCleared returns if the "singguard_response" field was cleared in this mutation.
+func (m *SecurityCheckLogMutation) SingguardResponseCleared() bool {
+	_, ok := m.clearedFields[securitychecklog.FieldSingguardResponse]
+	return ok
+}
+
+// ResetSingguardResponse resets all changes to the "singguard_response" field.
+func (m *SecurityCheckLogMutation) ResetSingguardResponse() {
+	m.singguard_response = nil
+	delete(m.clearedFields, securitychecklog.FieldSingguardResponse)
+}
+
+// SetCheckStatus sets the "check_status" field.
+func (m *SecurityCheckLogMutation) SetCheckStatus(s string) {
+	m.check_status = &s
+}
+
+// CheckStatus returns the value of the "check_status" field in the mutation.
+func (m *SecurityCheckLogMutation) CheckStatus() (r string, exists bool) {
+	v := m.check_status
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCheckStatus returns the old "check_status" field's value of the SecurityCheckLog entity.
+// If the SecurityCheckLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SecurityCheckLogMutation) OldCheckStatus(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCheckStatus is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCheckStatus requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCheckStatus: %w", err)
+	}
+	return oldValue.CheckStatus, nil
+}
+
+// ResetCheckStatus resets all changes to the "check_status" field.
+func (m *SecurityCheckLogMutation) ResetCheckStatus() {
+	m.check_status = nil
+}
+
+// SetDecision sets the "decision" field.
+func (m *SecurityCheckLogMutation) SetDecision(s string) {
+	m.decision = &s
+}
+
+// Decision returns the value of the "decision" field in the mutation.
+func (m *SecurityCheckLogMutation) Decision() (r string, exists bool) {
+	v := m.decision
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDecision returns the old "decision" field's value of the SecurityCheckLog entity.
+// If the SecurityCheckLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SecurityCheckLogMutation) OldDecision(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDecision is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDecision requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDecision: %w", err)
+	}
+	return oldValue.Decision, nil
+}
+
+// ResetDecision resets all changes to the "decision" field.
+func (m *SecurityCheckLogMutation) ResetDecision() {
+	m.decision = nil
+}
+
+// SetIsUnsafe sets the "is_unsafe" field.
+func (m *SecurityCheckLogMutation) SetIsUnsafe(b bool) {
+	m.is_unsafe = &b
+}
+
+// IsUnsafe returns the value of the "is_unsafe" field in the mutation.
+func (m *SecurityCheckLogMutation) IsUnsafe() (r bool, exists bool) {
+	v := m.is_unsafe
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldIsUnsafe returns the old "is_unsafe" field's value of the SecurityCheckLog entity.
+// If the SecurityCheckLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SecurityCheckLogMutation) OldIsUnsafe(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldIsUnsafe is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldIsUnsafe requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldIsUnsafe: %w", err)
+	}
+	return oldValue.IsUnsafe, nil
+}
+
+// ResetIsUnsafe resets all changes to the "is_unsafe" field.
+func (m *SecurityCheckLogMutation) ResetIsUnsafe() {
+	m.is_unsafe = nil
+}
+
+// SetTriggeredRules sets the "triggered_rules" field.
+func (m *SecurityCheckLogMutation) SetTriggeredRules(dctr []domain.SecurityCheckTriggeredRule) {
+	m.triggered_rules = &dctr
+	m.appendtriggered_rules = nil
+}
+
+// TriggeredRules returns the value of the "triggered_rules" field in the mutation.
+func (m *SecurityCheckLogMutation) TriggeredRules() (r []domain.SecurityCheckTriggeredRule, exists bool) {
+	v := m.triggered_rules
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTriggeredRules returns the old "triggered_rules" field's value of the SecurityCheckLog entity.
+// If the SecurityCheckLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SecurityCheckLogMutation) OldTriggeredRules(ctx context.Context) (v []domain.SecurityCheckTriggeredRule, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTriggeredRules is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTriggeredRules requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTriggeredRules: %w", err)
+	}
+	return oldValue.TriggeredRules, nil
+}
+
+// AppendTriggeredRules adds dctr to the "triggered_rules" field.
+func (m *SecurityCheckLogMutation) AppendTriggeredRules(dctr []domain.SecurityCheckTriggeredRule) {
+	m.appendtriggered_rules = append(m.appendtriggered_rules, dctr...)
+}
+
+// AppendedTriggeredRules returns the list of values that were appended to the "triggered_rules" field in this mutation.
+func (m *SecurityCheckLogMutation) AppendedTriggeredRules() ([]domain.SecurityCheckTriggeredRule, bool) {
+	if len(m.appendtriggered_rules) == 0 {
+		return nil, false
+	}
+	return m.appendtriggered_rules, true
+}
+
+// ResetTriggeredRules resets all changes to the "triggered_rules" field.
+func (m *SecurityCheckLogMutation) ResetTriggeredRules() {
+	m.triggered_rules = nil
+	m.appendtriggered_rules = nil
+}
+
+// SetLatencyMs sets the "latency_ms" field.
+func (m *SecurityCheckLogMutation) SetLatencyMs(i int) {
+	m.latency_ms = &i
+	m.addlatency_ms = nil
+}
+
+// LatencyMs returns the value of the "latency_ms" field in the mutation.
+func (m *SecurityCheckLogMutation) LatencyMs() (r int, exists bool) {
+	v := m.latency_ms
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLatencyMs returns the old "latency_ms" field's value of the SecurityCheckLog entity.
+// If the SecurityCheckLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SecurityCheckLogMutation) OldLatencyMs(ctx context.Context) (v *int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLatencyMs is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLatencyMs requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLatencyMs: %w", err)
+	}
+	return oldValue.LatencyMs, nil
+}
+
+// AddLatencyMs adds i to the "latency_ms" field.
+func (m *SecurityCheckLogMutation) AddLatencyMs(i int) {
+	if m.addlatency_ms != nil {
+		*m.addlatency_ms += i
+	} else {
+		m.addlatency_ms = &i
+	}
+}
+
+// AddedLatencyMs returns the value that was added to the "latency_ms" field in this mutation.
+func (m *SecurityCheckLogMutation) AddedLatencyMs() (r int, exists bool) {
+	v := m.addlatency_ms
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearLatencyMs clears the value of the "latency_ms" field.
+func (m *SecurityCheckLogMutation) ClearLatencyMs() {
+	m.latency_ms = nil
+	m.addlatency_ms = nil
+	m.clearedFields[securitychecklog.FieldLatencyMs] = struct{}{}
+}
+
+// LatencyMsCleared returns if the "latency_ms" field was cleared in this mutation.
+func (m *SecurityCheckLogMutation) LatencyMsCleared() bool {
+	_, ok := m.clearedFields[securitychecklog.FieldLatencyMs]
+	return ok
+}
+
+// ResetLatencyMs resets all changes to the "latency_ms" field.
+func (m *SecurityCheckLogMutation) ResetLatencyMs() {
+	m.latency_ms = nil
+	m.addlatency_ms = nil
+	delete(m.clearedFields, securitychecklog.FieldLatencyMs)
+}
+
+// SetSingguardLatencyMs sets the "singguard_latency_ms" field.
+func (m *SecurityCheckLogMutation) SetSingguardLatencyMs(i int) {
+	m.singguard_latency_ms = &i
+	m.addsingguard_latency_ms = nil
+}
+
+// SingguardLatencyMs returns the value of the "singguard_latency_ms" field in the mutation.
+func (m *SecurityCheckLogMutation) SingguardLatencyMs() (r int, exists bool) {
+	v := m.singguard_latency_ms
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSingguardLatencyMs returns the old "singguard_latency_ms" field's value of the SecurityCheckLog entity.
+// If the SecurityCheckLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SecurityCheckLogMutation) OldSingguardLatencyMs(ctx context.Context) (v *int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSingguardLatencyMs is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSingguardLatencyMs requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSingguardLatencyMs: %w", err)
+	}
+	return oldValue.SingguardLatencyMs, nil
+}
+
+// AddSingguardLatencyMs adds i to the "singguard_latency_ms" field.
+func (m *SecurityCheckLogMutation) AddSingguardLatencyMs(i int) {
+	if m.addsingguard_latency_ms != nil {
+		*m.addsingguard_latency_ms += i
+	} else {
+		m.addsingguard_latency_ms = &i
+	}
+}
+
+// AddedSingguardLatencyMs returns the value that was added to the "singguard_latency_ms" field in this mutation.
+func (m *SecurityCheckLogMutation) AddedSingguardLatencyMs() (r int, exists bool) {
+	v := m.addsingguard_latency_ms
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearSingguardLatencyMs clears the value of the "singguard_latency_ms" field.
+func (m *SecurityCheckLogMutation) ClearSingguardLatencyMs() {
+	m.singguard_latency_ms = nil
+	m.addsingguard_latency_ms = nil
+	m.clearedFields[securitychecklog.FieldSingguardLatencyMs] = struct{}{}
+}
+
+// SingguardLatencyMsCleared returns if the "singguard_latency_ms" field was cleared in this mutation.
+func (m *SecurityCheckLogMutation) SingguardLatencyMsCleared() bool {
+	_, ok := m.clearedFields[securitychecklog.FieldSingguardLatencyMs]
+	return ok
+}
+
+// ResetSingguardLatencyMs resets all changes to the "singguard_latency_ms" field.
+func (m *SecurityCheckLogMutation) ResetSingguardLatencyMs() {
+	m.singguard_latency_ms = nil
+	m.addsingguard_latency_ms = nil
+	delete(m.clearedFields, securitychecklog.FieldSingguardLatencyMs)
+}
+
+// SetQueueDelayMs sets the "queue_delay_ms" field.
+func (m *SecurityCheckLogMutation) SetQueueDelayMs(i int) {
+	m.queue_delay_ms = &i
+	m.addqueue_delay_ms = nil
+}
+
+// QueueDelayMs returns the value of the "queue_delay_ms" field in the mutation.
+func (m *SecurityCheckLogMutation) QueueDelayMs() (r int, exists bool) {
+	v := m.queue_delay_ms
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldQueueDelayMs returns the old "queue_delay_ms" field's value of the SecurityCheckLog entity.
+// If the SecurityCheckLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SecurityCheckLogMutation) OldQueueDelayMs(ctx context.Context) (v *int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldQueueDelayMs is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldQueueDelayMs requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldQueueDelayMs: %w", err)
+	}
+	return oldValue.QueueDelayMs, nil
+}
+
+// AddQueueDelayMs adds i to the "queue_delay_ms" field.
+func (m *SecurityCheckLogMutation) AddQueueDelayMs(i int) {
+	if m.addqueue_delay_ms != nil {
+		*m.addqueue_delay_ms += i
+	} else {
+		m.addqueue_delay_ms = &i
+	}
+}
+
+// AddedQueueDelayMs returns the value that was added to the "queue_delay_ms" field in this mutation.
+func (m *SecurityCheckLogMutation) AddedQueueDelayMs() (r int, exists bool) {
+	v := m.addqueue_delay_ms
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearQueueDelayMs clears the value of the "queue_delay_ms" field.
+func (m *SecurityCheckLogMutation) ClearQueueDelayMs() {
+	m.queue_delay_ms = nil
+	m.addqueue_delay_ms = nil
+	m.clearedFields[securitychecklog.FieldQueueDelayMs] = struct{}{}
+}
+
+// QueueDelayMsCleared returns if the "queue_delay_ms" field was cleared in this mutation.
+func (m *SecurityCheckLogMutation) QueueDelayMsCleared() bool {
+	_, ok := m.clearedFields[securitychecklog.FieldQueueDelayMs]
+	return ok
+}
+
+// ResetQueueDelayMs resets all changes to the "queue_delay_ms" field.
+func (m *SecurityCheckLogMutation) ResetQueueDelayMs() {
+	m.queue_delay_ms = nil
+	m.addqueue_delay_ms = nil
+	delete(m.clearedFields, securitychecklog.FieldQueueDelayMs)
+}
+
+// SetExceptionType sets the "exception_type" field.
+func (m *SecurityCheckLogMutation) SetExceptionType(s string) {
+	m.exception_type = &s
+}
+
+// ExceptionType returns the value of the "exception_type" field in the mutation.
+func (m *SecurityCheckLogMutation) ExceptionType() (r string, exists bool) {
+	v := m.exception_type
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldExceptionType returns the old "exception_type" field's value of the SecurityCheckLog entity.
+// If the SecurityCheckLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SecurityCheckLogMutation) OldExceptionType(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldExceptionType is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldExceptionType requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldExceptionType: %w", err)
+	}
+	return oldValue.ExceptionType, nil
+}
+
+// ClearExceptionType clears the value of the "exception_type" field.
+func (m *SecurityCheckLogMutation) ClearExceptionType() {
+	m.exception_type = nil
+	m.clearedFields[securitychecklog.FieldExceptionType] = struct{}{}
+}
+
+// ExceptionTypeCleared returns if the "exception_type" field was cleared in this mutation.
+func (m *SecurityCheckLogMutation) ExceptionTypeCleared() bool {
+	_, ok := m.clearedFields[securitychecklog.FieldExceptionType]
+	return ok
+}
+
+// ResetExceptionType resets all changes to the "exception_type" field.
+func (m *SecurityCheckLogMutation) ResetExceptionType() {
+	m.exception_type = nil
+	delete(m.clearedFields, securitychecklog.FieldExceptionType)
+}
+
+// SetExceptionMessage sets the "exception_message" field.
+func (m *SecurityCheckLogMutation) SetExceptionMessage(s string) {
+	m.exception_message = &s
+}
+
+// ExceptionMessage returns the value of the "exception_message" field in the mutation.
+func (m *SecurityCheckLogMutation) ExceptionMessage() (r string, exists bool) {
+	v := m.exception_message
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldExceptionMessage returns the old "exception_message" field's value of the SecurityCheckLog entity.
+// If the SecurityCheckLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SecurityCheckLogMutation) OldExceptionMessage(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldExceptionMessage is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldExceptionMessage requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldExceptionMessage: %w", err)
+	}
+	return oldValue.ExceptionMessage, nil
+}
+
+// ClearExceptionMessage clears the value of the "exception_message" field.
+func (m *SecurityCheckLogMutation) ClearExceptionMessage() {
+	m.exception_message = nil
+	m.clearedFields[securitychecklog.FieldExceptionMessage] = struct{}{}
+}
+
+// ExceptionMessageCleared returns if the "exception_message" field was cleared in this mutation.
+func (m *SecurityCheckLogMutation) ExceptionMessageCleared() bool {
+	_, ok := m.clearedFields[securitychecklog.FieldExceptionMessage]
+	return ok
+}
+
+// ResetExceptionMessage resets all changes to the "exception_message" field.
+func (m *SecurityCheckLogMutation) ResetExceptionMessage() {
+	m.exception_message = nil
+	delete(m.clearedFields, securitychecklog.FieldExceptionMessage)
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *SecurityCheckLogMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *SecurityCheckLogMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the SecurityCheckLog entity.
+// If the SecurityCheckLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SecurityCheckLogMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *SecurityCheckLogMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// Where appends a list predicates to the SecurityCheckLogMutation builder.
+func (m *SecurityCheckLogMutation) Where(ps ...predicate.SecurityCheckLog) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the SecurityCheckLogMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *SecurityCheckLogMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.SecurityCheckLog, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *SecurityCheckLogMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *SecurityCheckLogMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (SecurityCheckLog).
+func (m *SecurityCheckLogMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *SecurityCheckLogMutation) Fields() []string {
+	fields := make([]string, 0, 29)
+	if m.event_id != nil {
+		fields = append(fields, securitychecklog.FieldEventID)
+	}
+	if m.request_id != nil {
+		fields = append(fields, securitychecklog.FieldRequestID)
+	}
+	if m.client_request_id != nil {
+		fields = append(fields, securitychecklog.FieldClientRequestID)
+	}
+	if m.user_id != nil {
+		fields = append(fields, securitychecklog.FieldUserID)
+	}
+	if m.api_key_id != nil {
+		fields = append(fields, securitychecklog.FieldAPIKeyID)
+	}
+	if m.api_key_name != nil {
+		fields = append(fields, securitychecklog.FieldAPIKeyName)
+	}
+	if m.group_id != nil {
+		fields = append(fields, securitychecklog.FieldGroupID)
+	}
+	if m.group_name != nil {
+		fields = append(fields, securitychecklog.FieldGroupName)
+	}
+	if m.model != nil {
+		fields = append(fields, securitychecklog.FieldModel)
+	}
+	if m.provider != nil {
+		fields = append(fields, securitychecklog.FieldProvider)
+	}
+	if m.protocol != nil {
+		fields = append(fields, securitychecklog.FieldProtocol)
+	}
+	if m.endpoint != nil {
+		fields = append(fields, securitychecklog.FieldEndpoint)
+	}
+	if m.config_version != nil {
+		fields = append(fields, securitychecklog.FieldConfigVersion)
+	}
+	if m.rules_snapshot != nil {
+		fields = append(fields, securitychecklog.FieldRulesSnapshot)
+	}
+	if m.request_body != nil {
+		fields = append(fields, securitychecklog.FieldRequestBody)
+	}
+	if m.request_body_original_bytes != nil {
+		fields = append(fields, securitychecklog.FieldRequestBodyOriginalBytes)
+	}
+	if m.request_body_stored_bytes != nil {
+		fields = append(fields, securitychecklog.FieldRequestBodyStoredBytes)
+	}
+	if m.request_body_truncated != nil {
+		fields = append(fields, securitychecklog.FieldRequestBodyTruncated)
+	}
+	if m.singguard_response != nil {
+		fields = append(fields, securitychecklog.FieldSingguardResponse)
+	}
+	if m.check_status != nil {
+		fields = append(fields, securitychecklog.FieldCheckStatus)
+	}
+	if m.decision != nil {
+		fields = append(fields, securitychecklog.FieldDecision)
+	}
+	if m.is_unsafe != nil {
+		fields = append(fields, securitychecklog.FieldIsUnsafe)
+	}
+	if m.triggered_rules != nil {
+		fields = append(fields, securitychecklog.FieldTriggeredRules)
+	}
+	if m.latency_ms != nil {
+		fields = append(fields, securitychecklog.FieldLatencyMs)
+	}
+	if m.singguard_latency_ms != nil {
+		fields = append(fields, securitychecklog.FieldSingguardLatencyMs)
+	}
+	if m.queue_delay_ms != nil {
+		fields = append(fields, securitychecklog.FieldQueueDelayMs)
+	}
+	if m.exception_type != nil {
+		fields = append(fields, securitychecklog.FieldExceptionType)
+	}
+	if m.exception_message != nil {
+		fields = append(fields, securitychecklog.FieldExceptionMessage)
+	}
+	if m.created_at != nil {
+		fields = append(fields, securitychecklog.FieldCreatedAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *SecurityCheckLogMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case securitychecklog.FieldEventID:
+		return m.EventID()
+	case securitychecklog.FieldRequestID:
+		return m.RequestID()
+	case securitychecklog.FieldClientRequestID:
+		return m.ClientRequestID()
+	case securitychecklog.FieldUserID:
+		return m.UserID()
+	case securitychecklog.FieldAPIKeyID:
+		return m.APIKeyID()
+	case securitychecklog.FieldAPIKeyName:
+		return m.APIKeyName()
+	case securitychecklog.FieldGroupID:
+		return m.GroupID()
+	case securitychecklog.FieldGroupName:
+		return m.GroupName()
+	case securitychecklog.FieldModel:
+		return m.Model()
+	case securitychecklog.FieldProvider:
+		return m.Provider()
+	case securitychecklog.FieldProtocol:
+		return m.Protocol()
+	case securitychecklog.FieldEndpoint:
+		return m.Endpoint()
+	case securitychecklog.FieldConfigVersion:
+		return m.ConfigVersion()
+	case securitychecklog.FieldRulesSnapshot:
+		return m.RulesSnapshot()
+	case securitychecklog.FieldRequestBody:
+		return m.RequestBody()
+	case securitychecklog.FieldRequestBodyOriginalBytes:
+		return m.RequestBodyOriginalBytes()
+	case securitychecklog.FieldRequestBodyStoredBytes:
+		return m.RequestBodyStoredBytes()
+	case securitychecklog.FieldRequestBodyTruncated:
+		return m.RequestBodyTruncated()
+	case securitychecklog.FieldSingguardResponse:
+		return m.SingguardResponse()
+	case securitychecklog.FieldCheckStatus:
+		return m.CheckStatus()
+	case securitychecklog.FieldDecision:
+		return m.Decision()
+	case securitychecklog.FieldIsUnsafe:
+		return m.IsUnsafe()
+	case securitychecklog.FieldTriggeredRules:
+		return m.TriggeredRules()
+	case securitychecklog.FieldLatencyMs:
+		return m.LatencyMs()
+	case securitychecklog.FieldSingguardLatencyMs:
+		return m.SingguardLatencyMs()
+	case securitychecklog.FieldQueueDelayMs:
+		return m.QueueDelayMs()
+	case securitychecklog.FieldExceptionType:
+		return m.ExceptionType()
+	case securitychecklog.FieldExceptionMessage:
+		return m.ExceptionMessage()
+	case securitychecklog.FieldCreatedAt:
+		return m.CreatedAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *SecurityCheckLogMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case securitychecklog.FieldEventID:
+		return m.OldEventID(ctx)
+	case securitychecklog.FieldRequestID:
+		return m.OldRequestID(ctx)
+	case securitychecklog.FieldClientRequestID:
+		return m.OldClientRequestID(ctx)
+	case securitychecklog.FieldUserID:
+		return m.OldUserID(ctx)
+	case securitychecklog.FieldAPIKeyID:
+		return m.OldAPIKeyID(ctx)
+	case securitychecklog.FieldAPIKeyName:
+		return m.OldAPIKeyName(ctx)
+	case securitychecklog.FieldGroupID:
+		return m.OldGroupID(ctx)
+	case securitychecklog.FieldGroupName:
+		return m.OldGroupName(ctx)
+	case securitychecklog.FieldModel:
+		return m.OldModel(ctx)
+	case securitychecklog.FieldProvider:
+		return m.OldProvider(ctx)
+	case securitychecklog.FieldProtocol:
+		return m.OldProtocol(ctx)
+	case securitychecklog.FieldEndpoint:
+		return m.OldEndpoint(ctx)
+	case securitychecklog.FieldConfigVersion:
+		return m.OldConfigVersion(ctx)
+	case securitychecklog.FieldRulesSnapshot:
+		return m.OldRulesSnapshot(ctx)
+	case securitychecklog.FieldRequestBody:
+		return m.OldRequestBody(ctx)
+	case securitychecklog.FieldRequestBodyOriginalBytes:
+		return m.OldRequestBodyOriginalBytes(ctx)
+	case securitychecklog.FieldRequestBodyStoredBytes:
+		return m.OldRequestBodyStoredBytes(ctx)
+	case securitychecklog.FieldRequestBodyTruncated:
+		return m.OldRequestBodyTruncated(ctx)
+	case securitychecklog.FieldSingguardResponse:
+		return m.OldSingguardResponse(ctx)
+	case securitychecklog.FieldCheckStatus:
+		return m.OldCheckStatus(ctx)
+	case securitychecklog.FieldDecision:
+		return m.OldDecision(ctx)
+	case securitychecklog.FieldIsUnsafe:
+		return m.OldIsUnsafe(ctx)
+	case securitychecklog.FieldTriggeredRules:
+		return m.OldTriggeredRules(ctx)
+	case securitychecklog.FieldLatencyMs:
+		return m.OldLatencyMs(ctx)
+	case securitychecklog.FieldSingguardLatencyMs:
+		return m.OldSingguardLatencyMs(ctx)
+	case securitychecklog.FieldQueueDelayMs:
+		return m.OldQueueDelayMs(ctx)
+	case securitychecklog.FieldExceptionType:
+		return m.OldExceptionType(ctx)
+	case securitychecklog.FieldExceptionMessage:
+		return m.OldExceptionMessage(ctx)
+	case securitychecklog.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown SecurityCheckLog field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *SecurityCheckLogMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case securitychecklog.FieldEventID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEventID(v)
+		return nil
+	case securitychecklog.FieldRequestID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRequestID(v)
+		return nil
+	case securitychecklog.FieldClientRequestID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetClientRequestID(v)
+		return nil
+	case securitychecklog.FieldUserID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUserID(v)
+		return nil
+	case securitychecklog.FieldAPIKeyID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAPIKeyID(v)
+		return nil
+	case securitychecklog.FieldAPIKeyName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAPIKeyName(v)
+		return nil
+	case securitychecklog.FieldGroupID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetGroupID(v)
+		return nil
+	case securitychecklog.FieldGroupName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetGroupName(v)
+		return nil
+	case securitychecklog.FieldModel:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetModel(v)
+		return nil
+	case securitychecklog.FieldProvider:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetProvider(v)
+		return nil
+	case securitychecklog.FieldProtocol:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetProtocol(v)
+		return nil
+	case securitychecklog.FieldEndpoint:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEndpoint(v)
+		return nil
+	case securitychecklog.FieldConfigVersion:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetConfigVersion(v)
+		return nil
+	case securitychecklog.FieldRulesSnapshot:
+		v, ok := value.([]domain.SecurityCheckRule)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRulesSnapshot(v)
+		return nil
+	case securitychecklog.FieldRequestBody:
+		v, ok := value.([]byte)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRequestBody(v)
+		return nil
+	case securitychecklog.FieldRequestBodyOriginalBytes:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRequestBodyOriginalBytes(v)
+		return nil
+	case securitychecklog.FieldRequestBodyStoredBytes:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRequestBodyStoredBytes(v)
+		return nil
+	case securitychecklog.FieldRequestBodyTruncated:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRequestBodyTruncated(v)
+		return nil
+	case securitychecklog.FieldSingguardResponse:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSingguardResponse(v)
+		return nil
+	case securitychecklog.FieldCheckStatus:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCheckStatus(v)
+		return nil
+	case securitychecklog.FieldDecision:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDecision(v)
+		return nil
+	case securitychecklog.FieldIsUnsafe:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetIsUnsafe(v)
+		return nil
+	case securitychecklog.FieldTriggeredRules:
+		v, ok := value.([]domain.SecurityCheckTriggeredRule)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTriggeredRules(v)
+		return nil
+	case securitychecklog.FieldLatencyMs:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLatencyMs(v)
+		return nil
+	case securitychecklog.FieldSingguardLatencyMs:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSingguardLatencyMs(v)
+		return nil
+	case securitychecklog.FieldQueueDelayMs:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetQueueDelayMs(v)
+		return nil
+	case securitychecklog.FieldExceptionType:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetExceptionType(v)
+		return nil
+	case securitychecklog.FieldExceptionMessage:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetExceptionMessage(v)
+		return nil
+	case securitychecklog.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown SecurityCheckLog field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *SecurityCheckLogMutation) AddedFields() []string {
+	var fields []string
+	if m.adduser_id != nil {
+		fields = append(fields, securitychecklog.FieldUserID)
+	}
+	if m.addapi_key_id != nil {
+		fields = append(fields, securitychecklog.FieldAPIKeyID)
+	}
+	if m.addgroup_id != nil {
+		fields = append(fields, securitychecklog.FieldGroupID)
+	}
+	if m.addconfig_version != nil {
+		fields = append(fields, securitychecklog.FieldConfigVersion)
+	}
+	if m.addrequest_body_original_bytes != nil {
+		fields = append(fields, securitychecklog.FieldRequestBodyOriginalBytes)
+	}
+	if m.addrequest_body_stored_bytes != nil {
+		fields = append(fields, securitychecklog.FieldRequestBodyStoredBytes)
+	}
+	if m.addlatency_ms != nil {
+		fields = append(fields, securitychecklog.FieldLatencyMs)
+	}
+	if m.addsingguard_latency_ms != nil {
+		fields = append(fields, securitychecklog.FieldSingguardLatencyMs)
+	}
+	if m.addqueue_delay_ms != nil {
+		fields = append(fields, securitychecklog.FieldQueueDelayMs)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *SecurityCheckLogMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case securitychecklog.FieldUserID:
+		return m.AddedUserID()
+	case securitychecklog.FieldAPIKeyID:
+		return m.AddedAPIKeyID()
+	case securitychecklog.FieldGroupID:
+		return m.AddedGroupID()
+	case securitychecklog.FieldConfigVersion:
+		return m.AddedConfigVersion()
+	case securitychecklog.FieldRequestBodyOriginalBytes:
+		return m.AddedRequestBodyOriginalBytes()
+	case securitychecklog.FieldRequestBodyStoredBytes:
+		return m.AddedRequestBodyStoredBytes()
+	case securitychecklog.FieldLatencyMs:
+		return m.AddedLatencyMs()
+	case securitychecklog.FieldSingguardLatencyMs:
+		return m.AddedSingguardLatencyMs()
+	case securitychecklog.FieldQueueDelayMs:
+		return m.AddedQueueDelayMs()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *SecurityCheckLogMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case securitychecklog.FieldUserID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddUserID(v)
+		return nil
+	case securitychecklog.FieldAPIKeyID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddAPIKeyID(v)
+		return nil
+	case securitychecklog.FieldGroupID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddGroupID(v)
+		return nil
+	case securitychecklog.FieldConfigVersion:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddConfigVersion(v)
+		return nil
+	case securitychecklog.FieldRequestBodyOriginalBytes:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddRequestBodyOriginalBytes(v)
+		return nil
+	case securitychecklog.FieldRequestBodyStoredBytes:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddRequestBodyStoredBytes(v)
+		return nil
+	case securitychecklog.FieldLatencyMs:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddLatencyMs(v)
+		return nil
+	case securitychecklog.FieldSingguardLatencyMs:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddSingguardLatencyMs(v)
+		return nil
+	case securitychecklog.FieldQueueDelayMs:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddQueueDelayMs(v)
+		return nil
+	}
+	return fmt.Errorf("unknown SecurityCheckLog numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *SecurityCheckLogMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(securitychecklog.FieldRequestID) {
+		fields = append(fields, securitychecklog.FieldRequestID)
+	}
+	if m.FieldCleared(securitychecklog.FieldClientRequestID) {
+		fields = append(fields, securitychecklog.FieldClientRequestID)
+	}
+	if m.FieldCleared(securitychecklog.FieldUserID) {
+		fields = append(fields, securitychecklog.FieldUserID)
+	}
+	if m.FieldCleared(securitychecklog.FieldAPIKeyID) {
+		fields = append(fields, securitychecklog.FieldAPIKeyID)
+	}
+	if m.FieldCleared(securitychecklog.FieldAPIKeyName) {
+		fields = append(fields, securitychecklog.FieldAPIKeyName)
+	}
+	if m.FieldCleared(securitychecklog.FieldGroupID) {
+		fields = append(fields, securitychecklog.FieldGroupID)
+	}
+	if m.FieldCleared(securitychecklog.FieldGroupName) {
+		fields = append(fields, securitychecklog.FieldGroupName)
+	}
+	if m.FieldCleared(securitychecklog.FieldModel) {
+		fields = append(fields, securitychecklog.FieldModel)
+	}
+	if m.FieldCleared(securitychecklog.FieldProvider) {
+		fields = append(fields, securitychecklog.FieldProvider)
+	}
+	if m.FieldCleared(securitychecklog.FieldProtocol) {
+		fields = append(fields, securitychecklog.FieldProtocol)
+	}
+	if m.FieldCleared(securitychecklog.FieldEndpoint) {
+		fields = append(fields, securitychecklog.FieldEndpoint)
+	}
+	if m.FieldCleared(securitychecklog.FieldRequestBody) {
+		fields = append(fields, securitychecklog.FieldRequestBody)
+	}
+	if m.FieldCleared(securitychecklog.FieldSingguardResponse) {
+		fields = append(fields, securitychecklog.FieldSingguardResponse)
+	}
+	if m.FieldCleared(securitychecklog.FieldLatencyMs) {
+		fields = append(fields, securitychecklog.FieldLatencyMs)
+	}
+	if m.FieldCleared(securitychecklog.FieldSingguardLatencyMs) {
+		fields = append(fields, securitychecklog.FieldSingguardLatencyMs)
+	}
+	if m.FieldCleared(securitychecklog.FieldQueueDelayMs) {
+		fields = append(fields, securitychecklog.FieldQueueDelayMs)
+	}
+	if m.FieldCleared(securitychecklog.FieldExceptionType) {
+		fields = append(fields, securitychecklog.FieldExceptionType)
+	}
+	if m.FieldCleared(securitychecklog.FieldExceptionMessage) {
+		fields = append(fields, securitychecklog.FieldExceptionMessage)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *SecurityCheckLogMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *SecurityCheckLogMutation) ClearField(name string) error {
+	switch name {
+	case securitychecklog.FieldRequestID:
+		m.ClearRequestID()
+		return nil
+	case securitychecklog.FieldClientRequestID:
+		m.ClearClientRequestID()
+		return nil
+	case securitychecklog.FieldUserID:
+		m.ClearUserID()
+		return nil
+	case securitychecklog.FieldAPIKeyID:
+		m.ClearAPIKeyID()
+		return nil
+	case securitychecklog.FieldAPIKeyName:
+		m.ClearAPIKeyName()
+		return nil
+	case securitychecklog.FieldGroupID:
+		m.ClearGroupID()
+		return nil
+	case securitychecklog.FieldGroupName:
+		m.ClearGroupName()
+		return nil
+	case securitychecklog.FieldModel:
+		m.ClearModel()
+		return nil
+	case securitychecklog.FieldProvider:
+		m.ClearProvider()
+		return nil
+	case securitychecklog.FieldProtocol:
+		m.ClearProtocol()
+		return nil
+	case securitychecklog.FieldEndpoint:
+		m.ClearEndpoint()
+		return nil
+	case securitychecklog.FieldRequestBody:
+		m.ClearRequestBody()
+		return nil
+	case securitychecklog.FieldSingguardResponse:
+		m.ClearSingguardResponse()
+		return nil
+	case securitychecklog.FieldLatencyMs:
+		m.ClearLatencyMs()
+		return nil
+	case securitychecklog.FieldSingguardLatencyMs:
+		m.ClearSingguardLatencyMs()
+		return nil
+	case securitychecklog.FieldQueueDelayMs:
+		m.ClearQueueDelayMs()
+		return nil
+	case securitychecklog.FieldExceptionType:
+		m.ClearExceptionType()
+		return nil
+	case securitychecklog.FieldExceptionMessage:
+		m.ClearExceptionMessage()
+		return nil
+	}
+	return fmt.Errorf("unknown SecurityCheckLog nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *SecurityCheckLogMutation) ResetField(name string) error {
+	switch name {
+	case securitychecklog.FieldEventID:
+		m.ResetEventID()
+		return nil
+	case securitychecklog.FieldRequestID:
+		m.ResetRequestID()
+		return nil
+	case securitychecklog.FieldClientRequestID:
+		m.ResetClientRequestID()
+		return nil
+	case securitychecklog.FieldUserID:
+		m.ResetUserID()
+		return nil
+	case securitychecklog.FieldAPIKeyID:
+		m.ResetAPIKeyID()
+		return nil
+	case securitychecklog.FieldAPIKeyName:
+		m.ResetAPIKeyName()
+		return nil
+	case securitychecklog.FieldGroupID:
+		m.ResetGroupID()
+		return nil
+	case securitychecklog.FieldGroupName:
+		m.ResetGroupName()
+		return nil
+	case securitychecklog.FieldModel:
+		m.ResetModel()
+		return nil
+	case securitychecklog.FieldProvider:
+		m.ResetProvider()
+		return nil
+	case securitychecklog.FieldProtocol:
+		m.ResetProtocol()
+		return nil
+	case securitychecklog.FieldEndpoint:
+		m.ResetEndpoint()
+		return nil
+	case securitychecklog.FieldConfigVersion:
+		m.ResetConfigVersion()
+		return nil
+	case securitychecklog.FieldRulesSnapshot:
+		m.ResetRulesSnapshot()
+		return nil
+	case securitychecklog.FieldRequestBody:
+		m.ResetRequestBody()
+		return nil
+	case securitychecklog.FieldRequestBodyOriginalBytes:
+		m.ResetRequestBodyOriginalBytes()
+		return nil
+	case securitychecklog.FieldRequestBodyStoredBytes:
+		m.ResetRequestBodyStoredBytes()
+		return nil
+	case securitychecklog.FieldRequestBodyTruncated:
+		m.ResetRequestBodyTruncated()
+		return nil
+	case securitychecklog.FieldSingguardResponse:
+		m.ResetSingguardResponse()
+		return nil
+	case securitychecklog.FieldCheckStatus:
+		m.ResetCheckStatus()
+		return nil
+	case securitychecklog.FieldDecision:
+		m.ResetDecision()
+		return nil
+	case securitychecklog.FieldIsUnsafe:
+		m.ResetIsUnsafe()
+		return nil
+	case securitychecklog.FieldTriggeredRules:
+		m.ResetTriggeredRules()
+		return nil
+	case securitychecklog.FieldLatencyMs:
+		m.ResetLatencyMs()
+		return nil
+	case securitychecklog.FieldSingguardLatencyMs:
+		m.ResetSingguardLatencyMs()
+		return nil
+	case securitychecklog.FieldQueueDelayMs:
+		m.ResetQueueDelayMs()
+		return nil
+	case securitychecklog.FieldExceptionType:
+		m.ResetExceptionType()
+		return nil
+	case securitychecklog.FieldExceptionMessage:
+		m.ResetExceptionMessage()
+		return nil
+	case securitychecklog.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown SecurityCheckLog field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *SecurityCheckLogMutation) AddedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *SecurityCheckLogMutation) AddedIDs(name string) []ent.Value {
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *SecurityCheckLogMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *SecurityCheckLogMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *SecurityCheckLogMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *SecurityCheckLogMutation) EdgeCleared(name string) bool {
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *SecurityCheckLogMutation) ClearEdge(name string) error {
+	return fmt.Errorf("unknown SecurityCheckLog unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *SecurityCheckLogMutation) ResetEdge(name string) error {
+	return fmt.Errorf("unknown SecurityCheckLog edge %s", name)
 }
 
 // SecuritySecretMutation represents an operation that mutates the SecuritySecret nodes in the graph.

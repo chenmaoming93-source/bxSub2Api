@@ -75,6 +75,11 @@ func Name(v string) predicate.Group {
 	return predicate.Group(sql.FieldEQ(FieldName, v))
 }
 
+// SceneName applies equality check predicate on the "scene_name" field. It's identical to SceneNameEQ.
+func SceneName(v string) predicate.Group {
+	return predicate.Group(sql.FieldEQ(FieldSceneName, v))
+}
+
 // Description applies equality check predicate on the "description" field. It's identical to DescriptionEQ.
 func Description(v string) predicate.Group {
 	return predicate.Group(sql.FieldEQ(FieldDescription, v))
@@ -403,6 +408,81 @@ func NameEqualFold(v string) predicate.Group {
 // NameContainsFold applies the ContainsFold predicate on the "name" field.
 func NameContainsFold(v string) predicate.Group {
 	return predicate.Group(sql.FieldContainsFold(FieldName, v))
+}
+
+// SceneNameEQ applies the EQ predicate on the "scene_name" field.
+func SceneNameEQ(v string) predicate.Group {
+	return predicate.Group(sql.FieldEQ(FieldSceneName, v))
+}
+
+// SceneNameNEQ applies the NEQ predicate on the "scene_name" field.
+func SceneNameNEQ(v string) predicate.Group {
+	return predicate.Group(sql.FieldNEQ(FieldSceneName, v))
+}
+
+// SceneNameIn applies the In predicate on the "scene_name" field.
+func SceneNameIn(vs ...string) predicate.Group {
+	return predicate.Group(sql.FieldIn(FieldSceneName, vs...))
+}
+
+// SceneNameNotIn applies the NotIn predicate on the "scene_name" field.
+func SceneNameNotIn(vs ...string) predicate.Group {
+	return predicate.Group(sql.FieldNotIn(FieldSceneName, vs...))
+}
+
+// SceneNameGT applies the GT predicate on the "scene_name" field.
+func SceneNameGT(v string) predicate.Group {
+	return predicate.Group(sql.FieldGT(FieldSceneName, v))
+}
+
+// SceneNameGTE applies the GTE predicate on the "scene_name" field.
+func SceneNameGTE(v string) predicate.Group {
+	return predicate.Group(sql.FieldGTE(FieldSceneName, v))
+}
+
+// SceneNameLT applies the LT predicate on the "scene_name" field.
+func SceneNameLT(v string) predicate.Group {
+	return predicate.Group(sql.FieldLT(FieldSceneName, v))
+}
+
+// SceneNameLTE applies the LTE predicate on the "scene_name" field.
+func SceneNameLTE(v string) predicate.Group {
+	return predicate.Group(sql.FieldLTE(FieldSceneName, v))
+}
+
+// SceneNameContains applies the Contains predicate on the "scene_name" field.
+func SceneNameContains(v string) predicate.Group {
+	return predicate.Group(sql.FieldContains(FieldSceneName, v))
+}
+
+// SceneNameHasPrefix applies the HasPrefix predicate on the "scene_name" field.
+func SceneNameHasPrefix(v string) predicate.Group {
+	return predicate.Group(sql.FieldHasPrefix(FieldSceneName, v))
+}
+
+// SceneNameHasSuffix applies the HasSuffix predicate on the "scene_name" field.
+func SceneNameHasSuffix(v string) predicate.Group {
+	return predicate.Group(sql.FieldHasSuffix(FieldSceneName, v))
+}
+
+// SceneNameIsNil applies the IsNil predicate on the "scene_name" field.
+func SceneNameIsNil() predicate.Group {
+	return predicate.Group(sql.FieldIsNull(FieldSceneName))
+}
+
+// SceneNameNotNil applies the NotNil predicate on the "scene_name" field.
+func SceneNameNotNil() predicate.Group {
+	return predicate.Group(sql.FieldNotNull(FieldSceneName))
+}
+
+// SceneNameEqualFold applies the EqualFold predicate on the "scene_name" field.
+func SceneNameEqualFold(v string) predicate.Group {
+	return predicate.Group(sql.FieldEqualFold(FieldSceneName, v))
+}
+
+// SceneNameContainsFold applies the ContainsFold predicate on the "scene_name" field.
+func SceneNameContainsFold(v string) predicate.Group {
+	return predicate.Group(sql.FieldContainsFold(FieldSceneName, v))
 }
 
 // DescriptionEQ applies the EQ predicate on the "description" field.

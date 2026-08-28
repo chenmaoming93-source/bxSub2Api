@@ -15,6 +15,7 @@ type GroupModelsListConfig = domain.GroupModelsListConfig
 type Group struct {
 	ID             int64
 	Name           string
+	SceneName      string
 	Description    string
 	Platform       string
 	RateMultiplier float64
@@ -68,6 +69,9 @@ type Group struct {
 	// RPMLimit 分组级每分钟请求数上限（0 = 不限制）。
 	// 一旦设置即接管该分组用户的限流（覆盖用户级 rpm_limit），可被 user-group rpm_override 进一步覆盖。
 	RPMLimit int
+
+	// SecurityCheckConfig stores the group-level SingGuard request security policy.
+	SecurityCheckConfig domain.SecurityCheckConfig
 
 	CreatedAt time.Time
 	UpdatedAt time.Time

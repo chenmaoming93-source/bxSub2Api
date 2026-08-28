@@ -24,6 +24,26 @@ func (integrationTokenUsageServiceStub) QueryCurrentUsage(_ context.Context, _ s
 	return service.ExternalTokenUsageResult{Dimensions: service.ExternalTokenUsageDimensions{UserID: 1, GroupID: 2, APIKeyID: 3, RouteAlias: "gpt-main"}, Metric: "total_tokens", Timezone: "Asia/Shanghai", Day: service.ExternalTokenUsagePeriodResult{DimensionConfigured: true, TotalTokens: &zero}}, nil
 }
 
+func (integrationTokenUsageServiceStub) QueryDailyUsage(_ context.Context, _ service.ExternalDailyUsageInput) (service.ExternalDailyUsageResult, error) {
+	return service.ExternalDailyUsageResult{
+		GroupID: 2, APIKeyID: 3, ProjectionID: 7, Metric: "total_tokens", Timezone: "Asia/Shanghai",
+		DimensionConfigured: true, Complete: true,
+		Days: []service.ExternalDailyUsageDay{{Date: "2026-07-01", TotalTokens: 12500}},
+	}, nil
+}
+
+func (integrationTokenUsageServiceStub) QuerySceneAccountDailyUsage(_ context.Context, _ service.SceneAccountDailyUsageInput) (*service.SceneAccountDailyUsageResult, error) {
+	return &service.SceneAccountDailyUsageResult{Timezone: "Asia/Shanghai", Complete: true, ProjectionID: 7, Days: []service.SceneAccountDailyUsageDay{}}, nil
+}
+
+func (integrationTokenUsageServiceStub) QueryDailyUsageFilled(_ context.Context, _ service.ExternalDailyUsageInput) (service.ExternalDailyUsageResult, error) {
+	return service.ExternalDailyUsageResult{
+		GroupID: 2, APIKeyID: 3, ProjectionID: 7, Metric: "total_tokens", Timezone: "Asia/Shanghai",
+		DimensionConfigured: true, Complete: true,
+		Days: []service.ExternalDailyUsageDay{{Date: "2026-07-01", TotalTokens: 12500}, {Date: "2026-07-02", TotalTokens: 0}},
+	}, nil
+}
+
 func (integrationProvisioningServiceStub) EnsurePlatformKey(_ context.Context, input service.EnsurePlatformKeyInput) (*service.EnsurePlatformKeyResult, error) {
 	groupID := int64(2)
 	return &service.EnsurePlatformKeyResult{
@@ -49,6 +69,7 @@ func integrationRouter(cfg config.ExternalAPIKeyProvisioningConfig) *gin.Engine 
 		v1,
 		handler.NewExternalProvisioningHandler(integrationProvisioningServiceStub{}),
 		handler.NewExternalTokenUsageHandlerWithQuerier(integrationTokenUsageServiceStub{}),
+		handler.NewExternalSceneAccountDailyUsageHandlerWithQuerier(integrationTokenUsageServiceStub{}),
 		middleware.ExternalProvisioningAuth(cfg),
 		middleware.NewProvisioningHardening(nil, nil).Middleware(),
 	)
@@ -108,6 +129,100 @@ func performIntegrationRequest(router http.Handler, path, token, body string) *h
 	return recorder
 }
 
+func TestIntegrationRoutes_TokenUsageDailyExternalTokenOnlyAndUnique(t *testing.T) {
+	const token = "secret_0123456789abcdef0123456789abcdef"
+	router := integrationRouter(config.ExternalAPIKeyProvisioningConfig{Enabled: true, AccessToken: token})
+	path := "/api/v1/integrations/token-usage/query/group-api-key/daily"
+	body := `{"group_name":"public","api_key":"sk-key-value-1234567890","start_date":"2026-07-01","end_date":"2026-07-31"}`
+
+	routes := router.Routes()
+	count := 0
+	for _, route := range routes {
+		if route.Method == http.MethodPost && route.Path == path {
+			count++
+		}
+	}
+	if count != 1 {
+		t.Fatalf("token usage daily route count=%d, want 1", count)
+	}
+
+	for _, unauthorized := range []struct {
+		token  string
+		cookie string
+	}{{}, {token: "Bearer fake-jwt"}, {cookie: "session=admin"}} {
+		request := httptest.NewRequest(http.MethodPost, path, bytes.NewBufferString(body))
+		request.Header.Set("Content-Type", "application/json")
+		if unauthorized.token != "" {
+			request.Header.Set("Authorization", unauthorized.token)
+		}
+		if unauthorized.cookie != "" {
+			request.Header.Set("Cookie", unauthorized.cookie)
+		}
+		recorder := httptest.NewRecorder()
+		router.ServeHTTP(recorder, request)
+		if recorder.Code != http.StatusUnauthorized {
+			t.Fatalf("unauthorized status=%d body=%s", recorder.Code, recorder.Body.String())
+		}
+	}
+
+	hidden := performIntegrationRequest(integrationRouter(config.ExternalAPIKeyProvisioningConfig{Enabled: false, AccessToken: token}), path, "Bearer "+token, body)
+	if hidden.Code != http.StatusNotFound || !strings.Contains(hidden.Body.String(), "NOT_FOUND") {
+		t.Fatalf("disabled: status=%d body=%s", hidden.Code, hidden.Body.String())
+	}
+
+	response := performIntegrationRequest(router, path, "Bearer "+token, body)
+	if response.Code != http.StatusOK || !strings.Contains(response.Body.String(), `"days"`) {
+		t.Fatalf("authorized status=%d body=%s", response.Code, response.Body.String())
+	}
+}
+
+func TestIntegrationRoutes_TokenUsageDailyCSVExternalTokenOnlyAndUnique(t *testing.T) {
+	const token = "secret_0123456789abcdef0123456789abcdef"
+	router := integrationRouter(config.ExternalAPIKeyProvisioningConfig{Enabled: true, AccessToken: token})
+	path := "/api/v1/integrations/token-usage/query/group-api-key/daily/csv"
+	body := `{"group_name":"public","api_key":"sk-key-value-1234567890","start_date":"2026-07-01","end_date":"2026-07-31"}`
+
+	routes := router.Routes()
+	count := 0
+	for _, route := range routes {
+		if route.Method == http.MethodPost && route.Path == path {
+			count++
+		}
+	}
+	if count != 1 {
+		t.Fatalf("token usage daily csv route count=%d, want 1", count)
+	}
+
+	for _, unauthorized := range []struct {
+		token  string
+		cookie string
+	}{{}, {token: "Bearer fake-jwt"}, {cookie: "session=admin"}} {
+		request := httptest.NewRequest(http.MethodPost, path, bytes.NewBufferString(body))
+		request.Header.Set("Content-Type", "application/json")
+		if unauthorized.token != "" {
+			request.Header.Set("Authorization", unauthorized.token)
+		}
+		if unauthorized.cookie != "" {
+			request.Header.Set("Cookie", unauthorized.cookie)
+		}
+		recorder := httptest.NewRecorder()
+		router.ServeHTTP(recorder, request)
+		if recorder.Code != http.StatusUnauthorized {
+			t.Fatalf("unauthorized status=%d body=%s", recorder.Code, recorder.Body.String())
+		}
+	}
+
+	hidden := performIntegrationRequest(integrationRouter(config.ExternalAPIKeyProvisioningConfig{Enabled: false, AccessToken: token}), path, "Bearer "+token, body)
+	if hidden.Code != http.StatusNotFound || !strings.Contains(hidden.Body.String(), "NOT_FOUND") {
+		t.Fatalf("disabled: status=%d body=%s", hidden.Code, hidden.Body.String())
+	}
+
+	response := performIntegrationRequest(router, path, "Bearer "+token, body)
+	if response.Code != http.StatusOK || !strings.Contains(response.Header().Get("Content-Type"), "text/csv") || !strings.Contains(response.Body.String(), "date,total_tokens") {
+		t.Fatalf("authorized status=%d contentType=%q body=%s", response.Code, response.Header().Get("Content-Type"), response.Body.String())
+	}
+}
+
 func TestIntegrationRoutes_GroupModelRoutesAuthContract(t *testing.T) {
 	const token = "secret_0123456789abcdef0123456789abcdef"
 	path := "/api/v1/integrations/model-routes/list"
@@ -143,5 +258,20 @@ func TestIntegrationRoutes_GetOrCreateAuthRegression(t *testing.T) {
 	authorized := performIntegrationRequest(router, "/api/v1/integrations/api-keys/getOrCreate", "Bearer "+token, body)
 	if authorized.Code != http.StatusOK {
 		t.Fatalf("authorized status=%d body=%s", authorized.Code, authorized.Body.String())
+	}
+}
+
+func TestIntegrationRoutes_SceneAccountDailyAuthContract(t *testing.T) {
+	const token = "secret_0123456789abcdef0123456789abcdef"
+	path := "/api/v1/integrations/token-usage/query/scene-account/daily"
+	body := `{"start_date":"2026-08-01","end_date":"2026-08-02"}`
+
+	unauthorized := performIntegrationRequest(integrationRouter(config.ExternalAPIKeyProvisioningConfig{Enabled: true, AccessToken: token}), path, "", body)
+	if unauthorized.Code != http.StatusUnauthorized {
+		t.Fatalf("unauthorized status=%d body=%s", unauthorized.Code, unauthorized.Body.String())
+	}
+	response := performIntegrationRequest(integrationRouter(config.ExternalAPIKeyProvisioningConfig{Enabled: true, AccessToken: token}), path, "Bearer "+token, body)
+	if response.Code != http.StatusOK || !strings.Contains(response.Body.String(), `"projection_id":7`) {
+		t.Fatalf("authorized status=%d body=%s", response.Code, response.Body.String())
 	}
 }

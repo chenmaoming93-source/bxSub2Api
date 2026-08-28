@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"database/sql"
+	"log/slog"
 	"time"
 
 	dbent "github.com/Wei-Shaw/sub2api/ent"
@@ -15,6 +16,42 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
+func ProvideSingGuardClient(cfg *config.Config) *SingGuardClient {
+	if cfg == nil || cfg.SingGuard.BaseURL == "" {
+		return nil
+	}
+	client, err := NewSingGuardClient(cfg.SingGuard.BaseURL, nil)
+	if err != nil {
+		slog.Warn("singguard.client_disabled", "err", err)
+		return nil
+	}
+	return client
+}
+
+func ProvideSecurityCheckService(client *SingGuardClient) *SecurityCheckService {
+	return NewSecurityCheckService(client)
+}
+
+func ProvideSecurityConfigProvider(rdb *redis.Client, store SecurityCheckConfigStore) *SecurityConfigProvider {
+	provider := NewSecurityConfigProvider(rdb, store, DefaultSecurityConfigTTL)
+	provider.Start(context.Background())
+	return provider
+}
+
+func ProvideSecurityCheckCollector(repo SecurityCheckLogRepository) *SecurityCheckCollector {
+	collector := NewSecurityCheckCollector(repo)
+	collector.Start()
+	return collector
+}
+
+func ProvideSceneAccountDailyUsageService(entClient *dbent.Client, projections *tokenstat.ProjectionAdminService, runtime *tokenstat.RuntimeController, cfg *config.Config) (*SceneAccountDailyUsageService, error) {
+	location, err := time.LoadLocation(cfg.Gateway.DynamicTokenStatistics.Timezone)
+	if err != nil {
+		return nil, err
+	}
+	return NewSceneAccountDailyUsageService(entClient, projections, runtime, location), nil
+}
+
 func ProvideExternalTokenUsageService(lookup ExternalTokenUsageDimensionLookup, reader ExternalTokenUsageCurrentReader, projections *tokenstat.ProjectionAdminService, cfg *config.Config) (*ExternalTokenUsageService, error) {
 	location, err := time.LoadLocation(cfg.Gateway.DynamicTokenStatistics.Timezone)
 	if err != nil {
@@ -22,6 +59,7 @@ func ProvideExternalTokenUsageService(lookup ExternalTokenUsageDimensionLookup, 
 	}
 	svc := NewExternalTokenUsageService(lookup)
 	svc.ConfigureCurrentUsage(reader, projections, location)
+	svc.ConfigureHistoryQuery(projections)
 	svc.ConfigureQuotaRules(projections)
 	return svc, nil
 }
@@ -583,6 +621,11 @@ var ProviderSet = wire.NewSet(
 	ProvideAPIKeyAuthCacheInvalidator,
 	NewGroupService,
 	ProvideExternalTokenUsageService,
+	ProvideSceneAccountDailyUsageService,
+	ProvideSingGuardClient,
+	ProvideSecurityCheckService,
+	ProvideSecurityConfigProvider,
+	ProvideSecurityCheckCollector,
 	NewAccountService,
 	NewProxyService,
 	NewRedeemService,
