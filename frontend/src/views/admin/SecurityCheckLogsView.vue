@@ -48,6 +48,11 @@
         <div v-else-if="detail" class="space-y-4">
           <div><h2 class="section-title">记录 #{{ detail.id }}</h2><p class="section-help">{{ formatTime(detail.created_at) }}</p></div>
           <div class="grid gap-3 text-sm md:grid-cols-4"><div>检查状态：<b>{{ statusLabel(detail.check_status) }}</b></div><div>最终决策：<b>{{ decisionLabel(detail.decision) }}</b></div><div>配置版本：<b>{{ detail.config_version }}</b></div><div>检查耗时：<b>{{ detail.latency_ms ?? '-' }} ms</b></div></div>
+          <div v-if="detail.exception_type || detail.exception_message" class="rounded-lg border border-red-200 bg-red-50 p-4 dark:border-red-900/50 dark:bg-red-950/30">
+            <h3 class="font-medium text-red-800 dark:text-red-200">异常信息</h3>
+            <p v-if="detail.exception_type" class="mt-2 text-sm text-red-700 dark:text-red-300">异常类型：{{ detail.exception_type }}</p>
+            <pre v-if="detail.exception_message" class="mt-2 max-h-40 overflow-auto whitespace-pre-wrap text-sm text-red-700 dark:text-red-300">{{ detail.exception_message }}</pre>
+          </div>
           <div v-if="detail.request_body_truncated" class="rounded-lg bg-amber-50 p-3 text-sm text-amber-800">请求体已截断：保存 {{ formatBytes(detail.request_body_stored_bytes) }}，原始 {{ formatBytes(detail.request_body_original_bytes) }}。</div>
           <div v-if="detail.triggered_rules?.length" class="space-y-2"><h3 class="font-medium">命中规则</h3><div v-for="(rule, index) in detail.triggered_rules" :key="index" class="rounded-lg bg-gray-50 p-3 text-sm dark:bg-dark-700"><b>{{ dimensionName(rule.dimension) }}</b><span class="ml-2 text-gray-500">{{ dimensionCode(rule.dimension) }}</span><span class="ml-2">风险概率 {{ rule.risk_prob }}，阈值 {{ rule.threshold }}，动作 {{ rule.action === 'block' ? '阻断' : '告警' }}</span></div></div>
           <div class="grid gap-4 lg:grid-cols-2"><div><h3 class="mb-2 font-medium">请求体</h3><pre class="max-h-96 overflow-auto rounded-lg bg-gray-50 p-3 text-xs dark:bg-dark-800">{{ detail.request_body || '(empty)' }}</pre></div><div><h3 class="mb-2 font-medium">SingGuard 完整返回</h3><pre class="max-h-96 overflow-auto rounded-lg bg-gray-50 p-3 text-xs dark:bg-dark-800">{{ formatResponse(detail.singguard_response) }}</pre></div></div>

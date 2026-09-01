@@ -4,7 +4,7 @@
 - Source plan: [../..//.plans/group-singguard-security-check-implementation-plan.md](../../.plans/group-singguard-security-check-implementation-plan.md)
 - Target effort per MVP: 假设每个 MVP 约 1 个聚焦开发者日；如实现或验证明显超过 1.5 个开发者日，应继续拆分。
 - Progress update cadence: `after every completed MVP`
-- Last updated: `2026-08-27T20:09:02+08:00`
+- Last updated: `2026-08-31T16:40:13+08:00`
 - Overall: `9/9 (100%)`
 
 ## 状态规则

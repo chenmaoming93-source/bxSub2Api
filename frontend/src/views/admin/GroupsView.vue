@@ -102,15 +102,6 @@
                 : t('admin.groups.modelRouting.refreshAllSchedules') }}
             </button>
             <button
-              v-permission="'groups.read'"
-              @click="showSecurityLogsModal = true"
-              class="btn btn-secondary"
-              data-test="security-check-logs"
-            >
-              <Icon name="shield" size="md" class="mr-2" />
-              安全日志
-            </button>
-            <button
               v-permission="'groups.create'"
               @click="openCreateModal"
               class="btn btn-primary"
@@ -3043,7 +3034,6 @@
       @close="showSecurityCheckModal = false"
       @success="handleSecurityCheckSuccess"
     />
-    <SecurityCheckLogsModal :show="showSecurityLogsModal" @close="showSecurityLogsModal = false" />
 
     <!-- Group Rate Multipliers Modal -->
     <GroupRateMultipliersModal
@@ -3099,7 +3089,6 @@ import GroupRPMOverridesModal from "@/components/admin/group/GroupRPMOverridesMo
 import GroupConcurrencyViewModal from "@/components/admin/group/GroupConcurrencyViewModal.vue";
 import GroupModelRoutingEditor from "@/components/admin/group/GroupModelRoutingEditor.vue";
 import GroupSecurityCheckModal from "@/components/admin/group/GroupSecurityCheckModal.vue";
-import SecurityCheckLogsModal from "@/components/admin/group/SecurityCheckLogsModal.vue";
 import type { RoutingEditorScheduleUpdate } from "@/components/admin/group/groupModelRoutingEditor";
 import GroupCapacityBadge from "@/components/common/GroupCapacityBadge.vue";
 import { VueDraggable } from "vue-draggable-plus";
@@ -3367,7 +3356,6 @@ const showConcurrencyViewModal = ref(false);
 const concurrencyViewGroup = ref<AdminGroup | null>(null);
 const showSecurityCheckModal = ref(false);
 const securityCheckGroup = ref<AdminGroup | null>(null);
-const showSecurityLogsModal = ref(false);
 const rpmOverridesGroup = ref<AdminGroup | null>(null);
 const sortableGroups = ref<AdminGroup[]>([]);
 const createMessagesDispatchDefaults = createDefaultMessagesDispatchFormState();
