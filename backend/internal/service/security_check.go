@@ -49,7 +49,9 @@ func NewSingGuardClient(baseURL string, client *http.Client) (*SingGuardClient, 
 		return nil, errors.New("singguard base URL is empty")
 	}
 	if client == nil {
-		client = &http.Client{Timeout: 5 * time.Second}
+		// Per-request context deadlines are configured by the group security
+		// check (TimeoutMS). Do not impose a shorter shared-client deadline.
+		client = &http.Client{}
 	}
 	return &SingGuardClient{baseURL: baseURL, client: client}, nil
 }

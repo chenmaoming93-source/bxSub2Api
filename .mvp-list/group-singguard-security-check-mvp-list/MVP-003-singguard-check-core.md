@@ -65,9 +65,9 @@ SingGuard 接口由 `SINGGUARD_API_SPEC.md` 定义，使用 `POST {base_url}/cla
 |---|---|---|
 | 定向测试 | `cd backend; go test ./internal/service -run 'TestFormatSecurityCheckTextSupportsChatResponsesAndGemini|TestSingGuardClient|TestSecurityCheckService' -count=1 -v` | 通过；协议格式化、请求契约、规则、缺维度和超时测试通过。 |
 | 相关包测试 | `cd backend; go test ./internal/config ./internal/service ./internal/handler ./internal/handler/dto` | 通过。 |
-| 实现路径 | `backend/internal/service/security_check.go` | 已实现独立 SingGuard client、Query 请求、五维响应、四协议格式化、图片占位、超限和规则判定。 |
+| 实现路径 | `backend/internal/service/security_check.go` | 已实现独立 SingGuard client、Query 请求、五维响应、四协议格式化、图片占位、超限和规则判定；请求总超时由分组 `TimeoutMS` context 控制。 |
 | 配置路径 | `backend/internal/config/config.go` | 已增加 `singguard.base_url` 配置入口，未硬编码地址。 |
-| 测试路径 | `backend/internal/service/security_check_test.go` | httptest 覆盖字符串 text、query/no threshold、正常/HTTP 错误/非法 JSON、四协议、严格阈值、warn 继续、block 短路、缺维度和超时。 |
+| 测试路径 | `backend/internal/service/security_check_test.go` | httptest 覆盖字符串 text、query/no threshold、正常/HTTP 错误/非法 JSON、四协议、严格阈值、warn 继续、block 短路、缺维度和超时，并验证默认客户端不设置会提前截断配置超时的固定总时限。 |
 
 ## 执行记录
 

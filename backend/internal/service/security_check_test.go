@@ -95,6 +95,16 @@ func TestSingGuardClientSendsStringTextAndQueryTask(t *testing.T) {
 	}
 }
 
+func TestNewSingGuardClientUsesPerRequestContextTimeout(t *testing.T) {
+	client, err := NewSingGuardClient("http://127.0.0.1:1", nil)
+	if err != nil {
+		t.Fatalf("new client: %v", err)
+	}
+	if client.client.Timeout != 0 {
+		t.Fatalf("default client timeout = %v, want no shared deadline", client.client.Timeout)
+	}
+}
+
 func TestSecurityCheckServiceEvaluatesStrictThresholdAndActions(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(`{"task":"query","risks":{"Dangerous_Operations_Tool_Abuse":{"risk_prob":0.8},"Malicious_Code_and_Cyberattack":{"risk_prob":0.2},"Prompt_Injection_and_Jailbreak":{"risk_prob":0.9},"Resource_Abuse":{"risk_prob":0.1},"Sensitive_Information_Stealing":{"risk_prob":0.1}}}`))
