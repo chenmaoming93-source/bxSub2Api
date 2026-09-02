@@ -14,6 +14,10 @@ import (
 
 // UpdateSecurityCheck updates only the group-level SingGuard policy.
 // PUT /api/v1/admin/groups/:id/security-check
+func (h *GroupHandler) SetSecurityCheckSettingService(settingService *service.SettingService) {
+	h.settingService = settingService
+}
+
 func (h *GroupHandler) SetSecurityCheckLogDependencies(store service.SecurityCheckLogStore, collector *service.SecurityCheckCollector) {
 	h.securityCheckLogStore = store
 	h.securityCheckCollector = collector
@@ -81,6 +85,42 @@ func (h *GroupHandler) ReopenSecurityCheckCollection(c *gin.Context) {
 		h.securityCheckCollector.Reopen()
 	}
 	response.Success(c, map[string]any{"reopened": true})
+}
+
+type securityCheckLogRetentionRequest struct {
+	RetentionDays int    `json:"retention_days" binding:"required"`
+	CleanupTime   string `json:"cleanup_time" binding:"required"`
+}
+
+func (h *GroupHandler) GetSecurityCheckLogRetention(c *gin.Context) {
+	if h.settingService == nil {
+		response.Error(c, http.StatusServiceUnavailable, "setting service unavailable")
+		return
+	}
+	config, err := h.settingService.GetSecurityCheckLogRetentionConfig(c.Request.Context())
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, config.WithNextCleanup(time.Now()))
+}
+
+func (h *GroupHandler) UpdateSecurityCheckLogRetention(c *gin.Context) {
+	if h.settingService == nil {
+		response.Error(c, http.StatusServiceUnavailable, "setting service unavailable")
+		return
+	}
+	var req securityCheckLogRetentionRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid security log retention config: "+err.Error())
+		return
+	}
+	config := service.SecurityCheckLogRetentionConfig{RetentionDays: req.RetentionDays, CleanupTime: req.CleanupTime}
+	if err := h.settingService.SetSecurityCheckLogRetentionConfig(c.Request.Context(), config); err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+	response.Success(c, config.WithNextCleanup(time.Now()))
 }
 
 func (h *GroupHandler) UpdateSecurityCheck(c *gin.Context) {

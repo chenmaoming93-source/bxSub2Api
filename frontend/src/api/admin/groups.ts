@@ -187,6 +187,13 @@ export interface SecurityCheckLogPage {
   page_size: number
 }
 
+export interface SecurityCheckLogRetentionConfig {
+  retention_days: number
+  cleanup_time: string
+  timezone: string
+  next_cleanup_at: string
+}
+
 export async function listSecurityCheckLogs(params?: Record<string, string | number>): Promise<SecurityCheckLogPage> {
   const { data } = await apiClient.get<SecurityCheckLogPage>('/admin/groups/security-check/logs', { params })
   return data
@@ -195,6 +202,16 @@ export async function listSecurityCheckLogs(params?: Record<string, string | num
 export async function getSecurityCheckLog(id: number) {
   const { data } = await apiClient.get(`/admin/groups/security-check/logs/${id}`)
   return data as SecurityCheckLogSummary & { config_version: number; rules_snapshot: unknown[]; request_body?: string; singguard_response?: string; exception_type?: string; exception_message?: string }
+}
+
+export async function getSecurityCheckLogRetention(): Promise<SecurityCheckLogRetentionConfig> {
+  const { data } = await apiClient.get<SecurityCheckLogRetentionConfig>('/admin/groups/security-check/retention')
+  return data
+}
+
+export async function updateSecurityCheckLogRetention(config: Pick<SecurityCheckLogRetentionConfig, 'retention_days' | 'cleanup_time'>): Promise<SecurityCheckLogRetentionConfig> {
+  const { data } = await apiClient.put<SecurityCheckLogRetentionConfig>('/admin/groups/security-check/retention', config)
+  return data
 }
 
 export async function getSecurityCheckCollectionStatus() {
@@ -458,6 +475,8 @@ export const groupsAPI = {
   updateSecurityCheck,
   listSecurityCheckLogs,
   getSecurityCheckLog,
+  getSecurityCheckLogRetention,
+  updateSecurityCheckLogRetention,
   getSecurityCheckCollectionStatus,
   reopenSecurityCheckCollection,
   getModelsListCandidates,

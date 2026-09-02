@@ -1,9 +1,9 @@
 # 分组级 SingGuard 请求安全检查实施计划
 
-> **状态：最终版——用户已批准（Final — user approved）**  
-> **版本：1.1**  
-> **日期：2026-08-26**  
-> **变更摘要：** 新增分组级请求安全检查、规则判定、超时/异常决策、采集、采样、管理页面及多实例配置缓存同步；补充独立安全日志页面、检查状态可视化和风险维度可读化展示。
+> **状态：最终版——用户已批准（Final — user approved）**
+> **版本：1.2.2**
+> **日期：2026-09-02**
+> **变更摘要：** 新增分组级请求安全检查、规则判定、超时/异常决策、采集、采样、管理页面及多实例配置缓存同步；补充独立安全日志页面、检查状态可视化、风险维度可读化展示，以及严格按配置时间执行的日志生命周期清理。
 
 ## 1. Introduction
 
@@ -591,7 +591,8 @@ sub2api:security-check:config-change
 
 | Key | 默认值 | 说明 |
 |---|---:|---|
-| `security_check_log_retention_days` | 3 | 记录保留天数 |
+| `security_check_log_retention_days` | 3 | 记录保留天数，范围 1～3650 |
+| `security_check_log_cleanup_time` | `03:00` | 每日清理时间，服务器本地时区，格式 `HH:mm` |
 | `security_check_collection_master_enabled` | true | 全局采集开关 |
 
 Redis 保存共享熔断状态：
@@ -638,6 +639,15 @@ GET /api/v1/admin/security-check-logs/{id}
 GET /api/v1/admin/security-check-collection/status
 POST /api/v1/admin/security-check-collection/reopen
 ```
+
+日志生命周期配置（当前实现路由）：
+
+```http
+GET /api/v1/admin/groups/security-check/retention
+PUT /api/v1/admin/groups/security-check/retention
+```
+
+请求字段：`retention_days`、`cleanup_time`；响应额外返回服务器本地时区和下一次清理时间。
 
 建议权限：
 
@@ -788,8 +798,16 @@ onLocalCacheMiss(groupID):
 ### 5.5 过期清理
 
 ```text
-cleanup:
-    retentionDays = load global setting
+cleanup_tick:
+    config = load retention_days and cleanup_time
+    localNow = now in server local timezone
+
+    if localNow is before cleanup_time:
+        return
+    if cleanup already succeeded today:
+        return
+
+    retentionDays = config.retention_days
     cutoff = now - retentionDays
 
     repeat:
@@ -797,7 +815,10 @@ cleanup:
         where created_at < cutoff
 
     stop when affected rows == 0
+    mark today as cleaned
 ```
+
+默认保留 3 天、每日 03:00 执行。严格按配置时间触发：服务在当天清理时间之后启动，或配置在当天清理时间之后保存时，均等待下一次计划时间，不执行补偿清理。清理失败记录错误并等待下一次计划时间，不影响模型请求。
 
 ## 6. Verification Strategy
 
@@ -819,7 +840,9 @@ cleanup:
 - 超时和异常决策；
 - 请求体截断和压缩；
 - 缓存版本比较；
-- 熔断状态转换。
+- 熔断状态转换；
+- 日志保留天数和 `HH:mm` 清理时间校验；
+- 每日严格定时调度、错过时间不补偿。
 
 ### 6.2 外部接口契约测试
 
@@ -865,6 +888,7 @@ cleanup:
 - **AC-11：** 配置更新后本地缓存通过 Pub/Sub 失效，丢通知时 TTL 兜底。
 - **AC-12：** 默认记录保留 3 天，并支持页面配置。
 - **AC-13：** 管理员可以分页查询记录并查看请求体、完整返回体和判定结果。
+- **AC-14：** 默认每日 03:00 按服务器本地时间清理，并支持页面配置清理时间；服务重启或保存配置晚于当天清理时间时，不补偿执行，等待下一次计划时间。
 
 ### 6.5 监控指标
 
@@ -934,7 +958,8 @@ cleanup:
 - 独立安全检查记录页面（含日志列表和详情）；
 - 安全检查记录列表中的检查状态可视化；
 - 记录详情；
-- 保留期限配置；
+- 保留期限和每日清理时间配置；
+- 清理时区和下一次执行时间展示；
 - 风险维度中文名称和含义字典；
 - 采集状态和恢复操作；
 - RBAC 权限；
@@ -1042,3 +1067,27 @@ cleanup:
 - 在详情弹窗中展示后端已记录的 `exception_type` 和 `exception_message`；
 - 移除分组管理页面的“安全日志”按钮、弹窗挂载和相关状态，统一使用左侧“安全检查日志”页面；
 - 不改变日志表结构、后端接口和安全检查判定逻辑。
+
+### v1.2 日志生命周期配置补充
+
+用户批准增加安全日志生命周期配置：
+
+- 在安全检查日志页面配置保留天数和每日清理时间；
+- 默认保留 3 天、服务器本地时间每日 03:00 清理；
+- 复用 `settings` 表保存配置，不新增表字段或迁移；
+- 清理 worker 动态读取配置，失败按分钟重试且不影响模型请求；
+- 增加 `MVP-010` 覆盖设置 API、调度清理、页面配置和验证。
+
+### v1.2.1 同日重配修订
+
+验证发现：若服务启动后的补偿清理已经标记当天完成，管理员随后在同一天修改清理时间或保留天数，旧调度状态会阻止当天再次清理。该版本曾调整为检测到配置变化时重置当天清理状态。
+
+### v1.2.2 严格定时修订
+
+根据用户反馈，取消启动和同日保存配置后的补偿清理：
+
+- 仅在服务器本地时间进入配置的 `HH:mm` 分钟时执行；
+- 服务启动时如果已错过当天时间，等待下一天；
+- 配置在当天时间之后保存，等待下一天；
+- 清理失败不在非计划时间重试，等待下一次计划时间；
+- 清理时间始终读取配置，不写死具体时间值。

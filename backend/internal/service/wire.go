@@ -38,8 +38,8 @@ func ProvideSecurityConfigProvider(rdb *redis.Client, store SecurityCheckConfigS
 	return provider
 }
 
-func ProvideSecurityCheckCollector(repo SecurityCheckLogRepository) *SecurityCheckCollector {
-	collector := NewSecurityCheckCollector(repo)
+func ProvideSecurityCheckCollector(repo SecurityCheckLogRepository, settingService *SettingService) *SecurityCheckCollector {
+	collector := NewSecurityCheckCollector(repo, settingService)
 	collector.Start()
 	return collector
 }

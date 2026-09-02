@@ -10,6 +10,18 @@
         <div class="flex items-center gap-3 text-sm"><span class="status-dot" :class="status?.circuit_open ? 'bg-red-500' : 'bg-emerald-500'"></span><span>{{ status?.circuit_open ? '采集已熔断' : '采集正常' }}</span><button v-if="status?.circuit_open && canManage" type="button" class="btn btn-secondary" @click="reopen">恢复采集</button></div>
       </header>
 
+      <section class="card space-y-4 p-5">
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between"><div><h2 class="section-title">日志保留与清理</h2><p class="section-help">按服务器本地时间每天自动清理过期安全检查记录。</p></div><span v-if="retentionConfig.next_cleanup_at" class="text-xs text-gray-500">下次清理：{{ formatTime(retentionConfig.next_cleanup_at) }}</span></div>
+        <div class="grid gap-4 md:grid-cols-[12rem_12rem_1fr_auto] md:items-end">
+          <label><span class="field-label">保留天数</span><input v-model.number="retentionConfig.retention_days" class="input" type="number" min="1" max="3650" required :disabled="retentionLoading || retentionSaving || !canManage" /><span class="mt-1 block text-xs text-gray-500">范围：1～3650 天</span></label>
+          <label><span class="field-label">每日清理时间</span><input v-model="retentionConfig.cleanup_time" class="input" type="time" required :disabled="retentionLoading || retentionSaving || !canManage" /></label>
+          <div class="text-sm text-gray-500 dark:text-gray-400">时区：{{ retentionConfig.timezone || '服务器本地时区' }}</div>
+          <button v-if="canManage" class="btn btn-primary" :disabled="retentionLoading || retentionSaving" @click="saveRetention">{{ retentionSaving ? '保存中…' : '保存清理配置' }}</button>
+        </div>
+        <div v-if="retentionError" class="rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950/30 dark:text-red-300">{{ retentionError }}</div>
+        <div v-if="retentionSaved" class="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">清理配置已保存。</div>
+      </section>
+
       <section class="card space-y-4 p-4">
         <div class="grid gap-3 md:grid-cols-4">
           <label><span class="field-label">分组 ID</span><input v-model="filters.group_id" class="input" type="number" min="1" placeholder="全部分组" /></label>
@@ -68,7 +80,7 @@ import AppLayout from '@/components/layout/AppLayout.vue'
 import BaseDialog from '@/components/common/BaseDialog.vue'
 import Icon from '@/components/icons/Icon.vue'
 import { adminAPI } from '@/api/admin'
-import type { SecurityCheckLogSummary } from '@/api/admin/groups'
+import type { SecurityCheckLogRetentionConfig, SecurityCheckLogSummary } from '@/api/admin/groups'
 import { extractApiErrorMessage } from '@/utils/apiError'
 import { useAuthStore } from '@/stores/auth'
 
@@ -85,6 +97,11 @@ const pageSize = 20
 const loading = ref(false)
 const error = ref('')
 const status = ref<{ circuit_open: boolean; failure_count: number } | null>(null)
+const retentionConfig = ref<SecurityCheckLogRetentionConfig>({ retention_days: 3, cleanup_time: '03:00', timezone: '服务器本地时区', next_cleanup_at: '' })
+const retentionLoading = ref(false)
+const retentionSaving = ref(false)
+const retentionError = ref('')
+const retentionSaved = ref(false)
 const filters = reactive({ group_id: '', decision: '', status: '' })
 
 const dimensions: Record<string, { name: string; code: string }> = {
@@ -103,6 +120,20 @@ const dimensionCode = (value: string) => dimensions[value]?.code || value
 const formatTime = (value: string) => new Date(value).toLocaleString()
 const formatBytes = (value: number) => value < 1024 ? `${value} B` : value < 1024 * 1024 ? `${(value / 1024).toFixed(1)} KB` : `${(value / 1024 / 1024).toFixed(1)} MB`
 const formatResponse = (value?: string) => { if (!value) return '(no response)'; try { return JSON.stringify(JSON.parse(value), null, 2) } catch { return value } }
+const loadRetention = async () => {
+  retentionLoading.value = true
+  retentionError.value = ''
+  try { retentionConfig.value = await adminAPI.groups.getSecurityCheckLogRetention() } catch (err) { retentionError.value = extractApiErrorMessage(err) } finally { retentionLoading.value = false }
+}
+const saveRetention = async () => {
+  retentionSaving.value = true
+  retentionError.value = ''
+  retentionSaved.value = false
+  try {
+    retentionConfig.value = await adminAPI.groups.updateSecurityCheckLogRetention({ retention_days: retentionConfig.value.retention_days, cleanup_time: retentionConfig.value.cleanup_time })
+    retentionSaved.value = true
+  } catch (err) { retentionError.value = extractApiErrorMessage(err) } finally { retentionSaving.value = false }
+}
 const load = async () => {
   loading.value = true; error.value = ''
   try {
@@ -126,7 +157,9 @@ const closeDetail = () => {
   detailLoading.value = false
 }
 const reopen = async () => { try { await adminAPI.groups.reopenSecurityCheckCollection(); await load() } catch (err) { error.value = extractApiErrorMessage(err) } }
-onMounted(load)
+onMounted(() => {
+  void Promise.all([load(), loadRetention()])
+})
 </script>
 
 <style scoped>

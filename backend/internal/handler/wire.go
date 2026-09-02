@@ -98,9 +98,11 @@ func ProvideAdminGroupHandler(
 	dashboardService *service.DashboardService,
 	groupCapacityService *service.GroupCapacityService,
 	refresher *service.ModelRouteConcurrencyScheduleRefresher,
+	settingService *service.SettingService,
 ) *admin.GroupHandler {
 	h := admin.NewGroupHandler(adminService, dashboardService, groupCapacityService)
 	h.SetModelRouteConcurrencyScheduleRefresher(refresher)
+	h.SetSecurityCheckSettingService(settingService)
 	return h
 }
 

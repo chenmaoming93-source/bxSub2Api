@@ -22,6 +22,11 @@ describe('security check logs admin view', () => {
 
   it('shows stored exception details inside the detail dialog', () => {
     expect(source).toContain('异常信息')
+    expect(source).toContain('日志保留与清理')
+    expect(source).toContain('retention_days')
+    expect(source).toContain('cleanup_time')
+    expect(source).toContain('next_cleanup_at')
+    expect(source).toContain('saveRetention')
     expect(source).toContain('detail.exception_type')
     expect(source).toContain('detail.exception_message')
   })

@@ -4,8 +4,8 @@
 - Source plan: [../..//.plans/group-singguard-security-check-implementation-plan.md](../../.plans/group-singguard-security-check-implementation-plan.md)
 - Target effort per MVP: 假设每个 MVP 约 1 个聚焦开发者日；如实现或验证明显超过 1.5 个开发者日，应继续拆分。
 - Progress update cadence: `after every completed MVP`
-- Last updated: `2026-08-31T16:40:13+08:00`
-- Overall: `9/9 (100%)`
+- Last updated: `2026-09-02T10:38:22+08:00`
+- Overall: `10/10 (100%)`
 
 ## 状态规则
 
@@ -26,12 +26,13 @@
 | MVP-006 | [MVP-006-async-collection-protection.md](./MVP-006-async-collection-protection.md) | DONE | MVP-003, MVP-004 | 1.5 个开发者日 | 2026-08-26T16:07:50+08:00 | [证据](./MVP-006-async-collection-protection.md#完成证据) |
 | MVP-007 | [MVP-007-admin-configuration-ui.md](./MVP-007-admin-configuration-ui.md) | DONE | MVP-001, MVP-002 | 1 个开发者日 | 2026-08-26T16:19:33+08:00 | [证据](./MVP-007-admin-configuration-ui.md#完成证据) |
 | MVP-008 | [MVP-008-log-query-retention-ui.md](./MVP-008-log-query-retention-ui.md) | DONE | MVP-006, MVP-007 | 1.5 个开发者日 | 2026-08-26T16:35:16+08:00 | [证据](./MVP-008-log-query-retention-ui.md#完成证据) |
-| MVP-009 | [MVP-009-security-log-ui-refinement.md](./MVP-009-security-log-ui-refinement.md) | PENDING | MVP-008 | 1 个开发者日 |  |  |
+| MVP-009 | [MVP-009-security-log-ui-refinement.md](./MVP-009-security-log-ui-refinement.md) | DONE | MVP-008 | 1 个开发者日 | 2026-08-31T16:40:13+08:00 | [证据](./MVP-009-security-log-ui-refinement.md#完成证据) |
+| MVP-010 | [MVP-010-configurable-log-retention.md](./MVP-010-configurable-log-retention.md) | DONE | MVP-008, MVP-009 | 1.5 个开发者日 | 2026-09-01T19:50:09+08:00 | [证据](./MVP-010-configurable-log-retention.md#完成证据) |
 
 ## 依赖说明
 
 - 关键链路：`MVP-001 → MVP-002 → MVP-003 → MVP-004 → MVP-005`。
-- 采集链路从 `MVP-003` 和 `MVP-004` 开始，最终与管理页面汇合到 `MVP-008`，界面可读性和独立页面由 `MVP-009` 补充。
+- 采集链路从 `MVP-003` 和 `MVP-004` 开始，最终与管理页面汇合到 `MVP-008`，界面可读性和独立页面由 `MVP-009` 补充，生命周期配置由 `MVP-010` 完成。
 - `MVP-007` 与 `MVP-004` 至 `MVP-006` 可在配置接口稳定后并行推进。
 
 ## 规划假设

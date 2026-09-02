@@ -65,26 +65,36 @@ type SecurityCheckLogRecord struct {
 
 // SecurityCheckCollector asynchronously persists records without blocking model calls.
 type SecurityCheckCollector struct {
-	repo   SecurityCheckLogRepository
-	high   chan SecurityCheckLogRecord
-	normal chan SecurityCheckLogRecord
-	stop   chan struct{}
-	done   chan struct{}
-	onDrop func(SecurityCheckLogRecord)
+	repo     SecurityCheckLogRepository
+	settings *SettingService
+	high     chan SecurityCheckLogRecord
+	normal   chan SecurityCheckLogRecord
+	stop     chan struct{}
+	done     chan struct{}
+	onDrop   func(SecurityCheckLogRecord)
 
 	mu              sync.Mutex
 	failureCount    int
 	circuitOpenedAt time.Time
 }
 
-func NewSecurityCheckCollector(repo SecurityCheckLogRepository) *SecurityCheckCollector {
-	return &SecurityCheckCollector{
-		repo:   repo,
-		high:   make(chan SecurityCheckLogRecord, securityCollectionHighQueueSize),
-		normal: make(chan SecurityCheckLogRecord, securityCollectionNormalQueueSize),
-		stop:   make(chan struct{}),
-		done:   make(chan struct{}),
+func NewSecurityCheckCollector(repo SecurityCheckLogRepository, settingServices ...*SettingService) *SecurityCheckCollector {
+	var settings *SettingService
+	if len(settingServices) > 0 {
+		settings = settingServices[0]
 	}
+	return &SecurityCheckCollector{
+		repo:     repo,
+		settings: settings,
+		high:     make(chan SecurityCheckLogRecord, securityCollectionHighQueueSize),
+		normal:   make(chan SecurityCheckLogRecord, securityCollectionNormalQueueSize),
+		stop:     make(chan struct{}),
+		done:     make(chan struct{}),
+	}
+}
+
+func securityCleanupScheduleChanged(previous, next SecurityCheckLogRetentionConfig) bool {
+	return previous.RetentionDays != next.RetentionDays || previous.CleanupTime != next.CleanupTime
 }
 
 // Start launches the bounded batch writer. A nil repository still drains and drops safely.
@@ -155,13 +165,53 @@ func (c *SecurityCheckCollector) run() {
 	ticker := time.NewTicker(securityCollectionFlushInterval)
 	defer ticker.Stop()
 	batch := make([]SecurityCheckLogRecord, 0, securityCollectionBatchSize)
-	lastCleanup := time.Now().Add(-time.Hour)
+	cleanupConfig := DefaultSecurityCheckLogRetentionConfig()
+	cleanupConfigLoadedAt := time.Time{}
+	cleanupConfigInitialized := false
+	nextCleanupAt := time.Time{}
+	loadCleanupConfig := func(now time.Time) SecurityCheckLogRetentionConfig {
+		if !cleanupConfigLoadedAt.IsZero() && now.Sub(cleanupConfigLoadedAt) < time.Minute {
+			return cleanupConfig
+		}
+		cleanupConfigLoadedAt = now
+		loaded := cleanupConfig
+		if c.settings != nil {
+			fromSettings, err := c.settings.GetSecurityCheckLogRetentionConfig(context.Background())
+			if err != nil {
+				slog.Warn("security_check.cleanup_config_invalid", "err", err)
+			} else {
+				loaded = fromSettings
+			}
+		}
+		if !cleanupConfigInitialized {
+			cleanupConfig = loaded
+			cleanupConfigInitialized = true
+			// On startup, only the current scheduled minute is eligible. If it
+			// has already passed, wait for the next occurrence instead of catching up.
+			nextCleanupAt = nextSecurityCleanupAt(now, loaded.CleanupTime, true)
+		} else if securityCleanupScheduleChanged(cleanupConfig, loaded) {
+			cleanupConfig = loaded
+			// A saved schedule must not trigger an immediate catch-up cleanup.
+			nextCleanupAt = nextSecurityCleanupAt(now, loaded.CleanupTime, false)
+		}
+		return cleanupConfig
+	}
 	cleanup := func() {
 		store, ok := c.repo.(SecurityCheckLogStore)
-		if !ok || time.Since(lastCleanup) < time.Hour {
+		if !ok {
 			return
 		}
-		before := time.Now().AddDate(0, 0, -3)
+		now := time.Now()
+		config := loadCleanupConfig(now)
+		if now.Before(nextCleanupAt) {
+			return
+		}
+		if !securityCleanupScheduledMinute(now, nextCleanupAt) {
+			// The exact configured minute was missed; strict scheduling skips it.
+			nextCleanupAt = nextSecurityCleanupAt(now, config.CleanupTime, false)
+			return
+		}
+		before := now.AddDate(0, 0, -config.RetentionDays)
 		for {
 			deleted, err := store.DeleteSecurityCheckLogsBefore(context.Background(), before, 1000)
 			if err != nil {
@@ -172,7 +222,9 @@ func (c *SecurityCheckCollector) run() {
 				break
 			}
 		}
-		lastCleanup = time.Now()
+		// A failed run is not retried outside the configured minute; the next
+		// attempt is the next scheduled occurrence.
+		nextCleanupAt = nextCleanupAt.AddDate(0, 0, 1)
 	}
 	flush := func() {
 		if len(batch) == 0 || c.repo == nil || c.isCircuitOpen() {

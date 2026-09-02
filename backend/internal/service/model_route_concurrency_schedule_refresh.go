@@ -310,7 +310,7 @@ func (s *ModelRouteConcurrencyScheduleRefresher) finishRefresh(result ModelRoute
 	}
 	log := logger.L().With(zap.String("component", "service.model_route_schedule"))
 	if err != nil {
-		log.Error("refresh end", append(fields, zap.Error(err))...)
+		log.Warn("refresh end", append(fields, zap.Error(err))...)
 	} else {
 		log.Info("refresh end", fields...)
 	}

@@ -25,6 +25,7 @@ type GroupHandler struct {
 	dashboardService       *service.DashboardService
 	groupCapacityService   *service.GroupCapacityService
 	scheduleRefresher      *service.ModelRouteConcurrencyScheduleRefresher
+	settingService         *service.SettingService
 	securityCheckLogStore  service.SecurityCheckLogStore
 	securityCheckCollector *service.SecurityCheckCollector
 }

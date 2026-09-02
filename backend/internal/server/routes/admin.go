@@ -383,6 +383,8 @@ func registerGroupRoutes(admin *gin.RouterGroup, h *handler.Handlers, routes *rb
 		adminPUT(routes, groups, "/:id/security-check", rbac.PermissionGroupsUpdate, h.Admin.Group.UpdateSecurityCheck)
 		adminGET(routes, groups, "/security-check/logs", rbac.PermissionGroupsRead, h.Admin.Group.ListSecurityCheckLogs)
 		adminGET(routes, groups, "/security-check/logs/:log_id", rbac.PermissionGroupsRead, h.Admin.Group.GetSecurityCheckLog)
+		adminGET(routes, groups, "/security-check/retention", rbac.PermissionGroupsRead, h.Admin.Group.GetSecurityCheckLogRetention)
+		adminPUT(routes, groups, "/security-check/retention", rbac.PermissionGroupsUpdate, h.Admin.Group.UpdateSecurityCheckLogRetention)
 		adminGET(routes, groups, "/security-check/collection-status", rbac.PermissionGroupsRead, h.Admin.Group.SecurityCheckCollectionStatus)
 		adminPOST(routes, groups, "/security-check/collection-reopen", rbac.PermissionGroupsUpdate, h.Admin.Group.ReopenSecurityCheckCollection)
 		adminDELETE(routes, groups, "/:id", rbac.PermissionGroupsDelete, h.Admin.Group.Delete)
