@@ -61,7 +61,7 @@ ldap:
   username_attribute: "cn"
   email_attribute: "mail"
   display_name_attribute: "displayName"
-   department_attribute: "department"
+  department_attribute: "department"
   # Set domain to use AD NTLM bind; leave empty for simple bind.
   domain: ""
   start_tls: false
