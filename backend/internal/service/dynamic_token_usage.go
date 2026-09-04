@@ -8,13 +8,17 @@ import (
 
 // submitDynamicTokenUsage is deliberately fail-open. It only performs a
 // non-blocking in-memory enqueue and never returns an error to model handling.
-func submitDynamicTokenUsage(log *UsageLog) {
+func submitDynamicTokenUsage(log *UsageLog, department string) {
 	if log == nil || log.UserID <= 0 {
 		return
 	}
 	dimensions := map[tokenstat.DimensionCode]tokenstat.DimensionValue{
 		tokenstat.DimensionUserID: tokenstat.Int64Value(log.UserID),
 	}
+	if department = strings.TrimSpace(department); department == "" {
+		department = "未设置"
+	}
+	dimensions[tokenstat.DimensionDepartment] = tokenstat.StringValue(department)
 	if log.APIKeyID > 0 {
 		dimensions[tokenstat.DimensionAPIKeyID] = tokenstat.Int64Value(log.APIKeyID)
 	}

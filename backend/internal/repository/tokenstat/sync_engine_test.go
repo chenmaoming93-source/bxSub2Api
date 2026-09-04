@@ -47,7 +47,7 @@ func TestDynamicTokenSyncPersistsAbsoluteSnapshotAndPreservesConcurrentDirty(t *
 	hash[0] = 2
 	operation := domain.AccountingOperation{
 		Period: period, ProjectionID: 8, DimensionHash: hash,
-		DimensionValues: map[string]any{"user_id": int64(42)}, MetricCode: domain.MetricTotalTokens, Delta: 10,
+		DimensionValues: map[string]any{"user_id": int64(42), "department": "研发部"}, MetricCode: domain.MetricTotalTokens, Delta: 10,
 	}
 	require.NoError(t, accumulator.Add(context.Background(), []domain.AccountingOperation{operation}))
 
@@ -60,6 +60,8 @@ func TestDynamicTokenSyncPersistsAbsoluteSnapshotAndPreservesConcurrentDirty(t *
 	require.NoError(t, engine.Sync(context.Background()))
 	require.Len(t, sink.rows, 1)
 	require.Equal(t, int64(10), sink.rows[0].MetricValue)
+	require.NotNil(t, sink.rows[0].Department)
+	require.Equal(t, "研发部", *sink.rows[0].Department)
 	require.Equal(t, int64(1), sink.rows[0].SourceVersion)
 	require.True(t, mini.Exists(dynamicDirtyKey), "write during sync must remain in current dirty set")
 

@@ -313,6 +313,26 @@ func (_u *TokenStatAggregateUpdate) ClearUpstreamModel() *TokenStatAggregateUpda
 	return _u
 }
 
+// SetDepartment sets the "department" field.
+func (_u *TokenStatAggregateUpdate) SetDepartment(v string) *TokenStatAggregateUpdate {
+	_u.mutation.SetDepartment(v)
+	return _u
+}
+
+// SetNillableDepartment sets the "department" field if the given value is not nil.
+func (_u *TokenStatAggregateUpdate) SetNillableDepartment(v *string) *TokenStatAggregateUpdate {
+	if v != nil {
+		_u.SetDepartment(*v)
+	}
+	return _u
+}
+
+// ClearDepartment clears the value of the "department" field.
+func (_u *TokenStatAggregateUpdate) ClearDepartment() *TokenStatAggregateUpdate {
+	_u.mutation.ClearDepartment()
+	return _u
+}
+
 // SetLastSyncedAt sets the "last_synced_at" field.
 func (_u *TokenStatAggregateUpdate) SetLastSyncedAt(v time.Time) *TokenStatAggregateUpdate {
 	_u.mutation.SetLastSyncedAt(v)
@@ -403,6 +423,11 @@ func (_u *TokenStatAggregateUpdate) check() error {
 	if v, ok := _u.mutation.UpstreamModel(); ok {
 		if err := tokenstataggregate.UpstreamModelValidator(v); err != nil {
 			return &ValidationError{Name: "upstream_model", err: fmt.Errorf(`ent: validator failed for field "TokenStatAggregate.upstream_model": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.Department(); ok {
+		if err := tokenstataggregate.DepartmentValidator(v); err != nil {
+			return &ValidationError{Name: "department", err: fmt.Errorf(`ent: validator failed for field "TokenStatAggregate.department": %w`, err)}
 		}
 	}
 	return nil
@@ -506,6 +531,12 @@ func (_u *TokenStatAggregateUpdate) sqlSave(ctx context.Context) (_node int, err
 	}
 	if _u.mutation.UpstreamModelCleared() {
 		_spec.ClearField(tokenstataggregate.FieldUpstreamModel, field.TypeString)
+	}
+	if value, ok := _u.mutation.Department(); ok {
+		_spec.SetField(tokenstataggregate.FieldDepartment, field.TypeString, value)
+	}
+	if _u.mutation.DepartmentCleared() {
+		_spec.ClearField(tokenstataggregate.FieldDepartment, field.TypeString)
 	}
 	if value, ok := _u.mutation.LastSyncedAt(); ok {
 		_spec.SetField(tokenstataggregate.FieldLastSyncedAt, field.TypeTime, value)
@@ -815,6 +846,26 @@ func (_u *TokenStatAggregateUpdateOne) ClearUpstreamModel() *TokenStatAggregateU
 	return _u
 }
 
+// SetDepartment sets the "department" field.
+func (_u *TokenStatAggregateUpdateOne) SetDepartment(v string) *TokenStatAggregateUpdateOne {
+	_u.mutation.SetDepartment(v)
+	return _u
+}
+
+// SetNillableDepartment sets the "department" field if the given value is not nil.
+func (_u *TokenStatAggregateUpdateOne) SetNillableDepartment(v *string) *TokenStatAggregateUpdateOne {
+	if v != nil {
+		_u.SetDepartment(*v)
+	}
+	return _u
+}
+
+// ClearDepartment clears the value of the "department" field.
+func (_u *TokenStatAggregateUpdateOne) ClearDepartment() *TokenStatAggregateUpdateOne {
+	_u.mutation.ClearDepartment()
+	return _u
+}
+
 // SetLastSyncedAt sets the "last_synced_at" field.
 func (_u *TokenStatAggregateUpdateOne) SetLastSyncedAt(v time.Time) *TokenStatAggregateUpdateOne {
 	_u.mutation.SetLastSyncedAt(v)
@@ -918,6 +969,11 @@ func (_u *TokenStatAggregateUpdateOne) check() error {
 	if v, ok := _u.mutation.UpstreamModel(); ok {
 		if err := tokenstataggregate.UpstreamModelValidator(v); err != nil {
 			return &ValidationError{Name: "upstream_model", err: fmt.Errorf(`ent: validator failed for field "TokenStatAggregate.upstream_model": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.Department(); ok {
+		if err := tokenstataggregate.DepartmentValidator(v); err != nil {
+			return &ValidationError{Name: "department", err: fmt.Errorf(`ent: validator failed for field "TokenStatAggregate.department": %w`, err)}
 		}
 	}
 	return nil
@@ -1038,6 +1094,12 @@ func (_u *TokenStatAggregateUpdateOne) sqlSave(ctx context.Context) (_node *Toke
 	}
 	if _u.mutation.UpstreamModelCleared() {
 		_spec.ClearField(tokenstataggregate.FieldUpstreamModel, field.TypeString)
+	}
+	if value, ok := _u.mutation.Department(); ok {
+		_spec.SetField(tokenstataggregate.FieldDepartment, field.TypeString, value)
+	}
+	if _u.mutation.DepartmentCleared() {
+		_spec.ClearField(tokenstataggregate.FieldDepartment, field.TypeString)
 	}
 	if value, ok := _u.mutation.LastSyncedAt(); ok {
 		_spec.SetField(tokenstataggregate.FieldLastSyncedAt, field.TypeTime, value)

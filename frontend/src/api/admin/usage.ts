@@ -47,6 +47,43 @@ export interface SceneAccountDailyUsageParams {
   group_name?: string
 }
 
+export interface DepartmentUsageRow {
+  department: string
+  total_tokens: number
+  user_count: number
+  average_tokens: number
+  percentage: number
+}
+
+export interface DepartmentUsageResponse {
+  rows: DepartmentUsageRow[]
+  total: number
+  summary: number
+  complete: boolean
+  last_synced_at?: string
+  consistency: string
+}
+
+export interface DepartmentUserUsageRow {
+  user_id: number
+  email: string
+  username: string
+  total_tokens: number
+  percentage: number
+}
+
+export interface DepartmentUserUsageResponse {
+  department: string
+  department_total_tokens: number
+  rows: DepartmentUserUsageRow[]
+  total: number
+  page: number
+  page_size: number
+  complete: boolean
+  last_synced_at?: string
+  consistency: string
+}
+
 export interface AdminUsageStatsResponse {
   total_requests: number
   total_input_tokens: number
@@ -242,6 +279,20 @@ export async function cancelCleanupTask(taskId: number): Promise<{ id: number; s
   return data
 }
 
+export async function queryDepartmentStats(
+  params: { start_date: string; end_date: string; timezone?: string }
+): Promise<DepartmentUsageResponse> {
+  const { data } = await apiClient.get<DepartmentUsageResponse>('/admin/usage/department-stats', { params })
+  return data
+}
+
+export async function queryDepartmentUsers(
+  params: { department: string; start_date: string; end_date: string; timezone?: string; page?: number; page_size?: number }
+): Promise<DepartmentUserUsageResponse> {
+  const { data } = await apiClient.get<DepartmentUserUsageResponse>('/admin/usage/department-stats/users', { params })
+  return data
+}
+
 export async function querySceneAccountDaily(
   params: SceneAccountDailyUsageParams
 ): Promise<SceneAccountDailyUsageResponse> {
@@ -253,6 +304,8 @@ export async function querySceneAccountDaily(
 
 export const adminUsageAPI = {
   list,
+  queryDepartmentStats,
+  queryDepartmentUsers,
   querySceneAccountDaily,
   getStats,
   searchUsers,

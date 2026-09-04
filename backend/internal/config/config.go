@@ -133,6 +133,7 @@ type LDAPConfig struct {
 	UsernameAttribute     string   `mapstructure:"username_attribute"`
 	EmailAttribute        string   `mapstructure:"email_attribute"`
 	DisplayNameAttribute  string   `mapstructure:"display_name_attribute"`
+	DepartmentAttribute   string   `mapstructure:"department_attribute"`
 	Domain                string   `mapstructure:"domain"`
 	StartTLS              bool     `mapstructure:"start_tls"`
 	InsecureSkipVerify    bool     `mapstructure:"insecure_skip_verify"`
@@ -1807,6 +1808,7 @@ func setDefaults() {
 	viper.SetDefault("ldap.username_attribute", "sAMAccountName")
 	viper.SetDefault("ldap.email_attribute", "mail")
 	viper.SetDefault("ldap.display_name_attribute", "displayName")
+	viper.SetDefault("ldap.department_attribute", "department")
 	viper.SetDefault("ldap.domain", "")
 	viper.SetDefault("ldap.start_tls", true)
 	viper.SetDefault("ldap.insecure_skip_verify", false)

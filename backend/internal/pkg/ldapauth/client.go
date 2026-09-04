@@ -17,6 +17,7 @@ type User struct {
 	Username    string
 	Email       string
 	DisplayName string
+	Department  string
 	DN          string
 }
 
@@ -101,7 +102,7 @@ func (c *Client) searchUser(conn *ldap.Conn, username string) (*User, error) {
 	req := ldap.NewSearchRequest(
 		c.cfg.BaseDN, ldap.ScopeWholeSubtree, ldap.NeverDerefAliases,
 		2, 0, false, filter,
-		[]string{c.cfg.UsernameAttribute, c.cfg.EmailAttribute, c.cfg.DisplayNameAttribute}, nil,
+		ldapUserAttributes(c.cfg), nil,
 	)
 	result, err := conn.Search(req)
 	if err != nil {
@@ -117,7 +118,7 @@ func (c *Client) lookupDN(conn *ldap.Conn, dn string) (*User, error) {
 	req := ldap.NewSearchRequest(
 		dn, ldap.ScopeBaseObject, ldap.NeverDerefAliases,
 		1, 0, false, "(objectClass=*)",
-		[]string{c.cfg.UsernameAttribute, c.cfg.EmailAttribute, c.cfg.DisplayNameAttribute}, nil,
+		ldapUserAttributes(c.cfg), nil,
 	)
 	result, err := conn.Search(req)
 	if err != nil || len(result.Entries) != 1 {
@@ -135,6 +136,7 @@ func (c *Client) userFromEntry(entry *ldap.Entry, fallbackUsername string) *User
 		Username:    strings.TrimSpace(username),
 		Email:       strings.TrimSpace(strings.ToLower(entry.GetAttributeValue(c.cfg.EmailAttribute))),
 		DisplayName: strings.TrimSpace(entry.GetAttributeValue(c.cfg.DisplayNameAttribute)),
+		Department:  normalizeAttributeValue(entry.GetAttributeValues(c.cfg.DepartmentAttribute)),
 		DN:          entry.DN,
 	}
 }

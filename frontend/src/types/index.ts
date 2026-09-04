@@ -105,6 +105,8 @@ export interface User {
 }
 
 export interface AdminUser extends User {
+  // LDAP 同步的部门快照（普通用户接口不返回）
+  department: string
   // 管理员备注（普通用户接口不返回）
   notes: string
   last_used_at?: string | null
@@ -1584,6 +1586,7 @@ export interface UpdateUserRequest {
   email?: string
   password?: string
   username?: string
+  department?: string
   notes?: string
   role?: 'admin' | 'user'
   balance?: number

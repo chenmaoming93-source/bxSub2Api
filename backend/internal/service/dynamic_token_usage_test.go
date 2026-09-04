@@ -25,6 +25,7 @@ func (gatewayProjectionSource) ActiveProjections() []tokenstat.ProjectionDefinit
 		DimensionCodes: []tokenstat.DimensionCode{
 			tokenstat.DimensionUserID, tokenstat.DimensionAPIKeyID, tokenstat.DimensionGroupID,
 			tokenstat.DimensionRouteAlias, tokenstat.DimensionAccountID, tokenstat.DimensionUpstreamModel,
+			tokenstat.DimensionDepartment,
 		},
 		MetricCodes: []tokenstat.MetricCode{tokenstat.MetricTotalTokens},
 	}}
@@ -53,7 +54,7 @@ func TestSubmitDynamicTokenUsageUserProjectionDoesNotRequireRoutingDimensions(t 
 	submitDynamicTokenUsage(&UsageLog{
 		UserID: 42, Model: "requested-model", InputTokens: 3, OutputTokens: 4,
 		RequestType: RequestTypeSync, CreatedAt: time.Now(),
-	})
+	}, "研发部")
 	pipeline.Close()
 	tokenstat.SetDefaultPipeline(nil)
 	require.Len(t, writer.operations, 3)
@@ -81,12 +82,13 @@ func TestSubmitDynamicTokenUsageRepresentativeProtocols(t *testing.T) {
 				UserID: 1, APIKeyID: 2, GroupID: &groupID, RouteAlias: "route",
 				AccountID: 4, UpstreamModel: &model, InputTokens: 5, OutputTokens: 7,
 				RequestType: requestType, CreatedAt: time.Now(),
-			})
+			}, "研发部")
 			pipeline.Close()
 			tokenstat.SetDefaultPipeline(nil)
 			require.Len(t, writer.operations, 3)
 			require.Equal(t, int64(12), writer.operations[0].Delta)
-			require.Len(t, writer.operations[0].DimensionValues, 6)
+			require.Len(t, writer.operations[0].DimensionValues, 7)
+			require.Equal(t, "研发部", writer.operations[0].DimensionValues["department"])
 		})
 	}
 }

@@ -103,7 +103,7 @@ func TestUserHandlerEndpoints(t *testing.T) {
 	router.ServeHTTP(rec, req)
 	require.Equal(t, http.StatusOK, rec.Code)
 
-	updateBody := map[string]any{"email": "updated@example.com"}
+	updateBody := map[string]any{"email": "ldap-user-001"}
 	body, _ = json.Marshal(updateBody)
 	rec = httptest.NewRecorder()
 	req = httptest.NewRequest(http.MethodPut, "/api/v1/admin/users/1", bytes.NewReader(body))

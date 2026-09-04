@@ -337,6 +337,7 @@ func registerUserManagementRoutes(admin *gin.RouterGroup, h *handler.Handlers, r
 	users := admin.Group("/users")
 	{
 		adminGET(routes, users, "", rbac.PermissionUsersRead, h.Admin.User.List)
+		adminPOST(routes, users, "/sync-ldap", rbac.PermissionUsersUpdate, h.Admin.User.SyncLDAP)
 		adminGET(routes, users, "/:id", rbac.PermissionUsersRead, h.Admin.User.GetByID)
 		adminPOST(routes, users, "/:id/auth-identities", rbac.PermissionUsersUpdate, h.Admin.User.BindAuthIdentity)
 		adminPOST(routes, users, "", rbac.PermissionUsersCreate, h.Admin.User.Create)
@@ -670,6 +671,8 @@ func registerUsageRoutes(admin *gin.RouterGroup, h *handler.Handlers, routes *rb
 	{
 		adminGET(routes, usage, "", rbac.PermissionUsageAdminRead, h.Admin.Usage.List)
 		adminGET(routes, usage, "/scene-account/daily", rbac.PermissionUsageAdminRead, h.Admin.SceneAccountUsage.QueryDaily)
+		adminGET(routes, usage, "/department-stats", rbac.PermissionUsageAdminRead, h.Admin.Usage.DepartmentStats)
+		adminGET(routes, usage, "/department-stats/users", rbac.PermissionUsageAdminRead, h.Admin.Usage.DepartmentUsers)
 		adminGET(routes, usage, "/stats", rbac.PermissionUsageAdminRead, h.Admin.Usage.Stats)
 		adminGET(routes, usage, "/search-users", rbac.PermissionUsageAdminRead, h.Admin.Usage.SearchUsers)
 		adminGET(routes, usage, "/search-api-keys", rbac.PermissionUsageAdminRead, h.Admin.Usage.SearchAPIKeys)

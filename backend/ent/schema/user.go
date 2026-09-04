@@ -59,6 +59,10 @@ func (User) Fields() []ent.Field {
 		field.String("username").
 			MaxLen(100).
 			Default(""),
+		// department is synchronized from LDAP; empty means not set.
+		field.String("department").
+			MaxLen(255).
+			Default(""),
 		// wechat field migrated to user_attribute_values (see migration 019)
 		field.String("notes").
 			SchemaType(map[string]string{dialect.MySQL: "text"}).

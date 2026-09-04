@@ -29,6 +29,7 @@ type UserHandler struct {
 	concurrencyService    *service.ConcurrencyService
 	userPlatformQuotaRepo service.UserPlatformQuotaRepository // T13 admin quota view
 	billingCache          service.BillingCache                // T17/T18 缓存失效（PUT/POST 路径）
+	ldapUserSync          *service.LDAPUserSyncService
 }
 
 // NewUserHandler creates a new admin user handler
@@ -46,6 +47,19 @@ func NewUserHandler(
 	}
 }
 
+// NewUserHandlerWithLDAPSync creates the admin user handler with LDAP sync enabled.
+func NewUserHandlerWithLDAPSync(
+	adminService service.AdminService,
+	concurrencyService *service.ConcurrencyService,
+	userPlatformQuotaRepo service.UserPlatformQuotaRepository,
+	billingCache service.BillingCache,
+	ldapUserSync *service.LDAPUserSyncService,
+) *UserHandler {
+	h := NewUserHandler(adminService, concurrencyService, userPlatformQuotaRepo, billingCache)
+	h.ldapUserSync = ldapUserSync
+	return h
+}
+
 // CreateUserRequest represents admin create user request
 type CreateUserRequest struct {
 	Email         string   `json:"email" binding:"required,email"`
@@ -61,9 +75,10 @@ type CreateUserRequest struct {
 // UpdateUserRequest represents admin update user request
 // 使用指针类型来区分"未提供"和"设置为0"
 type UpdateUserRequest struct {
-	Email         string   `json:"email" binding:"omitempty,email"`
+	Email         string   `json:"email"`
 	Password      string   `json:"password" binding:"omitempty,min=6"`
 	Username      *string  `json:"username"`
+	Department    *string  `json:"department"`
 	Notes         *string  `json:"notes"`
 	Balance       *float64 `json:"balance"`
 	Concurrency   *int     `json:"concurrency"`
@@ -167,6 +182,30 @@ func (h *UserHandler) List(c *gin.Context) {
 	}
 
 	response.Paginated(c, out, total, page, pageSize)
+}
+
+// SyncLDAP synchronizes LDAP-backed user profiles with service-account credentials.
+// POST /api/v1/admin/users/sync-ldap
+func (h *UserHandler) SyncLDAP(c *gin.Context) {
+	if h.ldapUserSync == nil {
+		response.ErrorFrom(c, errors.New("ldap user sync service is unavailable"))
+		return
+	}
+	result, err := h.ldapUserSync.Sync(c.Request.Context())
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	slog.InfoContext(c.Request.Context(), "admin.ldap_user_sync.completed",
+		"total", result.Total,
+		"ldap_candidates", result.LDAPCandidates,
+		"synced", result.Synced,
+		"local_cleared", result.LocalCleared,
+		"not_found", result.NotFound,
+		"failed", result.Failed,
+		"duration_ms", result.DurationMS,
+	)
+	response.Success(c, result)
 }
 
 // parseAttributeFilters extracts attribute filters from query params
@@ -301,6 +340,7 @@ func (h *UserHandler) Update(c *gin.Context) {
 		Email:         req.Email,
 		Password:      req.Password,
 		Username:      req.Username,
+		Department:    req.Department,
 		Notes:         req.Notes,
 		Balance:       req.Balance,
 		Concurrency:   req.Concurrency,

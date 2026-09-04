@@ -19,7 +19,7 @@ func TestUpsertAggregateUsesMonotonicSourceVersionSQL(t *testing.T) {
 			"D", sqlmock.AnyArg(), sqlmock.AnyArg(), int64(7), sqlmock.AnyArg(), sqlmock.AnyArg(),
 			"total_tokens", int64(123), int64(4),
 			sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(),
-			sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(),
+			sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(), sqlmock.AnyArg(),
 		).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 

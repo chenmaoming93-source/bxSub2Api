@@ -65,7 +65,7 @@ type usageQueryRequest struct {
 }
 
 func (h *DynamicTokenStatisticsHandler) Dimensions(c *gin.Context) {
-	response.Success(c, gin.H{"dimensions": tokenstat.Dimensions()})
+	response.Success(c, gin.H{"dimensions": tokenstat.ConfigurableDimensions()})
 }
 
 func (h *DynamicTokenStatisticsHandler) Metrics(c *gin.Context) {

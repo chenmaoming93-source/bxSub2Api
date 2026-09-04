@@ -161,6 +161,20 @@ func (_c *UserCreate) SetNillableUsername(v *string) *UserCreate {
 	return _c
 }
 
+// SetDepartment sets the "department" field.
+func (_c *UserCreate) SetDepartment(v string) *UserCreate {
+	_c.mutation.SetDepartment(v)
+	return _c
+}
+
+// SetNillableDepartment sets the "department" field if the given value is not nil.
+func (_c *UserCreate) SetNillableDepartment(v *string) *UserCreate {
+	if v != nil {
+		_c.SetDepartment(*v)
+	}
+	return _c
+}
+
 // SetNotes sets the "notes" field.
 func (_c *UserCreate) SetNotes(v string) *UserCreate {
 	_c.mutation.SetNotes(v)
@@ -673,6 +687,10 @@ func (_c *UserCreate) defaults() error {
 		v := user.DefaultUsername
 		_c.mutation.SetUsername(v)
 	}
+	if _, ok := _c.mutation.Department(); !ok {
+		v := user.DefaultDepartment
+		_c.mutation.SetDepartment(v)
+	}
 	if _, ok := _c.mutation.Notes(); !ok {
 		v := user.DefaultNotes
 		_c.mutation.SetNotes(v)
@@ -760,6 +778,14 @@ func (_c *UserCreate) check() error {
 	if v, ok := _c.mutation.Username(); ok {
 		if err := user.UsernameValidator(v); err != nil {
 			return &ValidationError{Name: "username", err: fmt.Errorf(`ent: validator failed for field "User.username": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.Department(); !ok {
+		return &ValidationError{Name: "department", err: errors.New(`ent: missing required field "User.department"`)}
+	}
+	if v, ok := _c.mutation.Department(); ok {
+		if err := user.DepartmentValidator(v); err != nil {
+			return &ValidationError{Name: "department", err: fmt.Errorf(`ent: validator failed for field "User.department": %w`, err)}
 		}
 	}
 	if _, ok := _c.mutation.Notes(); !ok {
@@ -857,6 +883,10 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.Username(); ok {
 		_spec.SetField(user.FieldUsername, field.TypeString, value)
 		_node.Username = value
+	}
+	if value, ok := _c.mutation.Department(); ok {
+		_spec.SetField(user.FieldDepartment, field.TypeString, value)
+		_node.Department = value
 	}
 	if value, ok := _c.mutation.Notes(); ok {
 		_spec.SetField(user.FieldNotes, field.TypeString, value)
@@ -1364,6 +1394,18 @@ func (u *UserUpsert) UpdateUsername() *UserUpsert {
 	return u
 }
 
+// SetDepartment sets the "department" field.
+func (u *UserUpsert) SetDepartment(v string) *UserUpsert {
+	u.Set(user.FieldDepartment, v)
+	return u
+}
+
+// UpdateDepartment sets the "department" field to the value that was provided on create.
+func (u *UserUpsert) UpdateDepartment() *UserUpsert {
+	u.SetExcluded(user.FieldDepartment)
+	return u
+}
+
 // SetNotes sets the "notes" field.
 func (u *UserUpsert) SetNotes(v string) *UserUpsert {
 	u.Set(user.FieldNotes, v)
@@ -1757,6 +1799,20 @@ func (u *UserUpsertOne) SetUsername(v string) *UserUpsertOne {
 func (u *UserUpsertOne) UpdateUsername() *UserUpsertOne {
 	return u.Update(func(s *UserUpsert) {
 		s.UpdateUsername()
+	})
+}
+
+// SetDepartment sets the "department" field.
+func (u *UserUpsertOne) SetDepartment(v string) *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.SetDepartment(v)
+	})
+}
+
+// UpdateDepartment sets the "department" field to the value that was provided on create.
+func (u *UserUpsertOne) UpdateDepartment() *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateDepartment()
 	})
 }
 
@@ -2353,6 +2409,20 @@ func (u *UserUpsertBulk) SetUsername(v string) *UserUpsertBulk {
 func (u *UserUpsertBulk) UpdateUsername() *UserUpsertBulk {
 	return u.Update(func(s *UserUpsert) {
 		s.UpdateUsername()
+	})
+}
+
+// SetDepartment sets the "department" field.
+func (u *UserUpsertBulk) SetDepartment(v string) *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.SetDepartment(v)
+	})
+}
+
+// UpdateDepartment sets the "department" field to the value that was provided on create.
+func (u *UserUpsertBulk) UpdateDepartment() *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateDepartment()
 	})
 }
 

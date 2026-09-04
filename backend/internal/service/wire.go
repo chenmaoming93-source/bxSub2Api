@@ -10,11 +10,24 @@ import (
 	"github.com/Wei-Shaw/sub2api/internal/config"
 	"github.com/Wei-Shaw/sub2api/internal/payment"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/antigravity"
+	"github.com/Wei-Shaw/sub2api/internal/pkg/ldapauth"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/logger"
 	tokenstat "github.com/Wei-Shaw/sub2api/internal/service/tokenstat"
 	"github.com/google/wire"
 	"github.com/redis/go-redis/v9"
 )
+
+func ProvideLDAPUserSyncService(userRepo UserRepository, cacheInvalidator APIKeyAuthCacheInvalidator, cfg *config.Config) *LDAPUserSyncService {
+	if cfg == nil {
+		return NewLDAPUserSyncService(userRepo, nil, cacheInvalidator, nil)
+	}
+	return NewLDAPUserSyncService(
+		userRepo,
+		ldapauth.NewDefaultLDAPDirectory(cfg.LDAP),
+		cacheInvalidator,
+		cfg.LDAP.LocalLoginAccounts,
+	)
+}
 
 func ProvideSingGuardClient(cfg *config.Config) *SingGuardClient {
 	if cfg == nil || cfg.SingGuard.BaseURL == "" {
@@ -619,6 +632,7 @@ var ProviderSet = wire.NewSet(
 	NewUserService,
 	ProvideAPIKeyService,
 	ProvideAPIKeyAuthCacheInvalidator,
+	ProvideLDAPUserSyncService,
 	NewGroupService,
 	ProvideExternalTokenUsageService,
 	ProvideSceneAccountDailyUsageService,

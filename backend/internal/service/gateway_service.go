@@ -9952,7 +9952,7 @@ func (s *GatewayService) recordUsageCore(ctx context.Context, input *recordUsage
 		return nil
 	}
 	if inserted {
-		submitDynamicTokenUsage(usageLog)
+		submitDynamicTokenUsage(usageLog, user.Department)
 	}
 	if s.deferredService != nil {
 		s.deferredService.ScheduleLastUsedUpdate(account.ID)

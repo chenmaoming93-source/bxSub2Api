@@ -132,6 +132,7 @@ CREATE TABLE IF NOT EXISTS user_provider_default_grants (
 			UserBalance:     3.5,
 			UserConcurrency: 2,
 		},
+		LDAP: config.LDAPConfig{AutoCreateUser: true},
 	}
 	settingSvc := service.NewSettingService(&authIdentitySettingRepoStub{
 		values: settings,

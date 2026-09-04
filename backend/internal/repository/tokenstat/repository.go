@@ -29,6 +29,7 @@ type Aggregate struct {
 	RouteAlias      *string
 	AccountID       *int64
 	UpstreamModel   *string
+	Department      *string
 	LastSyncedAt    time.Time
 }
 
@@ -111,7 +112,7 @@ func (r *Repository) UpsertAggregate(ctx context.Context, aggregate Aggregate) e
 		aggregate.ProjectionID, aggregate.DimensionHash[:], values,
 		aggregate.MetricCode, aggregate.MetricValue, aggregate.SourceVersion,
 		aggregate.UserID, aggregate.APIKeyID, aggregate.GroupID, aggregate.RouteAlias,
-		aggregate.AccountID, aggregate.UpstreamModel, aggregate.LastSyncedAt,
+		aggregate.AccountID, aggregate.UpstreamModel, aggregate.Department, aggregate.LastSyncedAt,
 		aggregate.LastSyncedAt, aggregate.LastSyncedAt,
 	)
 	if err != nil {
@@ -124,9 +125,9 @@ const upsertAggregateSQL = `
 INSERT INTO token_stat_aggregates (
     period_type, period_start, period_end, projection_id, dimension_hash,
     dimension_values, metric_code, metric_value, source_version,
-    user_id, api_key_id, group_id, route_alias, account_id, upstream_model,
+    user_id, api_key_id, group_id, route_alias, account_id, upstream_model, department,
     last_synced_at, created_at, updated_at
-) VALUES (?, ?, ?, ?, ?, CAST(? AS JSON), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+) VALUES (?, ?, ?, ?, ?, CAST(? AS JSON), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 AS new
 ON DUPLICATE KEY UPDATE
     period_end = IF(new.source_version > token_stat_aggregates.source_version, new.period_end, token_stat_aggregates.period_end),
@@ -138,6 +139,7 @@ ON DUPLICATE KEY UPDATE
     route_alias = IF(new.source_version > token_stat_aggregates.source_version, new.route_alias, token_stat_aggregates.route_alias),
     account_id = IF(new.source_version > token_stat_aggregates.source_version, new.account_id, token_stat_aggregates.account_id),
     upstream_model = IF(new.source_version > token_stat_aggregates.source_version, new.upstream_model, token_stat_aggregates.upstream_model),
+    department = IF(new.source_version > token_stat_aggregates.source_version, new.department, token_stat_aggregates.department),
     last_synced_at = IF(new.source_version > token_stat_aggregates.source_version, new.last_synced_at, token_stat_aggregates.last_synced_at),
     updated_at = IF(new.source_version > token_stat_aggregates.source_version, new.updated_at, token_stat_aggregates.updated_at),
     source_version = GREATEST(token_stat_aggregates.source_version, new.source_version)`

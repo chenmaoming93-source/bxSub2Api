@@ -130,11 +130,22 @@
               <!-- Refresh Button -->
               <button
                 @click="loadUsers"
-                :disabled="loading"
+                :disabled="loading || syncingLDAP"
                 class="btn btn-secondary px-2 md:px-3"
                 :title="t('common.refresh')"
               >
                 <Icon name="refresh" size="md" :class="loading ? 'animate-spin' : ''" />
+              </button>
+              <!-- LDAP Sync Button -->
+              <button
+                v-permission="'users.update'"
+                @click="handleSyncLDAP"
+                :disabled="loading || syncingLDAP"
+                class="btn btn-secondary px-2 md:px-3"
+                :title="t('admin.users.syncLDAP')"
+              >
+                <Icon name="refresh" size="md" :class="syncingLDAP ? 'animate-spin' : ''" />
+                <span class="hidden md:inline md:ml-1.5">{{ syncingLDAP ? t('admin.users.syncLDAPLoading') : t('admin.users.syncLDAP') }}</span>
               </button>
               <!-- Filter Settings Dropdown -->
               <div class="relative" ref="filterDropdownRef">
@@ -279,6 +290,10 @@
 
           <template #cell-username="{ value }">
             <span class="text-sm text-gray-700 dark:text-gray-300">{{ value || '-' }}</span>
+          </template>
+
+          <template #cell-department="{ value }">
+            <span class="text-sm text-gray-700 dark:text-gray-300">{{ value || t('admin.users.columns.departmentUnset') }}</span>
           </template>
 
           <template #cell-notes="{ value }">
@@ -851,6 +866,7 @@ const allColumns = computed<Column[]>(() => [
   { key: 'email', label: t('admin.users.columns.user'), sortable: true },
   { key: 'id', label: t('admin.users.columns.id'), sortable: true },
   { key: 'username', label: t('admin.users.columns.username'), sortable: true },
+  { key: 'department', label: t('admin.users.columns.department'), sortable: false },
   { key: 'notes', label: t('admin.users.columns.notes'), sortable: false },
   // Dynamic attribute columns
   ...attributeColumns.value,
@@ -1008,6 +1024,7 @@ const columns = computed<Column[]>(() =>
 
 const users = ref<AdminUser[]>([])
 const loading = ref(false)
+const syncingLDAP = ref(false)
 const searchQuery = ref('')
 const USER_SORT_STORAGE_KEY = 'admin-users-table-sort'
 const loadInitialSortState = (): { sort_by: string; sort_order: 'asc' | 'desc' } => {
@@ -1593,6 +1610,29 @@ const loadUsers = async () => {
     if (abortController === currentAbortController) {
       loading.value = false
     }
+  }
+}
+
+const handleSyncLDAP = async () => {
+  if (syncingLDAP.value) return
+  syncingLDAP.value = true
+  try {
+    const result = await adminAPI.users.syncLDAP()
+    const issueCount = result.failed + result.not_found
+    const message = t(issueCount > 0 ? 'admin.users.syncLDAPPartialSuccess' : 'admin.users.syncLDAPSuccess', {
+      synced: result.synced,
+      total: result.total,
+      failed: issueCount
+    })
+    if (issueCount > 0) appStore.showError(message)
+    else appStore.showSuccess(message)
+    await loadUsers()
+  } catch (error: any) {
+    const message = error.response?.data?.detail || error.message || t('admin.users.syncLDAPFailed')
+    appStore.showError(message)
+    console.error('Error syncing LDAP users:', error)
+  } finally {
+    syncingLDAP.value = false
   }
 }
 

@@ -1629,6 +1629,7 @@ var (
 		{Name: "route_alias", Type: field.TypeString, Nullable: true, Size: 255},
 		{Name: "account_id", Type: field.TypeInt64, Nullable: true},
 		{Name: "upstream_model", Type: field.TypeString, Nullable: true, Size: 255},
+		{Name: "department", Type: field.TypeString, Nullable: true, Size: 255},
 		{Name: "last_synced_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
 	}
 	// TokenStatAggregatesTable holds the schema information for the "token_stat_aggregates" table.
@@ -1666,6 +1667,11 @@ var (
 				Name:    "tokenstataggregate_account_id",
 				Unique:  false,
 				Columns: []*schema.Column{TokenStatAggregatesColumns[16]},
+			},
+			{
+				Name:    "tokenstataggregate_department",
+				Unique:  false,
+				Columns: []*schema.Column{TokenStatAggregatesColumns[18]},
 			},
 		},
 	}
@@ -1991,6 +1997,7 @@ var (
 		{Name: "concurrency", Type: field.TypeInt, Default: 5},
 		{Name: "status", Type: field.TypeString, Size: 20, Default: "active"},
 		{Name: "username", Type: field.TypeString, Size: 100, Default: ""},
+		{Name: "department", Type: field.TypeString, Size: 255, Default: ""},
 		{Name: "notes", Type: field.TypeString, Default: "", SchemaType: map[string]string{"mysql": "text"}},
 		{Name: "totp_secret_encrypted", Type: field.TypeString, Nullable: true, SchemaType: map[string]string{"mysql": "text"}},
 		{Name: "totp_enabled", Type: field.TypeBool, Default: false},

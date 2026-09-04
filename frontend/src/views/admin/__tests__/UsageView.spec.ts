@@ -3,7 +3,7 @@ import { flushPromises, mount } from '@vue/test-utils'
 
 import UsageView from '../UsageView.vue'
 
-const { list, getStats, getSnapshotV2, getById, getModelStats, listErrorLogs, querySceneAccountDaily } = vi.hoisted(() => {
+const { list, getStats, getSnapshotV2, getById, getModelStats, listErrorLogs, querySceneAccountDaily, queryDepartmentStats, queryDepartmentUsers } = vi.hoisted(() => {
   vi.stubGlobal('localStorage', {
     getItem: vi.fn(() => null),
     setItem: vi.fn(),
@@ -18,6 +18,8 @@ const { list, getStats, getSnapshotV2, getById, getModelStats, listErrorLogs, qu
     getModelStats: vi.fn(),
     listErrorLogs: vi.fn(),
     querySceneAccountDaily: vi.fn(),
+    queryDepartmentStats: vi.fn(),
+    queryDepartmentUsers: vi.fn(),
   }
 })
 
@@ -55,6 +57,8 @@ vi.mock('@/api/admin/usage', () => ({
   adminUsageAPI: {
     list: vi.fn(),
     querySceneAccountDaily,
+    queryDepartmentStats,
+    queryDepartmentUsers,
   },
 }))
 
@@ -107,6 +111,14 @@ const ModelDistributionChartStub = {
     </div>
   `,
 }
+const DepartmentDistributionChartStub = {
+  emits: ['select'],
+  template: '<button data-test="select-department" @click="$emit(\'select\', \'研发部\')">研发部</button>',
+}
+const BaseDialogStub = {
+  props: ['show'],
+  template: '<div v-if="show"><slot /></div>',
+}
 const GroupDistributionChartStub = {
   props: ['metric'],
   emits: ['update:metric'],
@@ -127,6 +139,10 @@ describe('admin UsageView distribution metric toggles', () => {
     getById.mockReset()
     getModelStats.mockReset()
     querySceneAccountDaily.mockReset()
+    queryDepartmentStats.mockReset()
+    queryDepartmentUsers.mockReset()
+    queryDepartmentStats.mockResolvedValue({ rows: [], total: 0, summary: 0, complete: true, consistency: 'mysql_eventual' })
+    queryDepartmentUsers.mockResolvedValue({ department: '研发部', department_total_tokens: 0, rows: [], total: 0, page: 1, page_size: 50, complete: true, consistency: 'mysql_eventual' })
     querySceneAccountDaily.mockResolvedValue({
       timezone: 'Asia/Shanghai',
       start_date: '2026-08-01',
@@ -469,5 +485,55 @@ describe('admin UsageView errors tab filter forwarding', () => {
     expect(wrapper.find('[data-test="scene-token-usage"]').text()).toContain('technical-a')
     expect(wrapper.find('[data-test="scene-token-usage"]').text()).toContain('account-a')
     expect(wrapper.find('[data-test="scene-token-usage"]').text()).toContain('model-a')
+  })
+
+  it('queries department usage with its independent date range', async () => {
+    queryDepartmentStats.mockResolvedValue({ rows: [], total: 0, summary: 0, complete: true, consistency: 'mysql_eventual' })
+    const wrapper = mount(UsageView, {
+      global: { stubs: {
+        AppLayout: AppLayoutStub, UsageStatsCards: true, UsageFilters: UsageFiltersStub,
+        UsageTable: true, UsageExportProgress: true, UsageCleanupDialog: true,
+        UserBalanceHistoryModal: true, AuditLogModal: true, Pagination: true, Select: true,
+        DateRangePicker: true, Icon: true, TokenUsageTrend: true,
+        ModelDistributionChart: true, GroupDistributionChart: true, EndpointDistributionChart: true,
+        OpsErrorLogTable: true, OpsErrorDetailModal: true,
+      } },
+    })
+    vi.advanceTimersByTime(120)
+    await flushPromises()
+    const inputs = wrapper.findAll('[data-test="department-token-usage"] input[type="date"]')
+    await inputs[0].setValue('2026-08-01')
+    await inputs[1].setValue('2026-08-02')
+    await wrapper.find('[data-test="department-token-usage"] button').trigger('click')
+    await flushPromises()
+    expect(queryDepartmentStats).toHaveBeenLastCalledWith(expect.objectContaining({ start_date: '2026-08-01', end_date: '2026-08-02' }))
+  })
+
+  it('lazy-loads department users after selecting a department', async () => {
+    queryDepartmentStats.mockResolvedValue({
+      rows: [{ department: '研发部', total_tokens: 100, user_count: 2, average_tokens: 50, percentage: 100 }],
+      total: 1,
+      summary: 100,
+      complete: true,
+      consistency: 'mysql_eventual'
+    })
+    const wrapper = mount(UsageView, {
+      global: { stubs: {
+        AppLayout: AppLayoutStub, UsageStatsCards: true, UsageFilters: UsageFiltersStub,
+        UsageTable: true, UsageExportProgress: true, UsageCleanupDialog: true,
+        UserBalanceHistoryModal: true, AuditLogModal: true, Pagination: true, Select: true,
+        DateRangePicker: true, Icon: true, TokenUsageTrend: true,
+        ModelDistributionChart: true, GroupDistributionChart: true, EndpointDistributionChart: true,
+        DepartmentDistributionChart: DepartmentDistributionChartStub, DepartmentUserUsageChart: true, BaseDialog: BaseDialogStub,
+        OpsErrorLogTable: true, OpsErrorDetailModal: true,
+      } },
+    })
+    vi.advanceTimersByTime(120)
+    await flushPromises()
+    await wrapper.find('[data-test="select-department"]').trigger('click')
+    await flushPromises()
+
+    expect(queryDepartmentUsers).toHaveBeenCalledWith(expect.objectContaining({ department: '研发部', page: 1 }))
+    expect(wrapper.find('[data-test="department-user-usage"]').exists()).toBe(true)
   })
 })

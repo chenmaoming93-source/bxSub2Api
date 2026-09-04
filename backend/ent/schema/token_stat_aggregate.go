@@ -43,6 +43,7 @@ func (TokenStatAggregate) Fields() []ent.Field {
 		field.String("route_alias").MaxLen(255).Optional().Nillable(),
 		field.Int64("account_id").Optional().Nillable(),
 		field.String("upstream_model").MaxLen(255).Optional().Nillable(),
+		field.String("department").MaxLen(255).Optional().Nillable(),
 		field.Time("last_synced_at").SchemaType(map[string]string{dialect.MySQL: "datetime(6)"}),
 	}
 }
@@ -55,5 +56,6 @@ func (TokenStatAggregate) Indexes() []ent.Index {
 		index.Fields("api_key_id"),
 		index.Fields("group_id"),
 		index.Fields("account_id"),
+		index.Fields("department"),
 	}
 }

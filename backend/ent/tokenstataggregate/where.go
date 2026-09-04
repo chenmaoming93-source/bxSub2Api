@@ -134,6 +134,11 @@ func UpstreamModel(v string) predicate.TokenStatAggregate {
 	return predicate.TokenStatAggregate(sql.FieldEQ(FieldUpstreamModel, v))
 }
 
+// Department applies equality check predicate on the "department" field. It's identical to DepartmentEQ.
+func Department(v string) predicate.TokenStatAggregate {
+	return predicate.TokenStatAggregate(sql.FieldEQ(FieldDepartment, v))
+}
+
 // LastSyncedAt applies equality check predicate on the "last_synced_at" field. It's identical to LastSyncedAtEQ.
 func LastSyncedAt(v time.Time) predicate.TokenStatAggregate {
 	return predicate.TokenStatAggregate(sql.FieldEQ(FieldLastSyncedAt, v))
@@ -937,6 +942,81 @@ func UpstreamModelEqualFold(v string) predicate.TokenStatAggregate {
 // UpstreamModelContainsFold applies the ContainsFold predicate on the "upstream_model" field.
 func UpstreamModelContainsFold(v string) predicate.TokenStatAggregate {
 	return predicate.TokenStatAggregate(sql.FieldContainsFold(FieldUpstreamModel, v))
+}
+
+// DepartmentEQ applies the EQ predicate on the "department" field.
+func DepartmentEQ(v string) predicate.TokenStatAggregate {
+	return predicate.TokenStatAggregate(sql.FieldEQ(FieldDepartment, v))
+}
+
+// DepartmentNEQ applies the NEQ predicate on the "department" field.
+func DepartmentNEQ(v string) predicate.TokenStatAggregate {
+	return predicate.TokenStatAggregate(sql.FieldNEQ(FieldDepartment, v))
+}
+
+// DepartmentIn applies the In predicate on the "department" field.
+func DepartmentIn(vs ...string) predicate.TokenStatAggregate {
+	return predicate.TokenStatAggregate(sql.FieldIn(FieldDepartment, vs...))
+}
+
+// DepartmentNotIn applies the NotIn predicate on the "department" field.
+func DepartmentNotIn(vs ...string) predicate.TokenStatAggregate {
+	return predicate.TokenStatAggregate(sql.FieldNotIn(FieldDepartment, vs...))
+}
+
+// DepartmentGT applies the GT predicate on the "department" field.
+func DepartmentGT(v string) predicate.TokenStatAggregate {
+	return predicate.TokenStatAggregate(sql.FieldGT(FieldDepartment, v))
+}
+
+// DepartmentGTE applies the GTE predicate on the "department" field.
+func DepartmentGTE(v string) predicate.TokenStatAggregate {
+	return predicate.TokenStatAggregate(sql.FieldGTE(FieldDepartment, v))
+}
+
+// DepartmentLT applies the LT predicate on the "department" field.
+func DepartmentLT(v string) predicate.TokenStatAggregate {
+	return predicate.TokenStatAggregate(sql.FieldLT(FieldDepartment, v))
+}
+
+// DepartmentLTE applies the LTE predicate on the "department" field.
+func DepartmentLTE(v string) predicate.TokenStatAggregate {
+	return predicate.TokenStatAggregate(sql.FieldLTE(FieldDepartment, v))
+}
+
+// DepartmentContains applies the Contains predicate on the "department" field.
+func DepartmentContains(v string) predicate.TokenStatAggregate {
+	return predicate.TokenStatAggregate(sql.FieldContains(FieldDepartment, v))
+}
+
+// DepartmentHasPrefix applies the HasPrefix predicate on the "department" field.
+func DepartmentHasPrefix(v string) predicate.TokenStatAggregate {
+	return predicate.TokenStatAggregate(sql.FieldHasPrefix(FieldDepartment, v))
+}
+
+// DepartmentHasSuffix applies the HasSuffix predicate on the "department" field.
+func DepartmentHasSuffix(v string) predicate.TokenStatAggregate {
+	return predicate.TokenStatAggregate(sql.FieldHasSuffix(FieldDepartment, v))
+}
+
+// DepartmentIsNil applies the IsNil predicate on the "department" field.
+func DepartmentIsNil() predicate.TokenStatAggregate {
+	return predicate.TokenStatAggregate(sql.FieldIsNull(FieldDepartment))
+}
+
+// DepartmentNotNil applies the NotNil predicate on the "department" field.
+func DepartmentNotNil() predicate.TokenStatAggregate {
+	return predicate.TokenStatAggregate(sql.FieldNotNull(FieldDepartment))
+}
+
+// DepartmentEqualFold applies the EqualFold predicate on the "department" field.
+func DepartmentEqualFold(v string) predicate.TokenStatAggregate {
+	return predicate.TokenStatAggregate(sql.FieldEqualFold(FieldDepartment, v))
+}
+
+// DepartmentContainsFold applies the ContainsFold predicate on the "department" field.
+func DepartmentContainsFold(v string) predicate.TokenStatAggregate {
+	return predicate.TokenStatAggregate(sql.FieldContainsFold(FieldDepartment, v))
 }
 
 // LastSyncedAtEQ applies the EQ predicate on the "last_synced_at" field.

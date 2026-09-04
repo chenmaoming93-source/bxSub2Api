@@ -20,7 +20,9 @@ func SetDefaultQuotaTimeout(timeout time.Duration) { defaultQuotaTimeoutNanos.St
 // SetDefaultQuotaSingleTimeout configures the per-rule timeout for a single
 // quota counter read. A value <= 0 disables the per-rule limit and leaves every
 // rule read bounded only by the shared total timeout.
-func SetDefaultQuotaSingleTimeout(timeout time.Duration) { defaultQuotaSingleTimeoutNanos.Store(int64(timeout)) }
+func SetDefaultQuotaSingleTimeout(timeout time.Duration) {
+	defaultQuotaSingleTimeoutNanos.Store(int64(timeout))
+}
 
 func CheckDefaultQuota(ctx context.Context, at time.Time, available map[DimensionCode]DimensionValue) []QuotaDecision {
 	if !RuntimeEnabled() {

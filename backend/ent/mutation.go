@@ -41764,6 +41764,7 @@ type TokenStatAggregateMutation struct {
 	account_id        *int64
 	addaccount_id     *int64
 	upstream_model    *string
+	department        *string
 	last_synced_at    *time.Time
 	clearedFields     map[string]struct{}
 	done              bool
@@ -42703,6 +42704,55 @@ func (m *TokenStatAggregateMutation) ResetUpstreamModel() {
 	delete(m.clearedFields, tokenstataggregate.FieldUpstreamModel)
 }
 
+// SetDepartment sets the "department" field.
+func (m *TokenStatAggregateMutation) SetDepartment(s string) {
+	m.department = &s
+}
+
+// Department returns the value of the "department" field in the mutation.
+func (m *TokenStatAggregateMutation) Department() (r string, exists bool) {
+	v := m.department
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDepartment returns the old "department" field's value of the TokenStatAggregate entity.
+// If the TokenStatAggregate object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *TokenStatAggregateMutation) OldDepartment(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDepartment is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDepartment requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDepartment: %w", err)
+	}
+	return oldValue.Department, nil
+}
+
+// ClearDepartment clears the value of the "department" field.
+func (m *TokenStatAggregateMutation) ClearDepartment() {
+	m.department = nil
+	m.clearedFields[tokenstataggregate.FieldDepartment] = struct{}{}
+}
+
+// DepartmentCleared returns if the "department" field was cleared in this mutation.
+func (m *TokenStatAggregateMutation) DepartmentCleared() bool {
+	_, ok := m.clearedFields[tokenstataggregate.FieldDepartment]
+	return ok
+}
+
+// ResetDepartment resets all changes to the "department" field.
+func (m *TokenStatAggregateMutation) ResetDepartment() {
+	m.department = nil
+	delete(m.clearedFields, tokenstataggregate.FieldDepartment)
+}
+
 // SetLastSyncedAt sets the "last_synced_at" field.
 func (m *TokenStatAggregateMutation) SetLastSyncedAt(t time.Time) {
 	m.last_synced_at = &t
@@ -42773,7 +42823,7 @@ func (m *TokenStatAggregateMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *TokenStatAggregateMutation) Fields() []string {
-	fields := make([]string, 0, 18)
+	fields := make([]string, 0, 19)
 	if m.created_at != nil {
 		fields = append(fields, tokenstataggregate.FieldCreatedAt)
 	}
@@ -42825,6 +42875,9 @@ func (m *TokenStatAggregateMutation) Fields() []string {
 	if m.upstream_model != nil {
 		fields = append(fields, tokenstataggregate.FieldUpstreamModel)
 	}
+	if m.department != nil {
+		fields = append(fields, tokenstataggregate.FieldDepartment)
+	}
 	if m.last_synced_at != nil {
 		fields = append(fields, tokenstataggregate.FieldLastSyncedAt)
 	}
@@ -42870,6 +42923,8 @@ func (m *TokenStatAggregateMutation) Field(name string) (ent.Value, bool) {
 		return m.AccountID()
 	case tokenstataggregate.FieldUpstreamModel:
 		return m.UpstreamModel()
+	case tokenstataggregate.FieldDepartment:
+		return m.Department()
 	case tokenstataggregate.FieldLastSyncedAt:
 		return m.LastSyncedAt()
 	}
@@ -42915,6 +42970,8 @@ func (m *TokenStatAggregateMutation) OldField(ctx context.Context, name string) 
 		return m.OldAccountID(ctx)
 	case tokenstataggregate.FieldUpstreamModel:
 		return m.OldUpstreamModel(ctx)
+	case tokenstataggregate.FieldDepartment:
+		return m.OldDepartment(ctx)
 	case tokenstataggregate.FieldLastSyncedAt:
 		return m.OldLastSyncedAt(ctx)
 	}
@@ -43044,6 +43101,13 @@ func (m *TokenStatAggregateMutation) SetField(name string, value ent.Value) erro
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetUpstreamModel(v)
+		return nil
+	case tokenstataggregate.FieldDepartment:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDepartment(v)
 		return nil
 	case tokenstataggregate.FieldLastSyncedAt:
 		v, ok := value.(time.Time)
@@ -43187,6 +43251,9 @@ func (m *TokenStatAggregateMutation) ClearedFields() []string {
 	if m.FieldCleared(tokenstataggregate.FieldUpstreamModel) {
 		fields = append(fields, tokenstataggregate.FieldUpstreamModel)
 	}
+	if m.FieldCleared(tokenstataggregate.FieldDepartment) {
+		fields = append(fields, tokenstataggregate.FieldDepartment)
+	}
 	return fields
 }
 
@@ -43218,6 +43285,9 @@ func (m *TokenStatAggregateMutation) ClearField(name string) error {
 		return nil
 	case tokenstataggregate.FieldUpstreamModel:
 		m.ClearUpstreamModel()
+		return nil
+	case tokenstataggregate.FieldDepartment:
+		m.ClearDepartment()
 		return nil
 	}
 	return fmt.Errorf("unknown TokenStatAggregate nullable field %s", name)
@@ -43277,6 +43347,9 @@ func (m *TokenStatAggregateMutation) ResetField(name string) error {
 		return nil
 	case tokenstataggregate.FieldUpstreamModel:
 		m.ResetUpstreamModel()
+		return nil
+	case tokenstataggregate.FieldDepartment:
+		m.ResetDepartment()
 		return nil
 	case tokenstataggregate.FieldLastSyncedAt:
 		m.ResetLastSyncedAt()
@@ -52027,6 +52100,7 @@ type UserMutation struct {
 	addconcurrency                  *int
 	status                          *string
 	username                        *string
+	department                      *string
 	notes                           *string
 	totp_secret_encrypted           *string
 	totp_enabled                    *bool
@@ -52608,6 +52682,42 @@ func (m *UserMutation) OldUsername(ctx context.Context) (v string, err error) {
 // ResetUsername resets all changes to the "username" field.
 func (m *UserMutation) ResetUsername() {
 	m.username = nil
+}
+
+// SetDepartment sets the "department" field.
+func (m *UserMutation) SetDepartment(s string) {
+	m.department = &s
+}
+
+// Department returns the value of the "department" field in the mutation.
+func (m *UserMutation) Department() (r string, exists bool) {
+	v := m.department
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDepartment returns the old "department" field's value of the User entity.
+// If the User object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserMutation) OldDepartment(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDepartment is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDepartment requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDepartment: %w", err)
+	}
+	return oldValue.Department, nil
+}
+
+// ResetDepartment resets all changes to the "department" field.
+func (m *UserMutation) ResetDepartment() {
+	m.department = nil
 }
 
 // SetNotes sets the "notes" field.
@@ -54141,7 +54251,7 @@ func (m *UserMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *UserMutation) Fields() []string {
-	fields := make([]string, 0, 23)
+	fields := make([]string, 0, 24)
 	if m.created_at != nil {
 		fields = append(fields, user.FieldCreatedAt)
 	}
@@ -54171,6 +54281,9 @@ func (m *UserMutation) Fields() []string {
 	}
 	if m.username != nil {
 		fields = append(fields, user.FieldUsername)
+	}
+	if m.department != nil {
+		fields = append(fields, user.FieldDepartment)
 	}
 	if m.notes != nil {
 		fields = append(fields, user.FieldNotes)
@@ -54239,6 +54352,8 @@ func (m *UserMutation) Field(name string) (ent.Value, bool) {
 		return m.Status()
 	case user.FieldUsername:
 		return m.Username()
+	case user.FieldDepartment:
+		return m.Department()
 	case user.FieldNotes:
 		return m.Notes()
 	case user.FieldTotpSecretEncrypted:
@@ -54294,6 +54409,8 @@ func (m *UserMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldStatus(ctx)
 	case user.FieldUsername:
 		return m.OldUsername(ctx)
+	case user.FieldDepartment:
+		return m.OldDepartment(ctx)
 	case user.FieldNotes:
 		return m.OldNotes(ctx)
 	case user.FieldTotpSecretEncrypted:
@@ -54398,6 +54515,13 @@ func (m *UserMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetUsername(v)
+		return nil
+	case user.FieldDepartment:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDepartment(v)
 		return nil
 	case user.FieldNotes:
 		v, ok := value.(string)
@@ -54670,6 +54794,9 @@ func (m *UserMutation) ResetField(name string) error {
 		return nil
 	case user.FieldUsername:
 		m.ResetUsername()
+		return nil
+	case user.FieldDepartment:
+		m.ResetDepartment()
 		return nil
 	case user.FieldNotes:
 		m.ResetNotes()

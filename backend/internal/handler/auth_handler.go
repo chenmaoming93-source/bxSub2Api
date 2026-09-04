@@ -262,7 +262,7 @@ func (h *AuthHandler) Login(c *gin.Context) {
 			response.ErrorFrom(c, service.ErrInvalidCredentials)
 			return
 		}
-		token, user, err = h.authService.LoginLDAP(c.Request.Context(), identity.Username, identity.DisplayName)
+		token, user, err = h.authService.LoginLDAP(c.Request.Context(), req.Email, identity.DisplayName, identity.Department)
 	} else {
 		token, user, err = h.authService.Login(c.Request.Context(), req.Email, req.Password)
 	}

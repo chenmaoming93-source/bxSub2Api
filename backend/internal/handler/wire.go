@@ -201,7 +201,7 @@ var ProviderSet = wire.NewSet(
 
 	// Admin handlers
 	admin.NewDashboardHandler,
-	admin.NewUserHandler,
+	admin.NewUserHandlerWithLDAPSync,
 	ProvideAdminGroupHandler,
 	admin.NewAccountHandler,
 	admin.NewAnnouncementHandler,
@@ -218,7 +218,7 @@ var ProviderSet = wire.NewSet(
 	admin.NewOpsHandler,
 	ProvideSystemHandler,
 	admin.NewSubscriptionHandler,
-	admin.NewUsageHandler,
+	admin.NewUsageHandlerWithTokenStats,
 	admin.NewUserAttributeHandler,
 	admin.NewErrorPassthroughHandler,
 	admin.NewTLSFingerprintProfileHandler,

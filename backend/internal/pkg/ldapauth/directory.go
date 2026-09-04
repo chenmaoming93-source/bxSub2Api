@@ -86,7 +86,7 @@ func (d *LDAPDirectory) LookupUser(ctx context.Context, username string) (*User,
 	request := ldap.NewSearchRequest(
 		d.cfg.BaseDN, ldap.ScopeWholeSubtree, ldap.NeverDerefAliases,
 		2, 0, false, filter,
-		[]string{d.cfg.UsernameAttribute, d.cfg.EmailAttribute, d.cfg.DisplayNameAttribute}, nil,
+		ldapUserAttributes(d.cfg), nil,
 	)
 	result, err := conn.Search(request)
 	if err != nil {
@@ -105,9 +105,27 @@ func (d *LDAPDirectory) LookupUser(ctx context.Context, username string) (*User,
 			Username:    resolvedUsername,
 			Email:       strings.ToLower(strings.TrimSpace(entry.GetAttributeValue(d.cfg.EmailAttribute))),
 			DisplayName: strings.TrimSpace(entry.GetAttributeValue(d.cfg.DisplayNameAttribute)),
+			Department:  normalizeAttributeValue(entry.GetAttributeValues(d.cfg.DepartmentAttribute)),
 			DN:          entry.DN,
 		}, nil
 	default:
 		return nil, ErrDirectoryAmbiguous
 	}
+}
+
+func ldapUserAttributes(cfg config.LDAPConfig) []string {
+	attributes := []string{cfg.UsernameAttribute, cfg.EmailAttribute, cfg.DisplayNameAttribute}
+	if strings.TrimSpace(cfg.DepartmentAttribute) != "" {
+		attributes = append(attributes, cfg.DepartmentAttribute)
+	}
+	return attributes
+}
+
+func normalizeAttributeValue(values []string) string {
+	for _, value := range values {
+		if normalized := strings.TrimSpace(value); normalized != "" {
+			return normalized
+		}
+	}
+	return ""
 }

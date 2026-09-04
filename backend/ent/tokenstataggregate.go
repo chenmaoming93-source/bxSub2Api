@@ -52,6 +52,8 @@ type TokenStatAggregate struct {
 	AccountID *int64 `json:"account_id,omitempty"`
 	// UpstreamModel holds the value of the "upstream_model" field.
 	UpstreamModel *string `json:"upstream_model,omitempty"`
+	// Department holds the value of the "department" field.
+	Department *string `json:"department,omitempty"`
 	// LastSyncedAt holds the value of the "last_synced_at" field.
 	LastSyncedAt time.Time `json:"last_synced_at,omitempty"`
 	selectValues sql.SelectValues
@@ -66,7 +68,7 @@ func (*TokenStatAggregate) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case tokenstataggregate.FieldID, tokenstataggregate.FieldProjectionID, tokenstataggregate.FieldMetricValue, tokenstataggregate.FieldSourceVersion, tokenstataggregate.FieldUserID, tokenstataggregate.FieldAPIKeyID, tokenstataggregate.FieldGroupID, tokenstataggregate.FieldAccountID:
 			values[i] = new(sql.NullInt64)
-		case tokenstataggregate.FieldPeriodType, tokenstataggregate.FieldMetricCode, tokenstataggregate.FieldRouteAlias, tokenstataggregate.FieldUpstreamModel:
+		case tokenstataggregate.FieldPeriodType, tokenstataggregate.FieldMetricCode, tokenstataggregate.FieldRouteAlias, tokenstataggregate.FieldUpstreamModel, tokenstataggregate.FieldDepartment:
 			values[i] = new(sql.NullString)
 		case tokenstataggregate.FieldCreatedAt, tokenstataggregate.FieldUpdatedAt, tokenstataggregate.FieldPeriodStart, tokenstataggregate.FieldPeriodEnd, tokenstataggregate.FieldLastSyncedAt:
 			values[i] = new(sql.NullTime)
@@ -201,6 +203,13 @@ func (_m *TokenStatAggregate) assignValues(columns []string, values []any) error
 				_m.UpstreamModel = new(string)
 				*_m.UpstreamModel = value.String
 			}
+		case tokenstataggregate.FieldDepartment:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field department", values[i])
+			} else if value.Valid {
+				_m.Department = new(string)
+				*_m.Department = value.String
+			}
 		case tokenstataggregate.FieldLastSyncedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
 				return fmt.Errorf("unexpected type %T for field last_synced_at", values[i])
@@ -303,6 +312,11 @@ func (_m *TokenStatAggregate) String() string {
 	builder.WriteString(", ")
 	if v := _m.UpstreamModel; v != nil {
 		builder.WriteString("upstream_model=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	if v := _m.Department; v != nil {
+		builder.WriteString("department=")
 		builder.WriteString(*v)
 	}
 	builder.WriteString(", ")

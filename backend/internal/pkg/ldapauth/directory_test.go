@@ -33,24 +33,24 @@ func directoryConfig() config.LDAPConfig {
 		ServerURL: "ldap://directory.example", BaseDN: "dc=example,dc=com",
 		BindDN: "cn=service,dc=example,dc=com", BindPassword: "service-secret",
 		UserFilter: "(uid=%s)", UsernameAttribute: "uid", EmailAttribute: "mail",
-		DisplayNameAttribute: "displayName", StartTLS: true,
+		DisplayNameAttribute: "displayName", DepartmentAttribute: "department", StartTLS: true,
 	}
 }
 
 func TestLDAPDirectoryLookupUser(t *testing.T) {
 	t.Run("found without user password bind", func(t *testing.T) {
 		conn := &directoryConnStub{result: &ldap.SearchResult{Entries: []*ldap.Entry{
-			ldap.NewEntry("uid=alice,dc=example,dc=com", map[string][]string{"uid": {"alice"}, "mail": {" ALICE@EXAMPLE.COM "}, "displayName": {" Alice "}}),
+			ldap.NewEntry("uid=alice,dc=example,dc=com", map[string][]string{"uid": {"alice"}, "mail": {" ALICE@EXAMPLE.COM "}, "displayName": {" Alice "}, "department": {"", "  Engineering  "}}),
 		}}}
 		directory := NewLDAPDirectory(directoryConfig(), func(context.Context, config.LDAPConfig) (DirectoryConn, error) { return conn, nil })
 		user, err := directory.LookupUser(context.Background(), " alice ")
 		if err != nil {
 			t.Fatal(err)
 		}
-		if conn.bindUser != "cn=service,dc=example,dc=com" || user.Email != "alice@example.com" || user.DisplayName != "Alice" {
+		if conn.bindUser != "cn=service,dc=example,dc=com" || user.Email != "alice@example.com" || user.DisplayName != "Alice" || user.Department != "Engineering" {
 			t.Fatalf("bind=%q user=%+v", conn.bindUser, user)
 		}
-		if !conn.tls || conn.request.SizeLimit != 2 || conn.request.Filter != "(uid=alice)" {
+		if !conn.tls || conn.request.SizeLimit != 2 || conn.request.Filter != "(uid=alice)" || !containsString(conn.request.Attributes, "department") {
 			t.Fatalf("tls=%v request=%+v", conn.tls, conn.request)
 		}
 	})
@@ -86,4 +86,13 @@ func TestLDAPDirectoryLookupUser(t *testing.T) {
 			t.Fatalf("err=%v", err)
 		}
 	})
+}
+
+func containsString(values []string, target string) bool {
+	for _, value := range values {
+		if value == target {
+			return true
+		}
+	}
+	return false
 }

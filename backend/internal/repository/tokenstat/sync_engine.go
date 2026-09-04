@@ -197,6 +197,7 @@ func applyRedundantDimensions(aggregate *Aggregate) {
 	aggregate.AccountID = jsonInt64(aggregate.DimensionValues["account_id"])
 	aggregate.RouteAlias = jsonString(aggregate.DimensionValues["route_alias"])
 	aggregate.UpstreamModel = jsonString(aggregate.DimensionValues["upstream_model"])
+	aggregate.Department = jsonString(aggregate.DimensionValues["department"])
 }
 
 func jsonInt64(value any) *int64 {
