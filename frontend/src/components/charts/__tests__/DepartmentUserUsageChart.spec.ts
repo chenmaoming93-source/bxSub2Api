@@ -29,5 +29,7 @@ describe('DepartmentUserUsageChart', () => {
     expect(colors[0]).toBe('#4f46e5')
     expect(colors[1]).toBe('#818cf8')
     expect(colors[0]).not.toBe(colors[1])
+    expect(wrapper.find('.max-h-80').classes()).toContain('overflow-y-auto')
+    expect(wrapper.find('.min-h-\\[320px\\]').attributes('style')).toContain('height: 640px')
   })
 })

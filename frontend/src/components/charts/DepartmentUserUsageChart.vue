@@ -1,7 +1,9 @@
 <template>
-  <div class="h-80 w-full">
-    <Bar v-if="displayRows.length > 0" :data="chartData" :options="chartOptions" />
-    <div v-else class="flex h-full items-center justify-center text-sm text-gray-500 dark:text-gray-400">
+  <div class="max-h-80 w-full overflow-y-auto">
+    <div v-if="displayRows.length > 0" class="min-h-[320px]" :style="{ height: `${Math.max(displayRows.length, 10) * 32}px` }">
+      <Bar :data="chartData" :options="chartOptions" />
+    </div>
+    <div v-else class="flex h-80 items-center justify-center text-sm text-gray-500 dark:text-gray-400">
       {{ t('admin.usage.departmentUsage.noUserData') }}
     </div>
   </div>

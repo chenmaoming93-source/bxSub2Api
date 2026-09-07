@@ -227,9 +227,9 @@
       <template v-else-if="departmentUsers">
          <section class="space-y-4" data-test="department-user-usage">
         <DepartmentUserUsageChart :rows="departmentUsers.rows" />
-        <div class="overflow-x-auto">
+        <div class="max-h-80 overflow-auto">
           <table class="w-full text-xs">
-            <thead><tr class="text-gray-500 dark:text-gray-400"><th class="pb-2 text-left">{{ t('admin.usage.departmentUsage.user') }}</th><th class="pb-2 text-right">{{ t('admin.usage.departmentUsage.tokens') }}</th><th class="pb-2 text-right">{{ t('admin.usage.departmentUsage.percent') }}</th></tr></thead>
+            <thead class="sticky top-0 z-10 bg-white dark:bg-dark-800"><tr class="text-gray-500 dark:text-gray-400"><th class="pb-2 text-left">{{ t('admin.usage.departmentUsage.user') }}</th><th class="pb-2 text-right">{{ t('admin.usage.departmentUsage.tokens') }}</th><th class="pb-2 text-right">{{ t('admin.usage.departmentUsage.percent') }}</th></tr></thead>
             <tbody><tr v-for="row in departmentUsers.rows" :key="row.user_id" class="border-t border-gray-100 dark:border-gray-700"><td class="py-2 font-medium text-gray-900 dark:text-white">{{ row.username || row.email || row.user_id }}</td><td class="py-2 text-right text-gray-600 dark:text-gray-400">{{ row.total_tokens.toLocaleString() }}</td><td class="py-2 text-right text-gray-500 dark:text-gray-400">{{ row.percentage.toFixed(1) }}%</td></tr></tbody>
           </table>
         </div>
