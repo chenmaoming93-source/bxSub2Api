@@ -77,3 +77,31 @@ func TestParseModelRoutingConfigNullIsEmpty(t *testing.T) {
 		t.Fatalf("null config = %#v, want empty", config)
 	}
 }
+
+func TestGroupCandidatesByPriorityDeduplicatesWithinTier(t *testing.T) {
+	candidates := []ModelRouteCandidate{
+		{AccountIDs: []int64{1, 2}, Priority: 1},
+		{AccountIDs: []int64{2, 3}, Priority: 1},
+		{AccountIDs: []int64{4}, Priority: 2},
+	}
+	tiers, err := GroupCandidatesByPriority(candidates)
+	if err != nil {
+		t.Fatalf("GroupCandidatesByPriority() error = %v", err)
+	}
+	if len(tiers) != 2 {
+		t.Fatalf("tier count = %d, want 2", len(tiers))
+	}
+	if got := tiers[0].AccountIDs; len(got) != 3 || got[0] != 1 || got[1] != 2 || got[2] != 3 {
+		t.Fatalf("tier accounts = %v, want [1 2 3]", got)
+	}
+}
+
+func TestGroupCandidatesByPriorityRejectsCrossPriorityDuplicate(t *testing.T) {
+	_, err := GroupCandidatesByPriority([]ModelRouteCandidate{
+		{AccountIDs: []int64{1}, Priority: 1},
+		{AccountIDs: []int64{1}, Priority: 2},
+	})
+	if !errors.Is(err, ErrInvalidModelRouting) {
+		t.Fatalf("error = %v, want ErrInvalidModelRouting", err)
+	}
+}

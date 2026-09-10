@@ -23,6 +23,12 @@ func (s externalProjectionStub) ActiveProjections() []tokenstat.ProjectionDefini
 	return []tokenstat.ProjectionDefinition(s)
 }
 
+type externalQuotaStub []tokenstat.QuotaRule
+
+func (s externalQuotaStub) ActiveQuotaRules() []tokenstat.QuotaRule {
+	return []tokenstat.QuotaRule(s)
+}
+
 type externalCurrentReaderStub struct {
 	values []ExternalTokenUsageCurrentValue
 	errAt  int
@@ -52,6 +58,36 @@ func TestExternalTokenUsageQueryCurrentPeriodsAndStates(t *testing.T) {
 	require.True(t, got.Month.DataPresent)
 	require.Equal(t, time.Date(2026, 7, 27, 0, 0, 0, 0, location), got.Week.PeriodStart)
 	require.Equal(t, 3, reader.calls)
+}
+
+func TestExternalTokenUsageQueryReturnsSmallestEnforcedLimitPerPeriod(t *testing.T) {
+	location := time.UTC
+	reader := &externalCurrentReaderStub{values: []ExternalTokenUsageCurrentValue{{Exists: true, Value: 9}, {Exists: true, Value: 18}, {Exists: true, Value: 27}}}
+	svc := NewExternalTokenUsageService(validExternalTokenLookup())
+	svc.ConfigureCurrentUsage(reader, externalProjectionStub{{ID: 7, DimensionCodes: []tokenstat.DimensionCode{tokenstat.DimensionUserID, tokenstat.DimensionAPIKeyID, tokenstat.DimensionGroupID, tokenstat.DimensionRouteAlias}, MetricCodes: []tokenstat.MetricCode{tokenstat.MetricTotalTokens}}}, location)
+	svc.ConfigureQuotaRules(externalQuotaStub{
+		{ID: 1, DimensionCodes: []tokenstat.DimensionCode{tokenstat.DimensionUserID}, DimensionValues: map[tokenstat.DimensionCode]tokenstat.DimensionValue{
+			tokenstat.DimensionUserID: tokenstat.Int64Value(1),
+		}, MetricCode: tokenstat.MetricTotalTokens, PeriodType: tokenstat.PeriodDay, LimitValue: 100, Mode: tokenstat.QuotaModeEnforce},
+		{ID: 2, DimensionCodes: []tokenstat.DimensionCode{tokenstat.DimensionUserID, tokenstat.DimensionGroupID}, DimensionValues: map[tokenstat.DimensionCode]tokenstat.DimensionValue{
+			tokenstat.DimensionUserID: tokenstat.Int64Value(1), tokenstat.DimensionGroupID: tokenstat.Int64Value(2),
+		}, MetricCode: tokenstat.MetricTotalTokens, PeriodType: tokenstat.PeriodDay, LimitValue: 50, Mode: tokenstat.QuotaModeEnforce},
+		{ID: 3, DimensionCodes: []tokenstat.DimensionCode{tokenstat.DimensionUserID}, DimensionValues: map[tokenstat.DimensionCode]tokenstat.DimensionValue{
+			tokenstat.DimensionUserID: tokenstat.Int64Value(1),
+		}, MetricCode: tokenstat.MetricTotalTokens, PeriodType: tokenstat.PeriodDay, LimitValue: 10, Mode: tokenstat.QuotaModeObserve},
+		{ID: 4, DimensionCodes: []tokenstat.DimensionCode{tokenstat.DimensionUserID}, DimensionValues: map[tokenstat.DimensionCode]tokenstat.DimensionValue{
+			tokenstat.DimensionUserID: tokenstat.Int64Value(1),
+		}, MetricCode: tokenstat.MetricTotalTokens, PeriodType: tokenstat.PeriodWeek, LimitValue: 200, Mode: tokenstat.QuotaModeEnforce},
+	})
+	svc.SetClockForTest(func() time.Time { return time.Date(2026, 8, 18, 12, 0, 0, 0, location) })
+
+	got, err := svc.QueryCurrentUsage(context.Background(), ExternalTokenUsageInput{Username: "ldap@example.com", GroupName: "public", APIKey: "sk-ldap-key-0123456789", RouteAlias: "gpt-main"})
+	require.NoError(t, err)
+	require.NotNil(t, got.Day.EnforcedLimit)
+	require.Equal(t, int64(50), *got.Day.EnforcedLimit)
+	require.NotNil(t, got.Week.EnforcedLimit)
+	require.Equal(t, int64(200), *got.Week.EnforcedLimit)
+	require.Nil(t, got.Month.EnforcedLimit)
 }
 
 func TestExternalTokenUsageQueryUnconfiguredAndRedisFailure(t *testing.T) {

@@ -45,6 +45,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/rbacuserrole"
 	"github.com/Wei-Shaw/sub2api/ent/rbacuserversion"
 	"github.com/Wei-Shaw/sub2api/ent/redeemcode"
+	"github.com/Wei-Shaw/sub2api/ent/securitychecklog"
 	"github.com/Wei-Shaw/sub2api/ent/securitysecret"
 	"github.com/Wei-Shaw/sub2api/ent/setting"
 	"github.com/Wei-Shaw/sub2api/ent/subscriptionplan"
@@ -131,6 +132,8 @@ type Client struct {
 	RBACUserVersion *RBACUserVersionClient
 	// RedeemCode is the client for interacting with the RedeemCode builders.
 	RedeemCode *RedeemCodeClient
+	// SecurityCheckLog is the client for interacting with the SecurityCheckLog builders.
+	SecurityCheckLog *SecurityCheckLogClient
 	// SecuritySecret is the client for interacting with the SecuritySecret builders.
 	SecuritySecret *SecuritySecretClient
 	// Setting is the client for interacting with the Setting builders.
@@ -206,6 +209,7 @@ func (c *Client) init() {
 	c.RBACUserRole = NewRBACUserRoleClient(c.config)
 	c.RBACUserVersion = NewRBACUserVersionClient(c.config)
 	c.RedeemCode = NewRedeemCodeClient(c.config)
+	c.SecurityCheckLog = NewSecurityCheckLogClient(c.config)
 	c.SecuritySecret = NewSecuritySecretClient(c.config)
 	c.Setting = NewSettingClient(c.config)
 	c.SubscriptionPlan = NewSubscriptionPlanClient(c.config)
@@ -345,6 +349,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		RBACUserRole:                  NewRBACUserRoleClient(cfg),
 		RBACUserVersion:               NewRBACUserVersionClient(cfg),
 		RedeemCode:                    NewRedeemCodeClient(cfg),
+		SecurityCheckLog:              NewSecurityCheckLogClient(cfg),
 		SecuritySecret:                NewSecuritySecretClient(cfg),
 		Setting:                       NewSettingClient(cfg),
 		SubscriptionPlan:              NewSubscriptionPlanClient(cfg),
@@ -411,6 +416,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		RBACUserRole:                  NewRBACUserRoleClient(cfg),
 		RBACUserVersion:               NewRBACUserVersionClient(cfg),
 		RedeemCode:                    NewRedeemCodeClient(cfg),
+		SecurityCheckLog:              NewSecurityCheckLogClient(cfg),
 		SecuritySecret:                NewSecuritySecretClient(cfg),
 		Setting:                       NewSettingClient(cfg),
 		SubscriptionPlan:              NewSubscriptionPlanClient(cfg),
@@ -465,12 +471,12 @@ func (c *Client) Use(hooks ...Hook) {
 		c.PaymentOrder, c.PaymentProviderInstance, c.PendingAuthSession, c.PromoCode,
 		c.PromoCodeUsage, c.Proxy, c.RBACAuditLog, c.RBACPermission, c.RBACPolicyState,
 		c.RBACRole, c.RBACRolePermission, c.RBACUserRole, c.RBACUserVersion,
-		c.RedeemCode, c.SecuritySecret, c.Setting, c.SubscriptionPlan,
-		c.TLSFingerprintProfile, c.TokenStatAggregate, c.TokenStatPeriodState,
-		c.TokenStatProjection, c.TokenStatProjectionMetric, c.TokenStatQuotaRule,
-		c.UsageCleanupTask, c.UsageLog, c.User, c.UserAllowedGroup,
-		c.UserAttributeDefinition, c.UserAttributeValue, c.UserPlatformQuota,
-		c.UserSubscription,
+		c.RedeemCode, c.SecurityCheckLog, c.SecuritySecret, c.Setting,
+		c.SubscriptionPlan, c.TLSFingerprintProfile, c.TokenStatAggregate,
+		c.TokenStatPeriodState, c.TokenStatProjection, c.TokenStatProjectionMetric,
+		c.TokenStatQuotaRule, c.UsageCleanupTask, c.UsageLog, c.User,
+		c.UserAllowedGroup, c.UserAttributeDefinition, c.UserAttributeValue,
+		c.UserPlatformQuota, c.UserSubscription,
 	} {
 		n.Use(hooks...)
 	}
@@ -488,12 +494,12 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 		c.PaymentOrder, c.PaymentProviderInstance, c.PendingAuthSession, c.PromoCode,
 		c.PromoCodeUsage, c.Proxy, c.RBACAuditLog, c.RBACPermission, c.RBACPolicyState,
 		c.RBACRole, c.RBACRolePermission, c.RBACUserRole, c.RBACUserVersion,
-		c.RedeemCode, c.SecuritySecret, c.Setting, c.SubscriptionPlan,
-		c.TLSFingerprintProfile, c.TokenStatAggregate, c.TokenStatPeriodState,
-		c.TokenStatProjection, c.TokenStatProjectionMetric, c.TokenStatQuotaRule,
-		c.UsageCleanupTask, c.UsageLog, c.User, c.UserAllowedGroup,
-		c.UserAttributeDefinition, c.UserAttributeValue, c.UserPlatformQuota,
-		c.UserSubscription,
+		c.RedeemCode, c.SecurityCheckLog, c.SecuritySecret, c.Setting,
+		c.SubscriptionPlan, c.TLSFingerprintProfile, c.TokenStatAggregate,
+		c.TokenStatPeriodState, c.TokenStatProjection, c.TokenStatProjectionMetric,
+		c.TokenStatQuotaRule, c.UsageCleanupTask, c.UsageLog, c.User,
+		c.UserAllowedGroup, c.UserAttributeDefinition, c.UserAttributeValue,
+		c.UserPlatformQuota, c.UserSubscription,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -562,6 +568,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.RBACUserVersion.mutate(ctx, m)
 	case *RedeemCodeMutation:
 		return c.RedeemCode.mutate(ctx, m)
+	case *SecurityCheckLogMutation:
+		return c.SecurityCheckLog.mutate(ctx, m)
 	case *SecuritySecretMutation:
 		return c.SecuritySecret.mutate(ctx, m)
 	case *SettingMutation:
@@ -5386,6 +5394,139 @@ func (c *RedeemCodeClient) mutate(ctx context.Context, m *RedeemCodeMutation) (V
 	}
 }
 
+// SecurityCheckLogClient is a client for the SecurityCheckLog schema.
+type SecurityCheckLogClient struct {
+	config
+}
+
+// NewSecurityCheckLogClient returns a client for the SecurityCheckLog from the given config.
+func NewSecurityCheckLogClient(c config) *SecurityCheckLogClient {
+	return &SecurityCheckLogClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `securitychecklog.Hooks(f(g(h())))`.
+func (c *SecurityCheckLogClient) Use(hooks ...Hook) {
+	c.hooks.SecurityCheckLog = append(c.hooks.SecurityCheckLog, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `securitychecklog.Intercept(f(g(h())))`.
+func (c *SecurityCheckLogClient) Intercept(interceptors ...Interceptor) {
+	c.inters.SecurityCheckLog = append(c.inters.SecurityCheckLog, interceptors...)
+}
+
+// Create returns a builder for creating a SecurityCheckLog entity.
+func (c *SecurityCheckLogClient) Create() *SecurityCheckLogCreate {
+	mutation := newSecurityCheckLogMutation(c.config, OpCreate)
+	return &SecurityCheckLogCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of SecurityCheckLog entities.
+func (c *SecurityCheckLogClient) CreateBulk(builders ...*SecurityCheckLogCreate) *SecurityCheckLogCreateBulk {
+	return &SecurityCheckLogCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *SecurityCheckLogClient) MapCreateBulk(slice any, setFunc func(*SecurityCheckLogCreate, int)) *SecurityCheckLogCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &SecurityCheckLogCreateBulk{err: fmt.Errorf("calling to SecurityCheckLogClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*SecurityCheckLogCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &SecurityCheckLogCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for SecurityCheckLog.
+func (c *SecurityCheckLogClient) Update() *SecurityCheckLogUpdate {
+	mutation := newSecurityCheckLogMutation(c.config, OpUpdate)
+	return &SecurityCheckLogUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *SecurityCheckLogClient) UpdateOne(_m *SecurityCheckLog) *SecurityCheckLogUpdateOne {
+	mutation := newSecurityCheckLogMutation(c.config, OpUpdateOne, withSecurityCheckLog(_m))
+	return &SecurityCheckLogUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *SecurityCheckLogClient) UpdateOneID(id int64) *SecurityCheckLogUpdateOne {
+	mutation := newSecurityCheckLogMutation(c.config, OpUpdateOne, withSecurityCheckLogID(id))
+	return &SecurityCheckLogUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for SecurityCheckLog.
+func (c *SecurityCheckLogClient) Delete() *SecurityCheckLogDelete {
+	mutation := newSecurityCheckLogMutation(c.config, OpDelete)
+	return &SecurityCheckLogDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *SecurityCheckLogClient) DeleteOne(_m *SecurityCheckLog) *SecurityCheckLogDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *SecurityCheckLogClient) DeleteOneID(id int64) *SecurityCheckLogDeleteOne {
+	builder := c.Delete().Where(securitychecklog.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &SecurityCheckLogDeleteOne{builder}
+}
+
+// Query returns a query builder for SecurityCheckLog.
+func (c *SecurityCheckLogClient) Query() *SecurityCheckLogQuery {
+	return &SecurityCheckLogQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeSecurityCheckLog},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a SecurityCheckLog entity by its id.
+func (c *SecurityCheckLogClient) Get(ctx context.Context, id int64) (*SecurityCheckLog, error) {
+	return c.Query().Where(securitychecklog.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *SecurityCheckLogClient) GetX(ctx context.Context, id int64) *SecurityCheckLog {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *SecurityCheckLogClient) Hooks() []Hook {
+	return c.hooks.SecurityCheckLog
+}
+
+// Interceptors returns the client interceptors.
+func (c *SecurityCheckLogClient) Interceptors() []Interceptor {
+	return c.inters.SecurityCheckLog
+}
+
+func (c *SecurityCheckLogClient) mutate(ctx context.Context, m *SecurityCheckLogMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&SecurityCheckLogCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&SecurityCheckLogUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&SecurityCheckLogUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&SecurityCheckLogDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown SecurityCheckLog mutation op: %q", m.Op())
+	}
+}
+
 // SecuritySecretClient is a client for the SecuritySecret schema.
 type SecuritySecretClient struct {
 	config
@@ -8143,12 +8284,12 @@ type (
 		Group, IdempotencyRecord, IdentityAdoptionDecision, PaymentAuditLog,
 		PaymentOrder, PaymentProviderInstance, PendingAuthSession, PromoCode,
 		PromoCodeUsage, Proxy, RBACAuditLog, RBACPermission, RBACPolicyState, RBACRole,
-		RBACRolePermission, RBACUserRole, RBACUserVersion, RedeemCode, SecuritySecret,
-		Setting, SubscriptionPlan, TLSFingerprintProfile, TokenStatAggregate,
-		TokenStatPeriodState, TokenStatProjection, TokenStatProjectionMetric,
-		TokenStatQuotaRule, UsageCleanupTask, UsageLog, User, UserAllowedGroup,
-		UserAttributeDefinition, UserAttributeValue, UserPlatformQuota,
-		UserSubscription []ent.Hook
+		RBACRolePermission, RBACUserRole, RBACUserVersion, RedeemCode,
+		SecurityCheckLog, SecuritySecret, Setting, SubscriptionPlan,
+		TLSFingerprintProfile, TokenStatAggregate, TokenStatPeriodState,
+		TokenStatProjection, TokenStatProjectionMetric, TokenStatQuotaRule,
+		UsageCleanupTask, UsageLog, User, UserAllowedGroup, UserAttributeDefinition,
+		UserAttributeValue, UserPlatformQuota, UserSubscription []ent.Hook
 	}
 	inters struct {
 		APIKey, Account, AccountGroup, Announcement, AnnouncementRead, AuthIdentity,
@@ -8157,12 +8298,12 @@ type (
 		Group, IdempotencyRecord, IdentityAdoptionDecision, PaymentAuditLog,
 		PaymentOrder, PaymentProviderInstance, PendingAuthSession, PromoCode,
 		PromoCodeUsage, Proxy, RBACAuditLog, RBACPermission, RBACPolicyState, RBACRole,
-		RBACRolePermission, RBACUserRole, RBACUserVersion, RedeemCode, SecuritySecret,
-		Setting, SubscriptionPlan, TLSFingerprintProfile, TokenStatAggregate,
-		TokenStatPeriodState, TokenStatProjection, TokenStatProjectionMetric,
-		TokenStatQuotaRule, UsageCleanupTask, UsageLog, User, UserAllowedGroup,
-		UserAttributeDefinition, UserAttributeValue, UserPlatformQuota,
-		UserSubscription []ent.Interceptor
+		RBACRolePermission, RBACUserRole, RBACUserVersion, RedeemCode,
+		SecurityCheckLog, SecuritySecret, Setting, SubscriptionPlan,
+		TLSFingerprintProfile, TokenStatAggregate, TokenStatPeriodState,
+		TokenStatProjection, TokenStatProjectionMetric, TokenStatQuotaRule,
+		UsageCleanupTask, UsageLog, User, UserAllowedGroup, UserAttributeDefinition,
+		UserAttributeValue, UserPlatformQuota, UserSubscription []ent.Interceptor
 	}
 )
 

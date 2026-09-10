@@ -191,6 +191,10 @@ func (h *GatewayHandler) GeminiV1BetaModels(c *gin.Context) {
 		googleError(c, contentModerationStatus(decision), decision.Message)
 		return
 	}
+	if result := h.checkSecurityCheck(c, reqLog, apiKey, authSubject, service.ContentModerationProtocolGemini, modelName, body); securityCheckBlocked(result) {
+		googleError(c, http.StatusForbidden, securityCheckErrorMessage)
+		return
+	}
 
 	// 解析渠道级模型映射
 	channelMapping, _ := h.gatewayService.ResolveChannelMappingAndRestrict(c.Request.Context(), apiKey.GroupID, modelName)

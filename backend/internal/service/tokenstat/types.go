@@ -15,6 +15,7 @@ const (
 	DimensionRouteAlias    DimensionCode = "route_alias"
 	DimensionAccountID     DimensionCode = "account_id"
 	DimensionUpstreamModel DimensionCode = "upstream_model"
+	DimensionDepartment    DimensionCode = "department"
 )
 
 type MetricCode string

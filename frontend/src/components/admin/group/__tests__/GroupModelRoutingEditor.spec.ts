@@ -1,16 +1,41 @@
 import { mount, flushPromises } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const { list } = vi.hoisted(() => ({ list: vi.fn() }))
+const { list, listRefs, listConcurrency, listSchedules, replaceSchedules } = vi.hoisted(() => ({
+  list: vi.fn(),
+  listRefs: vi.fn(),
+  listConcurrency: vi.fn(),
+  listSchedules: vi.fn(),
+  replaceSchedules: vi.fn(),
+}))
 
-vi.mock('@/api/admin', () => ({ adminAPI: { accounts: { list } } }))
+vi.mock('@/api/admin', () => ({
+  adminAPI: {
+    accounts: { list },
+    groups: {
+      listModelRouteReferences: listRefs,
+      listModelRouteConcurrency: listConcurrency,
+      listModelRouteConcurrencySchedules: listSchedules,
+      replaceModelRouteConcurrencySchedules: replaceSchedules,
+    }
+  }
+}))
 vi.mock('vue-i18n', () => ({ useI18n: () => ({ t: (_key: string, fallback?: string) => fallback || _key }) }))
 
 import GroupModelRoutingEditor from '../GroupModelRoutingEditor.vue'
-import { addRoutingCandidate, createEmptyRoutingCandidate, type RoutingEditorRule } from '../groupModelRoutingEditor'
+import { addRoutingCandidate, createEmptyRoutingCandidate, sortRoutingCandidates, type RoutingEditorRule } from '../groupModelRoutingEditor'
 
 describe('GroupModelRoutingEditor', () => {
-  beforeEach(() => list.mockReset())
+  beforeEach(() => {
+    list.mockReset()
+    listRefs.mockReset()
+    listConcurrency.mockReset()
+    listSchedules.mockReset()
+    replaceSchedules.mockReset()
+    listRefs.mockResolvedValue([])
+    listConcurrency.mockResolvedValue([])
+    listSchedules.mockResolvedValue([])
+  })
 
   it('creates account-only candidates and increments priority', () => {
     expect(createEmptyRoutingCandidate()).toEqual({ accounts: [], priority: 0, maxConcurrency: null })
@@ -90,6 +115,54 @@ describe('GroupModelRoutingEditor', () => {
       global: { stubs: { Icon: true } }
     })
     expect((wrapper.vm as unknown as { isValid: () => boolean }).isValid()).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('keeps a candidate limited to one account', () => {
+    const wrapper = mount(GroupModelRoutingEditor, {
+      props: {
+        enabled: true,
+        rules: [{ alias: 'coding', candidates: [{ accounts: [{ id: 1, name: 'one' }, { id: 2, name: 'two' }], priority: 0 }] }],
+        platform: 'anthropic'
+      },
+      global: { stubs: { Icon: true } }
+    })
+    expect((wrapper.vm as unknown as { isValid: () => boolean }).isValid()).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('sorts candidates by priority while preserving equal-priority order', () => {
+    const first = { accounts: [{ id: 1, name: 'one' }], priority: 2 }
+    const second = { accounts: [{ id: 2, name: 'two' }], priority: 1 }
+    const third = { accounts: [{ id: 3, name: 'three' }], priority: 1 }
+    const rule: RoutingEditorRule = { alias: 'coding', candidates: [first, second, third] }
+
+    sortRoutingCandidates(rule)
+
+    expect(rule.candidates.map(candidate => candidate.accounts[0].id)).toEqual([2, 3, 1])
+  })
+
+  it('shows the current effective maximum concurrency for an existing candidate', async () => {
+    listRefs.mockResolvedValue([{
+      route_alias: 'coding', account_id: 7, max_concurrency: 50, account_concurrency: 100, allocated_concurrency: 0,
+    }])
+    listConcurrency.mockResolvedValue([{
+      route_alias: 'coding', account_id: 7, max_concurrency: 50, account_concurrency: 100, allocated_concurrency: 0,
+      current_concurrency: 12, effective_max_concurrency: 10,
+    }])
+    const wrapper = mount(GroupModelRoutingEditor, {
+      props: {
+        enabled: true,
+        groupId: 9,
+        rules: [{ alias: 'coding', candidates: [{ accounts: [{ id: 7, name: 'seven' }], priority: 0 }] }],
+        platform: 'anthropic'
+      },
+      global: { stubs: { Icon: true } }
+    })
+
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('10')
     wrapper.unmount()
   })
 })

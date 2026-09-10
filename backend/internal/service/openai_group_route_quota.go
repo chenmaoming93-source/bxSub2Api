@@ -1,6 +1,10 @@
 package service
 
-import "context"
+import (
+	"context"
+
+	"github.com/Wei-Shaw/sub2api/internal/domain"
+)
 
 // ResolveQuotaAllowedGroupRoute resolves a client-facing alias to the first
 // priority-ordered candidate that passes the shared daily-token quota gates.
@@ -15,6 +19,18 @@ func (s *OpenAIGatewayService) ResolveQuotaAllowedGroupRoute(ctx context.Context
 	candidates := group.GetRoutingCandidates(requestedModel)
 	if len(candidates) == 0 {
 		return requestedModel, nil, false, nil
+	}
+	if !candidates[0].Legacy {
+		tiers, err := domain.GroupCandidatesByPriority(candidates)
+		if err != nil {
+			return "", nil, true, err
+		}
+		for _, tier := range tiers {
+			if len(tier.AccountIDs) > 0 && !allAccountIDsExcluded(tier.AccountIDs, excludedAccountIDs) {
+				return requestedModel, tier.AccountIDs, true, nil
+			}
+		}
+		return "", nil, true, ErrNoAvailableAccounts
 	}
 	allExcluded := 0
 	for _, candidate := range candidates {

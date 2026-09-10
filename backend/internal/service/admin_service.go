@@ -147,6 +147,7 @@ type UpdateUserInput struct {
 	Email         string
 	Password      string
 	Username      *string
+	Department    *string
 	Notes         *string
 	Balance       *float64 // 使用指针区分"未提供"和"设置为0"
 	Concurrency   *int     // 使用指针区分"未提供"和"设置为0"
@@ -198,6 +199,7 @@ type AdminBoundAuthIdentityChannel struct {
 
 type CreateGroupInput struct {
 	Name             string
+	SceneName        string
 	Description      string
 	Platform         string
 	RateMultiplier   float64
@@ -239,6 +241,7 @@ type CreateGroupInput struct {
 
 type UpdateGroupInput struct {
 	Name             string
+	SceneName        *string
 	Description      *string
 	Platform         string
 	RateMultiplier   *float64 // 使用指针以支持设置为0
@@ -274,6 +277,8 @@ type UpdateGroupInput struct {
 	ModelsListConfig            *GroupModelsListConfig
 	// RPMLimit 分组 RPM 上限（0 = 不限制），nil 表示未提供不改动。
 	RPMLimit *int
+	// 分组级 SingGuard 请求安全检查配置。
+	SecurityCheckConfig *domain.SecurityCheckConfig
 	// 从指定分组复制账号（同步操作：先清空当前分组的账号绑定，再绑定源分组的账号）
 	CopyAccountsFromGroupIDs     []int64
 	ModelRouteConcurrencyUpdates []ModelRouteConcurrencyUpdate
@@ -606,6 +611,12 @@ type ModelRouteConcurrencyUpdate struct {
 	MaxConcurrency *int
 }
 
+type ModelRouteConcurrencySnapshot struct {
+	ModelRouteReference
+	CurrentConcurrency      int  `json:"current_concurrency"`
+	EffectiveMaxConcurrency *int `json:"effective_max_concurrency"`
+}
+
 type groupModelRouteGroupReader interface {
 	ListGroupModelRouteReferencesByGroup(context.Context, int64) (any, error)
 }
@@ -638,6 +649,55 @@ func (s *adminServiceImpl) ListGroupModelRouteReferencesByGroup(ctx context.Cont
 		return nil, fmt.Errorf("group repository does not support group reference lookup")
 	}
 	return reader.ListGroupModelRouteReferencesByGroup(ctx, groupID)
+}
+
+func (s *adminServiceImpl) ListGroupModelRouteConcurrency(ctx context.Context, groupID int64) ([]ModelRouteConcurrencySnapshot, error) {
+	if s.concurrencyService == nil {
+		return nil, fmt.Errorf("concurrency service is unavailable")
+	}
+	refsAny, err := s.ListGroupModelRouteReferencesByGroup(ctx, groupID)
+	if err != nil {
+		return nil, err
+	}
+	refs, ok := refsAny.([]ModelRouteReference)
+	if !ok {
+		return nil, fmt.Errorf("unexpected model-route reference result type")
+	}
+	requests := make([]RouteLoadRequest, 0, len(refs))
+	for _, ref := range refs {
+		requests = append(requests, RouteLoadRequest{
+			Key:                   fmt.Sprintf("group:%d|%s|%d", groupID, ref.RouteAlias, ref.AccountID),
+			AccountID:             ref.AccountID,
+			MaxConcurrency:        ref.MaxConcurrency,
+			AccountMaxConcurrency: ref.AccountConcurrency,
+		})
+	}
+	loads, err := s.concurrencyService.GetRouteLoadsBatch(ctx, requests)
+	if err != nil {
+		return nil, err
+	}
+	keys := make([]string, 0, len(refs))
+	for _, ref := range refs {
+		keys = append(keys, fmt.Sprintf("group:%d|%s|%d", groupID, ref.RouteAlias, ref.AccountID))
+	}
+	effectiveLimits, err := s.concurrencyService.GetRouteConcurrencyLimitsBatch(ctx, keys)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]ModelRouteConcurrencySnapshot, 0, len(refs))
+	for _, ref := range refs {
+		key := fmt.Sprintf("group:%d|%s|%d", groupID, ref.RouteAlias, ref.AccountID)
+		item := ModelRouteConcurrencySnapshot{ModelRouteReference: ref}
+		if load, ok := loads[key]; ok {
+			item.CurrentConcurrency = load.CurrentConcurrency
+		}
+		item.EffectiveMaxConcurrency = ref.MaxConcurrency
+		if limit, ok := effectiveLimits[key]; ok && limit.Hit {
+			item.EffectiveMaxConcurrency = limit.Limit
+		}
+		result = append(result, item)
+	}
+	return result, nil
 }
 
 func (s *adminServiceImpl) UpdateGroupModelRouteConcurrency(ctx context.Context, groupID int64, routeAlias string, accountID int64, maxConcurrency *int) error {
@@ -881,6 +941,7 @@ func (s *adminServiceImpl) UpdateUser(ctx context.Context, id int64, input *Upda
 	oldConcurrency := user.Concurrency
 	oldStatus := user.Status
 	oldRole := user.Role
+	oldDepartment := user.Department
 	oldRPMLimit := user.RPMLimit
 	oldAllowedGroups := append([]int64(nil), user.AllowedGroups...)
 
@@ -895,6 +956,9 @@ func (s *adminServiceImpl) UpdateUser(ctx context.Context, id int64, input *Upda
 
 	if input.Username != nil {
 		user.Username = *input.Username
+	}
+	if input.Department != nil {
+		user.Department = strings.TrimSpace(*input.Department)
 	}
 	if input.Notes != nil {
 		user.Notes = *input.Notes
@@ -930,7 +994,7 @@ func (s *adminServiceImpl) UpdateUser(ctx context.Context, id int64, input *Upda
 	if s.authCacheInvalidator != nil {
 		// RPMLimit 直接参与 billing_cache_service.checkRPM 的三级级联，
 		// allowed_groups 参与 API Key 专属分组授权判断；不失效缓存会让修改在一个 L2 TTL 内失去效果。
-		if user.Concurrency != oldConcurrency || user.Status != oldStatus || user.Role != oldRole || user.RPMLimit != oldRPMLimit || !sameInt64Set(user.AllowedGroups, oldAllowedGroups) {
+		if user.Concurrency != oldConcurrency || user.Status != oldStatus || user.Role != oldRole || user.Department != oldDepartment || user.RPMLimit != oldRPMLimit || !sameInt64Set(user.AllowedGroups, oldAllowedGroups) {
 			s.authCacheInvalidator.InvalidateAuthCacheByUserID(ctx, user.ID)
 		}
 	}
@@ -1999,6 +2063,7 @@ func (s *adminServiceImpl) CreateGroup(ctx context.Context, input *CreateGroupIn
 
 	group := &Group{
 		Name:                            input.Name,
+		SceneName:                       input.SceneName,
 		Description:                     input.Description,
 		Platform:                        platform,
 		RateMultiplier:                  input.RateMultiplier,
@@ -2177,6 +2242,9 @@ func (s *adminServiceImpl) UpdateGroup(ctx context.Context, id int64, input *Upd
 	if input.Name != "" {
 		group.Name = input.Name
 	}
+	if input.SceneName != nil {
+		group.SceneName = *input.SceneName
+	}
 	if input.Description != nil {
 		group.Description = *input.Description
 	}
@@ -2258,6 +2326,19 @@ func (s *adminServiceImpl) UpdateGroup(ctx context.Context, id int64, input *Upd
 		}
 	}
 	group.FallbackGroupIDOnInvalidRequest = fallbackOnInvalidRequest
+
+	// 分组级请求安全检查配置
+	if input.SecurityCheckConfig != nil {
+		config := domain.NormalizeSecurityCheckConfig(*input.SecurityCheckConfig)
+		if err := domain.ValidateSecurityCheckConfig(config); err != nil {
+			return nil, err
+		}
+		config.Version = group.SecurityCheckConfig.Version + 1
+		if config.Version <= 1 {
+			config.Version = 1
+		}
+		group.SecurityCheckConfig = config
+	}
 
 	// 模型路由配置
 	if input.ModelRouting != nil {

@@ -6,6 +6,19 @@
 import { apiClient } from '../client'
 import type { AdminUser, UpdateUserRequest, PaginatedResponse, ApiKey } from '@/types'
 
+export interface LDAPUserSyncResult {
+  total: number
+  ldap_candidates: number
+  synced: number
+  local_cleared: number
+  not_found: number
+  failed: number
+  duration_ms: number
+  started_at: string
+  finished_at: string
+  errors?: Array<{ email: string; kind: string; error: string }>
+}
+
 export interface AdminBindAuthIdentityChannelRequest {
   channel: string
   channel_app_id: string
@@ -52,6 +65,11 @@ export interface AdminBoundAuthIdentity {
  * @param options - Optional request options (signal)
  * @returns Paginated list of users
  */
+export async function syncLDAP(): Promise<LDAPUserSyncResult> {
+  const { data } = await apiClient.post<LDAPUserSyncResult>('/admin/users/sync-ldap')
+  return data
+}
+
 export async function list(
   page: number = 1,
   pageSize: number = 20,
@@ -378,6 +396,7 @@ export async function resetPlatformQuotaWindow(
 
 export const usersAPI = {
   list,
+  syncLDAP,
   getById,
   create,
   update,

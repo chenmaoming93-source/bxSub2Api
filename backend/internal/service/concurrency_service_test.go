@@ -27,6 +27,8 @@ type stubConcurrencyCacheForTest struct {
 	waitCountErr   error
 	loadBatch      map[int64]*AccountLoadInfo
 	loadBatchErr   error
+	routeLoad      map[string]int
+	routeLoadErr   error
 	usersLoadBatch map[int64]*UserLoadInfo
 	usersLoadErr   error
 	cleanupErr     error
@@ -87,6 +89,9 @@ func (c *stubConcurrencyCacheForTest) DecrementWaitCount(_ context.Context, _ in
 func (c *stubConcurrencyCacheForTest) GetAccountsLoadBatch(_ context.Context, _ []AccountWithConcurrency) (map[int64]*AccountLoadInfo, error) {
 	c.loadBatchCalls.Add(1)
 	return c.loadBatch, c.loadBatchErr
+}
+func (c *stubConcurrencyCacheForTest) GetRouteConcurrencyBatch(_ context.Context, _ []string) (map[string]int, error) {
+	return c.routeLoad, c.routeLoadErr
 }
 func (c *stubConcurrencyCacheForTest) GetUsersLoadBatch(_ context.Context, _ []UserWithConcurrency) (map[int64]*UserLoadInfo, error) {
 	return c.usersLoadBatch, c.usersLoadErr
@@ -239,6 +244,33 @@ func TestGetAccountsLoadBatch_NilCache(t *testing.T) {
 	result, err := svc.GetAccountsLoadBatch(context.Background(), nil)
 	require.NoError(t, err)
 	require.Empty(t, result)
+}
+
+func TestGetRouteLoadsBatch_UsesRouteAllocation(t *testing.T) {
+	limit := 10
+	cache := &stubConcurrencyCacheForTest{
+		routeLoad: map[string]int{"group:1|coding|101": 4},
+	}
+	svc := NewConcurrencyService(cache)
+	loads, err := svc.GetRouteLoadsBatch(context.Background(), []RouteLoadRequest{{
+		Key: "group:1|coding|101", AccountID: 101, MaxConcurrency: &limit,
+	}})
+	require.NoError(t, err)
+	require.Equal(t, 4, loads["group:1|coding|101"].CurrentConcurrency)
+	require.Equal(t, 40, loads["group:1|coding|101"].LoadRate)
+	require.False(t, loads["group:1|coding|101"].UsedAccountFallback)
+}
+
+func TestGetRouteLoadsBatch_FallsBackToAccountConcurrency(t *testing.T) {
+	cache := &stubConcurrencyCacheForTest{concurrency: 2}
+	svc := NewConcurrencyService(cache)
+	loads, err := svc.GetRouteLoadsBatch(context.Background(), []RouteLoadRequest{{
+		Key: "group:1|coding|101", AccountID: 101, AccountMaxConcurrency: 5,
+	}})
+	require.NoError(t, err)
+	require.Equal(t, 2, loads["group:1|coding|101"].CurrentConcurrency)
+	require.Equal(t, 40, loads["group:1|coding|101"].LoadRate)
+	require.True(t, loads["group:1|coding|101"].UsedAccountFallback)
 }
 
 func TestGetAccountsLoadBatch_UsesShortTTLCache(t *testing.T) {

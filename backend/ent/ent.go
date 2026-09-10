@@ -42,6 +42,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/rbacuserrole"
 	"github.com/Wei-Shaw/sub2api/ent/rbacuserversion"
 	"github.com/Wei-Shaw/sub2api/ent/redeemcode"
+	"github.com/Wei-Shaw/sub2api/ent/securitychecklog"
 	"github.com/Wei-Shaw/sub2api/ent/securitysecret"
 	"github.com/Wei-Shaw/sub2api/ent/setting"
 	"github.com/Wei-Shaw/sub2api/ent/subscriptionplan"
@@ -149,6 +150,7 @@ func checkColumn(t, c string) error {
 			rbacuserrole.Table:                  rbacuserrole.ValidColumn,
 			rbacuserversion.Table:               rbacuserversion.ValidColumn,
 			redeemcode.Table:                    redeemcode.ValidColumn,
+			securitychecklog.Table:              securitychecklog.ValidColumn,
 			securitysecret.Table:                securitysecret.ValidColumn,
 			setting.Table:                       setting.ValidColumn,
 			subscriptionplan.Table:              subscriptionplan.ValidColumn,

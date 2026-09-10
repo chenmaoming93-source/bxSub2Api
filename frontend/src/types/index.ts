@@ -105,6 +105,8 @@ export interface User {
 }
 
 export interface AdminUser extends User {
+  // LDAP 同步的部门快照（普通用户接口不返回）
+  department: string
   // 管理员备注（普通用户接口不返回）
   notes: string
   last_used_at?: string | null
@@ -517,6 +519,7 @@ export interface ModelRoutingRuleRow {
 export interface Group {
   id: number
   name: string
+  scene_name: string | null
   description: string | null
   platform: GroupPlatform
   rate_multiplier: number
@@ -548,7 +551,26 @@ export interface Group {
   updated_at: string
 }
 
+export type SecurityCheckRuleAction = 'block' | 'warn'
+
+export interface SecurityCheckRule {
+  dimension: string
+  threshold: number
+  action: SecurityCheckRuleAction
+}
+
+export interface SecurityCheckConfig {
+  enabled: boolean
+  rules: SecurityCheckRule[]
+  timeout_ms: number
+  exception_action: 'allow' | 'block'
+  collect_enabled: boolean
+  sample_rate: number
+  version?: number
+}
+
 export interface AdminGroup extends Group {
+  security_check_config?: SecurityCheckConfig
   // 模型路由配置（仅管理员可见，内部信息）
   model_routing: ModelRoutingConfig | null
   model_routing_enabled: boolean
@@ -638,6 +660,7 @@ export interface UpdateApiKeyRequest {
 
 export interface CreateGroupRequest {
   name: string
+  scene_name?: string | null
   description?: string | null
   platform?: GroupPlatform
   rate_multiplier?: number
@@ -672,6 +695,7 @@ export interface CreateGroupRequest {
 
 export interface UpdateGroupRequest {
   name?: string
+  scene_name?: string | null
   description?: string | null
   platform?: GroupPlatform
   rate_multiplier?: number
@@ -1562,6 +1586,7 @@ export interface UpdateUserRequest {
   email?: string
   password?: string
   username?: string
+  department?: string
   notes?: string
   role?: 'admin' | 'user'
   balance?: number

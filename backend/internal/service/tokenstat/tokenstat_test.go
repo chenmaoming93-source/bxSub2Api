@@ -8,7 +8,11 @@ import (
 )
 
 func TestRegistry(t *testing.T) {
-	require.Len(t, Dimensions(), 6)
+	require.Len(t, Dimensions(), 7)
+	require.Len(t, ConfigurableDimensions(), 6)
+	for _, dimension := range ConfigurableDimensions() {
+		require.NotEqual(t, DimensionDepartment, dimension.Code)
+	}
 	require.Len(t, Metrics(), 1)
 	metric, ok := Metric(MetricTotalTokens)
 	require.True(t, ok)

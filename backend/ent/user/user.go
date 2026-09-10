@@ -35,6 +35,8 @@ const (
 	FieldStatus = "status"
 	// FieldUsername holds the string denoting the username field in the database.
 	FieldUsername = "username"
+	// FieldDepartment holds the string denoting the department field in the database.
+	FieldDepartment = "department"
 	// FieldNotes holds the string denoting the notes field in the database.
 	FieldNotes = "notes"
 	// FieldTotpSecretEncrypted holds the string denoting the totp_secret_encrypted field in the database.
@@ -238,6 +240,7 @@ var Columns = []string{
 	FieldConcurrency,
 	FieldStatus,
 	FieldUsername,
+	FieldDepartment,
 	FieldNotes,
 	FieldTotpSecretEncrypted,
 	FieldTotpEnabled,
@@ -303,6 +306,10 @@ var (
 	DefaultUsername string
 	// UsernameValidator is a validator for the "username" field. It is called by the builders before save.
 	UsernameValidator func(string) error
+	// DefaultDepartment holds the default value on creation for the "department" field.
+	DefaultDepartment string
+	// DepartmentValidator is a validator for the "department" field. It is called by the builders before save.
+	DepartmentValidator func(string) error
 	// DefaultNotes holds the default value on creation for the "notes" field.
 	DefaultNotes string
 	// DefaultTotpEnabled holds the default value on creation for the "totp_enabled" field.
@@ -379,6 +386,11 @@ func ByStatus(opts ...sql.OrderTermOption) OrderOption {
 // ByUsername orders the results by the username field.
 func ByUsername(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldUsername, opts...).ToFunc()
+}
+
+// ByDepartment orders the results by the department field.
+func ByDepartment(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDepartment, opts...).ToFunc()
 }
 
 // ByNotes orders the results by the notes field.

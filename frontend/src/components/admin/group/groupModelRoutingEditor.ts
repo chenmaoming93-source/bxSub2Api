@@ -13,6 +13,14 @@ export interface RoutingEditorCandidate {
   accountConcurrency?: number
   allocatedConcurrency?: number
 	otherAllocatedConcurrency?: number
+	effectiveMaxConcurrency?: number | null
+	schedules?: import('./modelRouteConcurrencySchedule').ScheduleDraft[]
+}
+
+export interface RoutingEditorScheduleUpdate {
+  route_alias: string
+  account_id: number
+  schedules: Array<{ id?: number; start: string; end: string; max_concurrency: number | null }>
 }
 
 export interface RoutingEditorRule {
@@ -30,6 +38,14 @@ export function addRoutingCandidate(rule: RoutingEditorRule): void {
     ? 0
     : Math.max(...rule.candidates.map(item => Number(item.priority) || 0)) + 1
   rule.candidates.push(candidate)
+}
+
+export function sortRoutingCandidates(rule: RoutingEditorRule): void {
+  const ordered = rule.candidates
+    .map((candidate, index) => ({ candidate, index }))
+    .sort((left, right) => Number(left.candidate.priority) - Number(right.candidate.priority) || left.index - right.index)
+    .map(item => item.candidate)
+  rule.candidates.splice(0, rule.candidates.length, ...ordered)
 }
 
 /**

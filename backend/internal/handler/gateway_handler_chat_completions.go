@@ -99,6 +99,10 @@ func (h *GatewayHandler) ChatCompletions(c *gin.Context) {
 		h.chatCompletionsErrorResponse(c, contentModerationStatus(decision), contentModerationErrorCode(decision), decision.Message)
 		return
 	}
+	if result := h.checkSecurityCheck(c, reqLog, apiKey, subject, service.ContentModerationProtocolOpenAIChat, reqModel, body); securityCheckBlocked(result) {
+		h.chatCompletionsErrorResponse(c, http.StatusForbidden, securityCheckErrorCode, securityCheckErrorMessage)
+		return
+	}
 
 	// Error passthrough binding
 	if h.errorPassthroughService != nil {

@@ -143,6 +143,8 @@ const (
 	SettingKeyLoginAgreementUpdatedAt          = "login_agreement_updated_at"          // 条款更新日期（展示用）
 	SettingKeyLoginAgreementDocuments          = "login_agreement_documents"           // 条款文档列表（JSON，Markdown 内容）
 	SettingKeyDefaultGroupName                 = "default_group_name"                  // 默认分组名称（空字符串表示未配置）
+	SettingKeySecurityCheckLogRetentionDays    = "security_check_log_retention_days"   // 安全检查日志保留天数
+	SettingKeySecurityCheckLogCleanupTime      = "security_check_log_cleanup_time"     // 安全检查日志每日清理时间（服务器本地时间，HH:mm）
 
 	// 邮件服务设置
 	SettingKeySMTPHost     = "smtp_host"      // SMTP服务器地址

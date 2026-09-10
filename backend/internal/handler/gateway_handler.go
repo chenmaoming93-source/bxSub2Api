@@ -48,6 +48,9 @@ type GatewayHandler struct {
 	usageRecordWorkerPool     *service.UsageRecordWorkerPool
 	errorPassthroughService   *service.ErrorPassthroughService
 	contentModerationService  *service.ContentModerationService
+	securityCheckService      *service.SecurityCheckService
+	securityConfigProvider    *service.SecurityConfigProvider
+	securityCheckCollector    *service.SecurityCheckCollector
 	concurrencyHelper         *ConcurrencyHelper
 	userMsgQueueHelper        *UserMsgQueueHelper
 	maxAccountSwitches        int
@@ -197,6 +200,10 @@ func (h *GatewayHandler) Messages(c *gin.Context) {
 
 	if decision := h.checkContentModeration(c, reqLog, apiKey, subject, service.ContentModerationProtocolAnthropicMessages, reqModel, body); decision != nil && decision.Blocked {
 		h.errorResponse(c, contentModerationStatus(decision), contentModerationErrorCode(decision), decision.Message)
+		return
+	}
+	if result := h.checkSecurityCheck(c, reqLog, apiKey, subject, service.ContentModerationProtocolAnthropicMessages, reqModel, body); securityCheckBlocked(result) {
+		h.errorResponse(c, http.StatusForbidden, securityCheckErrorCode, securityCheckErrorMessage)
 		return
 	}
 

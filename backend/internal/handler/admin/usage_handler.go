@@ -15,6 +15,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/internal/pkg/usagestats"
 	"github.com/Wei-Shaw/sub2api/internal/server/middleware"
 	"github.com/Wei-Shaw/sub2api/internal/service"
+	tokenstat "github.com/Wei-Shaw/sub2api/internal/service/tokenstat"
 
 	"github.com/gin-gonic/gin"
 )
@@ -25,6 +26,7 @@ type UsageHandler struct {
 	apiKeyService  *service.APIKeyService
 	adminService   service.AdminService
 	cleanupService *service.UsageCleanupService
+	tokenStats     *tokenstat.ProjectionAdminService
 }
 
 // NewUsageHandler creates a new admin usage handler
@@ -40,6 +42,117 @@ func NewUsageHandler(
 		adminService:   adminService,
 		cleanupService: cleanupService,
 	}
+}
+
+// NewUsageHandlerWithTokenStats creates the usage handler with department statistics support.
+func NewUsageHandlerWithTokenStats(
+	usageService *service.UsageService,
+	apiKeyService *service.APIKeyService,
+	adminService service.AdminService,
+	cleanupService *service.UsageCleanupService,
+	tokenStats *tokenstat.ProjectionAdminService,
+) *UsageHandler {
+	h := NewUsageHandler(usageService, apiKeyService, adminService, cleanupService)
+	h.tokenStats = tokenStats
+	return h
+}
+
+// DepartmentStats handles aggregated Token usage by LDAP department.
+// GET /api/v1/admin/usage/department-stats?start_date=YYYY-MM-DD&end_date=YYYY-MM-DD&timezone=...
+func (h *UsageHandler) DepartmentStats(c *gin.Context) {
+	if h.tokenStats == nil {
+		response.Error(c, http.StatusServiceUnavailable, "Token statistics service unavailable")
+		return
+	}
+	startDate := strings.TrimSpace(c.Query("start_date"))
+	endDate := strings.TrimSpace(c.Query("end_date"))
+	if startDate == "" || endDate == "" {
+		response.BadRequest(c, "start_date and end_date are required")
+		return
+	}
+	tzName := strings.TrimSpace(c.Query("timezone"))
+	loc := timezone.Location()
+	if tzName != "" {
+		var err error
+		loc, err = time.LoadLocation(tzName)
+		if err != nil {
+			response.BadRequest(c, "Invalid timezone")
+			return
+		}
+	}
+	start, err := time.ParseInLocation("2006-01-02", startDate, loc)
+	if err != nil {
+		response.BadRequest(c, "Invalid start_date format, use YYYY-MM-DD")
+		return
+	}
+	end, err := time.ParseInLocation("2006-01-02", endDate, loc)
+	if err != nil {
+		response.BadRequest(c, "Invalid end_date format, use YYYY-MM-DD")
+		return
+	}
+	end = end.AddDate(0, 0, 1)
+	if !start.Before(end) {
+		response.BadRequest(c, "end_date must not be before start_date")
+		return
+	}
+	result, err := h.tokenStats.QueryDepartmentUsage(c.Request.Context(), start, end)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, result)
+}
+
+// DepartmentUsers handles current users' Token usage within one department.
+// GET /api/v1/admin/usage/department-stats/users?department=...&start_date=YYYY-MM-DD&end_date=YYYY-MM-DD&timezone=...
+func (h *UsageHandler) DepartmentUsers(c *gin.Context) {
+	if h.tokenStats == nil {
+		response.Error(c, http.StatusServiceUnavailable, "Token statistics service unavailable")
+		return
+	}
+	department := strings.TrimSpace(c.Query("department"))
+	if department == "" {
+		response.BadRequest(c, "department is required")
+		return
+	}
+	startDate := strings.TrimSpace(c.Query("start_date"))
+	endDate := strings.TrimSpace(c.Query("end_date"))
+	if startDate == "" || endDate == "" {
+		response.BadRequest(c, "start_date and end_date are required")
+		return
+	}
+	tzName := strings.TrimSpace(c.Query("timezone"))
+	loc := timezone.Location()
+	if tzName != "" {
+		var err error
+		loc, err = time.LoadLocation(tzName)
+		if err != nil {
+			response.BadRequest(c, "Invalid timezone")
+			return
+		}
+	}
+	start, err := time.ParseInLocation("2006-01-02", startDate, loc)
+	if err != nil {
+		response.BadRequest(c, "Invalid start_date format, use YYYY-MM-DD")
+		return
+	}
+	end, err := time.ParseInLocation("2006-01-02", endDate, loc)
+	if err != nil {
+		response.BadRequest(c, "Invalid end_date format, use YYYY-MM-DD")
+		return
+	}
+	end = end.AddDate(0, 0, 1)
+	if !start.Before(end) {
+		response.BadRequest(c, "end_date must not be before start_date")
+		return
+	}
+	page, pageSize := response.ParsePagination(c)
+	result, err := h.tokenStats.QueryDepartmentUserUsage(c.Request.Context(), start, end, department, page, pageSize)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, result)
 }
 
 // CreateUsageCleanupTaskRequest represents cleanup task creation request

@@ -10,6 +10,7 @@ func RegisterIntegrationRoutes(
 	v1 *gin.RouterGroup,
 	provHandler *handler.ExternalProvisioningHandler,
 	tokenUsageHandler *handler.ExternalTokenUsageHandler,
+	sceneAccountUsageHandler *handler.ExternalSceneAccountDailyUsageHandler,
 	provAuth gin.HandlerFunc,
 	provHardening gin.HandlerFunc,
 ) {
@@ -25,6 +26,11 @@ func RegisterIntegrationRoutes(
 		integration.POST("/model-routes/list-attributes", provHandler.ListGroupModelRoutesWithAttributes)
 		if tokenUsageHandler != nil {
 			integration.POST("/token-usage/query", tokenUsageHandler.Query)
+			integration.POST("/token-usage/query/group-api-key/daily", tokenUsageHandler.DailyQuery)
+			integration.POST("/token-usage/query/group-api-key/daily/csv", tokenUsageHandler.DailyQueryCSV)
+		}
+		if sceneAccountUsageHandler != nil {
+			integration.POST("/token-usage/query/scene-account/daily", sceneAccountUsageHandler.QueryDaily)
 		}
 	}
 }

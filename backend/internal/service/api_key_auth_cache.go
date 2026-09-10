@@ -40,6 +40,7 @@ type APIKeyAuthUserSnapshot struct {
 	// Balance notification fields (required for CheckBalanceAfterDeduction)
 	Email                      string             `json:"email"`
 	Username                   string             `json:"username"`
+	Department                 string             `json:"department,omitempty"`
 	BalanceNotifyEnabled       bool               `json:"balance_notify_enabled"`
 	BalanceNotifyThresholdType string             `json:"balance_notify_threshold_type"`
 	BalanceNotifyThreshold     *float64           `json:"balance_notify_threshold,omitempty"`

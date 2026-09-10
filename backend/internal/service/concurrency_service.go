@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"encoding/hex"
+	"fmt"
 	"os"
 	"strconv"
 	"sync"
@@ -52,12 +53,161 @@ type ConcurrencyCache interface {
 	CleanupStaleProcessSlots(ctx context.Context, activeRequestPrefix string) error
 }
 
+// RouteScheduleCache is an optional extension used by the background
+// precompute task. It is separate from ConcurrencyCache so existing test
+// doubles and request-path callers remain source-compatible.
+type RouteScheduleCache interface {
+	SetRouteScheduleConcurrencyLimit(context.Context, string, *int, time.Time) error
+	SetRouteScheduleConcurrencyLimits(context.Context, map[string]*int, time.Time) error
+	DeleteRouteScheduleConcurrencyLimit(context.Context, string) error
+	DeleteRouteScheduleConcurrencyLimits(context.Context, []string) error
+	ListRouteScheduleKeys(context.Context) ([]string, error)
+}
+
+// RouteScheduleRefreshLock is the optional distributed lock used by the
+// background schedule materializer. It is separate from the request-path
+// cache contracts so existing implementations remain source-compatible.
+type RouteScheduleRefreshLock interface {
+	TryAcquireRouteScheduleRefreshLock(context.Context, string, time.Duration) (bool, error)
+	RenewRouteScheduleRefreshLock(context.Context, string, time.Duration) (bool, error)
+	ReleaseRouteScheduleRefreshLock(context.Context, string) error
+}
+
+func (s *ConcurrencyService) SetRouteScheduleConcurrencyLimit(ctx context.Context, key string, limit *int, updatedAt time.Time) error {
+	cache, ok := s.cache.(RouteScheduleCache)
+	if !ok {
+		return fmt.Errorf("route schedule cache is unavailable")
+	}
+	return cache.SetRouteScheduleConcurrencyLimit(ctx, key, limit, updatedAt)
+}
+
+func (s *ConcurrencyService) SetRouteScheduleConcurrencyLimits(ctx context.Context, limits map[string]*int, updatedAt time.Time) error {
+	cache, ok := s.cache.(RouteScheduleCache)
+	if !ok {
+		return fmt.Errorf("route schedule cache is unavailable")
+	}
+	return cache.SetRouteScheduleConcurrencyLimits(ctx, limits, updatedAt)
+}
+
+func (s *ConcurrencyService) DeleteRouteScheduleConcurrencyLimit(ctx context.Context, key string) error {
+	cache, ok := s.cache.(RouteScheduleCache)
+	if !ok {
+		return fmt.Errorf("route schedule cache is unavailable")
+	}
+	return cache.DeleteRouteScheduleConcurrencyLimit(ctx, key)
+}
+
+func (s *ConcurrencyService) DeleteRouteScheduleConcurrencyLimits(ctx context.Context, keys []string) error {
+	cache, ok := s.cache.(RouteScheduleCache)
+	if !ok {
+		return fmt.Errorf("route schedule cache is unavailable")
+	}
+	return cache.DeleteRouteScheduleConcurrencyLimits(ctx, keys)
+}
+
+func (s *ConcurrencyService) ListRouteScheduleKeys(ctx context.Context) ([]string, error) {
+	cache, ok := s.cache.(RouteScheduleCache)
+	if !ok {
+		return nil, fmt.Errorf("route schedule cache is unavailable")
+	}
+	return cache.ListRouteScheduleKeys(ctx)
+}
+
+func (s *ConcurrencyService) TryAcquireRouteScheduleRefreshLock(ctx context.Context, token string, ttl time.Duration) (bool, error) {
+	cache, ok := s.cache.(RouteScheduleRefreshLock)
+	if !ok {
+		return false, fmt.Errorf("route schedule refresh lock is unavailable")
+	}
+	return cache.TryAcquireRouteScheduleRefreshLock(ctx, token, ttl)
+}
+
+func (s *ConcurrencyService) RenewRouteScheduleRefreshLock(ctx context.Context, token string, ttl time.Duration) (bool, error) {
+	cache, ok := s.cache.(RouteScheduleRefreshLock)
+	if !ok {
+		return false, fmt.Errorf("route schedule refresh lock is unavailable")
+	}
+	return cache.RenewRouteScheduleRefreshLock(ctx, token, ttl)
+}
+
+func (s *ConcurrencyService) ReleaseRouteScheduleRefreshLock(ctx context.Context, token string) error {
+	cache, ok := s.cache.(RouteScheduleRefreshLock)
+	if !ok {
+		return fmt.Errorf("route schedule refresh lock is unavailable")
+	}
+	return cache.ReleaseRouteScheduleRefreshLock(ctx, token)
+}
+
 // RouteConcurrencyCache is optional so existing test doubles remain compatible.
 type RouteConcurrencyCache interface {
 	AcquireRouteSlot(context.Context, string, int, string) (bool, error)
 	ReleaseRouteSlot(context.Context, string, string) error
 	GetRouteConcurrencyLimit(context.Context, string) (*int, bool, error)
 	SetRouteConcurrencyLimit(context.Context, string, *int) error
+}
+
+// RouteConcurrencyLimit is the materialized route limit and whether Redis
+// contained a value for the route. A nil Limit with Hit=true means unlimited;
+// Hit=false means the caller should fall back to the legacy configuration.
+type RouteConcurrencyLimit struct {
+	Limit *int
+	Hit   bool
+}
+
+// RouteConcurrencyLimitBatchCache is an optional batch extension used by
+// admin/read-only views. It keeps the request path unchanged while avoiding
+// one Redis pipeline per candidate when rendering a group.
+type RouteConcurrencyLimitBatchCache interface {
+	GetRouteConcurrencyLimitBatch(context.Context, []string) (map[string]RouteConcurrencyLimit, error)
+}
+
+// RouteLoadCache exposes active counts for route-scoped slots. It is kept
+// separate from RouteConcurrencyCache so existing optional implementations
+// remain source-compatible.
+type RouteLoadCache interface {
+	GetRouteConcurrencyBatch(context.Context, []string) (map[string]int, error)
+}
+
+type RouteLoadRequest struct {
+	Key                   string
+	AccountID             int64
+	MaxConcurrency        *int
+	AccountMaxConcurrency int
+}
+
+type RouteLoadInfo struct {
+	Key                 string
+	AccountID           int64
+	CurrentConcurrency  int
+	LoadRate            int
+	UsedAccountFallback bool
+}
+
+// GetRouteConcurrencyLimitsBatch returns materialized route limits. When the
+// cache implementation does not support batching, the optional single-route
+// interface is used as a compatibility fallback.
+func (s *ConcurrencyService) GetRouteConcurrencyLimitsBatch(ctx context.Context, keys []string) (map[string]RouteConcurrencyLimit, error) {
+	result := make(map[string]RouteConcurrencyLimit, len(keys))
+	if len(keys) == 0 || s == nil || s.cache == nil {
+		return result, nil
+	}
+	if cache, ok := s.cache.(RouteConcurrencyLimitBatchCache); ok {
+		return cache.GetRouteConcurrencyLimitBatch(ctx, keys)
+	}
+	cache, ok := s.cache.(RouteConcurrencyCache)
+	if !ok {
+		return nil, fmt.Errorf("route concurrency cache is unavailable")
+	}
+	for _, key := range keys {
+		if _, exists := result[key]; exists {
+			continue
+		}
+		limit, hit, err := cache.GetRouteConcurrencyLimit(ctx, key)
+		if err != nil {
+			return nil, err
+		}
+		result[key] = RouteConcurrencyLimit{Limit: limit, Hit: hit}
+	}
+	return result, nil
 }
 
 var (
@@ -370,6 +520,75 @@ func CalculateMaxWait(userConcurrency int) int {
 // GetAccountsLoadBatch 批量获取账号负载信息。
 func (s *ConcurrencyService) GetAccountsLoadBatch(ctx context.Context, accounts []AccountWithConcurrency) (map[int64]*AccountLoadInfo, error) {
 	return s.getAccountsLoadBatch(ctx, accounts, true)
+}
+
+// GetRouteLoadsBatch returns route-scoped active concurrency and normalized
+// load. Routes without an allocation fall back to account-wide active
+// concurrency and effective load factor.
+func (s *ConcurrencyService) GetRouteLoadsBatch(ctx context.Context, requests []RouteLoadRequest) (map[string]RouteLoadInfo, error) {
+	result := make(map[string]RouteLoadInfo, len(requests))
+	if len(requests) == 0 || s == nil || s.cache == nil {
+		return result, nil
+	}
+
+	routeCache, ok := s.cache.(RouteLoadCache)
+	if !ok {
+		return nil, fmt.Errorf("route load cache is unavailable")
+	}
+	routeKeys := make([]string, 0, len(requests))
+	accountIDs := make([]int64, 0, len(requests))
+	for _, request := range requests {
+		if request.MaxConcurrency != nil && *request.MaxConcurrency > 0 {
+			routeKeys = append(routeKeys, request.Key)
+		} else if request.AccountID > 0 {
+			accountIDs = append(accountIDs, request.AccountID)
+		}
+	}
+
+	routeCounts, err := routeCache.GetRouteConcurrencyBatch(ctx, routeKeys)
+	if err != nil {
+		return nil, err
+	}
+	accountCounts, err := s.cache.GetAccountConcurrencyBatch(ctx, uniqueInt64s(accountIDs))
+	if err != nil {
+		return nil, err
+	}
+
+	for _, request := range requests {
+		info := RouteLoadInfo{Key: request.Key, AccountID: request.AccountID}
+		maxConcurrency := 0
+		current := 0
+		if request.MaxConcurrency != nil && *request.MaxConcurrency > 0 {
+			maxConcurrency = *request.MaxConcurrency
+			current = routeCounts[request.Key]
+		} else {
+			maxConcurrency = request.AccountMaxConcurrency
+			current = accountCounts[request.AccountID]
+			info.UsedAccountFallback = true
+		}
+		info.CurrentConcurrency = current
+		if maxConcurrency > 0 {
+			info.LoadRate = current * 100 / maxConcurrency
+		}
+		result[request.Key] = info
+	}
+	return result, nil
+}
+
+func uniqueInt64s(values []int64) []int64 {
+	if len(values) < 2 {
+		return values
+	}
+	seen := make(map[int64]struct{}, len(values))
+	result := make([]int64, 0, len(values))
+	for _, value := range values {
+		if _, ok := seen[value]; ok {
+			continue
+		}
+		seen[value] = struct{}{}
+		result = append(result, value)
+	}
+	return result
 }
 
 // GetAccountsLoadBatchFresh 绕过极短 TTL 缓存，用于抢槽失败后的实时刷新兜底。

@@ -9,10 +9,10 @@ export type ModelRoutingValidationCode =
   | 'duplicate_alias'
   | 'candidate_required'
   | 'account_ids_required'
-	| 'candidate_multiple_accounts'
+  | 'candidate_multiple_accounts'
   | 'invalid_account_id'
   | 'invalid_priority'
-  | 'duplicate_priority'
+  | 'account_priority_conflict'
 
 export interface ModelRoutingValidationIssue {
   code: ModelRoutingValidationCode
@@ -85,22 +85,28 @@ export function validateModelRouting(rows: ModelRoutingRuleRow[]): ModelRoutingV
       return
     }
 
-    const priorities = new Set<number>()
+    const accountPriorities = new Map<number, number>()
     row.candidates.forEach((candidate, candidateIndex) => {
       if (candidate.account_ids.length === 0) {
         issues.push({ code: 'account_ids_required', ruleIndex, candidateIndex })
-	  } else if (candidate.account_ids.length > 1) {
-	    issues.push({ code: 'candidate_multiple_accounts', ruleIndex, candidateIndex })
+      } else if (candidate.account_ids.length > 1) {
+        issues.push({ code: 'candidate_multiple_accounts', ruleIndex, candidateIndex })
       } else if (candidate.account_ids.some(id => !Number.isInteger(id) || id <= 0)) {
         issues.push({ code: 'invalid_account_id', ruleIndex, candidateIndex })
       }
 
       if (!Number.isInteger(candidate.priority) || candidate.priority < 0) {
         issues.push({ code: 'invalid_priority', ruleIndex, candidateIndex, value: candidate.priority })
-      } else if (priorities.has(candidate.priority)) {
-        issues.push({ code: 'duplicate_priority', ruleIndex, candidateIndex, value: candidate.priority })
-      } else {
-        priorities.add(candidate.priority)
+      }
+      if (Number.isInteger(candidate.priority) && candidate.priority >= 0) {
+        for (const accountID of candidate.account_ids) {
+          const previousPriority = accountPriorities.get(accountID)
+          if (previousPriority !== undefined && previousPriority !== candidate.priority) {
+            issues.push({ code: 'account_priority_conflict', ruleIndex, candidateIndex, value: accountID })
+          } else {
+            accountPriorities.set(accountID, candidate.priority)
+          }
+        }
       }
     })
   })

@@ -58,6 +58,54 @@ func rescaleAccountModelRouteAllocations(ctx context.Context, exec sqlExecutor, 
 			return err
 		}
 	}
+	return rescaleAccountModelRouteConcurrencySchedules(ctx, exec, accountID, oldConcurrency, newConcurrency)
+}
+
+// rescaleAccountModelRouteConcurrencySchedules keeps explicit daily schedule
+// values proportional to the account's finite concurrency. NULL values mean
+// unlimited and are intentionally left unchanged. Redis is not touched here;
+// the minute refresh task publishes the committed database values later.
+func rescaleAccountModelRouteConcurrencySchedules(ctx context.Context, exec sqlExecutor, accountID int64, oldConcurrency, newConcurrency int) error {
+	if oldConcurrency <= 0 || newConcurrency <= 0 {
+		return nil
+	}
+	rows, err := exec.QueryContext(ctx, `
+		SELECT id, max_concurrency
+		FROM group_model_route_account_concurrency_schedules
+		WHERE account_id = ? AND max_concurrency IS NOT NULL
+		ORDER BY id`, accountID)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	type scheduleValue struct {
+		id    int64
+		value *int
+	}
+	items := make([]scheduleValue, 0)
+	for rows.Next() {
+		var item scheduleValue
+		if err := rows.Scan(&item.id, &item.value); err != nil {
+			return err
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	for _, item := range items {
+		updated := service.ScaleModelRouteConcurrencyValue(oldConcurrency, newConcurrency, item.value)
+		if updated == nil || item.value == nil || *updated == *item.value {
+			continue
+		}
+		if _, err := exec.ExecContext(ctx, `
+			UPDATE group_model_route_account_concurrency_schedules
+			SET max_concurrency = ?, updated_at = CURRENT_TIMESTAMP(6)
+			WHERE id = ? AND account_id = ?`, *updated, item.id, accountID); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 

@@ -13,6 +13,7 @@ var registeredDimensions = []DimensionDefinition{
 	{Code: DimensionRouteAlias, DisplayName: "路由别名", ValueType: ValueTypeString, Order: 40, Version: 1},
 	{Code: DimensionAccountID, DisplayName: "模型账号", ValueType: ValueTypeInt64, Order: 50, Version: 1},
 	{Code: DimensionUpstreamModel, DisplayName: "上游模型", ValueType: ValueTypeString, Order: 60, Version: 1},
+	{Code: DimensionDepartment, DisplayName: "部门", ValueType: ValueTypeString, Order: 70, Version: 1},
 }
 
 var registeredMetrics = []MetricDefinition{
@@ -21,6 +22,21 @@ var registeredMetrics = []MetricDefinition{
 
 func Dimensions() []DimensionDefinition {
 	return append([]DimensionDefinition(nil), registeredDimensions...)
+}
+
+// ConfigurableDimensions lists dimensions that administrators may select for
+// new projections. Department remains internally recognized for compatibility
+// with existing events and projections, but new reports use current users.department
+// joined to the user_id projection instead.
+func ConfigurableDimensions() []DimensionDefinition {
+	result := make([]DimensionDefinition, 0, len(registeredDimensions))
+	for _, definition := range registeredDimensions {
+		if definition.Code == DimensionDepartment {
+			continue
+		}
+		result = append(result, definition)
+	}
+	return result
 }
 
 func Metrics() []MetricDefinition {

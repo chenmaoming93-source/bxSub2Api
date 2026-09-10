@@ -108,15 +108,17 @@ func TestAccountFirstModelMappingValueResolvesUpstreamModel(t *testing.T) {
 
 func TestRouteCandidateCarriesSelectedAccountsOwnUpstreamModel(t *testing.T) {
 	first := modelRoutingAccount(1, "model-a")
+	first.Priority = 1
 	second := modelRoutingAccount(2, "model-b")
+	second.Priority = 99
 	concurrencyCache := &accountBoundRoutingConcurrencyCache{loads: map[int64]*AccountLoadInfo{
 		1: {AccountID: 1, LoadRate: 80},
 		2: {AccountID: 2, LoadRate: 20},
 	}}
 	svc := &GatewayService{concurrencyService: NewConcurrencyService(concurrencyCache)}
 	failures := []ModelCandidateFailure{}
-	selection, ok, err := svc.trySelectRouteCandidateAccounts(
-		context.Background(), nil, DynamicTokenRequestIdentity{}, "coding-alias", "", 0,
+	selection, ok, err := svc.trySelectRouteCandidateAccountsWithModel(
+		context.Background(), nil, DynamicTokenRequestIdentity{}, "coding-alias", "obsolete-candidate-model", "", 0,
 		[]int64{1, 2}, map[int64]*Account{1: first, 2: second}, func(int64) bool { return false },
 		PlatformAnthropic, false, accountBoundRoutingConfig(), &failures,
 	)

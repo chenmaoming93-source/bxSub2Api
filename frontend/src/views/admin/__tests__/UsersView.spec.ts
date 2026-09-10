@@ -6,12 +6,14 @@ import UsersView from '../UsersView.vue'
 
 const {
   listUsers,
+  syncLDAP,
   getAllGroups,
   getBatchUsersUsage,
   listEnabledDefinitions,
   getBatchUserAttributes
 } = vi.hoisted(() => ({
   listUsers: vi.fn(),
+  syncLDAP: vi.fn(),
   getAllGroups: vi.fn(),
   getBatchUsersUsage: vi.fn(),
   listEnabledDefinitions: vi.fn(),
@@ -22,6 +24,7 @@ vi.mock('@/api/admin', () => ({
   adminAPI: {
     users: {
       list: listUsers,
+      syncLDAP,
       toggleStatus: vi.fn(),
       delete: vi.fn()
     },
@@ -59,6 +62,7 @@ vi.mock('vue-i18n', async () => {
 const createAdminUser = (): AdminUser => ({
   id: 42,
   username: 'scoped-user',
+  department: '研发部',
   email: 'scoped@example.com',
   role: 'user',
   balance: 0,
@@ -85,6 +89,7 @@ const DataTableStub = {
       <button data-test="sort-last-used" @click="$emit('sort', 'last_used_at', 'desc')">sort</button>
       <div v-for="row in data" :key="row.id">
         <slot name="cell-last_used_at" :value="row.last_used_at" :row="row" />
+         <slot name="cell-department" :value="row.department" :row="row" />
       </div>
     </div>
   `
@@ -95,11 +100,23 @@ describe('admin UsersView', () => {
     localStorage.clear()
 
     listUsers.mockReset()
+    syncLDAP.mockReset()
     getAllGroups.mockReset()
     getBatchUsersUsage.mockReset()
     listEnabledDefinitions.mockReset()
     getBatchUserAttributes.mockReset()
 
+    syncLDAP.mockResolvedValue({
+      total: 1,
+      ldap_candidates: 1,
+      synced: 1,
+      local_cleared: 0,
+      not_found: 0,
+      failed: 0,
+      duration_ms: 1,
+      started_at: '2026-04-17T00:00:00Z',
+      finished_at: '2026-04-17T00:00:01Z'
+    })
     listUsers.mockResolvedValue({
       items: [createAdminUser()],
       total: 1,
@@ -148,6 +165,8 @@ describe('admin UsersView', () => {
     const visibleColumns = columns.split(',')
     expect(visibleColumns.slice(-4, -1)).toEqual(['last_active_at', 'last_used_at', 'created_at'])
     expect(visibleColumns).not.toContain('last_login_at')
+    expect(visibleColumns).toContain('department')
+    expect(wrapper.text()).toContain('研发部')
 
     await wrapper.get('[data-test="sort-last-used"]').trigger('click')
     await flushPromises()
@@ -161,6 +180,49 @@ describe('admin UsersView', () => {
       }),
       expect.any(Object)
     )
+  })
+
+  it('syncs LDAP users, refreshes the list, and prevents duplicate clicks while loading', async () => {
+    const wrapper = mount(UsersView, {
+      global: {
+        stubs: {
+          AppLayout: { template: '<div><slot /></div>' },
+          TablePageLayout: { template: '<div><slot name="filters" /><slot name="table" /><slot name="pagination" /></div>' },
+          DataTable: DataTableStub,
+          Pagination: true,
+          ConfirmDialog: true,
+          EmptyState: true,
+          GroupBadge: true,
+          Select: true,
+          UserAttributesConfigModal: true,
+          UserConcurrencyCell: true,
+          UserCreateModal: true,
+          UserEditModal: true,
+          UserApiKeysModal: true,
+          UserAllowedGroupsModal: true,
+          UserBalanceModal: true,
+          UserBalanceHistoryModal: true,
+          GroupReplaceModal: true,
+          UserRolesModal: true,
+          Icon: true,
+          Teleport: true
+        }
+      }
+    })
+    await flushPromises()
+    const button = wrapper.get('button[title="admin.users.syncLDAP"]')
+    let resolveSync!: (value: any) => void
+    syncLDAP.mockImplementationOnce(() => new Promise(resolve => { resolveSync = resolve }))
+
+    await button.trigger('click')
+    expect(syncLDAP).toHaveBeenCalledTimes(1)
+    expect(button.attributes('disabled')).toBeDefined()
+    await button.trigger('click')
+    expect(syncLDAP).toHaveBeenCalledTimes(1)
+
+    resolveSync({ total: 1, ldap_candidates: 1, synced: 1, local_cleared: 0, not_found: 0, failed: 0, duration_ms: 1, started_at: '', finished_at: '' })
+    await flushPromises()
+    expect(listUsers).toHaveBeenCalledTimes(2)
   })
 
 })

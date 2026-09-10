@@ -56,6 +56,7 @@ export const pagePermissionMatrix: PagePermissionDefinition[] = [
   { path: '/admin/settings', permission: 'settings.read', classification: 'rbac' },
   { path: '/admin/risk-control', permission: 'risk.read', classification: 'rbac' },
   { path: '/admin/usage', permission: 'usage.admin.read', classification: 'rbac' },
+  { path: '/admin/security-check-logs', permission: 'groups.read', classification: 'rbac' },
   { path: '/admin/token-statistics', permission: 'token_usage.read', classification: 'rbac' },
   { path: '/admin/affiliates/invites', permission: 'affiliates.read', classification: 'rbac' },
   { path: '/admin/affiliates/rebates', permission: 'affiliates.read', classification: 'rbac' },

@@ -29,11 +29,23 @@ describe('groups model routing normalizer', () => {
     })
   })
 
-  it('reports duplicate aliases and priorities, but has no model validation', () => {
+  it('allows multiple candidates with the same priority and reports duplicate aliases', () => {
     const rows: ModelRoutingRuleRow[] = [
       { alias: 'coding', candidates: [{ account_ids: [1], priority: 1 }, { account_ids: [2], priority: 1 }] },
       { alias: 'coding', candidates: [{ account_ids: [3], priority: 2 }] }
     ]
-    expect(validateModelRouting(rows).map(issue => issue.code)).toEqual(['duplicate_priority', 'duplicate_alias'])
+    expect(validateModelRouting(rows).map(issue => issue.code)).toEqual(['duplicate_alias'])
+  })
+
+  it('keeps one account per candidate and rejects cross-priority reuse', () => {
+    const rows: ModelRoutingRuleRow[] = [{
+      alias: 'coding',
+      candidates: [
+        { account_ids: [1], priority: 1 },
+        { account_ids: [1], priority: 2 }
+      ]
+    }]
+    expect(validateModelRouting(rows).map(issue => issue.code)).toEqual(['account_priority_conflict'])
+    expect(validateModelRouting([{ alias: 'coding', candidates: [{ account_ids: [1, 2], priority: 1 }] }]).map(issue => issue.code)).toEqual(['candidate_multiple_accounts'])
   })
 })

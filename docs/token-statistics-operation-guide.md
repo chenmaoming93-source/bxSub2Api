@@ -124,3 +124,26 @@ Redis 只保留当前自然日、周、月和封账中的短暂数据。只有�
 - HTTP 503：Redis 当前周期读取失败或值非法；接口不会回退到可能滞后的 MySQL。
 
 发布前验证目标 URL 只注册一次、RBAC coverage 将其归类为 external integration exclusion、三个周期读取正确。回滚只需撤回接口代码，不应删除 Redis 数据或统计投影。
+
+## 10. 外部历史按天用量接口运维
+
+接口路径为 `POST /api/v1/integrations/token-usage/query/group-api-key/daily`，入参 `group_name`、`api_key`、`start_date`、`end_date`（`YYYY-MM-DD`，跨度 ≤ 366 天）。同样复用 `ExternalAPIKeyProvisioning` 的启用开关、Access Token 和限流配置，数据来自 MySQL `token_stat_aggregates`（最终一致，同步间隔见 `gateway.dynamic_token_statistics.sync_interval_minutes`）。路径中 `group-api-key` 为维度组合标识，未来其他维度组合的历史按天查询沿用该模式（如 `user-model/daily`）。
+
+- HTTP 400 `INVALID_REQUEST`：JSON/字段/日期格式非法，`end_date < start_date`，或跨度超过 366 天。
+- HTTP 400 `API_KEY_MISMATCH`：API Key 值存在，但不属于目标分组（或无分组）。
+- HTTP 404 `GROUP_NOT_FOUND` / `API_KEY_NOT_FOUND`：分组或 API Key 值不存在/已删除；或 integrations 功能关闭（`NOT_FOUND`）。
+- HTTP 200 且 `dimension_configured=false`、`days=[]`、`message="统计维度未配置"`：不存在**维度签名精确等于 `api_key_id,group_id`** 且启用中的统计投影（在「可配置 Token 统计」页面新建、发布、启用；注意含额外维度的投影不会被本接口采用）。
+- HTTP 200 且 `dimension_configured=true`、`days=[]`：统计项已配置，但该范围内无任何已同步数据（数据从投影启用时刻起采集）。
+- HTTP 200 且 `days` 非空：只含有数据的天（升序），缺失天不出现、不补 0；结合 `complete=false`（仍在最终一致同步中）与 `last_synced_at` 判断时效。
+- HTTP 500：MySQL 聚合查询失败；接口不返回部分结果。
+
+投影选择规则：**强制要求**存在 ACTIVE 且维度签名精确等于 `api_key_id,group_id` 的统计投影（维度组合必须且只能是「API Key + 分组」两项）。超集投影（如四维 `user_id,api_key_id,group_id,route_alias`）不会被采用，因为异步管道会跳过缺少额外维度（如 `route_alias` 为空）的事件，导致该投影漏记、求和偏小。发布前验证目标 URL 只注册一次、RBAC coverage 将其归类为 external integration exclusion。回滚只需撤回接口代码，不删除 MySQL 聚合数据或统计投影。
+
+### 10.1 CSV 下载接口
+
+`POST /api/v1/integrations/token-usage/query/group-api-key/daily/csv`：入参与 JSON 接口完全一致（`group_name`、`api_key`、`start_date`、`end_date`），鉴权方式相同，返回 `text/csv` 附件下载。
+
+- CSV 列：`date,total_tokens`，`date` 为统计时区日期（升序）。
+- **逐日补 0**：范围内每一天都有一行，无记录的天 `total_tokens` 为 0（与 JSON 接口"缺失天不出现"不同）。
+- HTTP 409 `STATISTICS_NOT_CONFIGURED`：未配置精确 `api_key_id,group_id` 投影时返回该错误，**不会**输出全 0 的 CSV（避免与"已配置但无数据"混淆）。
+- 其余错误语义与 JSON 接口一致（400 / 401 / 404 / 500）。

@@ -89,6 +89,7 @@ func (r *userRepository) Create(ctx context.Context, userIn *service.User) error
 	created, err := txClient.User.Create().
 		SetEmail(userIn.Email).
 		SetUsername(userIn.Username).
+		SetDepartment(userIn.Department).
 		SetNotes(userIn.Notes).
 		SetPasswordHash(userIn.PasswordHash).
 		SetRole(userIn.Role).
@@ -252,6 +253,7 @@ func (r *userRepository) Update(ctx context.Context, userIn *service.User) error
 	updateOp := txClient.User.UpdateOneID(userIn.ID).
 		SetEmail(userIn.Email).
 		SetUsername(userIn.Username).
+		SetDepartment(userIn.Department).
 		SetNotes(userIn.Notes).
 		SetPasswordHash(userIn.PasswordHash).
 		SetRole(userIn.Role).

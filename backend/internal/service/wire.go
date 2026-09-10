@@ -3,17 +3,67 @@ package service
 import (
 	"context"
 	"database/sql"
+	"log/slog"
 	"time"
 
 	dbent "github.com/Wei-Shaw/sub2api/ent"
 	"github.com/Wei-Shaw/sub2api/internal/config"
 	"github.com/Wei-Shaw/sub2api/internal/payment"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/antigravity"
+	"github.com/Wei-Shaw/sub2api/internal/pkg/ldapauth"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/logger"
 	tokenstat "github.com/Wei-Shaw/sub2api/internal/service/tokenstat"
 	"github.com/google/wire"
 	"github.com/redis/go-redis/v9"
 )
+
+func ProvideLDAPUserSyncService(userRepo UserRepository, cacheInvalidator APIKeyAuthCacheInvalidator, cfg *config.Config) *LDAPUserSyncService {
+	if cfg == nil {
+		return NewLDAPUserSyncService(userRepo, nil, cacheInvalidator, nil)
+	}
+	return NewLDAPUserSyncService(
+		userRepo,
+		ldapauth.NewDefaultLDAPDirectory(cfg.LDAP),
+		cacheInvalidator,
+		cfg.LDAP.LocalLoginAccounts,
+	)
+}
+
+func ProvideSingGuardClient(cfg *config.Config) *SingGuardClient {
+	if cfg == nil || cfg.SingGuard.BaseURL == "" {
+		return nil
+	}
+	client, err := NewSingGuardClient(cfg.SingGuard.BaseURL, nil)
+	if err != nil {
+		slog.Warn("singguard.client_disabled", "err", err)
+		return nil
+	}
+	return client
+}
+
+func ProvideSecurityCheckService(client *SingGuardClient) *SecurityCheckService {
+	return NewSecurityCheckService(client)
+}
+
+func ProvideSecurityConfigProvider(rdb *redis.Client, store SecurityCheckConfigStore) *SecurityConfigProvider {
+	provider := NewSecurityConfigProvider(rdb, store, DefaultSecurityConfigTTL)
+	provider.Start(context.Background())
+	return provider
+}
+
+func ProvideSecurityCheckCollector(repo SecurityCheckLogRepository, settingService *SettingService) *SecurityCheckCollector {
+	collector := NewSecurityCheckCollector(repo, settingService)
+	collector.Start()
+	return collector
+}
+
+func ProvideSceneAccountDailyUsageService(entClient *dbent.Client, projections *tokenstat.ProjectionAdminService, runtime *tokenstat.RuntimeController, cfg *config.Config) (*SceneAccountDailyUsageService, error) {
+	location, err := time.LoadLocation(cfg.Gateway.DynamicTokenStatistics.Timezone)
+	if err != nil {
+		return nil, err
+	}
+	return NewSceneAccountDailyUsageService(entClient, projections, runtime, location), nil
+}
 
 func ProvideExternalTokenUsageService(lookup ExternalTokenUsageDimensionLookup, reader ExternalTokenUsageCurrentReader, projections *tokenstat.ProjectionAdminService, cfg *config.Config) (*ExternalTokenUsageService, error) {
 	location, err := time.LoadLocation(cfg.Gateway.DynamicTokenStatistics.Timezone)
@@ -22,6 +72,8 @@ func ProvideExternalTokenUsageService(lookup ExternalTokenUsageDimensionLookup, 
 	}
 	svc := NewExternalTokenUsageService(lookup)
 	svc.ConfigureCurrentUsage(reader, projections, location)
+	svc.ConfigureHistoryQuery(projections)
+	svc.ConfigureQuotaRules(projections)
 	return svc, nil
 }
 
@@ -231,6 +283,19 @@ func ProvideConcurrencyService(cache ConcurrencyCache, accountRepo AccountReposi
 		svc.SetAccountLoadBatchCacheTTL(time.Duration(cfg.Gateway.Scheduling.LoadBatchCacheTTLMS) * time.Millisecond)
 		svc.StartSlotCleanupWorker(accountRepo, cfg.Gateway.Scheduling.SlotCleanupInterval)
 	}
+	return svc
+}
+
+// ProvideModelRouteConcurrencyScheduleRefresher creates and starts the
+// minute-aligned materializer. It is intentionally independent of request
+// handling; the request path only consumes the Redis projection.
+func ProvideModelRouteConcurrencyScheduleRefresher(
+	repo ModelRouteConcurrencyScheduleRefreshRepository,
+	concurrency *ConcurrencyService,
+	cfg *config.Config,
+) *ModelRouteConcurrencyScheduleRefresher {
+	svc := NewModelRouteConcurrencyScheduleRefresher(repo, concurrency, cfg)
+	svc.Start()
 	return svc
 }
 
@@ -549,11 +614,12 @@ func ProvideAdminService(
 	entClient *dbent.Client, settingService *SettingService, defaultSubAssigner DefaultSubscriptionAssigner,
 	userSubRepo UserSubscriptionRepository, privacyClientFactory PrivacyClientFactory,
 	runtimeBlocker AccountRuntimeBlocker,
-	apiKeyService *APIKeyService,
+	apiKeyService *APIKeyService, concurrencyService *ConcurrencyService,
 ) AdminService {
 	svc := NewAdminService(userRepo, groupRepo, accountRepo, proxyRepo, apiKeyRepo, redeemCodeRepo, userGroupRateRepo, userRPMCache, billingCacheService, proxyProber, proxyLatencyCache, authCacheInvalidator, entClient, settingService, defaultSubAssigner, userSubRepo, privacyClientFactory, runtimeBlocker)
 	if impl, ok := svc.(*adminServiceImpl); ok {
 		impl.SetUserProvisioningService(NewEntUserProvisioningService(entClient, userRepo, apiKeyService))
+		impl.SetRouteConcurrencyService(concurrencyService)
 	}
 	return svc
 }
@@ -566,8 +632,14 @@ var ProviderSet = wire.NewSet(
 	NewUserService,
 	ProvideAPIKeyService,
 	ProvideAPIKeyAuthCacheInvalidator,
+	ProvideLDAPUserSyncService,
 	NewGroupService,
 	ProvideExternalTokenUsageService,
+	ProvideSceneAccountDailyUsageService,
+	ProvideSingGuardClient,
+	ProvideSecurityCheckService,
+	ProvideSecurityConfigProvider,
+	ProvideSecurityCheckCollector,
 	NewAccountService,
 	NewProxyService,
 	NewRedeemService,
@@ -617,6 +689,7 @@ var ProviderSet = wire.NewSet(
 	NewSubscriptionService,
 	wire.Bind(new(DefaultSubscriptionAssigner), new(*SubscriptionService)),
 	ProvideConcurrencyService,
+	ProvideModelRouteConcurrencyScheduleRefresher,
 	ProvideUserMessageQueueService,
 	NewUsageRecordWorkerPool,
 	ProvideSchedulerSnapshotService,

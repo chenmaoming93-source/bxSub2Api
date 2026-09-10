@@ -204,6 +204,20 @@ func (_c *TokenStatAggregateCreate) SetNillableUpstreamModel(v *string) *TokenSt
 	return _c
 }
 
+// SetDepartment sets the "department" field.
+func (_c *TokenStatAggregateCreate) SetDepartment(v string) *TokenStatAggregateCreate {
+	_c.mutation.SetDepartment(v)
+	return _c
+}
+
+// SetNillableDepartment sets the "department" field if the given value is not nil.
+func (_c *TokenStatAggregateCreate) SetNillableDepartment(v *string) *TokenStatAggregateCreate {
+	if v != nil {
+		_c.SetDepartment(*v)
+	}
+	return _c
+}
+
 // SetLastSyncedAt sets the "last_synced_at" field.
 func (_c *TokenStatAggregateCreate) SetLastSyncedAt(v time.Time) *TokenStatAggregateCreate {
 	_c.mutation.SetLastSyncedAt(v)
@@ -333,6 +347,11 @@ func (_c *TokenStatAggregateCreate) check() error {
 			return &ValidationError{Name: "upstream_model", err: fmt.Errorf(`ent: validator failed for field "TokenStatAggregate.upstream_model": %w`, err)}
 		}
 	}
+	if v, ok := _c.mutation.Department(); ok {
+		if err := tokenstataggregate.DepartmentValidator(v); err != nil {
+			return &ValidationError{Name: "department", err: fmt.Errorf(`ent: validator failed for field "TokenStatAggregate.department": %w`, err)}
+		}
+	}
 	if _, ok := _c.mutation.LastSyncedAt(); !ok {
 		return &ValidationError{Name: "last_synced_at", err: errors.New(`ent: missing required field "TokenStatAggregate.last_synced_at"`)}
 	}
@@ -430,6 +449,10 @@ func (_c *TokenStatAggregateCreate) createSpec() (*TokenStatAggregate, *sqlgraph
 	if value, ok := _c.mutation.UpstreamModel(); ok {
 		_spec.SetField(tokenstataggregate.FieldUpstreamModel, field.TypeString, value)
 		_node.UpstreamModel = &value
+	}
+	if value, ok := _c.mutation.Department(); ok {
+		_spec.SetField(tokenstataggregate.FieldDepartment, field.TypeString, value)
+		_node.Department = &value
 	}
 	if value, ok := _c.mutation.LastSyncedAt(); ok {
 		_spec.SetField(tokenstataggregate.FieldLastSyncedAt, field.TypeTime, value)
@@ -754,6 +777,24 @@ func (u *TokenStatAggregateUpsert) UpdateUpstreamModel() *TokenStatAggregateUpse
 // ClearUpstreamModel clears the value of the "upstream_model" field.
 func (u *TokenStatAggregateUpsert) ClearUpstreamModel() *TokenStatAggregateUpsert {
 	u.SetNull(tokenstataggregate.FieldUpstreamModel)
+	return u
+}
+
+// SetDepartment sets the "department" field.
+func (u *TokenStatAggregateUpsert) SetDepartment(v string) *TokenStatAggregateUpsert {
+	u.Set(tokenstataggregate.FieldDepartment, v)
+	return u
+}
+
+// UpdateDepartment sets the "department" field to the value that was provided on create.
+func (u *TokenStatAggregateUpsert) UpdateDepartment() *TokenStatAggregateUpsert {
+	u.SetExcluded(tokenstataggregate.FieldDepartment)
+	return u
+}
+
+// ClearDepartment clears the value of the "department" field.
+func (u *TokenStatAggregateUpsert) ClearDepartment() *TokenStatAggregateUpsert {
+	u.SetNull(tokenstataggregate.FieldDepartment)
 	return u
 }
 
@@ -1126,6 +1167,27 @@ func (u *TokenStatAggregateUpsertOne) UpdateUpstreamModel() *TokenStatAggregateU
 func (u *TokenStatAggregateUpsertOne) ClearUpstreamModel() *TokenStatAggregateUpsertOne {
 	return u.Update(func(s *TokenStatAggregateUpsert) {
 		s.ClearUpstreamModel()
+	})
+}
+
+// SetDepartment sets the "department" field.
+func (u *TokenStatAggregateUpsertOne) SetDepartment(v string) *TokenStatAggregateUpsertOne {
+	return u.Update(func(s *TokenStatAggregateUpsert) {
+		s.SetDepartment(v)
+	})
+}
+
+// UpdateDepartment sets the "department" field to the value that was provided on create.
+func (u *TokenStatAggregateUpsertOne) UpdateDepartment() *TokenStatAggregateUpsertOne {
+	return u.Update(func(s *TokenStatAggregateUpsert) {
+		s.UpdateDepartment()
+	})
+}
+
+// ClearDepartment clears the value of the "department" field.
+func (u *TokenStatAggregateUpsertOne) ClearDepartment() *TokenStatAggregateUpsertOne {
+	return u.Update(func(s *TokenStatAggregateUpsert) {
+		s.ClearDepartment()
 	})
 }
 
@@ -1666,6 +1728,27 @@ func (u *TokenStatAggregateUpsertBulk) UpdateUpstreamModel() *TokenStatAggregate
 func (u *TokenStatAggregateUpsertBulk) ClearUpstreamModel() *TokenStatAggregateUpsertBulk {
 	return u.Update(func(s *TokenStatAggregateUpsert) {
 		s.ClearUpstreamModel()
+	})
+}
+
+// SetDepartment sets the "department" field.
+func (u *TokenStatAggregateUpsertBulk) SetDepartment(v string) *TokenStatAggregateUpsertBulk {
+	return u.Update(func(s *TokenStatAggregateUpsert) {
+		s.SetDepartment(v)
+	})
+}
+
+// UpdateDepartment sets the "department" field to the value that was provided on create.
+func (u *TokenStatAggregateUpsertBulk) UpdateDepartment() *TokenStatAggregateUpsertBulk {
+	return u.Update(func(s *TokenStatAggregateUpsert) {
+		s.UpdateDepartment()
+	})
+}
+
+// ClearDepartment clears the value of the "department" field.
+func (u *TokenStatAggregateUpsertBulk) ClearDepartment() *TokenStatAggregateUpsertBulk {
+	return u.Update(func(s *TokenStatAggregateUpsert) {
+		s.ClearDepartment()
 	})
 }
 

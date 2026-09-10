@@ -506,11 +506,15 @@ func (s *AuthService) Login(ctx context.Context, email, password string) (string
 	return token, user, nil
 }
 
-// LoginLDAP completes login after LDAP has verified the password. LDAP accounts
-// are keyed locally by directory username; a real email address is not required.
-// The legacy User.Email column remains the account-key column for compatibility.
-func (s *AuthService) LoginLDAP(ctx context.Context, account, displayName string) (string, *User, error) {
+// LoginLDAP completes login after LDAP has verified the password. The local
+// account key is the username entered by the user and is stored in User.Email
+// for compatibility with the existing local account model.
+func (s *AuthService) LoginLDAP(ctx context.Context, account, displayName string, departments ...string) (string, *User, error) {
 	account = strings.TrimSpace(strings.ToLower(account))
+	department := ""
+	if len(departments) > 0 {
+		department = strings.TrimSpace(departments[0])
+	}
 	if account == "" || len(account) > 255 {
 		logger.LegacyPrintf("service.auth", "[LDAP] authenticated directory user has no valid username")
 		return "", nil, ErrInvalidCredentials
@@ -549,6 +553,7 @@ func (s *AuthService) LoginLDAP(ctx context.Context, account, displayName string
 		user = &User{
 			Email:        account,
 			Username:     localUsername,
+			Department:   department,
 			PasswordHash: hash,
 			Role:         RoleUser,
 			Balance:      grantPlan.Balance,

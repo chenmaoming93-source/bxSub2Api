@@ -59,6 +59,24 @@ func TestCandidateConcurrencyShare(t *testing.T) {
 	}
 }
 
+func TestScaleModelRouteConcurrencyValue(t *testing.T) {
+	if got := ScaleModelRouteConcurrencyValue(100, 200, allocationPtr(10)); got == nil || *got != 20 {
+		t.Fatalf("got %v, want 20", got)
+	}
+	if got := ScaleModelRouteConcurrencyValue(100, 50, allocationPtr(50)); got == nil || *got != 25 {
+		t.Fatalf("got %v, want 25", got)
+	}
+	if got := ScaleModelRouteConcurrencyValue(100, 1, allocationPtr(1)); got == nil || *got != 1 {
+		t.Fatalf("got %v, want positive minimum 1", got)
+	}
+	if got := ScaleModelRouteConcurrencyValue(100, 200, nil); got != nil {
+		t.Fatalf("unlimited value changed to %v", got)
+	}
+	if got := ScaleModelRouteConcurrencyValue(0, 200, allocationPtr(10)); got == nil || *got != 10 {
+		t.Fatalf("old unlimited value changed to %v", got)
+	}
+}
+
 func equalInts(a, b []int) bool {
 	if len(a) != len(b) {
 		return false

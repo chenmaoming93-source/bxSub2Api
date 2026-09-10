@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/Wei-Shaw/sub2api/internal/service"
 	"github.com/redis/go-redis/v9"
@@ -38,6 +39,23 @@ const (
 
 const routeSlotKeyPrefix = "concurrency:route:"
 const routeConfigKeyPrefix = "concurrency:route-config:"
+const routeScheduleKeyPrefix = "concurrency:route-schedule:"
+const routeScheduleRefreshLockKey = "concurrency:route-schedule:refresh-lock"
+
+var (
+	routeScheduleRefreshLockRenewScript = redis.NewScript(`
+		if redis.call('GET', KEYS[1]) == ARGV[1] then
+			return redis.call('PEXPIRE', KEYS[1], ARGV[2])
+		end
+		return 0
+	`)
+	routeScheduleRefreshLockReleaseScript = redis.NewScript(`
+		if redis.call('GET', KEYS[1]) == ARGV[1] then
+			return redis.call('DEL', KEYS[1])
+		end
+		return 0
+	`)
+)
 
 var (
 	// acquireScript 使用有序集合计数并在未达上限时添加槽位
@@ -268,14 +286,124 @@ func (c *concurrencyCache) ReleaseRouteSlot(ctx context.Context, key, requestID 
 	return c.rdb.ZRem(ctx, routeSlotKeyPrefix+key, requestID).Err()
 }
 
-func (c *concurrencyCache) GetRouteConcurrencyLimit(ctx context.Context, key string) (*int, bool, error) {
-	value, err := c.rdb.Get(ctx, routeConfigKeyPrefix+key).Result()
-	if errors.Is(err, redis.Nil) {
-		return nil, false, nil
+func (c *concurrencyCache) GetRouteConcurrencyBatch(ctx context.Context, keys []string) (map[string]int, error) {
+	if len(keys) == 0 {
+		return map[string]int{}, nil
 	}
+	now, err := c.rdb.Time(ctx).Result()
 	if err != nil {
+		return nil, fmt.Errorf("redis TIME: %w", err)
+	}
+	cutoffTime := now.Unix() - int64(c.slotTTLSeconds)
+	pipe := c.rdb.Pipeline()
+	type routeCmd struct {
+		key      string
+		zcardCmd *redis.IntCmd
+	}
+	cmds := make([]routeCmd, 0, len(keys))
+	seen := make(map[string]struct{}, len(keys))
+	for _, key := range keys {
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
+		slotKey := routeSlotKeyPrefix + key
+		pipe.ZRemRangeByScore(ctx, slotKey, "-inf", strconv.FormatInt(cutoffTime, 10))
+		cmds = append(cmds, routeCmd{key: key, zcardCmd: pipe.ZCard(ctx, slotKey)})
+	}
+	if _, err := pipe.Exec(ctx); err != nil && !errors.Is(err, redis.Nil) {
+		return nil, fmt.Errorf("route load pipeline exec: %w", err)
+	}
+	result := make(map[string]int, len(cmds))
+	for _, cmd := range cmds {
+		result[cmd.key] = int(cmd.zcardCmd.Val())
+	}
+	return result, nil
+}
+
+func (c *concurrencyCache) GetRouteConcurrencyLimit(ctx context.Context, key string) (*int, bool, error) {
+	// Read the schedule Hash and legacy string in one pipeline. The request
+	// path never computes time or queries the schedule table; the refresh task
+	// has already materialized the current value in the Hash.
+	pipe := c.rdb.Pipeline()
+	scheduleCmd := pipe.HGet(ctx, routeScheduleKeyPrefix+key, "limit")
+	legacyCmd := pipe.Get(ctx, routeConfigKeyPrefix+key)
+	if _, err := pipe.Exec(ctx); err != nil && !errors.Is(err, redis.Nil) {
 		return nil, false, err
 	}
+	if scheduleCmd.Err() == nil && scheduleCmd.Val() != "" {
+		limit, hit, err := parseRouteConcurrencyLimit(scheduleCmd.Val())
+		if err == nil {
+			return limit, hit, nil
+		}
+		// A malformed current Hash value is not allowed to break the old
+		// route path during rollout; use the unchanged legacy value.
+	}
+	if errors.Is(legacyCmd.Err(), redis.Nil) {
+		return nil, false, nil
+	}
+	if legacyCmd.Err() != nil {
+		return nil, false, legacyCmd.Err()
+	}
+	return parseRouteConcurrencyLimit(legacyCmd.Val())
+}
+
+func (c *concurrencyCache) GetRouteConcurrencyLimitBatch(ctx context.Context, keys []string) (map[string]service.RouteConcurrencyLimit, error) {
+	result := make(map[string]service.RouteConcurrencyLimit, len(keys))
+	if len(keys) == 0 {
+		return result, nil
+	}
+	pipe := c.rdb.Pipeline()
+	type commands struct {
+		key      string
+		schedule *redis.StringCmd
+		legacy   *redis.StringCmd
+	}
+	cmds := make([]commands, 0, len(keys))
+	seen := make(map[string]struct{}, len(keys))
+	for _, key := range keys {
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		seen[key] = struct{}{}
+		cmds = append(cmds, commands{
+			key:      key,
+			schedule: pipe.HGet(ctx, routeScheduleKeyPrefix+key, "limit"),
+			legacy:   pipe.Get(ctx, routeConfigKeyPrefix+key),
+		})
+	}
+	if _, err := pipe.Exec(ctx); err != nil && !errors.Is(err, redis.Nil) {
+		return nil, err
+	}
+	for _, command := range cmds {
+		var limit *int
+		var hit bool
+		if command.schedule.Err() == nil && command.schedule.Val() != "" {
+			parsed, parsedHit, err := parseRouteConcurrencyLimit(command.schedule.Val())
+			if err == nil {
+				limit, hit = parsed, parsedHit
+			}
+		}
+		if !hit {
+			if errors.Is(command.legacy.Err(), redis.Nil) {
+				result[command.key] = service.RouteConcurrencyLimit{}
+				continue
+			}
+			if command.legacy.Err() != nil {
+				return nil, command.legacy.Err()
+			}
+			parsed, parsedHit, err := parseRouteConcurrencyLimit(command.legacy.Val())
+			if err != nil {
+				return nil, err
+			}
+			limit, hit = parsed, parsedHit
+		}
+		result[command.key] = service.RouteConcurrencyLimit{Limit: limit, Hit: hit}
+	}
+	return result, nil
+}
+
+func parseRouteConcurrencyLimit(value string) (*int, bool, error) {
 	if value == "unlimited" {
 		return nil, true, nil
 	}
@@ -292,6 +420,87 @@ func (c *concurrencyCache) SetRouteConcurrencyLimit(ctx context.Context, key str
 		value = strconv.Itoa(*limit)
 	}
 	return c.rdb.Set(ctx, routeConfigKeyPrefix+key, value, 0).Err()
+}
+
+func (c *concurrencyCache) SetRouteScheduleConcurrencyLimit(ctx context.Context, key string, limit *int, updatedAt time.Time) error {
+	return c.SetRouteScheduleConcurrencyLimits(ctx, map[string]*int{key: limit}, updatedAt)
+}
+
+func (c *concurrencyCache) SetRouteScheduleConcurrencyLimits(ctx context.Context, limits map[string]*int, updatedAt time.Time) error {
+	if len(limits) == 0 {
+		return nil
+	}
+	value := "unlimited"
+	_, err := c.rdb.Pipelined(ctx, func(pipe redis.Pipeliner) error {
+		for key, limit := range limits {
+			value = "unlimited"
+			if limit != nil {
+				value = strconv.Itoa(*limit)
+			}
+			pipe.HSet(ctx, routeScheduleKeyPrefix+key, "limit", value, "updated_at", updatedAt.UTC().Format(time.RFC3339Nano))
+		}
+		return nil
+	})
+	return err
+}
+
+func (c *concurrencyCache) DeleteRouteScheduleConcurrencyLimit(ctx context.Context, key string) error {
+	return c.DeleteRouteScheduleConcurrencyLimits(ctx, []string{key})
+}
+
+func (c *concurrencyCache) DeleteRouteScheduleConcurrencyLimits(ctx context.Context, keys []string) error {
+	if len(keys) == 0 {
+		return nil
+	}
+	redisKeys := make([]string, 0, len(keys))
+	for _, key := range keys {
+		redisKeys = append(redisKeys, routeScheduleKeyPrefix+key)
+	}
+	return c.rdb.Del(ctx, redisKeys...).Err()
+}
+
+func (c *concurrencyCache) ListRouteScheduleKeys(ctx context.Context) ([]string, error) {
+	keys := make([]string, 0)
+	var cursor uint64
+	for {
+		batch, next, err := c.rdb.Scan(ctx, cursor, routeScheduleKeyPrefix+"*", 200).Result()
+		if err != nil {
+			return nil, err
+		}
+		for _, key := range batch {
+			// The lock shares the prefix but is not a materialized candidate Hash.
+			if key != routeScheduleRefreshLockKey {
+				keys = append(keys, key)
+			}
+		}
+		cursor = next
+		if cursor == 0 {
+			return keys, nil
+		}
+	}
+}
+
+func (c *concurrencyCache) TryAcquireRouteScheduleRefreshLock(ctx context.Context, token string, ttl time.Duration) (bool, error) {
+	if token == "" || ttl <= 0 {
+		return false, fmt.Errorf("invalid route schedule refresh lock arguments")
+	}
+	return c.rdb.SetNX(ctx, routeScheduleRefreshLockKey, token, ttl).Result()
+}
+
+func (c *concurrencyCache) RenewRouteScheduleRefreshLock(ctx context.Context, token string, ttl time.Duration) (bool, error) {
+	if token == "" || ttl <= 0 {
+		return false, fmt.Errorf("invalid route schedule refresh lock arguments")
+	}
+	result, err := routeScheduleRefreshLockRenewScript.Run(ctx, c.rdb, []string{routeScheduleRefreshLockKey}, token, ttl.Milliseconds()).Int()
+	return result == 1, err
+}
+
+func (c *concurrencyCache) ReleaseRouteScheduleRefreshLock(ctx context.Context, token string) error {
+	if token == "" {
+		return fmt.Errorf("invalid route schedule refresh lock token")
+	}
+	_, err := routeScheduleRefreshLockReleaseScript.Run(ctx, c.rdb, []string{routeScheduleRefreshLockKey}, token).Result()
+	return err
 }
 
 func (c *concurrencyCache) GetAccountConcurrency(ctx context.Context, accountID int64) (int, error) {

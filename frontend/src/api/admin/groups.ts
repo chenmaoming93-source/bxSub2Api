@@ -26,6 +26,53 @@ export async function listModelRouteReferences(groupId: number) {
   return data
 }
 
+export async function listModelRouteConcurrency(groupId: number) {
+  const { data } = await apiClient.get<Array<{ route_alias: string; account_id: number; max_concurrency: number | null; account_concurrency: number; allocated_concurrency: number; current_concurrency: number; effective_max_concurrency: number | null }>>(`/admin/groups/${groupId}/model-route-concurrency`)
+  return data
+}
+
+export interface ModelRouteConcurrencySchedule {
+  id?: number
+  start: string
+  end: string
+  max_concurrency: number | null
+}
+
+export async function listModelRouteConcurrencySchedules(
+  groupId: number,
+  routeAlias: string,
+  accountId: number
+): Promise<ModelRouteConcurrencySchedule[]> {
+  const { data } = await apiClient.get<ModelRouteConcurrencySchedule[]>(
+    `/admin/groups/${groupId}/model-route-references/concurrency-schedules`,
+    { params: { route_alias: routeAlias, account_id: accountId } }
+  )
+  return data || []
+}
+
+export async function replaceModelRouteConcurrencySchedules(
+  groupId: number,
+  input: { route_alias: string; account_id: number; schedules: ModelRouteConcurrencySchedule[] }
+): Promise<void> {
+  await apiClient.put(`/admin/groups/${groupId}/model-route-references/concurrency-schedules`, input)
+}
+
+export interface ModelRouteConcurrencyScheduleRefreshResponse {
+  task_id: string
+  message: string
+}
+
+export async function refreshModelRouteConcurrencySchedules(
+  groupId?: number
+): Promise<ModelRouteConcurrencyScheduleRefreshResponse> {
+  const { data } = await apiClient.post<ModelRouteConcurrencyScheduleRefreshResponse>(
+    groupId
+      ? `/admin/groups/${groupId}/model-route-references/concurrency-schedules/refresh`
+      : '/admin/groups/model-route-references/concurrency-schedules/refresh'
+  )
+  return data
+}
+
 export async function rebuildModelRouteReferences(): Promise<unknown> {
   const { data } = await apiClient.post('/admin/groups/model-route-references/rebuild')
   return data
@@ -103,6 +150,77 @@ export async function getByPlatform(platform: GroupPlatform): Promise<AdminGroup
  */
 export async function getById(id: number): Promise<AdminGroup> {
   const { data } = await apiClient.get<AdminGroup>(`/admin/groups/${id}`)
+  return data
+}
+
+export async function updateSecurityCheck(
+  id: number,
+  config: import('@/types').SecurityCheckConfig
+): Promise<AdminGroup> {
+  const { data } = await apiClient.put<AdminGroup>(`/admin/groups/${id}/security-check`, config)
+  return data
+}
+
+export interface SecurityCheckLogSummary {
+  id: number
+  event_id: string
+  request_id?: string
+  group_id?: number
+  group_name?: string
+  model?: string
+  protocol?: string
+  check_status: string
+  decision: string
+  is_unsafe: boolean
+  triggered_rules: Array<{ dimension: string; threshold: number; action: string; risk_prob: number }>
+  latency_ms?: number
+  created_at: string
+  request_body_original_bytes: number
+  request_body_stored_bytes: number
+  request_body_truncated: boolean
+}
+
+export interface SecurityCheckLogPage {
+  items: SecurityCheckLogSummary[]
+  total: number
+  page: number
+  page_size: number
+}
+
+export interface SecurityCheckLogRetentionConfig {
+  retention_days: number
+  cleanup_time: string
+  timezone: string
+  next_cleanup_at: string
+}
+
+export async function listSecurityCheckLogs(params?: Record<string, string | number>): Promise<SecurityCheckLogPage> {
+  const { data } = await apiClient.get<SecurityCheckLogPage>('/admin/groups/security-check/logs', { params })
+  return data
+}
+
+export async function getSecurityCheckLog(id: number) {
+  const { data } = await apiClient.get(`/admin/groups/security-check/logs/${id}`)
+  return data as SecurityCheckLogSummary & { config_version: number; rules_snapshot: unknown[]; request_body?: string; singguard_response?: string; exception_type?: string; exception_message?: string }
+}
+
+export async function getSecurityCheckLogRetention(): Promise<SecurityCheckLogRetentionConfig> {
+  const { data } = await apiClient.get<SecurityCheckLogRetentionConfig>('/admin/groups/security-check/retention')
+  return data
+}
+
+export async function updateSecurityCheckLogRetention(config: Pick<SecurityCheckLogRetentionConfig, 'retention_days' | 'cleanup_time'>): Promise<SecurityCheckLogRetentionConfig> {
+  const { data } = await apiClient.put<SecurityCheckLogRetentionConfig>('/admin/groups/security-check/retention', config)
+  return data
+}
+
+export async function getSecurityCheckCollectionStatus() {
+  const { data } = await apiClient.get<{ circuit_open: boolean; failure_count: number }>('/admin/groups/security-check/collection-status')
+  return data
+}
+
+export async function reopenSecurityCheckCollection() {
+  const { data } = await apiClient.post<{ reopened: boolean }>('/admin/groups/security-check/collection-reopen')
   return data
 }
 
@@ -354,11 +472,22 @@ export const groupsAPI = {
   getByPlatform,
   getAllIncludingInactive,
   getById,
+  updateSecurityCheck,
+  listSecurityCheckLogs,
+  getSecurityCheckLog,
+  getSecurityCheckLogRetention,
+  updateSecurityCheckLogRetention,
+  getSecurityCheckCollectionStatus,
+  reopenSecurityCheckCollection,
   getModelsListCandidates,
   create,
   update,
   updateModelRouteConcurrency,
   listModelRouteReferences,
+  listModelRouteConcurrency,
+  listModelRouteConcurrencySchedules,
+  replaceModelRouteConcurrencySchedules,
+  refreshModelRouteConcurrencySchedules,
   rebuildModelRouteReferences,
   delete: deleteGroup,
   toggleStatus,

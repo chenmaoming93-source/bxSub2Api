@@ -47,6 +47,8 @@ const (
 	FieldAccountID = "account_id"
 	// FieldUpstreamModel holds the string denoting the upstream_model field in the database.
 	FieldUpstreamModel = "upstream_model"
+	// FieldDepartment holds the string denoting the department field in the database.
+	FieldDepartment = "department"
 	// FieldLastSyncedAt holds the string denoting the last_synced_at field in the database.
 	FieldLastSyncedAt = "last_synced_at"
 	// Table holds the table name of the tokenstataggregate in the database.
@@ -73,6 +75,7 @@ var Columns = []string{
 	FieldRouteAlias,
 	FieldAccountID,
 	FieldUpstreamModel,
+	FieldDepartment,
 	FieldLastSyncedAt,
 }
 
@@ -111,6 +114,8 @@ var (
 	RouteAliasValidator func(string) error
 	// UpstreamModelValidator is a validator for the "upstream_model" field. It is called by the builders before save.
 	UpstreamModelValidator func(string) error
+	// DepartmentValidator is a validator for the "department" field. It is called by the builders before save.
+	DepartmentValidator func(string) error
 )
 
 // OrderOption defines the ordering options for the TokenStatAggregate queries.
@@ -194,6 +199,11 @@ func ByAccountID(opts ...sql.OrderTermOption) OrderOption {
 // ByUpstreamModel orders the results by the upstream_model field.
 func ByUpstreamModel(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldUpstreamModel, opts...).ToFunc()
+}
+
+// ByDepartment orders the results by the department field.
+func ByDepartment(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDepartment, opts...).ToFunc()
 }
 
 // ByLastSyncedAt orders the results by the last_synced_at field.

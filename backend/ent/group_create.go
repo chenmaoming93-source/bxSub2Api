@@ -77,6 +77,20 @@ func (_c *GroupCreate) SetName(v string) *GroupCreate {
 	return _c
 }
 
+// SetSceneName sets the "scene_name" field.
+func (_c *GroupCreate) SetSceneName(v string) *GroupCreate {
+	_c.mutation.SetSceneName(v)
+	return _c
+}
+
+// SetNillableSceneName sets the "scene_name" field if the given value is not nil.
+func (_c *GroupCreate) SetNillableSceneName(v *string) *GroupCreate {
+	if v != nil {
+		_c.SetSceneName(*v)
+	}
+	return _c
+}
+
 // SetDescription sets the "description" field.
 func (_c *GroupCreate) SetDescription(v string) *GroupCreate {
 	_c.mutation.SetDescription(v)
@@ -503,6 +517,20 @@ func (_c *GroupCreate) SetNillableRpmLimit(v *int) *GroupCreate {
 	return _c
 }
 
+// SetSecurityCheckConfig sets the "security_check_config" field.
+func (_c *GroupCreate) SetSecurityCheckConfig(v domain.SecurityCheckConfig) *GroupCreate {
+	_c.mutation.SetSecurityCheckConfig(v)
+	return _c
+}
+
+// SetNillableSecurityCheckConfig sets the "security_check_config" field if the given value is not nil.
+func (_c *GroupCreate) SetNillableSecurityCheckConfig(v *domain.SecurityCheckConfig) *GroupCreate {
+	if v != nil {
+		_c.SetSecurityCheckConfig(*v)
+	}
+	return _c
+}
+
 // AddAPIKeyIDs adds the "api_keys" edge to the APIKey entity by IDs.
 func (_c *GroupCreate) AddAPIKeyIDs(ids ...int64) *GroupCreate {
 	_c.mutation.AddAPIKeyIDs(ids...)
@@ -728,6 +756,10 @@ func (_c *GroupCreate) defaults() error {
 		v := group.DefaultRpmLimit
 		_c.mutation.SetRpmLimit(v)
 	}
+	if _, ok := _c.mutation.SecurityCheckConfig(); !ok {
+		v := group.DefaultSecurityCheckConfig
+		_c.mutation.SetSecurityCheckConfig(v)
+	}
 	return nil
 }
 
@@ -745,6 +777,11 @@ func (_c *GroupCreate) check() error {
 	if v, ok := _c.mutation.Name(); ok {
 		if err := group.NameValidator(v); err != nil {
 			return &ValidationError{Name: "name", err: fmt.Errorf(`ent: validator failed for field "Group.name": %w`, err)}
+		}
+	}
+	if v, ok := _c.mutation.SceneName(); ok {
+		if err := group.SceneNameValidator(v); err != nil {
+			return &ValidationError{Name: "scene_name", err: fmt.Errorf(`ent: validator failed for field "Group.scene_name": %w`, err)}
 		}
 	}
 	if _, ok := _c.mutation.RateMultiplier(); !ok {
@@ -830,6 +867,9 @@ func (_c *GroupCreate) check() error {
 	if _, ok := _c.mutation.RpmLimit(); !ok {
 		return &ValidationError{Name: "rpm_limit", err: errors.New(`ent: missing required field "Group.rpm_limit"`)}
 	}
+	if _, ok := _c.mutation.SecurityCheckConfig(); !ok {
+		return &ValidationError{Name: "security_check_config", err: errors.New(`ent: missing required field "Group.security_check_config"`)}
+	}
 	return nil
 }
 
@@ -872,6 +912,10 @@ func (_c *GroupCreate) createSpec() (*Group, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.Name(); ok {
 		_spec.SetField(group.FieldName, field.TypeString, value)
 		_node.Name = value
+	}
+	if value, ok := _c.mutation.SceneName(); ok {
+		_spec.SetField(group.FieldSceneName, field.TypeString, value)
+		_node.SceneName = &value
 	}
 	if value, ok := _c.mutation.Description(); ok {
 		_spec.SetField(group.FieldDescription, field.TypeString, value)
@@ -996,6 +1040,10 @@ func (_c *GroupCreate) createSpec() (*Group, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.RpmLimit(); ok {
 		_spec.SetField(group.FieldRpmLimit, field.TypeInt, value)
 		_node.RpmLimit = value
+	}
+	if value, ok := _c.mutation.SecurityCheckConfig(); ok {
+		_spec.SetField(group.FieldSecurityCheckConfig, field.TypeJSON, value)
+		_node.SecurityCheckConfig = value
 	}
 	if nodes := _c.mutation.APIKeysIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -1192,6 +1240,24 @@ func (u *GroupUpsert) SetName(v string) *GroupUpsert {
 // UpdateName sets the "name" field to the value that was provided on create.
 func (u *GroupUpsert) UpdateName() *GroupUpsert {
 	u.SetExcluded(group.FieldName)
+	return u
+}
+
+// SetSceneName sets the "scene_name" field.
+func (u *GroupUpsert) SetSceneName(v string) *GroupUpsert {
+	u.Set(group.FieldSceneName, v)
+	return u
+}
+
+// UpdateSceneName sets the "scene_name" field to the value that was provided on create.
+func (u *GroupUpsert) UpdateSceneName() *GroupUpsert {
+	u.SetExcluded(group.FieldSceneName)
+	return u
+}
+
+// ClearSceneName clears the value of the "scene_name" field.
+func (u *GroupUpsert) ClearSceneName() *GroupUpsert {
+	u.SetNull(group.FieldSceneName)
 	return u
 }
 
@@ -1705,6 +1771,18 @@ func (u *GroupUpsert) AddRpmLimit(v int) *GroupUpsert {
 	return u
 }
 
+// SetSecurityCheckConfig sets the "security_check_config" field.
+func (u *GroupUpsert) SetSecurityCheckConfig(v domain.SecurityCheckConfig) *GroupUpsert {
+	u.Set(group.FieldSecurityCheckConfig, v)
+	return u
+}
+
+// UpdateSecurityCheckConfig sets the "security_check_config" field to the value that was provided on create.
+func (u *GroupUpsert) UpdateSecurityCheckConfig() *GroupUpsert {
+	u.SetExcluded(group.FieldSecurityCheckConfig)
+	return u
+}
+
 // UpdateNewValues updates the mutable fields using the new values that were set on create.
 // Using this option is equivalent to using:
 //
@@ -1796,6 +1874,27 @@ func (u *GroupUpsertOne) SetName(v string) *GroupUpsertOne {
 func (u *GroupUpsertOne) UpdateName() *GroupUpsertOne {
 	return u.Update(func(s *GroupUpsert) {
 		s.UpdateName()
+	})
+}
+
+// SetSceneName sets the "scene_name" field.
+func (u *GroupUpsertOne) SetSceneName(v string) *GroupUpsertOne {
+	return u.Update(func(s *GroupUpsert) {
+		s.SetSceneName(v)
+	})
+}
+
+// UpdateSceneName sets the "scene_name" field to the value that was provided on create.
+func (u *GroupUpsertOne) UpdateSceneName() *GroupUpsertOne {
+	return u.Update(func(s *GroupUpsert) {
+		s.UpdateSceneName()
+	})
+}
+
+// ClearSceneName clears the value of the "scene_name" field.
+func (u *GroupUpsertOne) ClearSceneName() *GroupUpsertOne {
+	return u.Update(func(s *GroupUpsert) {
+		s.ClearSceneName()
 	})
 }
 
@@ -2394,6 +2493,20 @@ func (u *GroupUpsertOne) UpdateRpmLimit() *GroupUpsertOne {
 	})
 }
 
+// SetSecurityCheckConfig sets the "security_check_config" field.
+func (u *GroupUpsertOne) SetSecurityCheckConfig(v domain.SecurityCheckConfig) *GroupUpsertOne {
+	return u.Update(func(s *GroupUpsert) {
+		s.SetSecurityCheckConfig(v)
+	})
+}
+
+// UpdateSecurityCheckConfig sets the "security_check_config" field to the value that was provided on create.
+func (u *GroupUpsertOne) UpdateSecurityCheckConfig() *GroupUpsertOne {
+	return u.Update(func(s *GroupUpsert) {
+		s.UpdateSecurityCheckConfig()
+	})
+}
+
 // Exec executes the query.
 func (u *GroupUpsertOne) Exec(ctx context.Context) error {
 	if len(u.create.conflict) == 0 {
@@ -2651,6 +2764,27 @@ func (u *GroupUpsertBulk) SetName(v string) *GroupUpsertBulk {
 func (u *GroupUpsertBulk) UpdateName() *GroupUpsertBulk {
 	return u.Update(func(s *GroupUpsert) {
 		s.UpdateName()
+	})
+}
+
+// SetSceneName sets the "scene_name" field.
+func (u *GroupUpsertBulk) SetSceneName(v string) *GroupUpsertBulk {
+	return u.Update(func(s *GroupUpsert) {
+		s.SetSceneName(v)
+	})
+}
+
+// UpdateSceneName sets the "scene_name" field to the value that was provided on create.
+func (u *GroupUpsertBulk) UpdateSceneName() *GroupUpsertBulk {
+	return u.Update(func(s *GroupUpsert) {
+		s.UpdateSceneName()
+	})
+}
+
+// ClearSceneName clears the value of the "scene_name" field.
+func (u *GroupUpsertBulk) ClearSceneName() *GroupUpsertBulk {
+	return u.Update(func(s *GroupUpsert) {
+		s.ClearSceneName()
 	})
 }
 
@@ -3246,6 +3380,20 @@ func (u *GroupUpsertBulk) AddRpmLimit(v int) *GroupUpsertBulk {
 func (u *GroupUpsertBulk) UpdateRpmLimit() *GroupUpsertBulk {
 	return u.Update(func(s *GroupUpsert) {
 		s.UpdateRpmLimit()
+	})
+}
+
+// SetSecurityCheckConfig sets the "security_check_config" field.
+func (u *GroupUpsertBulk) SetSecurityCheckConfig(v domain.SecurityCheckConfig) *GroupUpsertBulk {
+	return u.Update(func(s *GroupUpsert) {
+		s.SetSecurityCheckConfig(v)
+	})
+}
+
+// UpdateSecurityCheckConfig sets the "security_check_config" field to the value that was provided on create.
+func (u *GroupUpsertBulk) UpdateSecurityCheckConfig() *GroupUpsertBulk {
+	return u.Update(func(s *GroupUpsert) {
+		s.UpdateSecurityCheckConfig()
 	})
 }
 

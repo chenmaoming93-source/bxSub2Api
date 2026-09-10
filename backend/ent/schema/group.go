@@ -38,6 +38,11 @@ func (Group) Fields() []ent.Field {
 		field.String("name").
 			MaxLen(100).
 			NotEmpty(),
+		field.String("scene_name").
+			MaxLen(100).
+			Optional().
+			Nillable().
+			Comment("业务场景展示名称，可为空且允许重复"),
 		field.String("description").
 			Optional().
 			Nillable().
@@ -164,6 +169,12 @@ func (Group) Fields() []ent.Field {
 		field.Int("rpm_limit").
 			Default(0).
 			Comment("分组 RPM 上限，0 表示不限制；设置后接管该分组用户的限流"),
+
+		// 分组级 SingGuard 请求安全检查配置。
+		field.JSON("security_check_config", domain.SecurityCheckConfig{}).
+			Default(domain.DefaultSecurityCheckConfig()).
+			SchemaType(map[string]string{dialect.MySQL: "json"}).
+			Comment("分组级请求安全检查配置"),
 	}
 }
 

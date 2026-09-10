@@ -74,6 +74,8 @@ type Tx struct {
 	RBACUserVersion *RBACUserVersionClient
 	// RedeemCode is the client for interacting with the RedeemCode builders.
 	RedeemCode *RedeemCodeClient
+	// SecurityCheckLog is the client for interacting with the SecurityCheckLog builders.
+	SecurityCheckLog *SecurityCheckLogClient
 	// SecuritySecret is the client for interacting with the SecuritySecret builders.
 	SecuritySecret *SecuritySecretClient
 	// Setting is the client for interacting with the Setting builders.
@@ -269,6 +271,7 @@ func (tx *Tx) init() {
 	tx.RBACUserRole = NewRBACUserRoleClient(tx.config)
 	tx.RBACUserVersion = NewRBACUserVersionClient(tx.config)
 	tx.RedeemCode = NewRedeemCodeClient(tx.config)
+	tx.SecurityCheckLog = NewSecurityCheckLogClient(tx.config)
 	tx.SecuritySecret = NewSecuritySecretClient(tx.config)
 	tx.Setting = NewSettingClient(tx.config)
 	tx.SubscriptionPlan = NewSubscriptionPlanClient(tx.config)

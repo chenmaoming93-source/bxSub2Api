@@ -533,10 +533,12 @@
 
 | 方法 | 接口 | 当前访问范围 | 对应前端页面/用途 | 源码 |
 |---|---|---|---|---|
-| POST | `/api/v1/integrations/api-keys/getOrCreate` | 外部集成密钥（独立于用户 RBAC） | 无站内页面（外部系统调用） | `integrations.go:27` |
-| POST | `/api/v1/integrations/model-routes/list` | 外部集成密钥（独立于用户 RBAC） | 无站内页面（外部系统调用） | `integrations.go:28` |
-| POST | `/api/v1/integrations/model-routes/list-attributes` | 外部集成密钥（独立于用户 RBAC） | 无站内页面（外部系统调用） | `integrations.go:29` |
-| POST | `/api/v1/integrations/token-usage/user-group-model/daily` | 外部集成密钥（独立于用户 RBAC） | 无站内页面（外部系统调用） | `integrations.go:30` |
+| POST | `/api/v1/integrations/api-keys/getOrCreate` | 外部集成密钥（独立于用户 RBAC） | 无站内页面（外部系统调用） | `integrations.go:23` |
+| POST | `/api/v1/integrations/model-routes/list` | 外部集成密钥（独立于用户 RBAC） | 无站内页面（外部系统调用） | `integrations.go:24` |
+| POST | `/api/v1/integrations/model-routes/list-attributes` | 外部集成密钥（独立于用户 RBAC） | 无站内页面（外部系统调用） | `integrations.go:25` |
+| POST | `/api/v1/integrations/token-usage/query` | 外部集成密钥（独立于用户 RBAC） | 无站内页面（外部系统调用，当前日/周/月实时值） | `integrations.go:27` |
+| POST | `/api/v1/integrations/token-usage/query/group-api-key/daily` | 外部集成密钥（独立于用户 RBAC） | 无站内页面（外部系统调用，分组×API Key 历史按天消耗量 JSON） | `integrations.go:28` |
+| POST | `/api/v1/integrations/token-usage/query/group-api-key/daily/csv` | 外部集成密钥（独立于用户 RBAC） | 无站内页面（外部系统调用，同上 CSV 下载，缺日补 0） | `integrations.go:29` |
 
 ## 模型网关接口
 

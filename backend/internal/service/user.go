@@ -10,6 +10,7 @@ type User struct {
 	ID             int64
 	Email          string
 	Username       string
+	Department     string
 	Notes          string
 	AvatarURL      string
 	AvatarSource   string
