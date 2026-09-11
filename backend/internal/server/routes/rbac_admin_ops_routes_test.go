@@ -23,6 +23,7 @@ func TestRBACAdminOpsReadWriteAndWebSocketPermissions(t *testing.T) {
 		`"/quotas", rbac.PermissionTokenQuotaRead`,
 		`"/quotas/:id", rbac.PermissionTokenQuotaUpdate`,
 		`"/quotas/:id/enable", rbac.PermissionTokenQuotaUpdate`,
+		`"/quota-usage/reset", rbac.PermissionTokenQuotaUpdate`,
 		`"/query", rbac.PermissionTokenUsageRead`,
 		`"/status", rbac.PermissionTokenUsageRead`,
 	} {

@@ -21,7 +21,9 @@ func TestDynamicTokenRedisAccumulatorThreePeriodsAndConcurrency(t *testing.T) {
 	accumulator := NewRedisAccumulator(client, 16, 7)
 	location, err := time.LoadLocation("Asia/Shanghai")
 	require.NoError(t, err)
-	periods := domain.NaturalPeriods(time.Date(2026, 7, 30, 12, 0, 0, 0, location), location)
+	at := time.Date(2026, 7, 30, 12, 0, 0, 0, location)
+	mini.SetTime(at)
+	periods := domain.NaturalPeriods(at, location)
 	var hash [16]byte
 	hash[0], hash[1] = 1, 2
 	operations := make([]domain.AccountingOperation, 0, 3)

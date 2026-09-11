@@ -37,6 +37,7 @@ type ExternalTokenUsageDimensionLookup interface {
 	FindUserByEmail(ctx context.Context, email string) (*User, error)
 	FindGroupByName(ctx context.Context, name string) (*Group, error)
 	FindAPIKeyByKey(ctx context.Context, key string) (*APIKey, error)
+	FindAccountByName(ctx context.Context, name string) (*Account, error)
 }
 
 type ExternalTokenUsageService struct {
@@ -107,6 +108,91 @@ func (s *ExternalTokenUsageService) ConfigureQuotaRules(provider ExternalTokenUs
 }
 
 func (s *ExternalTokenUsageService) SetClockForTest(now func() time.Time) { s.now = now }
+
+type ExternalTokenQuotaResetDimensions struct {
+	Username      *string `json:"username,omitempty"`
+	APIKey        *string `json:"api_key,omitempty"`
+	GroupName     *string `json:"group_name,omitempty"`
+	RouteAlias    *string `json:"route_alias,omitempty"`
+	AccountName   *string `json:"account_name,omitempty"`
+	UpstreamModel *string `json:"upstream_model,omitempty"`
+	Department    *string `json:"department,omitempty"`
+}
+
+func (s *ExternalTokenUsageService) ResolveQuotaResetDimensions(ctx context.Context, input ExternalTokenQuotaResetDimensions) (map[tokenstat.DimensionCode]tokenstat.DimensionValue, error) {
+	if s == nil || s.lookup == nil {
+		return nil, fmt.Errorf("external token usage dimension lookup is required")
+	}
+	result := make(map[tokenstat.DimensionCode]tokenstat.DimensionValue)
+	resolveString := func(code tokenstat.DimensionCode, value *string) error {
+		if value == nil {
+			return nil
+		}
+		normalized := strings.TrimSpace(*value)
+		if normalized == "" {
+			return fmt.Errorf("%s must not be empty", code)
+		}
+		result[code] = tokenstat.StringValue(normalized)
+		return nil
+	}
+	if input.Username != nil {
+		value := strings.TrimSpace(*input.Username)
+		if value == "" {
+			return nil, errors.New("username must not be empty")
+		}
+		user, err := s.lookup.FindUserByEmail(ctx, value)
+		if err != nil {
+			return nil, err
+		}
+		result[tokenstat.DimensionUserID] = tokenstat.Int64Value(user.ID)
+	}
+	if input.APIKey != nil {
+		value := strings.TrimSpace(*input.APIKey)
+		if value == "" {
+			return nil, errors.New("api_key must not be empty")
+		}
+		key, err := s.lookup.FindAPIKeyByKey(ctx, value)
+		if err != nil {
+			return nil, err
+		}
+		result[tokenstat.DimensionAPIKeyID] = tokenstat.Int64Value(key.ID)
+	}
+	if input.GroupName != nil {
+		value := strings.TrimSpace(*input.GroupName)
+		if value == "" {
+			return nil, errors.New("group_name must not be empty")
+		}
+		group, err := s.lookup.FindGroupByName(ctx, value)
+		if err != nil {
+			return nil, err
+		}
+		result[tokenstat.DimensionGroupID] = tokenstat.Int64Value(group.ID)
+	}
+	if input.AccountName != nil {
+		value := strings.TrimSpace(*input.AccountName)
+		if value == "" {
+			return nil, errors.New("account_name must not be empty")
+		}
+		account, err := s.lookup.FindAccountByName(ctx, value)
+		if err != nil {
+			return nil, err
+		}
+		result[tokenstat.DimensionAccountID] = tokenstat.Int64Value(account.ID)
+	}
+	if err := resolveString(tokenstat.DimensionRouteAlias, input.RouteAlias); err != nil {
+		return nil, err
+	}
+	if err := resolveString(tokenstat.DimensionUpstreamModel, input.UpstreamModel); err != nil {
+		return nil, err
+	}
+	if err := resolveString(tokenstat.DimensionDepartment, input.Department); err != nil {
+		return nil, err
+	}
+	if len(result) == 0 {
+		return nil, errors.New("at least one dimension value is required")
+	}
+	return result, nil
+}
 
 func (s *ExternalTokenUsageService) ResolveDimensions(ctx context.Context, input ExternalTokenUsageInput) (ExternalTokenUsageDimensions, error) {
 	if s == nil || s.lookup == nil {

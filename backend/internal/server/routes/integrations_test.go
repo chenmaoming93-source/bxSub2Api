@@ -12,12 +12,24 @@ import (
 	"github.com/Wei-Shaw/sub2api/internal/handler"
 	"github.com/Wei-Shaw/sub2api/internal/server/middleware"
 	"github.com/Wei-Shaw/sub2api/internal/service"
+	tokenstat "github.com/Wei-Shaw/sub2api/internal/service/tokenstat"
 	"github.com/gin-gonic/gin"
+	"github.com/stretchr/testify/require"
 )
 
 type integrationProvisioningServiceStub struct{}
 
 type integrationTokenUsageServiceStub struct{}
+
+type integrationQuotaResetterStub struct{}
+
+func (integrationQuotaResetterStub) ResetQuotaUsage(context.Context, tokenstat.ResetIdentityDiscoveryRequest) (tokenstat.QuotaResetResult, error) {
+	return tokenstat.QuotaResetResult{Status: tokenstat.QuotaResetStatusReset, MatchedQuotaCount: 1, MatchedUsageCount: 1, ResetCount: 1}, nil
+}
+
+func (integrationTokenUsageServiceStub) ResolveQuotaResetDimensions(context.Context, service.ExternalTokenQuotaResetDimensions) (map[tokenstat.DimensionCode]tokenstat.DimensionValue, error) {
+	return map[tokenstat.DimensionCode]tokenstat.DimensionValue{tokenstat.DimensionUserID: tokenstat.Int64Value(42)}, nil
+}
 
 func (integrationTokenUsageServiceStub) QueryCurrentUsage(_ context.Context, _ service.ExternalTokenUsageInput) (service.ExternalTokenUsageResult, error) {
 	zero := int64(0)
@@ -68,7 +80,7 @@ func integrationRouter(cfg config.ExternalAPIKeyProvisioningConfig) *gin.Engine 
 	RegisterIntegrationRoutes(
 		v1,
 		handler.NewExternalProvisioningHandler(integrationProvisioningServiceStub{}),
-		handler.NewExternalTokenUsageHandlerWithQuerier(integrationTokenUsageServiceStub{}),
+		handler.NewExternalTokenUsageHandlerWithServices(integrationTokenUsageServiceStub{}, integrationQuotaResetterStub{}, integrationTokenUsageServiceStub{}),
 		handler.NewExternalSceneAccountDailyUsageHandlerWithQuerier(integrationTokenUsageServiceStub{}),
 		middleware.ExternalProvisioningAuth(cfg),
 		middleware.NewProvisioningHardening(nil, nil).Middleware(),
@@ -116,6 +128,44 @@ func TestIntegrationRoutes_TokenUsageExternalTokenOnlyAndUnique(t *testing.T) {
 	if response.Code != http.StatusOK || !strings.Contains(response.Body.String(), `"periods"`) {
 		t.Fatalf("authorized status=%d body=%s", response.Code, response.Body.String())
 	}
+}
+
+func TestIntegrationRoutes_TokenQuotaResetAuthEnabledDisabledAndUnique(t *testing.T) {
+	const token = "secret_0123456789abcdef0123456789abcdef"
+	path := "/api/v1/integrations/token-usage/reset"
+	body := `{"dimension_values":{"username":"u@example.com"},"metric_code":"total_tokens","period_type":"D"}`
+	router := integrationRouter(config.ExternalAPIKeyProvisioningConfig{Enabled: true, AccessToken: token})
+	count := 0
+	for _, route := range router.Routes() {
+		if route.Method == http.MethodPost && route.Path == path {
+			count++
+		}
+	}
+	require.Equal(t, 1, count)
+	for _, credential := range []string{"", "Bearer wrong-token"} {
+		require.Equal(t, http.StatusUnauthorized, performIntegrationRequest(router, path, credential, body).Code)
+	}
+	authorized := performIntegrationRequest(router, path, "Bearer "+token, body)
+	require.Equal(t, http.StatusOK, authorized.Code, authorized.Body.String())
+	require.Contains(t, authorized.Body.String(), `"status":"RESET"`)
+
+	disabled := integrationRouter(config.ExternalAPIKeyProvisioningConfig{Enabled: false, AccessToken: token})
+	require.Equal(t, http.StatusNotFound, performIntegrationRequest(disabled, path, "Bearer "+token, body).Code)
+}
+
+func TestIntegrationRoutesTokenUsageDoesNotRequireProvisioningHandler(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	router := gin.New()
+	v1 := router.Group("/api/v1")
+	RegisterIntegrationRoutes(v1, nil, handler.NewExternalTokenUsageHandlerWithServices(integrationTokenUsageServiceStub{}, integrationQuotaResetterStub{}, integrationTokenUsageServiceStub{}), nil, func(c *gin.Context) { c.Next() }, func(c *gin.Context) { c.Next() })
+	routes := router.Routes()
+	found := false
+	for _, route := range routes {
+		if route.Path == "/api/v1/integrations/token-usage/reset" {
+			found = true
+		}
+	}
+	require.True(t, found)
 }
 
 func performIntegrationRequest(router http.Handler, path, token, body string) *httptest.ResponseRecorder {

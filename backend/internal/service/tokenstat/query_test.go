@@ -16,6 +16,21 @@ import (
 	_ "github.com/Wei-Shaw/sub2api/ent/runtime"
 )
 
+type quotaResetBaselineReaderStub struct{}
+
+func (quotaResetBaselineReaderStub) ReadBaselines(_ context.Context, identities []StatisticIdentity) ([]int64, error) {
+	result := make([]int64, len(identities))
+	for index, identity := range identities {
+		switch identity.DimensionHash[0] {
+		case 1:
+			result[index] = 40
+		case 2:
+			result[index] = 20
+		}
+	}
+	return result, nil
+}
+
 func TestDynamicTokenStatQueryValidationAggregationAndPagination(t *testing.T) {
 	sql.Register("sqlite3-tokenstat-query", &modernsqlite.Driver{})
 	db, err := sql.Open("sqlite3-tokenstat-query", "file:tokenstat_query?mode=memory&cache=shared&_pragma=foreign_keys(1)")
@@ -25,6 +40,7 @@ func TestDynamicTokenStatQueryValidationAggregationAndPagination(t *testing.T) {
 	t.Cleanup(func() { _ = client.Close() })
 	require.NoError(t, client.Schema.Create(context.Background()))
 	service := NewProjectionAdminService(client, nil)
+	service.AttachQuotaResetBaselineReader(quotaResetBaselineReaderStub{})
 	ctx := context.Background()
 	for id, department := range []string{"研发部", "产品部", "产品部"} {
 		_, err = client.User.Create().SetEmail(fmt.Sprintf("user-%d@example.com", id+1)).SetPasswordHash("hash").SetDepartment(department).Save(ctx)
@@ -127,9 +143,22 @@ func TestDynamicTokenStatQueryValidationAggregationAndPagination(t *testing.T) {
 	require.Equal(t, 2, result.Total)
 	require.Len(t, result.Rows, 1)
 	require.Equal(t, int64(200), result.Rows[0].Value)
+	require.True(t, result.ResetSnapshotsAvailable)
+	require.Equal(t, int64(20), *result.Rows[0].ResetSnapshot)
+	require.Equal(t, int64(180), *result.Rows[0].EffectiveValue)
 	require.Equal(t, int64(2), result.Rows[0].Dimensions[DimensionUserID].Int64)
 	require.Equal(t, "mysql_eventual", result.Consistency)
 	require.NotNil(t, result.LastSyncedAt)
+
+	groupedResult, err := service.QueryUsage(ctx, UsageQueryInput{
+		ProjectionID: projection.ID, MetricCode: MetricTotalTokens, PeriodType: PeriodDay,
+		Start: start, End: start.AddDate(0, 0, 2), GroupBy: []DimensionCode{DimensionUserID},
+		Sort: "value_asc", Page: 1, PageSize: 10,
+	})
+	require.NoError(t, err)
+	require.Equal(t, int64(150), groupedResult.Rows[0].Value)
+	require.Equal(t, int64(40), *groupedResult.Rows[0].ResetSnapshot)
+	require.Equal(t, int64(110), *groupedResult.Rows[0].EffectiveValue)
 
 	departmentResult, err := service.QueryUsage(ctx, UsageQueryInput{
 		ProjectionID: projection.ID, MetricCode: MetricTotalTokens, PeriodType: PeriodDay,

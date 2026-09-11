@@ -66,6 +66,17 @@ func newAccountRepositoryWithSQL(client *dbent.Client, sqlq sqlExecutor, schedul
 	return &accountRepository{client: client, sql: sqlq, schedulerCache: schedulerCache}
 }
 
+func (r *accountRepository) ExistsByName(ctx context.Context, name string, excludeID int64) (bool, error) {
+	query := r.client.Account.Query().Where(
+		dbaccount.NameEqualFold(strings.TrimSpace(name)),
+		dbaccount.DeletedAtIsNil(),
+	)
+	if excludeID > 0 {
+		query = query.Where(dbaccount.IDNEQ(excludeID))
+	}
+	return query.Exist(ctx)
+}
+
 func (r *accountRepository) Create(ctx context.Context, account *service.Account) error {
 	if account == nil {
 		return service.ErrAccountNilInput

@@ -1,9 +1,13 @@
 package admin
 
 import (
+	"context"
 	"encoding/csv"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"log/slog"
 	"strconv"
 	"time"
 
@@ -12,13 +16,22 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type quotaUsageResetter interface {
+	ResetQuotaUsage(context.Context, tokenstat.ResetIdentityDiscoveryRequest) (tokenstat.QuotaResetResult, error)
+}
+
 type DynamicTokenStatisticsHandler struct {
 	service    *tokenstat.ProjectionAdminService
 	controller *tokenstat.RuntimeController
+	resetter   quotaUsageResetter
 }
 
-func NewDynamicTokenStatisticsHandler(service *tokenstat.ProjectionAdminService, controller *tokenstat.RuntimeController) *DynamicTokenStatisticsHandler {
-	return &DynamicTokenStatisticsHandler{service: service, controller: controller}
+func NewDynamicTokenStatisticsHandler(service *tokenstat.ProjectionAdminService, controller *tokenstat.RuntimeController, resetter *tokenstat.QuotaResetService) *DynamicTokenStatisticsHandler {
+	return &DynamicTokenStatisticsHandler{service: service, controller: controller, resetter: resetter}
+}
+
+func newDynamicTokenStatisticsHandlerWithResetter(resetter quotaUsageResetter) *DynamicTokenStatisticsHandler {
+	return &DynamicTokenStatisticsHandler{resetter: resetter}
 }
 
 type runtimeRequest struct {
@@ -48,6 +61,12 @@ type quotaUpdateRequest struct {
 	Name       string              `json:"name" binding:"required"`
 	LimitValue int64               `json:"limit_value" binding:"required"`
 	Mode       tokenstat.QuotaMode `json:"mode" binding:"required"`
+}
+
+type quotaUsageResetRequest struct {
+	DimensionValues map[tokenstat.DimensionCode]tokenstat.DimensionValue `json:"dimension_values"`
+	MetricCode      tokenstat.MetricCode                                 `json:"metric_code"`
+	PeriodType      tokenstat.PeriodType                                 `json:"period_type"`
 }
 
 type usageQueryRequest struct {
@@ -236,6 +255,41 @@ func (h *DynamicTokenStatisticsHandler) DeleteQuota(c *gin.Context) {
 	response.Success(c, gin.H{"deleted": true})
 }
 
+func (h *DynamicTokenStatisticsHandler) ResetQuotaUsage(c *gin.Context) {
+	var request quotaUsageResetRequest
+	decoder := json.NewDecoder(c.Request.Body)
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&request); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+	if err := decoder.Decode(&struct{}{}); err != io.EOF {
+		response.BadRequest(c, "Invalid request: request body must contain one JSON value")
+		return
+	}
+	if h == nil || h.resetter == nil {
+		response.Error(c, 503, "TOKEN_QUOTA_RESET_UNAVAILABLE")
+		return
+	}
+	result, err := h.resetter.ResetQuotaUsage(c.Request.Context(), tokenstat.ResetIdentityDiscoveryRequest{
+		DimensionValues: request.DimensionValues, MetricCode: request.MetricCode, PeriodType: request.PeriodType, IncludeDetails: true,
+	})
+	if err != nil {
+		if errors.Is(err, tokenstat.ErrInvalidQuotaResetRequest) {
+			response.BadRequest(c, err.Error())
+			return
+		}
+		if errors.Is(err, tokenstat.ErrTokenQuotaResetUnavailable) {
+			response.Error(c, 503, "TOKEN_QUOTA_RESET_UNAVAILABLE")
+			return
+		}
+		response.Error(c, 503, "TOKEN_QUOTA_RESET_UNAVAILABLE")
+		return
+	}
+	slog.InfoContext(c.Request.Context(), "admin reset dynamic token quota usage", "admin_id", getAdminIDFromContext(c), "period_type", request.PeriodType, "metric_code", request.MetricCode, "status", result.Status, "reset_count", result.ResetCount, "failed_count", result.FailedCount)
+	response.Success(c, result)
+}
+
 func (h *DynamicTokenStatisticsHandler) QueryUsage(c *gin.Context) {
 	var request usageQueryRequest
 	if err := c.ShouldBindJSON(&request); err != nil {
@@ -256,11 +310,18 @@ func (h *DynamicTokenStatisticsHandler) QueryUsage(c *gin.Context) {
 		c.Header("Content-Type", "text/csv; charset=utf-8")
 		c.Header("Content-Disposition", `attachment; filename="token-statistics.csv"`)
 		writer := csv.NewWriter(c.Writer)
-		_ = writer.Write([]string{"period_start", "period_end", "dimensions", "value"})
+		_ = writer.Write([]string{"period_start", "period_end", "dimensions", "raw_value", "reset_snapshot", "effective_value"})
 		for _, row := range result.Rows {
+			resetSnapshot, effectiveValue := "", ""
+			if row.ResetSnapshot != nil {
+				resetSnapshot = strconv.FormatInt(*row.ResetSnapshot, 10)
+			}
+			if row.EffectiveValue != nil {
+				effectiveValue = strconv.FormatInt(*row.EffectiveValue, 10)
+			}
 			_ = writer.Write([]string{
 				row.PeriodStart.Format(time.RFC3339), row.PeriodEnd.Format(time.RFC3339),
-				fmt.Sprint(row.Dimensions), strconv.FormatInt(row.Value, 10),
+				fmt.Sprint(row.Dimensions), strconv.FormatInt(row.Value, 10), resetSnapshot, effectiveValue,
 			})
 		}
 		writer.Flush()

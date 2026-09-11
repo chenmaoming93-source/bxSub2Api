@@ -46,7 +46,8 @@ const chartOptions = computed(() => ({
     }
   },
   scales: {
-    x: { beginAtZero: true },
+    // Keep the numeric axis visible as soon as the chart opens; the rows scroll below it.
+    x: { beginAtZero: true, position: 'top' as const },
     y: { ticks: { autoSkip: false } }
   }
 }))

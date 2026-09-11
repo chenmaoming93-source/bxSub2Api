@@ -31,6 +31,21 @@ describe('dynamic token statistics admin api', () => {
     expect(client.post).toHaveBeenCalledWith('/admin/token-statistics/quotas', expect.any(Object))
   })
 
+  it('resets quota usage through the admin contract', async () => {
+    const input = {
+      dimension_values: {
+        user_id: { type: 'int64' as const, int64: 42 },
+        group_id: { type: 'int64' as const, int64: 7 }
+      },
+      metric_code: 'total_tokens' as const,
+      period_type: 'D' as const
+    }
+    const result = { status: 'RESET', matched_quota_count: 2, matched_usage_count: 3, reset_count: 3, no_usage_count: 0, failed_count: 0 }
+    client.post.mockResolvedValueOnce({ data: result })
+    await expect(dynamicTokenStatisticsAPI.resetQuotaUsage(input)).resolves.toEqual(result)
+    expect(client.post).toHaveBeenCalledWith('/admin/token-statistics/quota-usage/reset', input)
+  })
+
   it('queries and exports through the generic endpoint', async () => {
     const input = {
       projection_id: 1, metric_code: 'total_tokens' as const, period_type: 'D' as const,

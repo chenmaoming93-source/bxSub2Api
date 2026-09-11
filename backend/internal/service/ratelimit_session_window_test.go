@@ -70,6 +70,9 @@ func (m *sessionWindowMockRepo) GetByIDs(context.Context, []int64) ([]*Account, 
 func (m *sessionWindowMockRepo) ExistsByID(context.Context, int64) (bool, error) {
 	panic("unexpected")
 }
+func (m *sessionWindowMockRepo) ExistsByName(context.Context, string, int64) (bool, error) {
+	panic("unexpected")
+}
 func (m *sessionWindowMockRepo) GetByCRSAccountID(context.Context, string) (*Account, error) {
 	panic("unexpected")
 }

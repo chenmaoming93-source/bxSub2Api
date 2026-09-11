@@ -228,7 +228,7 @@ func (s *ProjectionAdminService) LoadQuotaRules(ctx context.Context, checker *Qu
 			}
 		}
 		rules = append(rules, QuotaRule{
-			ID: row.ID, ProjectionID: row.ProjectionID, DimensionCodes: codes, DimensionValues: values,
+			ID: row.ID, Name: row.Name, ProjectionID: row.ProjectionID, DimensionCodes: codes, DimensionValues: values,
 			MetricCode: MetricCode(row.MetricCode), PeriodType: PeriodType(row.PeriodType),
 			LimitValue: row.LimitValue, Mode: QuotaMode(row.EnforcementMode),
 			EffectiveFrom: row.EffectiveFrom, EffectiveUntil: row.EffectiveUntil,

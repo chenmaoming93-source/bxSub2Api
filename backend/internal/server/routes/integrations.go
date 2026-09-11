@@ -14,18 +14,21 @@ func RegisterIntegrationRoutes(
 	provAuth gin.HandlerFunc,
 	provHardening gin.HandlerFunc,
 ) {
-	if provHandler == nil {
+	if provHandler == nil && tokenUsageHandler == nil && sceneAccountUsageHandler == nil {
 		return
 	}
 
 	integration := v1.Group("/integrations")
 	integration.Use(provAuth, provHardening)
 	{
-		integration.POST("/api-keys/getOrCreate", provHandler.EnsureAPIKey)
-		integration.POST("/model-routes/list", provHandler.ListGroupModelRoutes)
-		integration.POST("/model-routes/list-attributes", provHandler.ListGroupModelRoutesWithAttributes)
+		if provHandler != nil {
+			integration.POST("/api-keys/getOrCreate", provHandler.EnsureAPIKey)
+			integration.POST("/model-routes/list", provHandler.ListGroupModelRoutes)
+			integration.POST("/model-routes/list-attributes", provHandler.ListGroupModelRoutesWithAttributes)
+		}
 		if tokenUsageHandler != nil {
 			integration.POST("/token-usage/query", tokenUsageHandler.Query)
+			integration.POST("/token-usage/reset", tokenUsageHandler.ResetQuotaUsage)
 			integration.POST("/token-usage/query/group-api-key/daily", tokenUsageHandler.DailyQuery)
 			integration.POST("/token-usage/query/group-api-key/daily/csv", tokenUsageHandler.DailyQueryCSV)
 		}

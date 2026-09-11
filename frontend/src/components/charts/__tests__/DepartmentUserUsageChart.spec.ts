@@ -7,7 +7,7 @@ vi.mock('vue-i18n', () => ({
 }))
 
 vi.mock('vue-chartjs', () => ({
-  Bar: { props: ['data'], template: '<div data-test="bar-chart"><span data-test="labels">{{ data.labels.join(\',\') }}</span><span data-test="colors">{{ data.datasets[0].backgroundColor.join(\',\') }}</span></div>' }
+  Bar: { props: ['data', 'options'], template: '<div data-test="bar-chart"><span data-test="labels">{{ data.labels.join(\',\') }}</span><span data-test="colors">{{ data.datasets[0].backgroundColor.join(\',\') }}</span><span data-test="axis-position">{{ options.scales.x.position }}</span></div>' }
 }))
 
 describe('DepartmentUserUsageChart', () => {
@@ -31,5 +31,6 @@ describe('DepartmentUserUsageChart', () => {
     expect(colors[0]).not.toBe(colors[1])
     expect(wrapper.find('.max-h-80').classes()).toContain('overflow-y-auto')
     expect(wrapper.find('.min-h-\\[320px\\]').attributes('style')).toContain('height: 640px')
+    expect(wrapper.find('[data-test="axis-position"]').text()).toBe('top')
   })
 })

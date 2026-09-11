@@ -3,7 +3,9 @@ package handler
 import (
 	"context"
 	"encoding/csv"
+	"encoding/json"
 	"errors"
+	"io"
 	"log/slog"
 	"net/http"
 	"strconv"
@@ -12,6 +14,7 @@ import (
 
 	"github.com/Wei-Shaw/sub2api/internal/pkg/response"
 	"github.com/Wei-Shaw/sub2api/internal/service"
+	tokenstat "github.com/Wei-Shaw/sub2api/internal/service/tokenstat"
 	"github.com/gin-gonic/gin"
 )
 
@@ -21,14 +24,34 @@ type ExternalTokenUsageQuerier interface {
 	QueryDailyUsageFilled(context.Context, service.ExternalDailyUsageInput) (service.ExternalDailyUsageResult, error)
 }
 
-type ExternalTokenUsageHandler struct{ service ExternalTokenUsageQuerier }
+type quotaUsageResetter interface {
+	ResetQuotaUsage(context.Context, tokenstat.ResetIdentityDiscoveryRequest) (tokenstat.QuotaResetResult, error)
+}
 
-func NewExternalTokenUsageHandler(service *service.ExternalTokenUsageService) *ExternalTokenUsageHandler {
-	return &ExternalTokenUsageHandler{service: service}
+type externalQuotaResetDimensionResolver interface {
+	ResolveQuotaResetDimensions(context.Context, service.ExternalTokenQuotaResetDimensions) (map[tokenstat.DimensionCode]tokenstat.DimensionValue, error)
+}
+
+type ExternalTokenUsageHandler struct {
+	service       ExternalTokenUsageQuerier
+	resetter      quotaUsageResetter
+	resetResolver externalQuotaResetDimensionResolver
+}
+
+func NewExternalTokenUsageHandler(service *service.ExternalTokenUsageService, resetter *tokenstat.QuotaResetService) *ExternalTokenUsageHandler {
+	return &ExternalTokenUsageHandler{service: service, resetter: resetter, resetResolver: service}
 }
 
 func NewExternalTokenUsageHandlerWithQuerier(service ExternalTokenUsageQuerier) *ExternalTokenUsageHandler {
 	return &ExternalTokenUsageHandler{service: service}
+}
+
+func NewExternalTokenUsageHandlerWithServices(queryService ExternalTokenUsageQuerier, resetter quotaUsageResetter, resolvers ...externalQuotaResetDimensionResolver) *ExternalTokenUsageHandler {
+	var resolver externalQuotaResetDimensionResolver
+	if len(resolvers) > 0 {
+		resolver = resolvers[0]
+	}
+	return &ExternalTokenUsageHandler{service: queryService, resetter: resetter, resetResolver: resolver}
 }
 
 type ExternalTokenUsageRequest struct {
@@ -57,6 +80,48 @@ type ExternalTokenUsageResponse struct {
 		Week  service.ExternalTokenUsagePeriodResult `json:"week"`
 		Month service.ExternalTokenUsagePeriodResult `json:"month"`
 	} `json:"periods"`
+}
+
+type ExternalTokenQuotaResetRequest struct {
+	DimensionValues service.ExternalTokenQuotaResetDimensions `json:"dimension_values"`
+	MetricCode      tokenstat.MetricCode                      `json:"metric_code"`
+	PeriodType      tokenstat.PeriodType                      `json:"period_type"`
+}
+
+func (h *ExternalTokenUsageHandler) ResetQuotaUsage(c *gin.Context) {
+	var request ExternalTokenQuotaResetRequest
+	decoder := json.NewDecoder(c.Request.Body)
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&request); err != nil {
+		response.Error(c, http.StatusBadRequest, "INVALID_REQUEST")
+		return
+	}
+	if err := decoder.Decode(&struct{}{}); err != io.EOF {
+		response.Error(c, http.StatusBadRequest, "INVALID_REQUEST")
+		return
+	}
+	if h == nil || h.resetter == nil || h.resetResolver == nil {
+		response.Error(c, http.StatusServiceUnavailable, "TOKEN_QUOTA_RESET_UNAVAILABLE")
+		return
+	}
+	dimensionValues, err := h.resetResolver.ResolveQuotaResetDimensions(c.Request.Context(), request.DimensionValues)
+	if err != nil {
+		response.Error(c, http.StatusBadRequest, "INVALID_REQUEST")
+		return
+	}
+	result, err := h.resetter.ResetQuotaUsage(c.Request.Context(), tokenstat.ResetIdentityDiscoveryRequest{
+		DimensionValues: dimensionValues, MetricCode: request.MetricCode, PeriodType: request.PeriodType,
+	})
+	if err != nil {
+		if errors.Is(err, tokenstat.ErrInvalidQuotaResetRequest) {
+			response.Error(c, http.StatusBadRequest, "INVALID_REQUEST")
+		} else {
+			response.Error(c, http.StatusServiceUnavailable, "TOKEN_QUOTA_RESET_UNAVAILABLE")
+		}
+		return
+	}
+	slog.Info("integration_token_quota_reset", "event", "integration.token_quota_reset", "source_ip", clientIP(c), "period_type", request.PeriodType, "metric_code", request.MetricCode, "status", result.Status, "reset_count", result.ResetCount, "no_usage_count", result.NoUsageCount, "failed_count", result.FailedCount)
+	response.Success(c, result)
 }
 
 func (h *ExternalTokenUsageHandler) Query(c *gin.Context) {

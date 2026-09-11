@@ -30,12 +30,17 @@ const (
 var ErrInvalidProjectionTransition = errors.New("invalid projection state transition")
 
 type ProjectionAdminService struct {
-	client        *ent.Client
-	redis         *redis.Client
-	localVersion  atomic.Uint64
-	active        atomic.Value
-	quotaChecker  *QuotaChecker
-	subscribeOnce sync.Once
+	client              *ent.Client
+	redis               *redis.Client
+	localVersion        atomic.Uint64
+	active              atomic.Value
+	quotaChecker        *QuotaChecker
+	quotaResetBaselines QuotaResetBaselineReader
+	subscribeOnce       sync.Once
+}
+
+func (s *ProjectionAdminService) AttachQuotaResetBaselineReader(reader QuotaResetBaselineReader) {
+	s.quotaResetBaselines = reader
 }
 
 func (s *ProjectionAdminService) AttachQuotaChecker(checker *QuotaChecker) {

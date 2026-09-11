@@ -59,6 +59,7 @@ const (
 
 type QuotaRule struct {
 	ID              int64
+	Name            string
 	ProjectionID    int64
 	DimensionCodes  []DimensionCode
 	DimensionValues map[DimensionCode]DimensionValue

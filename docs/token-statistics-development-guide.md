@@ -117,7 +117,56 @@ pnpm build
 - 不得改名复用已投产的维度、指标或命名空间版本。
 - 不得把“测试未运行”记录为通过。
 
-## 8. 外部四维当前用量查询
+## 8. 限额用量重置
+
+### 8.1 数据语义与 Redis namespace
+
+限额重置不清零真实统计，也不修改 MySQL 聚合。它把重置瞬间某条 raw 统计值复制为 Redis-only baseline，限额读取使用：
+
+```text
+effective_usage = max(0, raw_usage - reset_baseline)
+```
+
+- raw 统计：`sub2api:dynamic_token_stats:v1:{period_type}:{period_start}:{projection_id}:{shard}`
+- reset baseline：`sub2api:dynamic_token_quota_reset:v1:{period_type}:{period_start}:{projection_id}:{shard}`
+- 两者使用同一个 field：`{dimension_hash_hex}:{metric_code}`。
+- baseline 缺失时视为 0，因此旧数据及未重置限额仍保持 `effective_usage == raw_usage`。
+- 每个 baseline Hash 的过期时间是自然周期结束时间加 `orphan_ttl_days`，与原统计孤儿 TTL 策略一致。
+- 单条重置由 Lua 原子执行 `HGET raw → HSET baseline → EXPIREAT`；raw field 不存在时返回 `NO_USAGE`，不创建零 baseline。
+
+### 8.2 一致性边界
+
+部分维度请求会匹配所有包含这些维度的 ACTIVE 投影超集，并只保留 ENABLED、当前有效且完整维度值匹配的 quota 身份。发现过程严格按以下顺序执行：
+
+1. 对 `sub2api:dynamic_token_stats_dirty:v1:current` 完整 SSCAN 一次；
+2. 随后按页读取当前周期 MySQL `token_stat_aggregates` 身份；
+3. 在内存联合、去重并执行完整 quota 匹配；
+4. 按固定批次用普通 Redis pipeline 执行每条独立 Lua。
+
+这里刻意不获取同步锁、不二次读取 dirty、不扫描 `processing:{token}`、不在写 baseline 前重新校验 quota。扫描后新增或暂处 processing 窗口的身份可能遗漏，这是已接受的最终一致性边界；管理员可再次重置。多个身份没有全局事务，单条失败不回滚成功条目，结果用 `PARTIAL_RESET` 和计数表达。
+
+### 8.3 持久性、故障与运维
+
+- baseline 只存在 Redis，不写入或恢复到 MySQL；应用进程重启且 Redis 数据保留时继续生效。
+- 建议生产 Redis 开启并监控适当的 AOF/RDB 持久化和备份，但它只是运维增强，不构成应用层恢复保证。
+- Redis baseline 丢失后，限额读取自动回到 raw 累计值；这不会污染或改写 MySQL 真实统计。
+- 管理员通用查询以 MySQL `raw_value` 为真实累计，并按每个源统计身份的完整维度 hash 从 Redis pipeline 读取 baseline；分组查询会分别汇总 raw 与 baseline，返回 `reset_snapshot` 和 `effective_value=max(0,raw-reset_snapshot)`。Redis 读取失败时仍返回真实累计，并通过 `reset_snapshots_available=false` 明确标记快照不可用。
+- Redis 读取异常时限额检查继续 fail-open；重置入口在无成功项时返回 `TOKEN_QUOTA_RESET_UNAVAILABLE`，已有成功项时优先返回 `PARTIAL_RESET`。
+- 回滚应用版本前无需迁移或删除 baseline：旧版本不会读取独立 reset namespace。确认不再需要该能力后，可在变更窗口按前缀清理 baseline；禁止清理 raw、version 或 dirty namespace。
+
+### 8.4 API 与禁止事项
+
+- 管理员：`POST /api/v1/admin/token-statistics/quota-usage/reset`，要求 `token_quota.update`。
+- integrations：`POST /api/v1/integrations/token-usage/reset`，只使用既有 Bearer Token 与 hardening。
+- 管理员接口的 `dimension_values` 使用内部维度值；管理页面通过共享可搜索选择器把用户、API Key、分组和模型账号转换为对应 ID，不要求管理员手填 ID。
+- integrations 接口的 `dimension_values` 使用人类可读字段：`username`（精确匹配用户 email）、`api_key`（完整 Key 值）、`group_name`、`account_name`、`route_alias`、`upstream_model`、`department`。服务解析前四项为内部 ID，后三项保留为字符串维度。
+- integrations 示例：`{"dimension_values":{"username":"u@example.com","group_name":"public","route_alias":"default"},"metric_code":"total_tokens","period_type":"D"}`。
+- 请求只接受具体维度值、允许 quota 的 `metric_code` 和 `D/W/M period_type`；不得接受 projection、hash、shard、Redis key、baseline 或 wildcard。只传单一维度可以有意匹配多个统计身份。
+- 管理员重置响应额外返回 `matched_quotas` 和 `matched_entries`，用于展示匹配限额、统计身份维度、命中限额 ID 及每条重置结果；integrations 响应不返回这些内部排障详情。
+- 同一请求重复调用会以当时最新 raw 覆盖 baseline，不提供幂等键。
+- 不得把 reset baseline 放入 dirty 同步流，不得用 baseline 覆盖 raw 或 `token_stat_aggregates.metric_value`。
+
+## 9. 外部四维当前用量查询
 
 - 接口：`POST /api/v1/integrations/token-usage/query`。
 - 只允许 integrations Bearer Token；不得添加 JWT、登录态、Admin Auth 或 RBAC 权限点。

@@ -114,34 +114,17 @@
                   <option value="exact">指定具体值</option><option value="wildcard">任意值（分别统计）</option>
                 </select>
                 <div v-if="quotaDraft.dimension_codes.includes(dimension.code) && quotaValueModes[dimension.code] !== 'wildcard'">
-                <div v-if="dimension.code === 'api_key_id'" class="relative mt-2">
-                  <input v-model="apiKeySearchText" data-test="quota-api-key-search" class="input" required placeholder="输入 API Key 名称或具体 Key" @input="onAPIKeySearchInput" />
-                  <div v-if="apiKeySearchResults.length" class="absolute z-20 mt-1 max-h-48 w-full overflow-auto rounded-xl border border-gray-200 bg-white shadow-sm dark:border-dark-700 dark:bg-dark-800">
-                    <button v-for="key in apiKeySearchResults" :key="key.id" type="button" class="flex w-full flex-col gap-0.5 px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-dark-700" @click="selectQuotaAPIKey(key)">
-                      <span class="flex items-center gap-2">
-                        <span class="truncate font-medium text-gray-800 dark:text-gray-100">{{ key.name || `#${key.id}` }}</span>
-                        <span class="shrink-0 text-xs text-gray-400">#{{ key.id }}</span>
-                      </span>
-                      <span class="flex items-center gap-2">
-                        <span class="truncate font-mono text-xs text-gray-500 dark:text-gray-400">{{ key.masked_key }}</span>
-                        <span v-if="key.user_email || key.user_name" class="shrink-0 truncate text-xs text-gray-400">{{ key.user_name || key.user_email }}</span>
-                      </span>
-                    </button>
-                  </div>
-                </div>
-                <select
-                  v-else-if="usesEnhancedSelector(dimension.code, quotaValues)"
+                <TokenQuotaDimensionValueSelector
                   v-model="quotaValues[dimension.code]"
-                  class="input mt-2"
-                  required
+                  :code="dimension.code"
+                  :display-name="dimension.display_name"
+                  :value-type="dimension.value_type"
+                  :options="enhancedDimensionOptions(dimension.code, quotaValues, quotaAccountModels)"
+                  :use-selector="usesEnhancedSelector(dimension.code, quotaValues)"
+                  :selected-label="quotaSelectedLabels[dimension.code]"
                   @change="onQuotaValueChange(dimension.code)"
-                >
-                  <option value="" disabled>请选择{{ dimension.display_name }}</option>
-                  <option v-for="option in enhancedDimensionOptions(dimension.code, quotaValues, quotaAccountModels)" :key="String(option.value)" :value="option.value">
-                    {{ option.label }}
-                  </option>
-                </select>
-                <input v-else v-model="quotaValues[dimension.code]" class="input mt-2" required :type="dimension.value_type === 'int64' ? 'number' : 'text'" placeholder="匹配值" />
+                  @selected-label="quotaSelectedLabels[dimension.code] = $event"
+                />
                 </div>
               </span>
             </label>
@@ -149,6 +132,65 @@
           <p class="text-xs text-amber-700">若维度组合尚无统计项，系统会创建草稿，限额保持等待；统计项启用后限额自动启用，并立即使用当前周期已经累计的 Token 用量进行判断。</p>
           <div class="flex justify-end gap-2 border-t border-gray-100 pt-4 dark:border-dark-700">
             <button class="btn btn-primary" :disabled="saving">{{ saving ? '创建中…' : '创建限额' }}</button>
+          </div>
+        </form>
+        <form v-if="can('token_quota.update')" data-test="quota-reset-form" class="card space-y-5 p-5" @submit.prevent="resetQuotaUsage">
+          <div>
+            <h2 class="section-title">重置限额用量</h2>
+            <p class="section-help">只重置额度判定起点；真实累计统计和报表不会被清零或修改。</p>
+          </div>
+          <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <label><span class="field-label">周期</span><select v-model="resetDraft.period_type" class="input"><option value="D">自然日</option><option value="W">自然周</option><option value="M">自然月</option></select></label>
+            <label><span class="field-label">指标</span><select v-model="resetDraft.metric_code" class="input" required><option v-for="metric in quotaMetrics" :key="metric.code" :value="metric.code">{{ metric.display_name }}</option></select></label>
+          </div>
+          <fieldset>
+            <legend class="field-label">选择要匹配的具体维度（至少一项）</legend>
+            <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              <label v-for="dimension in dimensions" :key="dimension.code" class="dimension-option" :class="{ 'dimension-option-active': resetDraft.dimension_codes.includes(dimension.code) }">
+                <input v-model="resetDraft.dimension_codes" type="checkbox" :value="dimension.code" @change="onResetDimensionToggle(dimension.code)" />
+                <span class="min-w-0 flex-1"><b>{{ dimension.display_name }}</b><small>{{ dimension.code }}</small>
+                  <TokenQuotaDimensionValueSelector
+                    v-if="resetDraft.dimension_codes.includes(dimension.code)"
+                    v-model="resetValues[dimension.code]"
+                    data-test="quota-reset-value"
+                    :code="dimension.code"
+                    :display-name="dimension.display_name"
+                    :value-type="dimension.value_type"
+                    :options="enhancedDimensionOptions(dimension.code, resetValues, resetAccountModels)"
+                    :use-selector="usesEnhancedSelector(dimension.code, resetValues)"
+                    :selected-label="resetSelectedLabels[dimension.code]"
+                    @change="onResetValueChange(dimension.code)"
+                    @selected-label="resetSelectedLabels[dimension.code] = $event"
+                  />
+                </span>
+              </label>
+            </div>
+          </fieldset>
+          <div v-if="resetResult" data-test="quota-reset-result" class="rounded-xl border p-4 text-sm" :class="resetResult.status === 'PARTIAL_RESET' ? 'border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200' : 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-200'">
+            <b>{{ quotaResetStatusLabel(resetResult.status) }}</b>
+            <p class="mt-1">匹配限额 {{ resetResult.matched_quota_count }}，匹配用量 {{ resetResult.matched_usage_count }}，成功 {{ resetResult.reset_count }}，无用量 {{ resetResult.no_usage_count }}，失败 {{ resetResult.failed_count }}。</p>
+            <p v-if="resetResult.status === 'PARTIAL_RESET'" class="mt-1">部分条目未完成，可以再次点击重置。</p>
+            <details v-if="resetResult.matched_quotas?.length" class="mt-4" open>
+              <summary class="cursor-pointer font-medium">匹配到的限额规则（{{ resetResult.matched_quotas.length }}）</summary>
+              <div class="mt-2 overflow-x-auto rounded-lg border border-current/20 bg-white/60 dark:bg-dark-900/30">
+                <table class="stat-table text-xs">
+                  <thead><tr><th>限额</th><th>统计项</th><th>范围</th><th>上限</th><th>模式</th></tr></thead>
+                  <tbody><tr v-for="quota in resetResult.matched_quotas" :key="quota.id"><td>{{ quota.name || `#${quota.id}` }}（#{{ quota.id }}）</td><td>{{ projectionDisplayName(quota.projection_id) }}</td><td>{{ resetDimensionLabel(quota.dimension_values) }}</td><td>{{ quota.limit_value.toLocaleString() }}</td><td>{{ quota.mode === 'ENFORCE' ? '强制限制' : '仅观察' }}</td></tr></tbody>
+                </table>
+              </div>
+            </details>
+            <details v-if="resetResult.matched_entries?.length" class="mt-4" open>
+              <summary class="cursor-pointer font-medium">命中的额度条目（{{ resetResult.matched_entries.length }}）</summary>
+              <div class="mt-2 max-h-80 overflow-auto rounded-lg border border-current/20 bg-white/60 dark:bg-dark-900/30">
+                <table class="stat-table text-xs">
+                  <thead><tr><th>结果</th><th>统计项</th><th>维度身份</th><th>命中限额</th><th>周期</th></tr></thead>
+                  <tbody><tr v-for="(entry, index) in resetResult.matched_entries" :key="`${entry.projection_id}-${index}`"><td>{{ quotaResetEntryStatusLabel(entry.status) }}</td><td>{{ entry.projection_name || projectionDisplayName(entry.projection_id) }}</td><td>{{ resetDimensionLabel(entry.dimension_values) }}</td><td>{{ entry.matched_quota_ids.map(id => `#${id}`).join(', ') }}</td><td>{{ formatTime(entry.period_start) }} 至 {{ formatTime(entry.period_end) }}</td></tr></tbody>
+                </table>
+              </div>
+            </details>
+          </div>
+          <div class="flex justify-end border-t border-gray-100 pt-4 dark:border-dark-700">
+            <button class="btn btn-primary" :disabled="resetSaving || !canSubmitQuotaReset">{{ resetSaving ? '重置中…' : '重置限额用量' }}</button>
           </div>
         </form>
         <div class="card overflow-x-auto">
@@ -209,11 +251,12 @@
         <div v-if="queryError" class="rounded-lg bg-red-50 p-3 text-sm text-red-700">{{ queryError }}</div>
         <div v-if="queryResult" class="space-y-4">
           <div class="grid gap-3 md:grid-cols-3">
-            <div class="result-card"><div>Token 汇总</div><strong>{{ queryResult.summary.toLocaleString() }}</strong></div>
+            <div class="result-card"><div>真实累计汇总</div><strong>{{ queryResult.summary.toLocaleString() }}</strong></div>
             <div class="result-card"><div>统计开始时间</div><strong class="text-base">{{ formatTime(queryResult.projection_enabled_at) }}</strong></div>
             <div class="result-card"><div>MySQL 最后同步</div><strong class="text-base">{{ formatTime(queryResult.last_synced_at) }}</strong></div>
           </div>
           <div v-if="!queryResult.complete" class="rounded-lg bg-amber-50 p-3 text-sm text-amber-800">数据仍在最终一致同步中，当前结果可能不完整。</div>
+          <div v-if="!queryResult.reset_snapshots_available" class="rounded-lg bg-amber-50 p-3 text-sm text-amber-800">Redis 重置快照当前不可用；真实累计仍可查询，但快照和重置后有效用量暂无法显示。</div>
           <div v-if="queryResult.rows.length" class="grid gap-4 lg:grid-cols-2">
             <div class="card p-4"><h2 class="mb-3 font-medium">趋势</h2>
               <div v-for="row in trendRows" :key="row.period_start + dimensionLabel(row.dimensions)" class="mb-2 flex items-center gap-2 text-xs">
@@ -227,8 +270,8 @@
           </div>
           <div v-else class="card p-8 text-center text-gray-500">该条件下暂无已同步数据。</div>
           <div class="card overflow-x-auto">
-            <table class="stat-table"><thead><tr><th>周期开始</th><th>周期结束</th><th>维度</th><th>Token</th></tr></thead>
-              <tbody><tr v-for="(row, index) in queryResult.rows" :key="index"><td>{{ formatTime(row.period_start) }}</td><td>{{ formatTime(row.period_end) }}</td><td>{{ dimensionLabel(row.dimensions) }}</td><td>{{ row.value.toLocaleString() }}</td></tr></tbody>
+            <table class="stat-table"><thead><tr><th>周期开始</th><th>周期结束</th><th>维度</th><th>真实累计</th><th>重置快照</th><th>重置后有效用量</th></tr></thead>
+              <tbody><tr v-for="(row, index) in queryResult.rows" :key="index"><td>{{ formatTime(row.period_start) }}</td><td>{{ formatTime(row.period_end) }}</td><td>{{ dimensionLabel(row.dimensions) }}</td><td>{{ row.value.toLocaleString() }}</td><td>{{ row.reset_snapshot === undefined ? '不可用' : row.reset_snapshot.toLocaleString() }}</td><td>{{ row.effective_value === undefined ? '不可用' : row.effective_value.toLocaleString() }}</td></tr></tbody>
             </table>
             <div class="flex justify-end gap-2 p-3"><button class="btn btn-secondary" :disabled="queryPage <= 1" @click="runQuery(queryPage - 1)">上一页</button><span class="py-2 text-sm">第 {{ queryPage }} 页 / 共 {{ queryResult.total }} 条</span><button class="btn btn-secondary" :disabled="queryPage * 50 >= queryResult.total" @click="runQuery(queryPage + 1)">下一页</button></div>
           </div>
@@ -275,17 +318,17 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import Icon from '@/components/icons/Icon.vue'
 import BaseDialog from '@/components/common/BaseDialog.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
+import TokenQuotaDimensionValueSelector from '@/components/admin/tokenstat/TokenQuotaDimensionValueSelector.vue'
 import { dynamicTokenStatisticsAPI } from '@/api/admin/dynamicTokenStatistics'
-import type { DimensionCode, DimensionDefinition, DimensionValue, PeriodType, Projection, ProjectionInput, Quota, RuntimeState, SyncStatus, UsageQueryInput, UsageQueryResult } from '@/api/admin/dynamicTokenStatistics'
+import type { DimensionCode, DimensionDefinition, DimensionValue, MetricCode, MetricDefinition, PeriodType, Projection, ProjectionInput, Quota, QuotaResetResult, QuotaResetStatus, RuntimeState, SyncStatus, UsageQueryInput, UsageQueryResult } from '@/api/admin/dynamicTokenStatistics'
 import * as usersAPI from '@/api/admin/users'
 import * as groupsAPI from '@/api/admin/groups'
 import * as accountsAPI from '@/api/admin/accounts'
-import { searchApiKeys, type SimpleApiKey } from '@/api/admin/usage'
 import { usePermission } from '@/composables/usePermission'
 import type { Account, AdminGroup, AdminUser, SelectOption } from '@/types'
 
@@ -298,6 +341,7 @@ const tabs = [
 ] as const
 const tab = ref<(typeof tabs)[number]['id']>('projections')
 const dimensions = ref<DimensionDefinition[]>([])
+const metrics = ref<MetricDefinition[]>([])
 const projections = ref<Projection[]>([])
 const quotas = ref<Quota[]>([])
 const syncStatus = ref<SyncStatus>()
@@ -310,12 +354,13 @@ const success = ref('')
 const projectionDraft = reactive<{ id?: number; name: string; dimension_codes: DimensionCode[] }>({ name: '', dimension_codes: [] })
 const quotaDraft = reactive<{ name: string; dimension_codes: DimensionCode[]; period_type: PeriodType; mode: 'OBSERVE' | 'ENFORCE'; limit_value: number }>({ name: '', dimension_codes: [], period_type: 'D', mode: 'OBSERVE', limit_value: 0 })
 const quotaValues = reactive<Partial<Record<DimensionCode, string | number>>>({})
+const resetDraft = reactive<{ dimension_codes: DimensionCode[]; metric_code: MetricCode; period_type: PeriodType }>({ dimension_codes: [], metric_code: 'total_tokens', period_type: 'D' })
+const resetValues = reactive<Partial<Record<DimensionCode, string | number>>>({})
+const resetSaving = ref(false)
+const resetResult = ref<QuotaResetResult>()
 const quotaValueModes = reactive<Partial<Record<DimensionCode, 'exact' | 'wildcard'>>>({})
-const apiKeySearchText = ref('')
-const apiKeySearchResults = ref<SimpleApiKey[]>([])
-let apiKeySearchTimer: ReturnType<typeof setTimeout> | undefined
-let apiKeySearchController: AbortController | undefined
-let apiKeySearchVersion = 0
+const quotaSelectedLabels = reactive<Partial<Record<DimensionCode, string>>>({})
+const resetSelectedLabels = reactive<Partial<Record<DimensionCode, string>>>({})
 const deletingQuota = ref<Quota>()
 const editingQuota = ref<Quota>()
 const quotaEditDraft = reactive<{ name: string; mode: 'OBSERVE' | 'ENFORCE'; limit_value: number }>({ name: '', mode: 'OBSERVE', limit_value: 0 })
@@ -338,6 +383,7 @@ const queryGroups = ref<AdminGroup[]>([])
 const queryAccounts = ref<Account[]>([])
 const accountModels = ref<SelectOption[]>([])
 const quotaAccountModels = ref<SelectOption[]>([])
+const resetAccountModels = ref<SelectOption[]>([])
 const enhancedDimensionCodes = new Set<DimensionCode>(['user_id', 'group_id', 'account_id', 'route_alias', 'upstream_model'])
 const queryableProjections = computed(() => projections.value.filter(item => item.status === 'ACTIVE' || item.status === 'DISABLED'))
 const selectedQueryProjection = computed(() => projections.value.find(item => item.id === queryDraft.projection_id))
@@ -346,17 +392,26 @@ const rankingRows = computed(() => [...(queryResult.value?.rows ?? [])].sort((a,
 const trendRows = computed(() => [...(queryResult.value?.rows ?? [])].sort((a, b) => a.period_start.localeCompare(b.period_start)))
 const maxQueryValue = computed(() => Math.max(1, ...trendRows.value.map(row => row.value)))
 const activeProjectionCount = computed(() => projections.value.filter(item => item.status === 'ACTIVE').length)
+const quotaMetrics = computed(() => metrics.value.filter(item => item.allow_quota))
+const canSubmitQuotaReset = computed(() => quotaMetrics.value.some(metric => metric.code === resetDraft.metric_code) && resetDraft.dimension_codes.length > 0 && resetDraft.dimension_codes.every(code => {
+  const definition = dimensions.value.find(item => item.code === code)
+  const value = resetValues[code]
+  if (!definition || value === undefined || String(value).trim() === '') return false
+  return definition.value_type !== 'int64' || Number(value) > 0
+}))
 
 async function load() {
   loading.value = true
   error.value = ''
   try {
-    const [dimensionItems, projectionItems, quotaItems, status, runtime] = await Promise.all([
-      dynamicTokenStatisticsAPI.dimensions(), dynamicTokenStatisticsAPI.projections(),
+    const [dimensionItems, metricItems, projectionItems, quotaItems, status, runtime] = await Promise.all([
+      dynamicTokenStatisticsAPI.dimensions(), dynamicTokenStatisticsAPI.metrics(), dynamicTokenStatisticsAPI.projections(),
       dynamicTokenStatisticsAPI.quotas(), dynamicTokenStatisticsAPI.status(),
       dynamicTokenStatisticsAPI.runtime()
     ])
     dimensions.value = dimensionItems
+    metrics.value = metricItems
+    if (!quotaMetrics.value.some(item => item.code === resetDraft.metric_code) && quotaMetrics.value[0]) resetDraft.metric_code = quotaMetrics.value[0].code
     projections.value = projectionItems
     quotas.value = quotaItems
     syncStatus.value = status
@@ -384,7 +439,7 @@ function enhancedDimensionOptions(
   upstreamModels: SelectOption[]
 ): SelectOption[] {
   if (code === 'user_id') {
-    return queryUsers.value.map(user => ({ value: user.id, label: `${user.username || user.email}（#${user.id}）` }))
+    return queryUsers.value.map(user => ({ value: user.id, label: `${user.username ? `${user.username} · ` : ''}${user.email}（#${user.id}）` }))
   }
   if (code === 'group_id') {
     return queryGroups.value.map(group => ({ value: group.id, label: `${group.name}（#${group.id}）` }))
@@ -438,6 +493,7 @@ function onQuotaDimensionToggle(code: DimensionCode) {
     return
   }
   delete quotaValues[code]
+  delete quotaSelectedLabels[code]
 	delete quotaValueModes[code]
   if (code === 'group_id') delete quotaValues.route_alias
   if (code === 'account_id') {
@@ -447,35 +503,7 @@ function onQuotaDimensionToggle(code: DimensionCode) {
 }
 function onQuotaValueModeChange(code: DimensionCode) {
 	delete quotaValues[code]
-	if (code === 'api_key_id') {
-		apiKeySearchText.value = ''
-		apiKeySearchResults.value = []
-	}
-}
-function onAPIKeySearchInput() {
-	delete quotaValues.api_key_id
-	apiKeySearchResults.value = []
-	if (apiKeySearchTimer) clearTimeout(apiKeySearchTimer)
-	apiKeySearchController?.abort()
-	const keyword = apiKeySearchText.value.trim()
-	if (keyword.length < 2) return
-	const version = ++apiKeySearchVersion
-	apiKeySearchTimer = setTimeout(async () => {
-		const controller = new AbortController()
-		apiKeySearchController = controller
-		try {
-			const results = await searchApiKeys(undefined, keyword, { signal: controller.signal })
-			if (version === apiKeySearchVersion) apiKeySearchResults.value = results
-		} catch {
-			if (version === apiKeySearchVersion && !controller.signal.aborted) apiKeySearchResults.value = []
-		}
-	}, 400)
-}
-function selectQuotaAPIKey(key: SimpleApiKey) {
-	quotaValues.api_key_id = key.id
-	const user = key.user_name || key.user_email
-	apiKeySearchText.value = user ? `${key.name} · ${key.masked_key} · ${user}` : `${key.name} · ${key.masked_key}`
-	apiKeySearchResults.value = []
+	delete quotaSelectedLabels[code]
 }
 async function onQuotaValueChange(code: DimensionCode) {
   if (code === 'group_id') quotaValues.route_alias = ''
@@ -533,8 +561,7 @@ function resetQuota() {
   quotaDraft.limit_value = 0
   Object.keys(quotaValues).forEach(key => delete quotaValues[key as DimensionCode])
 	Object.keys(quotaValueModes).forEach(key => delete quotaValueModes[key as DimensionCode])
-	apiKeySearchText.value = ''
-	apiKeySearchResults.value = []
+  Object.keys(quotaSelectedLabels).forEach(key => delete quotaSelectedLabels[key as DimensionCode])
   quotaAccountModels.value = []
 }
 function editQuota(item: Quota) {
@@ -564,6 +591,85 @@ async function createQuota() {
     await load()
   } catch (cause) { error.value = (cause as Error).message } finally { saving.value = false }
 }
+function onResetDimensionToggle(code: DimensionCode) {
+  if (resetDraft.dimension_codes.includes(code)) {
+    resetValues[code] = ''
+  } else {
+    delete resetValues[code]
+    delete resetSelectedLabels[code]
+    if (code === 'account_id') resetAccountModels.value = []
+  }
+  resetResult.value = undefined
+}
+async function onResetValueChange(code: DimensionCode) {
+  resetResult.value = undefined
+  if (code === 'group_id') resetValues.route_alias = ''
+  if (code === 'account_id') {
+    resetValues.upstream_model = ''
+    resetAccountModels.value = []
+    try {
+      resetAccountModels.value = await loadAccountModels(Number(resetValues.account_id || 0))
+    } catch {
+      resetAccountModels.value = []
+    }
+  }
+}
+
+function quotaResetStatusLabel(status: QuotaResetStatus) {
+  return ({ RESET: '限额用量已重置', PARTIAL_RESET: '限额用量部分重置', NO_QUOTA: '没有适用的已启用限额', NO_USAGE: '当前周期没有可重置用量' } as const)[status]
+}
+function quotaResetEntryStatusLabel(status: 'RESET' | 'NO_USAGE' | 'FAILED') {
+  return ({ RESET: '已重置', NO_USAGE: '无用量', FAILED: '失败' } as const)[status]
+}
+function projectionDisplayName(id: number) {
+  const projection = projections.value.find(item => item.id === id)
+  return projection ? `${projection.name}（#${id}）` : `#${id}`
+}
+function resetDimensionLabel(values: Partial<Record<DimensionCode, DimensionValue>>) {
+  return Object.entries(values).map(([rawCode, value]) => {
+    const code = rawCode as DimensionCode
+    if (!value) return `${dimensionName(code)}=-`
+    if (value.type === 'wildcard') return `${dimensionName(code)}=任意值`
+    const raw = value.type === 'int64' ? value.int64 ?? 0 : value.string ?? ''
+    if (code === 'api_key_id' && Number(resetValues.api_key_id) === raw && resetSelectedLabels.api_key_id) {
+      return `${dimensionName(code)}=${resetSelectedLabels.api_key_id}（#${raw}）`
+    }
+    return `${dimensionName(code)}=${readableDimensionValue(code, raw)}`
+  }).join(', ')
+}
+
+async function resetQuotaUsage() {
+  if (!canSubmitQuotaReset.value) {
+    error.value = '请至少选择一个维度，并填写全部具体值'
+    return
+  }
+  if (!window.confirm('确定重置这些维度的限额判定起点吗？真实累计统计和报表不会被清零。')) return
+  resetSaving.value = true
+  resetResult.value = undefined
+  error.value = ''
+  success.value = ''
+  try {
+    const dimensionValues: Partial<Record<DimensionCode, DimensionValue>> = {}
+    for (const code of resetDraft.dimension_codes) {
+      const definition = dimensions.value.find(item => item.code === code)
+      if (!definition) throw new Error(`未知维度：${code}`)
+      const raw = resetValues[code]
+      dimensionValues[code] = definition.value_type === 'int64'
+        ? { type: 'int64', int64: Number(raw) }
+        : { type: 'string', string: String(raw ?? '').trim() }
+    }
+    resetResult.value = await dynamicTokenStatisticsAPI.resetQuotaUsage({
+      dimension_values: dimensionValues,
+      metric_code: resetDraft.metric_code,
+      period_type: resetDraft.period_type
+    })
+  } catch (cause) {
+    error.value = (cause as Error).message
+  } finally {
+    resetSaving.value = false
+  }
+}
+
 async function saveQuotaEdit() {
   const item = editingQuota.value
   if (!item) return
@@ -685,10 +791,6 @@ function readableDimensionValue(code: DimensionCode, value: number | string | { 
   return String(value)
 }
 
-onBeforeUnmount(() => {
-	if (apiKeySearchTimer) clearTimeout(apiKeySearchTimer)
-	apiKeySearchController?.abort()
-})
 function quotaDimensionEntries(item: Quota) {
   const projection = projections.value.find(candidate => candidate.id === item.projection_id)
   const orderedCodes = projection?.dimension_codes ?? Object.keys(item.dimension_values) as DimensionCode[]
