@@ -110,15 +110,16 @@ func (s *GatewayService) handleBedrockStreamingResponse(
 			if !ok {
 				if !clientDisconnected {
 					flusher.Flush()
+					return &streamingResult{usage: usage, firstTokenMs: firstTokenMs}, nil
 				}
-				return &streamingResult{usage: usage, firstTokenMs: firstTokenMs, clientDisconnect: clientDisconnected}, nil
+				return &streamingResult{usage: &ClaudeUsage{}, clientDisconnect: true}, nil
 			}
 			if ev.err != nil {
 				if clientDisconnected {
-					return &streamingResult{usage: usage, firstTokenMs: firstTokenMs, clientDisconnect: true}, nil
+					return &streamingResult{usage: &ClaudeUsage{}, clientDisconnect: true}, nil
 				}
 				if errors.Is(ev.err, context.Canceled) || errors.Is(ev.err, context.DeadlineExceeded) {
-					return &streamingResult{usage: usage, firstTokenMs: firstTokenMs, clientDisconnect: true}, nil
+					return &streamingResult{usage: &ClaudeUsage{}, clientDisconnect: true}, nil
 				}
 				return &streamingResult{usage: usage, firstTokenMs: firstTokenMs}, fmt.Errorf("bedrock stream read error: %w", ev.err)
 			}
@@ -154,7 +155,8 @@ func (s *GatewayService) handleBedrockStreamingResponse(
 				}
 				if writeErr != nil {
 					clientDisconnected = true
-					logger.LegacyPrintf("service.gateway", "[Bedrock] Client disconnected during streaming, continue draining for usage: account=%d", account.ID)
+					logger.LegacyPrintf("service.gateway", "[Bedrock] Client disconnected during streaming, canceling upstream: account=%d", account.ID)
+					return &streamingResult{usage: &ClaudeUsage{}, clientDisconnect: true}, nil
 				} else {
 					flusher.Flush()
 				}

@@ -312,6 +312,16 @@ func (h *OpenAIGatewayHandler) ChatCompletions(c *gin.Context) {
 			cyberBlockKeyChat = service.CyberSessionBlockKey(apiKey.ID, c, body)
 		}
 		h.recordCyberPolicyIfMarked(c, apiKey, account, subscription, reqModel, err != nil, cyberBlockKeyChat, channelMapping.ToUsageFields(reqModel, ""), service.HashUsageRequestPayload(body))
+		if isOpenAIClientDisconnected(c, result, err) {
+			model := reqModel
+			upstreamModel := ""
+			if result != nil {
+				model = result.Model
+				upstreamModel = result.UpstreamModel
+			}
+			queueClientDisconnectedOpsError(c, buildGatewayClientDisconnectedOpsEntry(c, account, model, upstreamModel, reqStream))
+			return
+		}
 
 		forwardDurationMs := time.Since(forwardStart).Milliseconds()
 		forwardFinishedFields := []zap.Field{}

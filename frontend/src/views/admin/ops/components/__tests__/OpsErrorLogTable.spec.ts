@@ -63,6 +63,18 @@ describe('OpsErrorLogTable user/api-key/account columns', () => {
     expect(text).toContain('acct-A') // 账号列
   })
 
+  it('shows client disconnected as upstream service disconnected', () => {
+    const wrapper = mountTable({
+      type: 'client_disconnected',
+      phase: 'network',
+      error_owner: 'client',
+      error_source: 'client_request',
+      status_code: 499,
+    })
+
+    expect(wrapper.text()).toContain('admin.ops.errorLog.typeClientDisconnected')
+  })
+
   it('shows the deleted badge for a soft-deleted api key', () => {
     const wrapper = mountTable({
       api_key_id: 5,
@@ -88,6 +100,7 @@ describe('OpsErrorLogTable i18n keys exist in the errorLog namespace', () => {
       const errorLog = msgs?.admin?.ops?.errorLog
       expect(errorLog?.apiKey).toBeTruthy()
       expect(errorLog?.keyDeletedBadge).toBeTruthy()
+      expect(errorLog?.typeClientDisconnected).toBeTruthy()
     })
   }
 })

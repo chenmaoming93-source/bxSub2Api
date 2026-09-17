@@ -2123,7 +2123,7 @@ func (s *OpenAIGatewayService) forwardOpenAIWSV2(
 			return
 		}
 		clientDisconnected = true
-		logger.LegacyPrintf("service.openai_gateway", "[OpenAI WS Mode] client disconnected, continue draining upstream: account=%d", account.ID)
+		logger.LegacyPrintf("service.openai_gateway", "[OpenAI WS Mode] client disconnected, canceling upstream: account=%d", account.ID)
 	}
 	flushBufferedStreamEvents := func(reason string) {
 		if len(bufferedStreamEvents) == 0 {
@@ -2172,6 +2172,9 @@ func (s *OpenAIGatewayService) forwardOpenAIWSV2(
 				truncateOpenAIWSLogValue(firstEventType, openAIWSLogValueMaxLen),
 				truncateOpenAIWSLogValue(lastEventType, openAIWSLogValueMaxLen),
 			)
+			if ctx.Err() != nil {
+				return &OpenAIForwardResult{RequestID: responseID, Usage: *usage, Model: originalModel, UpstreamModel: mappedModel, ImageCount: imageCounter.Count(), ImageOutputSizes: imageCounter.Sizes(), ServiceTier: extractOpenAIServiceTier(reqBody), ReasoningEffort: extractOpenAIReasoningEffort(reqBody, originalModel), Stream: reqStream, OpenAIWSMode: true, ResponseHeaders: lease.HandshakeHeaders(), Duration: time.Since(startTime), FirstTokenMs: firstTokenMs, ClientDisconnect: true}, nil
+			}
 			if !wroteDownstream {
 				return nil, wrapOpenAIWSFallback(classifyOpenAIWSReadFallbackReason(readErr), readErr)
 			}
@@ -2307,6 +2310,9 @@ func (s *OpenAIGatewayService) forwardOpenAIWSV2(
 				flushBufferedStreamEvents("error_event")
 				emitStreamMessage(message, true)
 			}
+			if clientDisconnected {
+				return &OpenAIForwardResult{RequestID: responseID, Usage: *usage, Model: originalModel, UpstreamModel: mappedModel, ImageCount: imageCounter.Count(), ImageOutputSizes: imageCounter.Sizes(), ServiceTier: extractOpenAIServiceTier(reqBody), ReasoningEffort: extractOpenAIReasoningEffort(reqBody, originalModel), Stream: reqStream, OpenAIWSMode: true, ResponseHeaders: lease.HandshakeHeaders(), Duration: time.Since(startTime), FirstTokenMs: firstTokenMs, ClientDisconnect: true}, nil
+			}
 			if !reqStream {
 				c.JSON(statusCode, gin.H{
 					"error": gin.H{
@@ -2341,6 +2347,9 @@ func (s *OpenAIGatewayService) forwardOpenAIWSV2(
 			} else {
 				flushBufferedStreamEvents(eventType)
 				emitStreamMessage(message, isTerminalEvent)
+				if clientDisconnected {
+					return &OpenAIForwardResult{RequestID: responseID, Usage: *usage, Model: originalModel, UpstreamModel: mappedModel, ImageCount: imageCounter.Count(), ImageOutputSizes: imageCounter.Sizes(), ServiceTier: extractOpenAIServiceTier(reqBody), ReasoningEffort: extractOpenAIReasoningEffort(reqBody, originalModel), Stream: reqStream, OpenAIWSMode: true, ResponseHeaders: lease.HandshakeHeaders(), Duration: time.Since(startTime), FirstTokenMs: firstTokenMs, ClientDisconnect: true}, nil
+				}
 			}
 		} else {
 			if responseField.Exists() && responseField.Type == gjson.JSON {
@@ -3115,10 +3124,31 @@ func (s *OpenAIGatewayService) ProxyResponsesWebSocketFromClient(
 				mappedModelBytes = []byte(mappedModel)
 			}
 		}
+		clientDisconnectResult := func() *OpenAIForwardResult {
+			return &OpenAIForwardResult{
+				RequestID:        responseID,
+				Model:            originalModel,
+				UpstreamModel:    mappedModel,
+				Stream:           reqStream,
+				OpenAIWSMode:     true,
+				ResponseHeaders:  lease.HandshakeHeaders(),
+				Duration:         time.Since(turnStart),
+				FirstTokenMs:     firstTokenMs,
+				Usage:            usage,
+				ServiceTier:      extractOpenAIServiceTierFromBody(payload),
+				ReasoningEffort:  ApplyThinkingEnabledFallback(extractOpenAIReasoningEffortFromBody(payload, originalModel), payload, mappedModel),
+				ImageCount:       imageCounter.Count(),
+				ImageOutputSizes: imageCounter.Sizes(),
+				ClientDisconnect: true,
+			}
+		}
 		for {
 			upstreamMessage, readErr := lease.ReadMessageWithContextTimeout(ctx, s.openAIWSReadTimeout())
 			if readErr != nil {
 				lease.MarkBroken()
+				if ctx.Err() != nil {
+					return clientDisconnectResult(), nil
+				}
 				return nil, wrapOpenAIWSIngressTurnError(
 					"read_upstream",
 					fmt.Errorf("read upstream websocket event: %w", readErr),
@@ -3250,14 +3280,16 @@ func (s *OpenAIGatewayService) ProxyResponsesWebSocketFromClient(
 					if isOpenAIWSClientDisconnectError(err) {
 						clientDisconnected = true
 						closeStatus, closeReason := summarizeOpenAIWSReadCloseError(err)
+						lease.MarkBroken()
 						logOpenAIWSModeInfo(
-							"ingress_ws_client_disconnected_drain account_id=%d turn=%d conn_id=%s close_status=%s close_reason=%s",
+							"ingress_ws_client_disconnected_cancel account_id=%d turn=%d conn_id=%s close_status=%s close_reason=%s",
 							account.ID,
 							turn,
 							truncateOpenAIWSLogValue(lease.ConnID(), openAIWSIDValueMaxLen),
 							closeStatus,
 							truncateOpenAIWSLogValue(closeReason, openAIWSHeaderValueMaxLen),
 						)
+						return clientDisconnectResult(), nil
 					} else {
 						return nil, wrapOpenAIWSIngressTurnError(
 							"write_client",
@@ -3846,6 +3878,10 @@ func (s *OpenAIGatewayService) ProxyResponsesWebSocketFromClient(
 		}
 		if result == nil {
 			return errors.New("websocket turn result is nil")
+		}
+		if result.ClientDisconnect {
+			lastTurnClean = false
+			return nil
 		}
 		responseID := strings.TrimSpace(result.RequestID)
 		lastTurnResponseID = responseID

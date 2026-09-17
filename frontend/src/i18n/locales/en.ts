@@ -5078,6 +5078,7 @@ export default {
         phase: 'Phase',
         id: 'ID:',
         typeUpstream: 'Upstream',
+         typeClientDisconnected: 'Upstream service disconnected',
         typeRequest: 'Request',
         typeAuth: 'Auth',
         typeRouting: 'Routing',

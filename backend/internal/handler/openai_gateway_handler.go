@@ -415,6 +415,16 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 			cyberBlockKeyHTTP = service.CyberSessionBlockKey(apiKey.ID, c, sessionHashBody)
 		}
 		h.recordCyberPolicyIfMarked(c, apiKey, account, subscription, reqModel, err != nil, cyberBlockKeyHTTP, channelMapping.ToUsageFields(reqModel, ""), service.HashUsageRequestPayload(body))
+		if isOpenAIClientDisconnected(c, result, err) {
+			model := reqModel
+			upstreamModel := ""
+			if result != nil {
+				model = result.Model
+				upstreamModel = result.UpstreamModel
+			}
+			queueClientDisconnectedOpsError(c, buildGatewayClientDisconnectedOpsEntry(c, account, model, upstreamModel, reqStream))
+			return
+		}
 		forwardDurationMs := time.Since(forwardStart).Milliseconds()
 		forwardFinishedFields := []zap.Field{
 			zap.Bool("remote_compact", requireCompact),
@@ -862,6 +872,16 @@ func (h *OpenAIGatewayHandler) Messages(c *gin.Context) {
 			cyberBlockKeyMsg = service.CyberSessionBlockKey(apiKey.ID, c, body)
 		}
 		h.recordCyberPolicyIfMarked(c, apiKey, account, subscription, reqModel, err != nil, cyberBlockKeyMsg, channelMappingMsg.ToUsageFields(reqModel, ""), service.HashUsageRequestPayload(body))
+		if isOpenAIClientDisconnected(c, result, err) {
+			model := reqModel
+			upstreamModel := ""
+			if result != nil {
+				model = result.Model
+				upstreamModel = result.UpstreamModel
+			}
+			queueClientDisconnectedOpsError(c, buildGatewayClientDisconnectedOpsEntry(c, account, model, upstreamModel, reqStream))
+			return
+		}
 		forwardDurationMs := time.Since(forwardStart).Milliseconds()
 		forwardFinishedFields := []zap.Field{}
 		if result != nil {
@@ -1566,6 +1586,10 @@ func (h *OpenAIGatewayHandler) ResponsesWebSocket(c *gin.Context) {
 					)
 				}
 				if result == nil {
+					return
+				}
+				if result.ClientDisconnect {
+					queueClientDisconnectedOpsError(c, buildGatewayClientDisconnectedOpsEntry(c, account, result.Model, result.UpstreamModel, result.Stream))
 					return
 				}
 				if account.Type == service.AccountTypeOAuth {

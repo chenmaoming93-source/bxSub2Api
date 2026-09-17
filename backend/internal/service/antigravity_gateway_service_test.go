@@ -1106,9 +1106,9 @@ func TestHandleClaudeStreamingResponse_ThoughtsTokenCount(t *testing.T) {
 
 // --- 流式客户端断开检测测试 ---
 
-// TestStreamUpstreamResponse_ClientDisconnectDrainsUsage
-// 验证：客户端写入失败后，streamUpstreamResponse 继续读取上游以收集 usage
-func TestStreamUpstreamResponse_ClientDisconnectDrainsUsage(t *testing.T) {
+// TestStreamUpstreamResponse_ClientDisconnectCancelsUpstream
+// 验证：客户端写入失败后，streamUpstreamResponse 立即取消上游并清空 usage
+func TestStreamUpstreamResponse_ClientDisconnectCancelsUpstream(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	svc := newAntigravityTestService(&config.Config{
 		Gateway: config.GatewayConfig{MaxLineSize: defaultMaxLineSize},
@@ -1138,7 +1138,8 @@ func TestStreamUpstreamResponse_ClientDisconnectDrainsUsage(t *testing.T) {
 	require.NotNil(t, result)
 	require.True(t, result.clientDisconnect)
 	require.NotNil(t, result.usage)
-	require.Equal(t, 20, result.usage.OutputTokens)
+	require.Zero(t, result.usage.InputTokens)
+	require.Zero(t, result.usage.OutputTokens)
 }
 
 // TestStreamUpstreamResponse_ContextCanceled
@@ -1618,4 +1619,95 @@ func generateLargeUnwrapJSON(minSize int) []byte {
 	outer := map[string]any{"response": inner}
 	b, _ := json.Marshal(outer)
 	return b
+}
+
+// blockingUpstreamCtxStub 暴露上游请求实际使用的 Context，并像真实传输一样挂起直到该
+// Context 结束，用于验证调用方断开是否真的取消了下游请求。
+type blockingUpstreamCtxStub struct {
+	ctxCh chan context.Context
+}
+
+func (s *blockingUpstreamCtxStub) Do(req *http.Request, _ string, _ int64, _ int) (*http.Response, error) {
+	if s.ctxCh != nil {
+		select {
+		case s.ctxCh <- req.Context():
+		default:
+		}
+	}
+	<-req.Context().Done()
+	return nil, req.Context().Err()
+}
+
+func (s *blockingUpstreamCtxStub) DoWithTLS(req *http.Request, proxyURL string, accountID int64, accountConcurrency int, _ *tlsfingerprint.Profile) (*http.Response, error) {
+	return s.Do(req, proxyURL, accountID, accountConcurrency)
+}
+
+// 调用方断开必须立即释放下游模型请求：桥接生效后上游请求的 Context 会被取消，
+// Forward 返回带断开标记的结果，且不会把这次取消记成上游错误。
+func TestAntigravityGatewayService_Forward_CallerDisconnectCancelsUpstreamRequest(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	writer := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(writer)
+
+	body, err := json.Marshal(map[string]any{
+		"model":      "claude-opus-4-6",
+		"messages":   []map[string]any{{"role": "user", "content": "hi"}},
+		"max_tokens": 16,
+		"stream":     true,
+	})
+	require.NoError(t, err)
+
+	requestCtx, cancelRequest := context.WithCancel(context.Background())
+	defer cancelRequest()
+	c.Request = httptest.NewRequest(http.MethodPost, "/v1/messages", bytes.NewReader(body)).WithContext(requestCtx)
+
+	upstream := &blockingUpstreamCtxStub{ctxCh: make(chan context.Context, 1)}
+	svc := &AntigravityGatewayService{
+		settingService: NewSettingService(&antigravitySettingRepoStub{}, &config.Config{Gateway: config.GatewayConfig{MaxLineSize: defaultMaxLineSize}}),
+		tokenProvider:  &AntigravityTokenProvider{},
+		httpUpstream:   upstream,
+	}
+
+	account := &Account{
+		ID:          1,
+		Name:        "acc-1",
+		Platform:    PlatformAntigravity,
+		Type:        AccountTypeOAuth,
+		Status:      StatusActive,
+		Concurrency: 1,
+		Credentials: map[string]any{"access_token": "token"},
+	}
+
+	type forwardOutcome struct {
+		result *ForwardResult
+		err    error
+	}
+	done := make(chan forwardOutcome, 1)
+	go func() {
+		result, forwardErr := svc.Forward(requestCtx, c, account, body, false)
+		done <- forwardOutcome{result: result, err: forwardErr}
+	}()
+
+	var upstreamCtx context.Context
+	select {
+	case upstreamCtx = <-upstream.ctxCh:
+	case <-time.After(5 * time.Second):
+		t.Fatal("upstream request was never issued")
+	}
+
+	cancelRequest()
+
+	require.Eventually(t, func() bool { return upstreamCtx.Err() != nil }, 2*time.Second, 10*time.Millisecond,
+		"caller disconnect must cancel the downstream request context")
+
+	outcome := <-done
+	require.NotNil(t, outcome.result, "a caller disconnect must return a forward result for Ops classification")
+	require.True(t, outcome.result.ClientDisconnect)
+	require.NoError(t, outcome.err)
+	require.Less(t, writer.Code, 400, "a disconnect must not write an error status that would look like a real upstream error")
+
+	if raw, ok := c.Get(OpsUpstreamErrorsKey); ok {
+		events, _ := raw.([]*OpsUpstreamErrorEvent)
+		require.Empty(t, events, "a caller cancellation must not be recorded as an upstream error")
+	}
 }

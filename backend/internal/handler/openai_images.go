@@ -216,6 +216,16 @@ func (h *OpenAIGatewayHandler) Images(c *gin.Context) {
 		if result != nil && result.FirstTokenMs != nil {
 			service.SetOpsLatencyMs(c, service.OpsTimeToFirstTokenMsKey, int64(*result.FirstTokenMs))
 		}
+		if isOpenAIClientDisconnected(c, result, err) {
+			model := parsed.Model
+			upstreamModel := ""
+			if result != nil {
+				model = result.Model
+				upstreamModel = result.UpstreamModel
+			}
+			queueClientDisconnectedOpsError(c, buildGatewayClientDisconnectedOpsEntry(c, account, model, upstreamModel, parsed.Stream))
+			return
+		}
 		if err != nil {
 			if result != nil && result.ImageCount > 0 {
 				reqLog.Warn("openai.images.forward_partial_error_with_image_result",

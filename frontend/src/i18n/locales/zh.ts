@@ -5237,6 +5237,7 @@ export default {
         phase: '阶段',
         id: 'ID：',
         typeUpstream: '上游',
+         typeClientDisconnected: '上游服务断开',
         typeRequest: '请求',
         typeAuth: '认证',
         typeRouting: '路由',

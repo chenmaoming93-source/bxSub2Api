@@ -34,6 +34,41 @@ function injectPublicSettings(backendUrl: string): Plugin {
   }
 }
 
+/**
+ * Propagate a downstream client abort through Vite's Node proxy.
+ *
+ * Vite creates a separate HTTP request to the backend. Without explicitly
+ * destroying that request, a client can close the response at :3000 while
+ * the Go request at :8080 continues until the model finishes.
+ */
+function propagateProxyClientAbort(proxy: any): void {
+  proxy.on('proxyReq', (proxyReq: any, req: any, res: any) => {
+    let cleanedUp = false
+
+    const cleanup = () => {
+      if (cleanedUp) return
+      cleanedUp = true
+      req.off?.('aborted', abortProxyRequest)
+      res.off?.('close', abortProxyRequest)
+      res.off?.('finish', cleanup)
+    }
+
+    const abortProxyRequest = () => {
+      if (cleanedUp || res.writableFinished) return
+      cleanup()
+      proxyReq.destroy()
+    }
+
+    // Covers a client abort before the incoming request has fully completed.
+    req.once?.('aborted', abortProxyRequest)
+    // Covers a client closing the response while the backend is still running.
+    res.once?.('close', abortProxyRequest)
+    res.once?.('finish', cleanup)
+    proxyReq.once?.('close', cleanup)
+    proxyReq.once?.('error', cleanup)
+  })
+}
+
 export default defineConfig(({ mode }) => {
   // 加载环境变量
   const env = loadEnv(mode, process.cwd(), '')
@@ -112,15 +147,18 @@ export default defineConfig(({ mode }) => {
       proxy: {
         '/api': {
           target: backendUrl,
-          changeOrigin: true
+          changeOrigin: true,
+          configure: propagateProxyClientAbort
         },
         '/v1': {
           target: backendUrl,
-          changeOrigin: true
+          changeOrigin: true,
+          configure: propagateProxyClientAbort
         },
         '/setup': {
           target: backendUrl,
-          changeOrigin: true
+          changeOrigin: true,
+          configure: propagateProxyClientAbort
         }
       }
     }

@@ -17,6 +17,10 @@ var ErrOpsDisabled = infraerrors.NotFound("OPS_DISABLED", "Ops monitoring is dis
 
 const (
 	opsMaxStoredErrorBodyBytes = 20 * 1024
+
+	// OpsErrorTypeClientDisconnected is the stable classification for an
+	// inbound caller that disconnects before the downstream request completes.
+	OpsErrorTypeClientDisconnected = "client_disconnected"
 )
 
 // OpsService provides ingestion and query APIs for the Ops monitoring module.
@@ -134,6 +138,32 @@ func (s *OpsService) IsMonitoringEnabled(ctx context.Context) bool {
 	default:
 		return true
 	}
+}
+
+// MarkClientDisconnectedErrorLog applies the stable, non-retryable Ops
+// classification for an inbound caller disconnect. It intentionally does not
+// add usage, billing, quota, or token data to the entry.
+func MarkClientDisconnectedErrorLog(entry *OpsInsertErrorLogInput) {
+	if entry == nil {
+		return
+	}
+	entry.ErrorPhase = "network"
+	entry.ErrorType = OpsErrorTypeClientDisconnected
+	entry.Severity = "P3"
+	entry.StatusCode = 499
+	entry.IsBusinessLimited = false
+	entry.IsCountTokens = false
+	entry.ErrorSource = "client_request"
+	entry.ErrorOwner = "client"
+	if strings.TrimSpace(entry.ErrorMessage) == "" {
+		entry.ErrorMessage = "Upstream client disconnected before response completed"
+	}
+	entry.ErrorBody = ""
+	entry.UpstreamStatusCode = nil
+	entry.UpstreamErrorMessage = nil
+	entry.UpstreamErrorDetail = nil
+	entry.UpstreamErrors = nil
+	entry.UpstreamErrorsJSON = nil
 }
 
 func (s *OpsService) RecordError(ctx context.Context, entry *OpsInsertErrorLogInput) error {

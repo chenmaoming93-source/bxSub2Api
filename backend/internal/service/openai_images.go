@@ -588,8 +588,9 @@ func (s *OpenAIGatewayService) forwardOpenAIImagesAPIKey(
 	if err != nil {
 		return nil, err
 	}
-	upstreamCtx, releaseUpstreamCtx := detachStreamUpstreamContext(ctx, parsed.Stream)
+	upstreamCtx, releaseUpstreamCtx := detachOpenAIUpstreamContext(ctx)
 	defer releaseUpstreamCtx()
+	setOpenAIUpstreamContext(c, upstreamCtx)
 
 	token, _, err := s.GetAccessToken(upstreamCtx, account)
 	if err != nil {
@@ -653,8 +654,11 @@ func (s *OpenAIGatewayService) forwardOpenAIImagesAPIKey(
 	imageCount := parsed.N
 	var firstTokenMs *int
 	if parsed.Stream && isEventStreamResponse(resp.Header) {
-		streamUsage, streamCount, streamSizes, ttft, err := s.handleOpenAIImagesStreamingResponse(resp, c, startTime)
+		streamUsage, streamCount, streamSizes, ttft, err := s.handleOpenAIImagesStreamingResponse(upstreamCtx, resp, c, startTime)
 		if err != nil {
+			if upstreamCtx.Err() != nil {
+				return &OpenAIForwardResult{RequestID: resp.Header.Get("x-request-id"), Usage: streamUsage, Model: requestModel, UpstreamModel: upstreamModel, Stream: parsed.Stream, ResponseHeaders: resp.Header.Clone(), Duration: time.Since(startTime), FirstTokenMs: ttft, ImageCount: streamCount, ImageSize: parsed.SizeTier, ImageInputSize: parsed.Size, ImageOutputSizes: streamSizes, ClientDisconnect: true}, nil
+			}
 			if streamCount > 0 {
 				return &OpenAIForwardResult{
 					RequestID:        resp.Header.Get("x-request-id"),
@@ -694,11 +698,27 @@ func (s *OpenAIGatewayService) forwardOpenAIImagesAPIKey(
 	} else {
 		nonStreamUsage, nonStreamCount, nonStreamSizes, err := s.handleOpenAIImagesNonStreamingResponse(resp, c)
 		if err != nil {
+			if upstreamCtx.Err() != nil {
+				return &OpenAIForwardResult{RequestID: resp.Header.Get("x-request-id"), Model: requestModel, UpstreamModel: upstreamModel, Stream: parsed.Stream, ResponseHeaders: resp.Header.Clone(), Duration: time.Since(startTime), ClientDisconnect: true}, nil
+			}
 			return nil, err
 		}
 		usage = nonStreamUsage
 		if nonStreamCount > 0 {
 			imageCount = nonStreamCount
+		}
+		if upstreamCtx.Err() != nil {
+			return &OpenAIForwardResult{
+				RequestID:        resp.Header.Get("x-request-id"),
+				Model:            requestModel,
+				UpstreamModel:    upstreamModel,
+				Stream:           parsed.Stream,
+				ResponseHeaders:  resp.Header.Clone(),
+				Duration:         time.Since(startTime),
+				ImageSize:        parsed.SizeTier,
+				ImageInputSize:   parsed.Size,
+				ClientDisconnect: true,
+			}, nil
 		}
 		return &OpenAIForwardResult{
 			RequestID:        resp.Header.Get("x-request-id"),
@@ -872,6 +892,7 @@ func (s *OpenAIGatewayService) handleOpenAIImagesNonStreamingResponse(resp *http
 }
 
 func (s *OpenAIGatewayService) handleOpenAIImagesStreamingResponse(
+	ctx context.Context,
 	resp *http.Response,
 	c *gin.Context,
 	startTime time.Time,
@@ -924,7 +945,8 @@ func (s *OpenAIGatewayService) handleOpenAIImagesStreamingResponse(
 		if !clientDisconnected {
 			if _, writeErr := c.Writer.Write(line); writeErr != nil {
 				clientDisconnected = true
-				logger.LegacyPrintf("service.openai_gateway", "[OpenAI] Images stream client disconnected, continue draining upstream for billing")
+				cancelDetachedStreamUpstreamContext(ctx)
+				logger.LegacyPrintf("service.openai_gateway", "[OpenAI] Images stream client disconnected, canceling upstream")
 			} else {
 				flusher.Flush()
 				lastDownstreamWriteAt = time.Now()
@@ -966,6 +988,9 @@ func (s *OpenAIGatewayService) handleOpenAIImagesStreamingResponse(
 		for {
 			line, err := reader.ReadBytes('\n')
 			processLine(line)
+			if clientDisconnected {
+				return usage, imageCounter.Count(), imageCounter.Sizes(), firstTokenMs, context.Canceled
+			}
 			if err == io.EOF {
 				break
 			}
@@ -1050,6 +1075,9 @@ func (s *OpenAIGatewayService) handleOpenAIImagesStreamingResponse(
 				return usage, imageCounter.Count(), imageCounter.Sizes(), firstTokenMs, ev.err
 			}
 			processLine(ev.line)
+			if clientDisconnected {
+				return usage, imageCounter.Count(), imageCounter.Sizes(), firstTokenMs, context.Canceled
+			}
 		case <-intervalCh:
 			lastRead := time.Unix(0, atomic.LoadInt64(&lastReadAt))
 			if time.Since(lastRead) < streamInterval {
@@ -1067,8 +1095,8 @@ func (s *OpenAIGatewayService) handleOpenAIImagesStreamingResponse(
 			}
 			if _, writeErr := io.WriteString(c.Writer, ":\n\n"); writeErr != nil {
 				clientDisconnected = true
-				logger.LegacyPrintf("service.openai_gateway", "[OpenAI] Images stream client disconnected during keepalive, continue draining upstream for billing")
-				continue
+				cancelDetachedStreamUpstreamContext(ctx)
+				return usage, imageCounter.Count(), imageCounter.Sizes(), firstTokenMs, context.Canceled
 			}
 			flusher.Flush()
 			lastDownstreamWriteAt = time.Now()

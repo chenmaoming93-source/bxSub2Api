@@ -31,6 +31,9 @@ const (
 	opsUpstreamModelKey = "ops_upstream_model"
 	opsRequestTypeKey   = "ops_request_type"
 
+	opsClientDisconnectedRecordedKey = "ops_client_disconnected_recorded"
+	opsClientDisconnectedEntryKey    = "ops_client_disconnected_entry"
+
 	// 错误过滤匹配常量 — shouldSkipOpsErrorLog 和错误分类共用
 	opsErrContextCanceled            = "context canceled"
 	opsErrNoAvailableAccounts        = "no available accounts"
@@ -114,8 +117,12 @@ func extractAttemptedKey(c *gin.Context) string {
 	return ""
 }
 
+type opsErrorRecorder interface {
+	RecordError(context.Context, *service.OpsInsertErrorLogInput) error
+}
+
 type opsErrorLogJob struct {
-	ops   *service.OpsService
+	ops   opsErrorRecorder
 	entry *service.OpsInsertErrorLogInput
 }
 
@@ -131,6 +138,7 @@ var (
 	opsErrorLogEnqueued  atomic.Int64
 	opsErrorLogDropped   atomic.Int64
 	opsErrorLogProcessed atomic.Int64
+	opsErrorLogFallback  atomic.Int64
 	opsErrorLogSanitized atomic.Int64
 
 	opsErrorLogLastDropLogAt atomic.Int64
@@ -209,12 +217,17 @@ func flushOpsErrorLogBatch(batch []opsErrorLogJob) {
 	}()
 
 	grouped := make(map[*service.OpsService][]*service.OpsInsertErrorLogInput, len(batch))
+	direct := make([]opsErrorLogJob, 0)
 	var processed int64
 	for _, job := range batch {
 		if job.ops == nil || job.entry == nil {
 			continue
 		}
-		grouped[job.ops] = append(grouped[job.ops], job.entry)
+		if opsSvc, ok := job.ops.(*service.OpsService); ok {
+			grouped[opsSvc] = append(grouped[opsSvc], job.entry)
+		} else {
+			direct = append(direct, job)
+		}
 		processed++
 	}
 	if processed == 0 {
@@ -227,6 +240,11 @@ func flushOpsErrorLogBatch(batch []opsErrorLogJob) {
 		}
 		ctx, cancel := context.WithTimeout(context.Background(), opsErrorLogTimeout)
 		_ = opsSvc.RecordErrorBatch(ctx, entries)
+		cancel()
+	}
+	for _, job := range direct {
+		ctx, cancel := context.WithTimeout(context.Background(), opsErrorLogTimeout)
+		_ = job.ops.RecordError(ctx, job.entry)
 		cancel()
 	}
 	opsErrorLogProcessed.Add(processed)
@@ -266,6 +284,104 @@ func enqueueOpsErrorLog(ops *service.OpsService, entry *service.OpsInsertErrorLo
 		opsErrorLogDropped.Add(1)
 		maybeLogOpsErrorLogDrop()
 	}
+}
+
+func recordOpsErrorLogSynchronously(ops opsErrorRecorder, entry *service.OpsInsertErrorLogInput) {
+	if ops == nil || entry == nil {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), opsErrorLogTimeout)
+	defer cancel()
+	if err := ops.RecordError(ctx, entry); err != nil {
+		log.Printf("[OpsErrorLogger] synchronous error-log fallback failed: %v", err)
+		return
+	}
+	opsErrorLogFallback.Add(1)
+}
+
+// enqueueCriticalOpsErrorLog is used for caller-disconnect records. Unlike
+// ordinary diagnostic logs, dropping this event would hide the concurrency
+// leak being investigated, so a full/unavailable queue falls back to a bounded
+// synchronous write using a detached timeout context.
+func enqueueCriticalOpsErrorLog(ops opsErrorRecorder, entry *service.OpsInsertErrorLogInput) {
+	if ops == nil || entry == nil {
+		return
+	}
+
+	select {
+	case <-opsErrorLogShutdownCh:
+		recordOpsErrorLogSynchronously(ops, entry)
+		return
+	default:
+	}
+
+	opsErrorLogMu.RLock()
+	stopping := opsErrorLogStopping
+	opsErrorLogMu.RUnlock()
+	if stopping {
+		recordOpsErrorLogSynchronously(ops, entry)
+		return
+	}
+
+	opsErrorLogOnce.Do(startOpsErrorLogWorkers)
+
+	opsErrorLogMu.RLock()
+	if opsErrorLogStopping || opsErrorLogQueue == nil {
+		opsErrorLogMu.RUnlock()
+		recordOpsErrorLogSynchronously(ops, entry)
+		return
+	}
+
+	select {
+	case opsErrorLogQueue <- opsErrorLogJob{ops: ops, entry: entry}:
+		opsErrorLogQueueLen.Add(1)
+		opsErrorLogEnqueued.Add(1)
+		opsErrorLogMu.RUnlock()
+	default:
+		opsErrorLogMu.RUnlock()
+		opsErrorLogDropped.Add(1)
+		maybeLogOpsErrorLogDrop()
+		recordOpsErrorLogSynchronously(ops, entry)
+	}
+}
+
+// recordClientDisconnectedOpsError applies the canonical classification and
+// guarantees at-most-once recording for one Gin request lifecycle.
+func queueClientDisconnectedOpsError(c *gin.Context, entry *service.OpsInsertErrorLogInput) bool {
+	if c == nil || entry == nil {
+		return false
+	}
+	if recorded, ok := c.Get(opsClientDisconnectedRecordedKey); ok {
+		if alreadyRecorded, ok := recorded.(bool); ok && alreadyRecorded {
+			return false
+		}
+	}
+	if _, exists := c.Get(opsClientDisconnectedEntryKey); exists {
+		return false
+	}
+	c.Set(opsClientDisconnectedEntryKey, entry)
+	return true
+}
+
+func recordClientDisconnectedOpsError(c *gin.Context, ops opsErrorRecorder, entry *service.OpsInsertErrorLogInput) bool {
+	if ops == nil || entry == nil {
+		return false
+	}
+	if c != nil {
+		if recorded, ok := c.Get(opsClientDisconnectedRecordedKey); ok {
+			if alreadyRecorded, ok := recorded.(bool); ok && alreadyRecorded {
+				return false
+			}
+		}
+		c.Set(opsClientDisconnectedRecordedKey, true)
+	}
+	service.MarkClientDisconnectedErrorLog(entry)
+	enqueueCriticalOpsErrorLog(ops, entry)
+	return true
+}
+
+func OpsErrorLogFallbackTotal() int64 {
+	return opsErrorLogFallback.Load()
 }
 
 func StopOpsErrorLogWorkers() bool {
@@ -527,6 +643,45 @@ func (w *opsCaptureWriter) WriteString(s string) (int, error) {
 // Notes:
 // - It buffers response bodies only when status >= 400 to avoid overhead for successful traffic.
 // - Streaming errors after the response has started (SSE) may still need explicit logging.
+// opsRequestCarriesRealUpstreamError reports whether the regular Ops error path has
+// something genuine to record for this request: an upstream failure status, or any
+// upstream error context captured while handling it. A pending caller-disconnect
+// record must never replace those, so the disconnect branch defers to the regular
+// path when this returns true.
+func opsRequestCarriesRealUpstreamError(c *gin.Context) bool {
+	if c == nil {
+		return false
+	}
+	if c.Writer != nil && c.Writer.Status() >= 400 {
+		return true
+	}
+	if v, ok := c.Get(service.OpsUpstreamErrorsKey); ok {
+		if arr, ok := v.([]*service.OpsUpstreamErrorEvent); ok && len(arr) > 0 {
+			return true
+		}
+	}
+	if v, ok := c.Get(service.OpsUpstreamStatusCodeKey); ok {
+		switch t := v.(type) {
+		case int:
+			if t > 0 {
+				return true
+			}
+		case int64:
+			if t > 0 {
+				return true
+			}
+		}
+	}
+	for _, key := range []string{service.OpsUpstreamErrorMessageKey, service.OpsUpstreamErrorDetailKey} {
+		if v, ok := c.Get(key); ok {
+			if s, ok := v.(string); ok && strings.TrimSpace(s) != "" {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func OpsErrorLoggerMiddleware(ops *service.OpsService) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		originalWriter := c.Writer
@@ -541,6 +696,20 @@ func OpsErrorLoggerMiddleware(ops *service.OpsService) gin.HandlerFunc {
 		}()
 		c.Writer = w
 		c.Next()
+
+		// A pending caller-disconnect record only pre-empts the regular path when it is
+		// actually recordable and the request carries no genuine upstream error of its
+		// own. Otherwise the code falls through to the regular logic below, so a real
+		// upstream failure (429/5xx/transport) always stays visible in the error list
+		// instead of being replaced by a disconnect row.
+		if pending, ok := c.Get(opsClientDisconnectedEntryKey); ok {
+			if entry, ok := pending.(*service.OpsInsertErrorLogInput); ok &&
+				ops != nil && ops.IsMonitoringEnabled(c.Request.Context()) &&
+				!opsRequestCarriesRealUpstreamError(c) {
+				recordClientDisconnectedOpsError(c, ops, entry)
+				return
+			}
+		}
 
 		if ops == nil {
 			return

@@ -115,6 +115,96 @@ func NewGatewayHandler(
 	}
 }
 
+func isGatewayClientDisconnected(c *gin.Context, result *service.ForwardResult, err error) bool {
+	if result != nil && result.ClientDisconnect {
+		return true
+	}
+	if c == nil || c.Request == nil || c.Request.Context().Err() == nil || err == nil {
+		return false
+	}
+	return errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded)
+}
+
+func isOpenAIClientDisconnected(c *gin.Context, result *service.OpenAIForwardResult, err error) bool {
+	if result != nil && result.ClientDisconnect {
+		return true
+	}
+	// Never infer a caller disconnect from a canceled request context alone. The
+	// service layer already marks every detected disconnect on the result, so the
+	// only remaining signal is an error that is itself a context cancellation —
+	// the same standard isGatewayClientDisconnected applies. Treating an upstream
+	// 429/5xx as a disconnect would hide the real cause in the Ops error list and
+	// skip its billing.
+	if c == nil || c.Request == nil || c.Request.Context().Err() == nil || err == nil {
+		return false
+	}
+	return errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded)
+}
+
+func buildGatewayClientDisconnectedOpsEntry(c *gin.Context, account *service.Account, model, upstreamModel string, stream bool) *service.OpsInsertErrorLogInput {
+	entry := &service.OpsInsertErrorLogInput{
+		Model:            model,
+		RequestedModel:   model,
+		UpstreamModel:    upstreamModel,
+		RequestPath:      "/",
+		Stream:           stream,
+		InboundEndpoint:  GetInboundEndpoint(c),
+		UpstreamEndpoint: GetUpstreamEndpoint(c, ""),
+		UserAgent:        c.GetHeader("User-Agent"),
+	}
+	if c != nil && c.Request != nil && c.Request.URL != nil {
+		entry.RequestPath = c.Request.URL.Path
+	}
+	if c != nil && c.Request != nil {
+		if requestID, ok := c.Request.Context().Value(ctxkey.ClientRequestID).(string); ok {
+			entry.ClientRequestID = requestID
+		}
+	}
+	if c != nil {
+		requestID := c.Writer.Header().Get("X-Request-Id")
+		if requestID == "" {
+			requestID = c.Writer.Header().Get("x-request-id")
+		}
+		entry.RequestID = requestID
+		if clientIP := strings.TrimSpace(ip.GetClientIP(c)); clientIP != "" {
+			entry.ClientIP = &clientIP
+		}
+		if requestType, ok := c.Get(opsRequestTypeKey); ok {
+			switch value := requestType.(type) {
+			case int16:
+				entry.RequestType = &value
+			case int:
+				converted := int16(value)
+				entry.RequestType = &converted
+			}
+		}
+	}
+	if entry.RequestType == nil {
+		requestType := int16(1)
+		if stream {
+			requestType = 2
+		}
+		entry.RequestType = &requestType
+	}
+	if apiKey, ok := middleware2.GetAPIKeyFromContext(c); ok && apiKey != nil {
+		entry.APIKeyID = &apiKey.ID
+		if apiKey.UserID > 0 {
+			entry.UserID = &apiKey.UserID
+		}
+		entry.GroupID = apiKey.GroupID
+		if apiKey.Group != nil && apiKey.Group.Platform != "" {
+			entry.Platform = apiKey.Group.Platform
+		}
+	}
+	if account != nil {
+		entry.AccountID = &account.ID
+		if entry.Platform == "" {
+			entry.Platform = account.Platform
+		}
+	}
+	return entry
+}
+
 // Messages handles Claude API compatible messages endpoint
 // POST /v1/messages
 func (h *GatewayHandler) Messages(c *gin.Context) {
@@ -460,6 +550,16 @@ func (h *GatewayHandler) Messages(c *gin.Context) {
 			logModelForwardFinished(reqLog, "gateway.forward_finished", c, forwardStart, account, reqModel, forwardModel, reqStream, fs.SwitchCount, writerSizeBeforeForward, err, forwardFinishedFields...)
 			if accountReleaseFunc != nil {
 				accountReleaseFunc()
+			}
+			if isGatewayClientDisconnected(c, result, err) {
+				model := reqModel
+				upstreamModel := ""
+				if result != nil {
+					model = result.Model
+					upstreamModel = result.UpstreamModel
+				}
+				queueClientDisconnectedOpsError(c, buildGatewayClientDisconnectedOpsEntry(c, account, model, upstreamModel, reqStream))
+				return
 			}
 			if err != nil {
 				var failoverErr *service.UpstreamFailoverError
@@ -860,6 +960,10 @@ func (h *GatewayHandler) Messages(c *gin.Context) {
 
 			if accountReleaseFunc != nil {
 				accountReleaseFunc()
+			}
+			if isGatewayClientDisconnected(c, result, err) {
+				queueClientDisconnectedOpsError(c, buildGatewayClientDisconnectedOpsEntry(c, account, result.Model, result.UpstreamModel, reqStream))
+				return
 			}
 			if err != nil {
 				// Beta policy block: return 400 immediately, no failover

@@ -63,3 +63,31 @@ func TestDetachUpstreamContextIgnoresClientCancel(t *testing.T) {
 	require.NoError(t, upstreamCtx.Err())
 	require.Equal(t, "test-value", upstreamCtx.Value(upstreamContextTestKey("test-key")))
 }
+
+// Gemini and Antigravity streams must release the downstream model request as soon as
+// the caller disconnects, so the stream-aware bridge has to follow the parent context
+// instead of dropping the cancellation path the way the plain detach helper does.
+func TestDetachStreamUpstreamContextFollowsClientCancelForStreams(t *testing.T) {
+	parent, cancel := context.WithCancel(context.WithValue(context.Background(), upstreamContextTestKey("test-key"), "test-value"))
+	upstreamCtx, release := detachStreamUpstreamContext(parent, true)
+	defer release()
+
+	require.NoError(t, upstreamCtx.Err())
+	require.Equal(t, "test-value", upstreamCtx.Value(upstreamContextTestKey("test-key")))
+
+	cancel()
+
+	require.Eventually(t, func() bool { return upstreamCtx.Err() != nil }, time.Second, 5*time.Millisecond,
+		"upstream context must follow the caller so a disconnect releases the downstream request")
+	require.ErrorIs(t, upstreamCtx.Err(), context.Canceled)
+}
+
+func TestDetachStreamUpstreamContextInheritsCancellationForNonStreams(t *testing.T) {
+	parent, cancel := context.WithCancel(context.Background())
+	upstreamCtx, release := detachStreamUpstreamContext(parent, false)
+	defer release()
+
+	cancel()
+
+	require.ErrorIs(t, upstreamCtx.Err(), context.Canceled)
+}

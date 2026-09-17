@@ -248,6 +248,11 @@ func (h *GatewayHandler) Responses(c *gin.Context) {
 			accountReleaseFunc()
 		}
 
+		if isGatewayClientDisconnected(c, result, err) {
+			queueClientDisconnectedOpsError(c, buildGatewayClientDisconnectedOpsEntry(c, account, result.Model, result.UpstreamModel, reqStream))
+			return
+		}
+
 		if err != nil {
 			var failoverErr *service.UpstreamFailoverError
 			if errors.As(err, &failoverErr) {

@@ -245,7 +245,7 @@ func (s *OpenAIGatewayService) ForwardAsAnthropic(
 	}
 
 	// 6. Build upstream request
-	upstreamCtx, releaseUpstreamCtx := detachUpstreamContext(ctx)
+	upstreamCtx, releaseUpstreamCtx := detachOpenAIUpstreamContext(ctx)
 	upstreamReq, err := s.buildUpstreamRequest(upstreamCtx, c, account, responsesBody, token, isStream, promptCacheKey, false)
 	releaseUpstreamCtx()
 	if err != nil {
@@ -283,6 +283,9 @@ func (s *OpenAIGatewayService) ForwardAsAnthropic(
 	}
 	resp, err := s.httpUpstream.Do(upstreamReq, proxyURL, account.ID, account.Concurrency)
 	if err != nil {
+		if ctx.Err() != nil {
+			return &OpenAIForwardResult{Model: originalModel, UpstreamModel: upstreamModel, Stream: clientStream, Duration: time.Since(startTime), ClientDisconnect: true}, nil
+		}
 		safeErr := sanitizeUpstreamErrorMessage(err.Error())
 		setOpsUpstreamError(c, 0, safeErr, "")
 		appendOpsUpstreamError(c, OpsUpstreamErrorEvent{
@@ -360,10 +363,17 @@ func (s *OpenAIGatewayService) ForwardAsAnthropic(
 	var result *OpenAIForwardResult
 	var handleErr error
 	if clientStream {
-		result, handleErr = s.handleAnthropicStreamingResponse(resp, c, account, originalModel, billingModel, upstreamModel, startTime)
+		result, handleErr = s.handleAnthropicStreamingResponse(upstreamCtx, resp, c, account, originalModel, billingModel, upstreamModel, startTime)
 	} else {
 		// Client wants JSON: buffer the streaming response and assemble a JSON reply.
-		result, handleErr = s.handleAnthropicBufferedStreamingResponse(resp, c, originalModel, billingModel, upstreamModel, startTime)
+		result, handleErr = s.handleAnthropicBufferedStreamingResponse(ctx, resp, c, originalModel, billingModel, upstreamModel, startTime)
+	}
+	if ctx.Err() != nil {
+		if result == nil {
+			result = &OpenAIForwardResult{Model: originalModel, BillingModel: billingModel, UpstreamModel: upstreamModel, Stream: clientStream, Duration: time.Since(startTime)}
+		}
+		result.ClientDisconnect = true
+		handleErr = nil
 	}
 
 	// cyber_policy：标记已设、error 已按 Anthropic 格式发给客户端。丢弃 result、返回哨兵，
@@ -434,6 +444,7 @@ func (s *OpenAIGatewayService) handleAnthropicErrorResponse(
 // This is used when the client requested stream=false but the upstream is always
 // streaming.
 func (s *OpenAIGatewayService) handleAnthropicBufferedStreamingResponse(
+	ctx context.Context,
 	resp *http.Response,
 	c *gin.Context,
 	originalModel string,
@@ -443,7 +454,7 @@ func (s *OpenAIGatewayService) handleAnthropicBufferedStreamingResponse(
 ) (*OpenAIForwardResult, error) {
 	requestID := resp.Header.Get("x-request-id")
 
-	finalResponse, usage, acc, err := s.readOpenAICompatBufferedTerminal(resp, "openai messages buffered", requestID)
+	finalResponse, usage, acc, err := s.readOpenAICompatBufferedTerminal(ctx, resp, "openai messages buffered", requestID)
 	if err != nil {
 		return nil, err
 	}
@@ -534,6 +545,7 @@ func isOpenAICompatDoneSentinelLine(line string) bool {
 }
 
 func (s *OpenAIGatewayService) readOpenAICompatBufferedTerminal(
+	ctx context.Context,
 	resp *http.Response,
 	logPrefix string,
 	requestID string,
@@ -682,6 +694,12 @@ func (s *OpenAIGatewayService) readOpenAICompatBufferedTerminal(
 				return event.Response, usage, acc, nil
 			}
 
+		case <-ctx.Done():
+			// 非流式请求也可能在上游返回完整终止事件前被调用方取消。
+			// 主循环必须主动关闭 Body，唤醒 scanner goroutine；不能只依赖
+			// HTTP transport 自己把取消传播到响应读取。
+			_ = resp.Body.Close()
+			return nil, usage, acc, ctx.Err()
 		case <-timeoutCh:
 			_ = resp.Body.Close()
 			logger.L().Warn(logPrefix+": data interval timeout",
@@ -699,6 +717,7 @@ func (s *OpenAIGatewayService) readOpenAICompatBufferedTerminal(
 // pattern to send Anthropic ping events during periods of upstream silence,
 // preventing proxy/client timeout disconnections.
 func (s *OpenAIGatewayService) handleAnthropicStreamingResponse(
+	ctx context.Context,
 	resp *http.Response,
 	c *gin.Context,
 	account *Account,
@@ -844,7 +863,7 @@ func (s *OpenAIGatewayService) handleAnthropicStreamingResponse(
 				writeStreamHeaders()
 				if _, err := fmt.Fprint(c.Writer, sse); err != nil {
 					clientDisconnected = true
-					logger.L().Info("openai messages stream: client disconnected, continuing to drain upstream for billing",
+					logger.L().Info("openai messages stream: client disconnected, canceling upstream",
 						zap.String("request_id", requestID),
 					)
 					break
@@ -930,8 +949,17 @@ func (s *OpenAIGatewayService) handleAnthropicStreamingResponse(
 			if processFrame(frame) {
 				return finalizeStream()
 			}
+			if clientDisconnected {
+				cancelDetachedStreamUpstreamContext(ctx)
+				return resultWithUsage(), nil
+			}
 		}
 		if err := scanner.Err(); err != nil {
+			if ctx.Err() != nil || errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+				clientDisconnected = true
+				cancelDetachedStreamUpstreamContext(ctx)
+				return resultWithUsage(), nil
+			}
 			handleScanErr(err)
 			return resultWithUsage(), fmt.Errorf("stream usage incomplete: %w", err)
 		}
@@ -941,6 +969,10 @@ func (s *OpenAIGatewayService) handleAnthropicStreamingResponse(
 			}
 			if processFrame(frame) {
 				return finalizeStream()
+			}
+			if clientDisconnected {
+				cancelDetachedStreamUpstreamContext(ctx)
+				return resultWithUsage(), nil
 			}
 		}
 		return missingTerminalErr()
@@ -1001,10 +1033,19 @@ func (s *OpenAIGatewayService) handleAnthropicStreamingResponse(
 					if processFrame(frame) {
 						return finalizeStream()
 					}
+					if clientDisconnected {
+						cancelDetachedStreamUpstreamContext(ctx)
+						return resultWithUsage(), nil
+					}
 				}
 				return missingTerminalErr()
 			}
 			if ev.err != nil {
+				if ctx.Err() != nil || errors.Is(ev.err, context.Canceled) || errors.Is(ev.err, context.DeadlineExceeded) {
+					clientDisconnected = true
+					cancelDetachedStreamUpstreamContext(ctx)
+					return resultWithUsage(), nil
+				}
 				handleScanErr(ev.err)
 				return resultWithUsage(), fmt.Errorf("stream usage incomplete: %w", ev.err)
 			}
@@ -1019,6 +1060,10 @@ func (s *OpenAIGatewayService) handleAnthropicStreamingResponse(
 			}
 			if processFrame(frame) {
 				return finalizeStream()
+			}
+			if clientDisconnected {
+				cancelDetachedStreamUpstreamContext(ctx)
+				return resultWithUsage(), nil
 			}
 
 		case <-intervalCh:
@@ -1051,7 +1096,8 @@ func (s *OpenAIGatewayService) handleAnthropicStreamingResponse(
 					zap.String("request_id", requestID),
 				)
 				clientDisconnected = true
-				continue
+				cancelDetachedStreamUpstreamContext(ctx)
+				return resultWithUsage(), nil
 			}
 			clientOutputStarted = true
 			c.Writer.Flush()

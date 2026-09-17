@@ -211,6 +211,17 @@ func (h *OpenAIGatewayHandler) Embeddings(c *gin.Context) {
 			return
 		}
 
+		if isOpenAIClientDisconnected(c, result, err) {
+			model := reqModel
+			upstreamModel := ""
+			if result != nil {
+				model = result.Model
+				upstreamModel = result.UpstreamModel
+			}
+			queueClientDisconnectedOpsError(c, buildGatewayClientDisconnectedOpsEntry(c, account, model, upstreamModel, false))
+			return
+		}
+
 		h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, true, nil)
 		userAgent := c.GetHeader("User-Agent")
 		clientIP := ip.GetClientIP(c)

@@ -3730,7 +3730,7 @@ func (c *openAIWSWriteFailAfterFirstTurnConn) Close() error {
 	return nil
 }
 
-func TestOpenAIGatewayService_ProxyResponsesWebSocketFromClient_ClientDisconnectStillDrainsUpstream(t *testing.T) {
+func TestOpenAIGatewayService_ProxyResponsesWebSocketFromClient_ClientDisconnectCancelsUpstream(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	cfg := &config.Config{}
@@ -3848,7 +3848,7 @@ func TestOpenAIGatewayService_ProxyResponsesWebSocketFromClient_ClientDisconnect
 
 	select {
 	case serverErr := <-serverErrCh:
-		require.NoError(t, serverErr, "客户端断连后应继续 drain 上游直到 terminal 或正常结束")
+		require.NoError(t, serverErr, "客户端断连后应立即取消上游 relay")
 	case <-time.After(5 * time.Second):
 		t.Fatal("等待 ingress websocket 结束超时")
 	}
@@ -3856,8 +3856,9 @@ func TestOpenAIGatewayService_ProxyResponsesWebSocketFromClient_ClientDisconnect
 	select {
 	case result := <-resultCh:
 		require.Equal(t, "resp_ingress_disconnect", result.RequestID)
-		require.Equal(t, 2, result.Usage.InputTokens)
-		require.Equal(t, 1, result.Usage.OutputTokens)
+		require.True(t, result.ClientDisconnect)
+		require.Zero(t, result.Usage.InputTokens)
+		require.Zero(t, result.Usage.OutputTokens)
 		require.NotNil(t, result.ServiceTier)
 		require.Equal(t, "flex", *result.ServiceTier)
 	case <-time.After(2 * time.Second):

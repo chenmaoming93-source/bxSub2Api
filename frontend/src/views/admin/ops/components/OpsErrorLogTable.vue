@@ -287,7 +287,11 @@ function formatRequestType(type: number | null | undefined): string {
 function getTypeBadge(log: OpsErrorLog): { label: string; className: string } {
   const phase = String(log.phase || '').toLowerCase()
   const owner = String(log.error_owner || '').toLowerCase()
+  const errorType = String(log.type || '').toLowerCase()
 
+  if (errorType === 'client_disconnected') {
+    return { label: t('admin.ops.errorLog.typeClientDisconnected'), className: 'bg-sky-50 text-sky-700 ring-sky-600/20 dark:bg-sky-900/30 dark:text-sky-400 dark:ring-sky-500/30' }
+  }
   if (isUpstreamRow(log)) {
     return { label: t('admin.ops.errorLog.typeUpstream'), className: 'bg-red-50 text-red-700 ring-red-600/20 dark:bg-red-900/30 dark:text-red-400 dark:ring-red-500/30' }
   }

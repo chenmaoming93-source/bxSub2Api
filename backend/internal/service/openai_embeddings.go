@@ -60,7 +60,7 @@ func (s *OpenAIGatewayService) ForwardEmbeddings(
 	}
 	targetURL := buildOpenAIEmbeddingsURL(validatedURL)
 
-	upstreamCtx, releaseUpstreamCtx := detachUpstreamContext(ctx)
+	upstreamCtx, releaseUpstreamCtx := detachOpenAIUpstreamContext(ctx)
 	upstreamReq, err := http.NewRequestWithContext(upstreamCtx, http.MethodPost, targetURL, bytes.NewReader(upstreamBody))
 	releaseUpstreamCtx()
 	if err != nil {
@@ -142,6 +142,9 @@ func (s *OpenAIGatewayService) ForwardEmbeddings(
 
 	respBody, err := ReadUpstreamResponseBody(resp.Body, s.cfg, c, openAITooLargeError)
 	if err != nil {
+		if upstreamCtx.Err() != nil {
+			return &OpenAIForwardResult{Model: originalModel, BillingModel: billingModel, UpstreamModel: upstreamModel, Stream: false, Duration: time.Since(startTime), ClientDisconnect: true}, nil
+		}
 		if !errors.Is(err, ErrUpstreamResponseBodyTooLarge) {
 			writeOpenAIEmbeddingsError(c, http.StatusBadGateway, "api_error", "Failed to read upstream response")
 		}
@@ -149,6 +152,21 @@ func (s *OpenAIGatewayService) ForwardEmbeddings(
 	}
 
 	writeOpenAIEmbeddingsUpstreamResponse(c, resp, respBody, s.responseHeaderFilter)
+
+	// 调用方在 non-streaming 请求期间断开时，结果不得携带可计费 usage：
+	// handler 会据此跳过 usage 记录与账号健康上报。
+	if ctx.Err() != nil {
+		return &OpenAIForwardResult{
+			RequestID:        firstNonEmptyString(resp.Header.Get("x-request-id"), resp.Header.Get("request-id")),
+			Usage:            OpenAIUsage{},
+			Model:            originalModel,
+			BillingModel:     billingModel,
+			UpstreamModel:    upstreamModel,
+			Stream:           false,
+			Duration:         time.Since(startTime),
+			ClientDisconnect: true,
+		}, nil
+	}
 
 	return &OpenAIForwardResult{
 		RequestID:     firstNonEmptyString(resp.Header.Get("x-request-id"), resp.Header.Get("request-id")),

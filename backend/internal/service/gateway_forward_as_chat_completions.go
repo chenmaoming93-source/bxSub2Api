@@ -133,6 +133,9 @@ func (s *GatewayService) ForwardAsChatCompletions(
 	// 11. Send request
 	resp, err := s.httpUpstream.DoWithTLS(upstreamReq, proxyURL, account.ID, account.Concurrency, s.tlsFPProfileService.ResolveTLSProfile(account))
 	if err != nil {
+		if ctx != nil && ctx.Err() != nil {
+			return newClientDisconnectedForwardResult(startTime, originalModel, mappedModel, reqStream), nil
+		}
 		if resp != nil && resp.Body != nil {
 			_ = resp.Body.Close()
 		}
@@ -153,6 +156,9 @@ func (s *GatewayService) ForwardAsChatCompletions(
 	defer func() { _ = resp.Body.Close() }()
 
 	// 12. Handle error response with failover
+	if ctx != nil && ctx.Err() != nil {
+		return newClientDisconnectedForwardResult(startTime, originalModel, mappedModel, reqStream), nil
+	}
 	if resp.StatusCode >= 400 {
 		respBody, _ := s.readUpstreamErrorBody(resp)
 		_ = resp.Body.Close()
@@ -191,9 +197,9 @@ func (s *GatewayService) ForwardAsChatCompletions(
 	var result *ForwardResult
 	var handleErr error
 	if clientStream {
-		result, handleErr = s.handleCCStreamingFromAnthropic(resp, c, originalModel, mappedModel, reasoningEffort, startTime, includeUsage)
+		result, handleErr = s.handleCCStreamingFromAnthropic(upstreamCtx, resp, c, originalModel, mappedModel, reasoningEffort, startTime, includeUsage)
 	} else {
-		result, handleErr = s.handleCCBufferedFromAnthropic(resp, c, originalModel, mappedModel, reasoningEffort, startTime)
+		result, handleErr = s.handleCCBufferedFromAnthropic(upstreamCtx, resp, c, originalModel, mappedModel, reasoningEffort, startTime)
 	}
 
 	return result, handleErr
@@ -220,6 +226,7 @@ func extractCCReasoningEffortFromBody(body []byte) *string {
 // handleCCBufferedFromAnthropic reads Anthropic SSE events, assembles the full
 // response, then converts Anthropic → Responses → Chat Completions.
 func (s *GatewayService) handleCCBufferedFromAnthropic(
+	ctx context.Context,
 	resp *http.Response,
 	c *gin.Context,
 	originalModel string,
@@ -293,12 +300,23 @@ func (s *GatewayService) handleCCBufferedFromAnthropic(
 	}
 
 	if err := scanner.Err(); err != nil {
-		if !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded) {
-			logger.L().Warn("forward_as_cc buffered: read error",
-				zap.Error(err),
-				zap.String("request_id", requestID),
-			)
+		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) || ctx.Err() != nil {
+			cancelDetachedStreamUpstreamContext(ctx)
+			result := newClientDisconnectedForwardResult(startTime, originalModel, mappedModel, false)
+			result.Usage = usage
+			return result, nil
 		}
+		logger.L().Warn("forward_as_cc buffered: read error",
+			zap.Error(err),
+			zap.String("request_id", requestID),
+		)
+	}
+
+	if ctx.Err() != nil {
+		cancelDetachedStreamUpstreamContext(ctx)
+		result := newClientDisconnectedForwardResult(startTime, originalModel, mappedModel, false)
+		result.Usage = usage
+		return result, nil
 	}
 
 	if finalResp == nil {
@@ -352,6 +370,7 @@ func (s *GatewayService) handleCCBufferedFromAnthropic(
 // handleCCStreamingFromAnthropic reads Anthropic SSE events, converts each
 // to Responses events, then to Chat Completions chunks, and writes them.
 func (s *GatewayService) handleCCStreamingFromAnthropic(
+	ctx context.Context,
 	resp *http.Response,
 	c *gin.Context,
 	originalModel string,
@@ -400,6 +419,11 @@ func (s *GatewayService) handleCCStreamingFromAnthropic(
 			Duration:        time.Since(startTime),
 			FirstTokenMs:    firstTokenMs,
 		}
+	}
+	clientDisconnectedResult := func() *ForwardResult {
+		result := resultWithUsage()
+		result.ClientDisconnect = true
+		return result
 	}
 
 	writeChunk := func(chunk apicompat.ChatCompletionsChunk) bool {
@@ -467,11 +491,16 @@ func (s *GatewayService) handleCCStreamingFromAnthropic(
 		}
 
 		if processAnthropicEvent(&event) {
-			return resultWithUsage(), nil
+			cancelDetachedStreamUpstreamContext(ctx)
+			return clientDisconnectedResult(), nil
 		}
 	}
 
 	if err := scanner.Err(); err != nil {
+		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) || ctx.Err() != nil {
+			cancelDetachedStreamUpstreamContext(ctx)
+			return clientDisconnectedResult(), nil
+		}
 		if !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded) {
 			logger.L().Warn("forward_as_cc stream: read error",
 				zap.Error(err),
@@ -485,16 +514,25 @@ func (s *GatewayService) handleCCStreamingFromAnthropic(
 	for _, resEvt := range finalResEvents {
 		ccChunks := apicompat.ResponsesEventToChatChunks(&resEvt, ccState)
 		for _, chunk := range ccChunks {
-			writeChunk(chunk) //nolint:errcheck
+			if writeChunk(chunk) {
+				cancelDetachedStreamUpstreamContext(ctx)
+				return clientDisconnectedResult(), nil
+			}
 		}
 	}
 	finalCCChunks := apicompat.FinalizeResponsesChatStream(ccState)
 	for _, chunk := range finalCCChunks {
-		writeChunk(chunk) //nolint:errcheck
+		if writeChunk(chunk) {
+			cancelDetachedStreamUpstreamContext(ctx)
+			return clientDisconnectedResult(), nil
+		}
 	}
 
 	// Write [DONE] marker
-	fmt.Fprint(c.Writer, "data: [DONE]\n\n") //nolint:errcheck
+	if _, err := fmt.Fprint(c.Writer, "data: [DONE]\n\n"); err != nil {
+		cancelDetachedStreamUpstreamContext(ctx)
+		return clientDisconnectedResult(), nil
+	}
 	c.Writer.Flush()
 
 	return resultWithUsage(), nil

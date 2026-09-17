@@ -222,7 +222,7 @@ func (s *OpenAIGatewayService) ForwardAsChatCompletions(
 	}
 
 	// 6. Build upstream request
-	upstreamCtx, releaseUpstreamCtx := detachUpstreamContext(ctx)
+	upstreamCtx, releaseUpstreamCtx := detachOpenAIUpstreamContext(ctx)
 	upstreamReq, err := s.buildUpstreamRequest(upstreamCtx, c, account, responsesBody, token, true, promptCacheKey, false)
 	releaseUpstreamCtx()
 	if err != nil {
@@ -241,6 +241,9 @@ func (s *OpenAIGatewayService) ForwardAsChatCompletions(
 	}
 	resp, err := s.httpUpstream.Do(upstreamReq, proxyURL, account.ID, account.Concurrency)
 	if err != nil {
+		if ctx.Err() != nil {
+			return &OpenAIForwardResult{Model: originalModel, UpstreamModel: upstreamModel, Stream: clientStream, Duration: time.Since(startTime), ClientDisconnect: true}, nil
+		}
 		safeErr := sanitizeUpstreamErrorMessage(err.Error())
 		setOpsUpstreamError(c, 0, safeErr, "")
 		appendOpsUpstreamError(c, OpsUpstreamErrorEvent{
@@ -302,9 +305,16 @@ func (s *OpenAIGatewayService) ForwardAsChatCompletions(
 	var result *OpenAIForwardResult
 	var handleErr error
 	if clientStream {
-		result, handleErr = s.handleChatStreamingResponse(resp, c, account, originalModel, billingModel, upstreamModel, startTime, len(body))
+		result, handleErr = s.handleChatStreamingResponse(upstreamCtx, resp, c, account, originalModel, billingModel, upstreamModel, startTime, len(body))
 	} else {
-		result, handleErr = s.handleChatBufferedStreamingResponse(resp, c, account, originalModel, billingModel, upstreamModel, startTime)
+		result, handleErr = s.handleChatBufferedStreamingResponse(ctx, resp, c, account, originalModel, billingModel, upstreamModel, startTime)
+	}
+	if ctx.Err() != nil {
+		if result == nil {
+			result = &OpenAIForwardResult{Model: originalModel, BillingModel: billingModel, UpstreamModel: upstreamModel, Stream: clientStream, Duration: time.Since(startTime)}
+		}
+		result.ClientDisconnect = true
+		handleErr = nil
 	}
 
 	// cyber_policy：标记已设、error 已按 Chat Completions 格式发给客户端。丢弃 result、
@@ -395,6 +405,7 @@ func (s *OpenAIGatewayService) handleChatCompletionsErrorResponse(
 // upstream, finds the terminal event, converts to a Chat Completions JSON
 // response, and writes it to the client.
 func (s *OpenAIGatewayService) handleChatBufferedStreamingResponse(
+	ctx context.Context,
 	resp *http.Response,
 	c *gin.Context,
 	account *Account,
@@ -405,7 +416,7 @@ func (s *OpenAIGatewayService) handleChatBufferedStreamingResponse(
 ) (*OpenAIForwardResult, error) {
 	requestID := resp.Header.Get("x-request-id")
 
-	finalResponse, usage, acc, err := s.readOpenAICompatBufferedTerminal(resp, "openai chat_completions buffered", requestID)
+	finalResponse, usage, acc, err := s.readOpenAICompatBufferedTerminal(ctx, resp, "openai chat_completions buffered", requestID)
 	if err != nil {
 		return nil, err
 	}
@@ -467,6 +478,7 @@ func (s *OpenAIGatewayService) handleChatBufferedStreamingResponse(
 // handleChatStreamingResponse reads Responses SSE events from upstream,
 // converts each to Chat Completions SSE chunks, and writes them to the client.
 func (s *OpenAIGatewayService) handleChatStreamingResponse(
+	ctx context.Context,
 	resp *http.Response,
 	c *gin.Context,
 	account *Account,
@@ -532,14 +544,15 @@ func (s *OpenAIGatewayService) handleChatStreamingResponse(
 
 	resultWithUsage := func() *OpenAIForwardResult {
 		return &OpenAIForwardResult{
-			RequestID:     requestID,
-			Usage:         usage,
-			Model:         originalModel,
-			BillingModel:  billingModel,
-			UpstreamModel: upstreamModel,
-			Stream:        true,
-			Duration:      time.Since(startTime),
-			FirstTokenMs:  firstTokenMs,
+			RequestID:        requestID,
+			Usage:            usage,
+			Model:            originalModel,
+			BillingModel:     billingModel,
+			UpstreamModel:    upstreamModel,
+			Stream:           true,
+			Duration:         time.Since(startTime),
+			FirstTokenMs:     firstTokenMs,
+			ClientDisconnect: clientDisconnected,
 		}
 	}
 
@@ -643,7 +656,7 @@ func (s *OpenAIGatewayService) handleChatStreamingResponse(
 				}
 				if _, err := fmt.Fprint(c.Writer, sse); err != nil {
 					clientDisconnected = true
-					logger.L().Info("openai chat_completions stream: client disconnected, continuing to drain upstream for billing",
+					logger.L().Info("openai chat_completions stream: client disconnected, canceling upstream",
 						zap.String("request_id", requestID),
 					)
 					break
@@ -776,8 +789,17 @@ func (s *OpenAIGatewayService) handleChatStreamingResponse(
 			if processFrame(frame) {
 				return finalizeStream()
 			}
+			if clientDisconnected {
+				cancelDetachedStreamUpstreamContext(ctx)
+				return resultWithUsage(), nil
+			}
 		}
 		if err := scanner.Err(); err != nil {
+			if ctx.Err() != nil || errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+				clientDisconnected = true
+				cancelDetachedStreamUpstreamContext(ctx)
+				return resultWithUsage(), nil
+			}
 			handleScanErr(err)
 			return resultWithUsage(), fmt.Errorf("stream usage incomplete: %w", err)
 		}
@@ -787,6 +809,10 @@ func (s *OpenAIGatewayService) handleChatStreamingResponse(
 			}
 			if processFrame(frame) {
 				return finalizeStream()
+			}
+			if clientDisconnected {
+				cancelDetachedStreamUpstreamContext(ctx)
+				return resultWithUsage(), nil
 			}
 		}
 		return missingTerminalErr()
@@ -850,6 +876,11 @@ func (s *OpenAIGatewayService) handleChatStreamingResponse(
 				return missingTerminalErr()
 			}
 			if ev.err != nil {
+				if ctx.Err() != nil || errors.Is(ev.err, context.Canceled) || errors.Is(ev.err, context.DeadlineExceeded) {
+					clientDisconnected = true
+					cancelDetachedStreamUpstreamContext(ctx)
+					return resultWithUsage(), nil
+				}
 				handleScanErr(ev.err)
 				return resultWithUsage(), fmt.Errorf("stream usage incomplete: %w", ev.err)
 			}
@@ -864,6 +895,10 @@ func (s *OpenAIGatewayService) handleChatStreamingResponse(
 			}
 			if processFrame(frame) {
 				return finalizeStream()
+			}
+			if clientDisconnected {
+				cancelDetachedStreamUpstreamContext(ctx)
+				return resultWithUsage(), nil
 			}
 
 		case <-intervalCh:
@@ -898,7 +933,8 @@ func (s *OpenAIGatewayService) handleChatStreamingResponse(
 					zap.String("request_id", requestID),
 				)
 				clientDisconnected = true
-				continue
+				cancelDetachedStreamUpstreamContext(ctx)
+				return resultWithUsage(), nil
 			}
 			c.Writer.Flush()
 		}

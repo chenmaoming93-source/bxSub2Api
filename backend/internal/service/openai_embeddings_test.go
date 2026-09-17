@@ -104,3 +104,50 @@ func TestForwardEmbeddings_APIKeyPassthroughRecordsUsageAndBatchInput(t *testing
 	require.Equal(t, "float", gjson.GetBytes(upstream.lastBody, "encoding_format").String())
 	require.Equal(t, int64(256), gjson.GetBytes(upstream.lastBody, "dimensions").Int())
 }
+
+// 调用方在 non-streaming embeddings 请求期间断开（入站 Context 已取消）时，
+// 结果必须标记 ClientDisconnect 且不携带可计费 usage，供 handler 跳过 usage 记录。
+func TestForwardEmbeddings_ClientDisconnectSkipsUsage(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	reqBody := []byte(`{"model":"nowledge-embedding","input":["hello"]}`)
+	reqCtx, cancel := context.WithCancel(context.Background())
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	c.Request = httptest.NewRequest(http.MethodPost, "/v1/embeddings", bytes.NewReader(reqBody)).WithContext(reqCtx)
+	c.Request.Header.Set("Content-Type", "application/json")
+
+	upstream := &httpUpstreamRecorder{resp: &http.Response{
+		StatusCode: http.StatusOK,
+		Header:     http.Header{"Content-Type": []string{"application/json"}, "X-Request-Id": []string{"emb-rid-disconnect"}},
+		Body: io.NopCloser(strings.NewReader(`{
+			"object":"list",
+			"data":[{"object":"embedding","index":0,"embedding":[0.1,0.2]}],
+			"model":"jina-embeddings-v5-text-small",
+			"usage":{"prompt_tokens":13,"total_tokens":13}
+		}`)),
+	}}
+	svc := &OpenAIGatewayService{
+		cfg:          &config.Config{},
+		httpUpstream: upstream,
+	}
+	account := &Account{
+		ID:       42,
+		Platform: PlatformOpenAI,
+		Type:     AccountTypeAPIKey,
+		Credentials: map[string]any{
+			"api_key":  "sk-test",
+			"base_url": "https://api.jina.ai",
+		},
+	}
+
+	cancel()
+
+	result, err := svc.ForwardEmbeddings(reqCtx, c, account, reqBody, "")
+
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	require.True(t, result.ClientDisconnect)
+	require.Zero(t, result.Usage.InputTokens)
+	require.Zero(t, result.Usage.OutputTokens)
+}

@@ -20,6 +20,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"syscall"
 	"time"
@@ -618,6 +619,16 @@ type ForwardResult struct {
 	ImageOutputSizes   []string
 	ImageSizeSource    string
 	ImageSizeBreakdown map[string]int
+}
+
+func newClientDisconnectedForwardResult(startTime time.Time, model, upstreamModel string, stream bool) *ForwardResult {
+	return &ForwardResult{
+		Model:            model,
+		UpstreamModel:    upstreamModel,
+		Stream:           stream,
+		Duration:         time.Since(startTime),
+		ClientDisconnect: true,
+	}
 }
 
 // UpstreamFailoverError indicates an upstream error that should trigger account failover.
@@ -5525,6 +5536,7 @@ func (s *GatewayService) Forward(ctx context.Context, c *gin.Context, account *A
 
 	// 重试循环
 	var resp *http.Response
+	responseCtx := ctx
 	lastWireBody := body
 	retryStart := time.Now()
 	for attempt := 1; attempt <= maxRetryAttempts; attempt++ {
@@ -5541,6 +5553,9 @@ func (s *GatewayService) Forward(ctx context.Context, c *gin.Context, account *A
 		// 发送请求
 		resp, err = s.httpUpstream.DoWithTLS(upstreamReq, proxyURL, account.ID, account.Concurrency, tlsProfile)
 		if err != nil {
+			if ctx != nil && ctx.Err() != nil {
+				return newClientDisconnectedForwardResult(startTime, originalModel, reqModel, reqStream), nil
+			}
 			if resp != nil && resp.Body != nil {
 				_ = resp.Body.Close()
 			}
@@ -5565,6 +5580,7 @@ func (s *GatewayService) Forward(ctx context.Context, c *gin.Context, account *A
 			})
 			return nil, fmt.Errorf("upstream request failed: %s", safeErr)
 		}
+		responseCtx = upstreamCtx
 
 		// 优先检测thinking block签名错误（400）并重试一次
 		if resp.StatusCode == 400 {
@@ -5959,7 +5975,15 @@ func (s *GatewayService) Forward(ctx context.Context, c *gin.Context, account *A
 	var firstTokenMs *int
 	var clientDisconnect bool
 	if reqStream {
-		streamResult, err := s.handleStreamingResponse(ctx, resp, c, account, startTime, originalModel, reqModel, shouldMimicClaudeCode)
+		streamResult, err := s.handleStreamingResponse(responseCtx, resp, c, account, startTime, originalModel, reqModel, shouldMimicClaudeCode)
+		if streamResult != nil && streamResult.clientDisconnect {
+			result := newClientDisconnectedForwardResult(startTime, originalModel, mappedModel, reqStream)
+			if streamResult.usage != nil {
+				result.Usage = *streamResult.usage
+			}
+			result.FirstTokenMs = streamResult.firstTokenMs
+			return result, nil
+		}
 		if err != nil {
 			var sseErr *sseStreamErrorEventError
 			if errors.As(err, &sseErr) {
@@ -6012,6 +6036,10 @@ func (s *GatewayService) Forward(ctx context.Context, c *gin.Context, account *A
 		usage, err = s.handleNonStreamingResponse(ctx, resp, c, account, originalModel, reqModel)
 		if err != nil {
 			return nil, err
+		}
+		if ctx.Err() != nil {
+			usage = &ClaudeUsage{}
+			clientDisconnect = true
 		}
 	}
 
@@ -6090,6 +6118,7 @@ func (s *GatewayService) forwardAnthropicAPIKeyPassthroughWithInput(
 	}
 
 	var resp *http.Response
+	responseCtx := ctx
 	retryStart := time.Now()
 	for attempt := 1; attempt <= maxRetryAttempts; attempt++ {
 		upstreamCtx, releaseUpstreamCtx := detachStreamUpstreamContext(ctx, input.RequestStream)
@@ -6108,6 +6137,9 @@ func (s *GatewayService) forwardAnthropicAPIKeyPassthroughWithInput(
 
 		resp, err = s.httpUpstream.DoWithTLS(upstreamReq, proxyURL, account.ID, account.Concurrency, s.tlsFPProfileService.ResolveTLSProfile(account))
 		if err != nil {
+			if ctx != nil && ctx.Err() != nil {
+				return newClientDisconnectedForwardResult(input.StartTime, input.OriginalModel, input.RequestModel, input.RequestStream), nil
+			}
 			if resp != nil && resp.Body != nil {
 				_ = resp.Body.Close()
 			}
@@ -6132,6 +6164,7 @@ func (s *GatewayService) forwardAnthropicAPIKeyPassthroughWithInput(
 			})
 			return nil, fmt.Errorf("upstream request failed: %s", safeErr)
 		}
+		responseCtx = upstreamCtx
 
 		// 透传分支禁止 400 请求体降级重试（该重试会改写请求体）
 		if resp.StatusCode >= 400 && resp.StatusCode != 400 && s.shouldRetryUpstreamError(account, resp.StatusCode) {
@@ -6186,6 +6219,9 @@ func (s *GatewayService) forwardAnthropicAPIKeyPassthroughWithInput(
 	}
 	defer func() { _ = resp.Body.Close() }()
 
+	if ctx != nil && ctx.Err() != nil {
+		return newClientDisconnectedForwardResult(input.StartTime, input.OriginalModel, input.RequestModel, input.RequestStream), nil
+	}
 	if resp.StatusCode >= 400 && s.shouldRetryUpstreamError(account, resp.StatusCode) {
 		if s.shouldFailoverUpstreamError(resp.StatusCode) {
 			respBody, _ := s.readUpstreamErrorBody(resp)
@@ -6261,17 +6297,26 @@ func (s *GatewayService) forwardAnthropicAPIKeyPassthroughWithInput(
 	var firstTokenMs *int
 	var clientDisconnect bool
 	if input.RequestStream {
-		streamResult, err := s.handleStreamingResponseAnthropicAPIKeyPassthrough(ctx, resp, c, account, input.StartTime, input.RequestModel)
+		streamResult, err := s.handleStreamingResponseAnthropicAPIKeyPassthrough(responseCtx, resp, c, account, input.StartTime, input.RequestModel)
+		if streamResult != nil && streamResult.clientDisconnect {
+			err = nil
+		}
 		if err != nil {
 			return nil, err
 		}
-		usage = streamResult.usage
-		firstTokenMs = streamResult.firstTokenMs
-		clientDisconnect = streamResult.clientDisconnect
+		if streamResult != nil {
+			usage = streamResult.usage
+			firstTokenMs = streamResult.firstTokenMs
+			clientDisconnect = streamResult.clientDisconnect
+		}
 	} else {
 		usage, err = s.handleNonStreamingResponseAnthropicAPIKeyPassthrough(ctx, resp, c, account)
 		if err != nil {
 			return nil, err
+		}
+		if ctx.Err() != nil {
+			usage = &ClaudeUsage{}
+			clientDisconnect = true
 		}
 	}
 	if usage == nil {
@@ -6465,6 +6510,9 @@ func (s *GatewayService) handleStreamingResponseAnthropicAPIKeyPassthrough(
 
 	for {
 		select {
+		case <-ctx.Done():
+			cancelDetachedStreamUpstreamContext(ctx)
+			return &streamingResult{usage: usage, firstTokenMs: firstTokenMs, clientDisconnect: true}, nil
 		case ev, ok := <-events:
 			if !ok {
 				if !clientDisconnected {
@@ -6520,11 +6568,13 @@ func (s *GatewayService) handleStreamingResponseAnthropicAPIKeyPassthrough(
 			if !clientDisconnected {
 				restored := string(reverseToolNamesIfPresent(c, []byte(line)))
 				if _, err := io.WriteString(w, restored); err != nil {
-					clientDisconnected = true
-					logger.LegacyPrintf("service.gateway", "[Anthropic passthrough] Client disconnected during streaming, continue draining upstream for usage: account=%d", account.ID)
+					cancelDetachedStreamUpstreamContext(ctx)
+					logger.LegacyPrintf("service.gateway", "[Anthropic passthrough] Client disconnected during streaming, canceling upstream: account=%d", account.ID)
+					return &streamingResult{usage: usage, firstTokenMs: firstTokenMs, clientDisconnect: true}, nil
 				} else if _, err := io.WriteString(w, "\n"); err != nil {
-					clientDisconnected = true
-					logger.LegacyPrintf("service.gateway", "[Anthropic passthrough] Client disconnected during streaming, continue draining upstream for usage: account=%d", account.ID)
+					cancelDetachedStreamUpstreamContext(ctx)
+					logger.LegacyPrintf("service.gateway", "[Anthropic passthrough] Client disconnected during streaming, canceling upstream: account=%d", account.ID)
+					return &streamingResult{usage: usage, firstTokenMs: firstTokenMs, clientDisconnect: true}, nil
 				} else if line == "" {
 					// 按 SSE 事件边界刷出，减少每行 flush 带来的 syscall 开销。
 					flusher.Flush()
@@ -6557,9 +6607,9 @@ func (s *GatewayService) handleStreamingResponseAnthropicAPIKeyPassthrough(
 				continue
 			}
 			if _, err := fmt.Fprint(w, "event: ping\ndata: {\"type\": \"ping\"}\n\n"); err != nil {
-				clientDisconnected = true
-				logger.LegacyPrintf("service.gateway", "[Anthropic passthrough] Client disconnected during keepalive ping, continue draining upstream for usage: account=%d", account.ID)
-				continue
+				cancelDetachedStreamUpstreamContext(ctx)
+				logger.LegacyPrintf("service.gateway", "[Anthropic passthrough] Client disconnected during keepalive ping, canceling upstream: account=%d", account.ID)
+				return &streamingResult{usage: usage, firstTokenMs: firstTokenMs, clientDisconnect: true}, nil
 			}
 			flusher.Flush()
 			lastDataAt = time.Now()
@@ -6914,6 +6964,10 @@ func (s *GatewayService) forwardBedrock(
 		usage, err = s.handleBedrockNonStreamingResponse(ctx, resp, c, account)
 		if err != nil {
 			return nil, err
+		}
+		if ctx.Err() != nil {
+			usage = &ClaudeUsage{}
+			clientDisconnect = true
 		}
 	}
 	if usage == nil {
@@ -8835,6 +8889,9 @@ func (s *GatewayService) handleStreamingResponse(ctx context.Context, resp *http
 
 	for {
 		select {
+		case <-ctx.Done():
+			cancelDetachedStreamUpstreamContext(ctx)
+			return &streamingResult{usage: usage, firstTokenMs: firstTokenMs, clientDisconnect: true}, nil
 		case ev, ok := <-events:
 			if !ok {
 				// 上游完成，返回结果
@@ -8908,8 +8965,9 @@ func (s *GatewayService) handleStreamingResponse(ctx context.Context, resp *http
 						restored := reverseToolNamesIfPresent(c, []byte(block))
 						if _, werr := fmt.Fprint(w, string(restored)); werr != nil {
 							clientDisconnected = true
-							logger.LegacyPrintf("service.gateway", "Client disconnected during streaming, continuing to drain upstream for billing")
-							break
+							cancelDetachedStreamUpstreamContext(ctx)
+							logger.LegacyPrintf("service.gateway", "Client disconnected during streaming, canceling upstream")
+							return &streamingResult{usage: usage, firstTokenMs: firstTokenMs, clientDisconnect: true}, nil
 						}
 						flusher.Flush()
 						lastDataAt = time.Now()
@@ -9717,14 +9775,102 @@ func detachedBillingContext(ctx context.Context) (context.Context, context.Cance
 	return context.WithTimeout(base, postUsageBillingTimeout)
 }
 
-func detachStreamUpstreamContext(ctx context.Context, stream bool) (context.Context, context.CancelFunc) {
+// streamUpstreamContextControl keeps the detached streaming context useful for
+// request values while restoring an explicit cancellation path. The parent
+// request is bridged into the child, and callers can explicitly cancel or
+// release the child once the downstream request lifecycle is complete.
+type streamUpstreamCancelKey struct{}
+
+type streamUpstreamContextControl struct {
+	ctx        context.Context
+	cancel     context.CancelFunc
+	stopBridge func() bool
+	once       sync.Once
+}
+
+func newStreamUpstreamContextControl(ctx context.Context, stream bool) *streamUpstreamContextControl {
 	if ctx == nil {
-		return context.Background(), func() {}
+		return &streamUpstreamContextControl{
+			ctx:    context.Background(),
+			cancel: func() {},
+		}
 	}
 	if !stream {
-		return ctx, func() {}
+		return &streamUpstreamContextControl{
+			ctx:    ctx,
+			cancel: func() {},
+		}
 	}
-	return context.WithoutCancel(ctx), func() {}
+
+	base := context.WithoutCancel(ctx)
+	child, cancel := context.WithCancel(base)
+	child = context.WithValue(child, streamUpstreamCancelKey{}, cancel)
+	stopBridge := context.AfterFunc(ctx, cancel)
+	return &streamUpstreamContextControl{
+		ctx:        child,
+		cancel:     cancel,
+		stopBridge: stopBridge,
+	}
+}
+
+func (c *streamUpstreamContextControl) Cancel() {
+	if c == nil || c.cancel == nil {
+		return
+	}
+	c.cancel()
+}
+
+func cancelDetachedStreamUpstreamContext(ctx context.Context) {
+	if ctx == nil {
+		return
+	}
+	if cancel, ok := ctx.Value(streamUpstreamCancelKey{}).(context.CancelFunc); ok && cancel != nil {
+		cancel()
+	}
+}
+
+const openAIUpstreamContextKey = "openai_upstream_context"
+
+func setOpenAIUpstreamContext(c *gin.Context, ctx context.Context) {
+	if c != nil && ctx != nil {
+		c.Set(openAIUpstreamContextKey, ctx)
+	}
+}
+
+func cancelOpenAIUpstreamContext(c *gin.Context) {
+	if c == nil {
+		return
+	}
+	if value, ok := c.Get(openAIUpstreamContextKey); ok {
+		if ctx, ok := value.(context.Context); ok {
+			cancelDetachedStreamUpstreamContext(ctx)
+		}
+	}
+}
+
+func (c *streamUpstreamContextControl) Release() {
+	if c == nil {
+		return
+	}
+	c.once.Do(func() {
+		if c.stopBridge != nil {
+			_ = c.stopBridge()
+		}
+		c.Cancel()
+	})
+}
+
+func detachStreamUpstreamContext(ctx context.Context, stream bool) (context.Context, context.CancelFunc) {
+	control := newStreamUpstreamContextControl(ctx, stream)
+	// Existing callers release immediately after constructing the request. Keep
+	// this compatibility wrapper non-canceling until protocol integrations adopt
+	// the explicit control lifecycle; the parent bridge still cancels the child.
+	return control.ctx, func() {}
+}
+
+func detachOpenAIUpstreamContext(ctx context.Context) (context.Context, context.CancelFunc) {
+	control := newStreamUpstreamContextControl(ctx, true)
+	return control.ctx, func() {}
 }
 
 func detachUpstreamContext(ctx context.Context) (context.Context, context.CancelFunc) {

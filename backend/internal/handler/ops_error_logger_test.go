@@ -36,6 +36,7 @@ func resetOpsErrorLoggerStateForTest(t *testing.T) {
 	opsErrorLogEnqueued.Store(0)
 	opsErrorLogDropped.Store(0)
 	opsErrorLogProcessed.Store(0)
+	opsErrorLogFallback.Store(0)
 	opsErrorLogSanitized.Store(0)
 	opsErrorLogLastDropLogAt.Store(0)
 

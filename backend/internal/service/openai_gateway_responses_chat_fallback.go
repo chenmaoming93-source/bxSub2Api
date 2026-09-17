@@ -112,7 +112,7 @@ func (s *OpenAIGatewayService) forwardResponsesViaRawChatCompletions(
 	}
 	targetURL := buildOpenAIChatCompletionsURL(validatedURL)
 
-	upstreamCtx, releaseUpstreamCtx := detachUpstreamContext(ctx)
+	upstreamCtx, releaseUpstreamCtx := detachOpenAIUpstreamContext(ctx)
 	upstreamReq, err := http.NewRequestWithContext(upstreamCtx, http.MethodPost, targetURL, bytes.NewReader(chatBody))
 	releaseUpstreamCtx()
 	if err != nil {
@@ -144,6 +144,9 @@ func (s *OpenAIGatewayService) forwardResponsesViaRawChatCompletions(
 	}
 	resp, err := s.httpUpstream.Do(upstreamReq, proxyURL, account.ID, account.Concurrency)
 	if err != nil {
+		if ctx.Err() != nil {
+			return &OpenAIForwardResult{Model: originalModel, UpstreamModel: upstreamModel, Stream: clientStream, Duration: time.Since(startTime), ClientDisconnect: true}, nil
+		}
 		// Transport-level failure (proxy/DNS/TCP/TLS — no HTTP response). Convert to
 		// a failover so the handler switches to a healthy account, and temporarily
 		// unschedule the account on durable faults (e.g. rejected proxy credentials).
@@ -188,12 +191,23 @@ func (s *OpenAIGatewayService) forwardResponsesViaRawChatCompletions(
 	}
 
 	if clientStream {
-		return s.streamChatCompletionsAsResponses(c, resp, originalModel, billingModel, upstreamModel, reasoningEffort, serviceTier, startTime)
+		return s.streamChatCompletionsAsResponses(upstreamCtx, c, resp, originalModel, billingModel, upstreamModel, reasoningEffort, serviceTier, startTime)
 	}
-	return s.bufferChatCompletionsAsResponses(c, resp, originalModel, billingModel, upstreamModel, reasoningEffort, serviceTier, startTime)
+	result, err := s.bufferChatCompletionsAsResponses(ctx, c, resp, originalModel, billingModel, upstreamModel, reasoningEffort, serviceTier, startTime)
+	if err != nil {
+		if ctx.Err() != nil {
+			return &OpenAIForwardResult{Model: originalModel, BillingModel: billingModel, UpstreamModel: upstreamModel, Stream: false, Duration: time.Since(startTime), ClientDisconnect: true}, nil
+		}
+		return nil, err
+	}
+	if ctx.Err() != nil {
+		return &OpenAIForwardResult{Model: originalModel, BillingModel: billingModel, UpstreamModel: upstreamModel, Stream: false, Duration: time.Since(startTime), ClientDisconnect: true}, nil
+	}
+	return result, nil
 }
 
 func (s *OpenAIGatewayService) bufferChatCompletionsAsResponses(
+	ctx context.Context,
 	c *gin.Context,
 	resp *http.Response,
 	originalModel string,
@@ -206,6 +220,9 @@ func (s *OpenAIGatewayService) bufferChatCompletionsAsResponses(
 	requestID := resp.Header.Get("x-request-id")
 	respBody, err := ReadUpstreamResponseBody(resp.Body, s.cfg, c, openAITooLargeError)
 	if err != nil {
+		if ctx.Err() != nil {
+			return nil, ctx.Err()
+		}
 		if !errors.Is(err, ErrUpstreamResponseBodyTooLarge) {
 			c.JSON(http.StatusBadGateway, gin.H{
 				"error": gin.H{
@@ -253,6 +270,7 @@ func (s *OpenAIGatewayService) bufferChatCompletionsAsResponses(
 }
 
 func (s *OpenAIGatewayService) streamChatCompletionsAsResponses(
+	ctx context.Context,
 	c *gin.Context,
 	resp *http.Response,
 	originalModel string,
@@ -301,7 +319,8 @@ func (s *OpenAIGatewayService) streamChatCompletionsAsResponses(
 			}
 			if _, err := fmt.Fprint(c.Writer, sse); err != nil {
 				clientDisconnected = true
-				logger.L().Debug("openai responses chat fallback: client disconnected, continuing to drain upstream for billing",
+				cancelDetachedStreamUpstreamContext(ctx)
+				logger.L().Debug("openai responses chat fallback: client disconnected, canceling upstream",
 					zap.Error(err),
 					zap.String("request_id", requestID),
 				)
@@ -350,9 +369,16 @@ func (s *OpenAIGatewayService) streamChatCompletionsAsResponses(
 			firstTokenMs = &ms
 		}
 		writeEvents(apicompat.ChatCompletionsChunkToResponsesEvents(&chunk, state))
+		if clientDisconnected {
+			return &OpenAIForwardResult{RequestID: requestID, Usage: usage, Model: originalModel, BillingModel: billingModel, UpstreamModel: upstreamModel, ReasoningEffort: reasoningEffort, ServiceTier: serviceTier, Stream: true, Duration: time.Since(startTime), FirstTokenMs: firstTokenMs, ClientDisconnect: true}, nil
+		}
 	}
 
 	if err := scanner.Err(); err != nil {
+		if ctx.Err() != nil || errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+			cancelDetachedStreamUpstreamContext(ctx)
+			return &OpenAIForwardResult{RequestID: requestID, Usage: usage, Model: originalModel, BillingModel: billingModel, UpstreamModel: upstreamModel, ReasoningEffort: reasoningEffort, ServiceTier: serviceTier, Stream: true, Duration: time.Since(startTime), FirstTokenMs: firstTokenMs, ClientDisconnect: true}, nil
+		}
 		if !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded) {
 			logger.L().Warn("openai responses chat fallback: stream read error",
 				zap.Error(err),
@@ -382,6 +408,10 @@ func (s *OpenAIGatewayService) streamChatCompletionsAsResponses(
 		if !clientDisconnected {
 			c.Writer.Flush()
 		}
+	}
+	if clientDisconnected {
+		cancelDetachedStreamUpstreamContext(ctx)
+		return &OpenAIForwardResult{RequestID: requestID, Usage: usage, Model: originalModel, BillingModel: billingModel, UpstreamModel: upstreamModel, ReasoningEffort: reasoningEffort, ServiceTier: serviceTier, Stream: true, Duration: time.Since(startTime), FirstTokenMs: firstTokenMs, ClientDisconnect: true}, nil
 	}
 	if !sawDone {
 		logger.L().Debug("openai responses chat fallback: upstream stream ended without done sentinel",

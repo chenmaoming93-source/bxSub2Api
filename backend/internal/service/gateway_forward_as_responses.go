@@ -127,6 +127,9 @@ func (s *GatewayService) ForwardAsResponses(
 	// 11. Send request
 	resp, err := s.httpUpstream.DoWithTLS(upstreamReq, proxyURL, account.ID, account.Concurrency, s.tlsFPProfileService.ResolveTLSProfile(account))
 	if err != nil {
+		if ctx != nil && ctx.Err() != nil {
+			return newClientDisconnectedForwardResult(startTime, originalModel, mappedModel, reqStream), nil
+		}
 		if resp != nil && resp.Body != nil {
 			_ = resp.Body.Close()
 		}
@@ -146,6 +149,9 @@ func (s *GatewayService) ForwardAsResponses(
 	defer func() { _ = resp.Body.Close() }()
 
 	// 12. Handle error response with failover
+	if ctx != nil && ctx.Err() != nil {
+		return newClientDisconnectedForwardResult(startTime, originalModel, mappedModel, reqStream), nil
+	}
 	if resp.StatusCode >= 400 {
 		respBody, _ := s.readUpstreamErrorBody(resp)
 		_ = resp.Body.Close()
@@ -182,9 +188,9 @@ func (s *GatewayService) ForwardAsResponses(
 	var result *ForwardResult
 	var handleErr error
 	if clientStream {
-		result, handleErr = s.handleResponsesStreamingResponse(resp, c, originalModel, mappedModel, reasoningEffort, startTime)
+		result, handleErr = s.handleResponsesStreamingResponse(upstreamCtx, resp, c, originalModel, mappedModel, reasoningEffort, startTime)
 	} else {
-		result, handleErr = s.handleResponsesBufferedStreamingResponse(resp, c, originalModel, mappedModel, reasoningEffort, startTime)
+		result, handleErr = s.handleResponsesBufferedStreamingResponse(upstreamCtx, resp, c, originalModel, mappedModel, reasoningEffort, startTime)
 	}
 
 	return result, handleErr
@@ -226,6 +232,7 @@ func mergeAnthropicUsage(dst *ClaudeUsage, src apicompat.AnthropicUsage) {
 // the upstream streaming response, assembles them into a complete Anthropic
 // response, converts to Responses API JSON format, and writes it to the client.
 func (s *GatewayService) handleResponsesBufferedStreamingResponse(
+	ctx context.Context,
 	resp *http.Response,
 	c *gin.Context,
 	originalModel string,
@@ -309,12 +316,23 @@ func (s *GatewayService) handleResponsesBufferedStreamingResponse(
 	}
 
 	if err := scanner.Err(); err != nil {
-		if !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded) {
-			logger.L().Warn("forward_as_responses buffered: read error",
-				zap.Error(err),
-				zap.String("request_id", requestID),
-			)
+		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) || ctx.Err() != nil {
+			cancelDetachedStreamUpstreamContext(ctx)
+			result := newClientDisconnectedForwardResult(startTime, originalModel, mappedModel, false)
+			result.Usage = usage
+			return result, nil
 		}
+		logger.L().Warn("forward_as_responses buffered: read error",
+			zap.Error(err),
+			zap.String("request_id", requestID),
+		)
+	}
+
+	if ctx.Err() != nil {
+		cancelDetachedStreamUpstreamContext(ctx)
+		result := newClientDisconnectedForwardResult(startTime, originalModel, mappedModel, false)
+		result.Usage = usage
+		return result, nil
 	}
 
 	if finalResp == nil {
@@ -366,6 +384,7 @@ func (s *GatewayService) handleResponsesBufferedStreamingResponse(
 // handleResponsesStreamingResponse reads Anthropic SSE events from upstream,
 // converts each to Responses SSE events, and writes them to the client.
 func (s *GatewayService) handleResponsesStreamingResponse(
+	ctx context.Context,
 	resp *http.Response,
 	c *gin.Context,
 	originalModel string,
@@ -408,6 +427,11 @@ func (s *GatewayService) handleResponsesStreamingResponse(
 			Duration:        time.Since(startTime),
 			FirstTokenMs:    firstTokenMs,
 		}
+	}
+	clientDisconnectedResult := func() *ForwardResult {
+		result := resultWithUsage()
+		result.ClientDisconnect = true
+		return result
 	}
 
 	// processEvent handles a single parsed Anthropic SSE event.
@@ -460,7 +484,10 @@ func (s *GatewayService) handleResponsesStreamingResponse(
 					continue
 				}
 				out := string(reverseToolNamesIfPresent(c, []byte(sse)))
-				fmt.Fprint(c.Writer, out) //nolint:errcheck
+				if _, err := fmt.Fprint(c.Writer, out); err != nil {
+					cancelDetachedStreamUpstreamContext(ctx)
+					return clientDisconnectedResult(), nil
+				}
 			}
 			c.Writer.Flush()
 		}
@@ -496,17 +523,26 @@ func (s *GatewayService) handleResponsesStreamingResponse(
 		}
 
 		if processEvent(&event) {
-			return resultWithUsage(), nil
+			cancelDetachedStreamUpstreamContext(ctx)
+			return clientDisconnectedResult(), nil
 		}
 	}
 
 	if err := scanner.Err(); err != nil {
+		if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) || ctx.Err() != nil {
+			cancelDetachedStreamUpstreamContext(ctx)
+			return clientDisconnectedResult(), nil
+		}
 		if !errors.Is(err, context.Canceled) && !errors.Is(err, context.DeadlineExceeded) {
 			logger.L().Warn("forward_as_responses stream: read error",
 				zap.Error(err),
 				zap.String("request_id", requestID),
 			)
 		}
+	}
+	if ctx.Err() != nil {
+		cancelDetachedStreamUpstreamContext(ctx)
+		return clientDisconnectedResult(), nil
 	}
 
 	return finalizeStream()
