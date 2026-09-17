@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	dbent "github.com/Wei-Shaw/sub2api/ent"
+	"github.com/Wei-Shaw/sub2api/ent/account"
 	"github.com/Wei-Shaw/sub2api/ent/apikey"
 	"github.com/Wei-Shaw/sub2api/ent/group"
 	"github.com/Wei-Shaw/sub2api/internal/service"
@@ -37,6 +38,22 @@ func (r *externalTokenUsageDimensionRepository) FindGroupByName(ctx context.Cont
 		return nil, translatePersistenceError(err, service.ErrGroupNotFound, nil)
 	}
 	return groupEntityToService(m), nil
+}
+
+func (r *externalTokenUsageDimensionRepository) FindAccountByName(ctx context.Context, name string) (*service.Account, error) {
+	matches, err := r.client.Account.Query().Where(
+		account.NameEqualFold(strings.TrimSpace(name)), account.DeletedAtIsNil(),
+	).Limit(2).All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if len(matches) == 0 {
+		return nil, service.ErrAccountNotFound
+	}
+	if len(matches) > 1 {
+		return nil, fmt.Errorf("account name matched multiple non-deleted accounts")
+	}
+	return accountEntityToService(matches[0]), nil
 }
 
 func (r *externalTokenUsageDimensionRepository) FindAPIKeyByKey(ctx context.Context, key string) (*service.APIKey, error) {

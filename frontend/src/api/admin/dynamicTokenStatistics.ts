@@ -1,6 +1,6 @@
 import { apiClient } from '../client'
 
-export type DimensionCode = 'user_id' | 'api_key_id' | 'group_id' | 'route_alias' | 'account_id' | 'upstream_model'
+export type DimensionCode = 'user_id' | 'api_key_id' | 'group_id' | 'route_alias' | 'account_id' | 'upstream_model' | 'department'
 export type MetricCode = 'total_tokens'
 export type PeriodType = 'D' | 'W' | 'M'
 export type ProjectionStatus = 'DRAFT' | 'PUBLISHED' | 'ACTIVE' | 'DISABLED'
@@ -78,6 +78,48 @@ export interface RuntimeState {
   enabled: boolean
 }
 
+export type QuotaResetStatus = 'RESET' | 'PARTIAL_RESET' | 'NO_QUOTA' | 'NO_USAGE'
+
+export interface QuotaResetInput {
+  dimension_values: Partial<Record<DimensionCode, DimensionValue>>
+  metric_code: MetricCode
+  period_type: PeriodType
+}
+
+export interface QuotaResetMatchedQuota {
+  id: number
+  name: string
+  projection_id: number
+  dimension_values: Partial<Record<DimensionCode, DimensionValue>>
+  metric_code: MetricCode
+  period_type: PeriodType
+  limit_value: number
+  mode: 'OBSERVE' | 'ENFORCE'
+}
+
+export interface QuotaResetMatchedEntry {
+  projection_id: number
+  projection_name: string
+  dimension_values: Partial<Record<DimensionCode, DimensionValue>>
+  metric_code: MetricCode
+  period_type: PeriodType
+  period_start: string
+  period_end: string
+  matched_quota_ids: number[]
+  status: 'RESET' | 'NO_USAGE' | 'FAILED'
+}
+
+export interface QuotaResetResult {
+  status: QuotaResetStatus
+  matched_quota_count: number
+  matched_usage_count: number
+  reset_count: number
+  no_usage_count: number
+  failed_count: number
+  matched_quotas?: QuotaResetMatchedQuota[]
+  matched_entries?: QuotaResetMatchedEntry[]
+}
+
 export interface UsageQueryInput {
   projection_id: number
   metric_code: MetricCode
@@ -93,13 +135,14 @@ export interface UsageQueryInput {
 }
 
 export interface UsageQueryResult {
-  rows: Array<{ period_start: string; period_end: string; dimensions: Partial<Record<DimensionCode, DimensionValue>>; value: number }>
+  rows: Array<{ period_start: string; period_end: string; dimensions: Partial<Record<DimensionCode, DimensionValue>>; value: number; reset_snapshot?: number; effective_value?: number }>
   total: number
   summary: number
   projection_enabled_at?: string
   last_synced_at?: string
   complete: boolean
   consistency: 'mysql_eventual'
+  reset_snapshots_available: boolean
 }
 
 const base = '/admin/token-statistics'
@@ -147,6 +190,10 @@ export const dynamicTokenStatisticsAPI = {
   async quotaAction(id: number, action: 'enable' | 'disable') {
     const { data } = await apiClient.post<{ quota: Quota }>(`${base}/quotas/${id}/${action}`)
     return data.quota
+  },
+  async resetQuotaUsage(input: QuotaResetInput) {
+    const { data } = await apiClient.post<QuotaResetResult>(`${base}/quota-usage/reset`, input)
+    return data
   },
   async status() {
     const { data } = await apiClient.get<SyncStatus>(`${base}/status`)

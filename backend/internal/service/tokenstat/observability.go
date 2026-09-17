@@ -3,18 +3,25 @@ package tokenstat
 import "sync/atomic"
 
 type ObservabilitySnapshot struct {
-	Enqueued          uint64 `json:"enqueued"`
-	DroppedQueueFull  uint64 `json:"dropped_queue_full"`
-	InvalidEvents     uint64 `json:"invalid_events"`
-	RedisWriteFailure uint64 `json:"redis_write_failures"`
-	SyncedRows        uint64 `json:"synced_rows"`
-	SyncFailures      uint64 `json:"sync_failures"`
-	FinalizedPeriods  uint64 `json:"finalized_periods"`
-	FinalizeFailures  uint64 `json:"finalize_failures"`
-	QuotaChecks       uint64 `json:"quota_checks"`
-	QuotaExceeded     uint64 `json:"quota_exceeded"`
-	QuotaFailOpen     uint64 `json:"quota_fail_open"`
-	ConfigVersion     uint64 `json:"config_version"`
+	Enqueued                uint64 `json:"enqueued"`
+	DroppedQueueFull        uint64 `json:"dropped_queue_full"`
+	InvalidEvents           uint64 `json:"invalid_events"`
+	RedisWriteFailure       uint64 `json:"redis_write_failures"`
+	SyncedRows              uint64 `json:"synced_rows"`
+	SyncFailures            uint64 `json:"sync_failures"`
+	FinalizedPeriods        uint64 `json:"finalized_periods"`
+	FinalizeFailures        uint64 `json:"finalize_failures"`
+	QuotaChecks             uint64 `json:"quota_checks"`
+	QuotaExceeded           uint64 `json:"quota_exceeded"`
+	QuotaFailOpen           uint64 `json:"quota_fail_open"`
+	QuotaResetRequests      uint64 `json:"quota_reset_requests"`
+	QuotaResetEntries       uint64 `json:"quota_reset_entries"`
+	QuotaResetPartial       uint64 `json:"quota_reset_partial"`
+	QuotaResetNoQuota       uint64 `json:"quota_reset_no_quota"`
+	QuotaResetNoUsage       uint64 `json:"quota_reset_no_usage"`
+	QuotaResetFailures      uint64 `json:"quota_reset_failures"`
+	QuotaResetFailedEntries uint64 `json:"quota_reset_failed_entries"`
+	ConfigVersion           uint64 `json:"config_version"`
 }
 
 var observability struct {
@@ -22,6 +29,10 @@ var observability struct {
 	syncedRows, syncFailures                      atomic.Uint64
 	finalizedPeriods, finalizeFailures            atomic.Uint64
 	quotaChecks, quotaExceeded, quotaFailOpen     atomic.Uint64
+	quotaResetRequests, quotaResetEntries         atomic.Uint64
+	quotaResetPartial, quotaResetNoQuota          atomic.Uint64
+	quotaResetNoUsage, quotaResetFailures         atomic.Uint64
+	quotaResetFailedEntries                       atomic.Uint64
 	configVersion                                 atomic.Uint64
 }
 
@@ -32,7 +43,11 @@ func MetricsSnapshot() ObservabilitySnapshot {
 		SyncedRows: observability.syncedRows.Load(), SyncFailures: observability.syncFailures.Load(),
 		FinalizedPeriods: observability.finalizedPeriods.Load(), FinalizeFailures: observability.finalizeFailures.Load(),
 		QuotaChecks: observability.quotaChecks.Load(), QuotaExceeded: observability.quotaExceeded.Load(),
-		QuotaFailOpen: observability.quotaFailOpen.Load(), ConfigVersion: observability.configVersion.Load(),
+		QuotaFailOpen: observability.quotaFailOpen.Load(), QuotaResetRequests: observability.quotaResetRequests.Load(),
+		QuotaResetEntries: observability.quotaResetEntries.Load(), QuotaResetPartial: observability.quotaResetPartial.Load(),
+		QuotaResetNoQuota: observability.quotaResetNoQuota.Load(), QuotaResetNoUsage: observability.quotaResetNoUsage.Load(),
+		QuotaResetFailures: observability.quotaResetFailures.Load(), QuotaResetFailedEntries: observability.quotaResetFailedEntries.Load(),
+		ConfigVersion: observability.configVersion.Load(),
 	}
 }
 

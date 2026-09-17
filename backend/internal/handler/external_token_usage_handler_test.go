@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/Wei-Shaw/sub2api/internal/service"
+	tokenstat "github.com/Wei-Shaw/sub2api/internal/service/tokenstat"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
 )
@@ -70,6 +71,59 @@ func TestExternalTokenUsageHandlerErrors(t *testing.T) {
 	require.Contains(t, mismatch.Body.String(), "API_KEY_MISMATCH")
 	require.Equal(t, http.StatusServiceUnavailable, performExternalTokenUsage(t, externalTokenUsageQuerierStub{err: service.ErrTokenUsageUnavailable}, `{"username":"u@example.com","group_name":"g","api_key":"k","route_alias":"r"}`).Code)
 	require.False(t, errors.Is(service.ErrRouteAliasNotFound, service.ErrTokenUsageUnavailable))
+}
+
+type externalQuotaResetterStub struct {
+	result    tokenstat.QuotaResetResult
+	err       error
+	calls     int
+	resolved  map[tokenstat.DimensionCode]tokenstat.DimensionValue
+	lastInput tokenstat.ResetIdentityDiscoveryRequest
+}
+
+func (s *externalQuotaResetterStub) ResetQuotaUsage(_ context.Context, input tokenstat.ResetIdentityDiscoveryRequest) (tokenstat.QuotaResetResult, error) {
+	s.calls++
+	s.lastInput = input
+	return s.result, s.err
+}
+func (s *externalQuotaResetterStub) ResolveQuotaResetDimensions(context.Context, service.ExternalTokenQuotaResetDimensions) (map[tokenstat.DimensionCode]tokenstat.DimensionValue, error) {
+	if s.resolved == nil {
+		return map[tokenstat.DimensionCode]tokenstat.DimensionValue{tokenstat.DimensionAPIKeyID: tokenstat.Int64Value(123)}, nil
+	}
+	return s.resolved, nil
+}
+
+func performExternalQuotaReset(stub *externalQuotaResetterStub, body string) *httptest.ResponseRecorder {
+	recorder := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(recorder)
+	c.Request = httptest.NewRequest(http.MethodPost, "/api/v1/integrations/token-usage/reset", strings.NewReader(body))
+	c.Request.Header.Set("Content-Type", "application/json")
+	NewExternalTokenUsageHandlerWithServices(nil, stub, stub).ResetQuotaUsage(c)
+	return recorder
+}
+
+func TestExternalQuotaResetHandlerContractAndRepeat(t *testing.T) {
+	stub := &externalQuotaResetterStub{result: tokenstat.QuotaResetResult{Status: tokenstat.QuotaResetStatusPartialReset, MatchedQuotaCount: 2, MatchedUsageCount: 3, ResetCount: 2, FailedCount: 1}}
+	body := `{"dimension_values":{"api_key":"sk-sensitive-value"},"metric_code":"total_tokens","period_type":"D"}`
+	for range 2 {
+		response := performExternalQuotaReset(stub, body)
+		require.Equal(t, http.StatusOK, response.Code)
+		require.Contains(t, response.Body.String(), `"status":"PARTIAL_RESET"`)
+		require.Contains(t, response.Body.String(), `"reset_count":2`)
+		require.NotContains(t, response.Body.String(), "sk-sensitive-value")
+	}
+	require.Equal(t, 2, stub.calls, "reset endpoint must not add idempotency")
+	require.Equal(t, tokenstat.Int64Value(123), stub.lastInput.DimensionValues[tokenstat.DimensionAPIKeyID])
+}
+
+func TestExternalQuotaResetHandlerStrictErrors(t *testing.T) {
+	unknown := performExternalQuotaReset(&externalQuotaResetterStub{}, `{"dimension_values":{},"metric_code":"total_tokens","period_type":"D","baseline":10}`)
+	require.Equal(t, http.StatusBadRequest, unknown.Code)
+	invalid := performExternalQuotaReset(&externalQuotaResetterStub{err: tokenstat.ErrInvalidQuotaResetRequest}, `{"dimension_values":{},"metric_code":"total_tokens","period_type":"D"}`)
+	require.Equal(t, http.StatusBadRequest, invalid.Code)
+	unavailable := performExternalQuotaReset(&externalQuotaResetterStub{err: tokenstat.ErrTokenQuotaResetUnavailable}, `{"dimension_values":{"username":"u@example.com"},"metric_code":"total_tokens","period_type":"D"}`)
+	require.Equal(t, http.StatusServiceUnavailable, unavailable.Code)
+	require.Contains(t, unavailable.Body.String(), "TOKEN_QUOTA_RESET_UNAVAILABLE")
 }
 
 func performExternalTokenUsageDaily(t *testing.T, stub externalTokenUsageQuerierStub, body string) *httptest.ResponseRecorder {

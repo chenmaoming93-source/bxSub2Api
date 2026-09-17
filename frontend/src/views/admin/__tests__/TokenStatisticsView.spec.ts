@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest'
 
 describe('configurable token statistics admin view', () => {
   const source = readFileSync(resolve(process.cwd(), 'src/views/admin/TokenStatisticsView.vue'), 'utf8')
+  const selector = readFileSync(resolve(process.cwd(), 'src/components/admin/tokenstat/TokenQuotaDimensionValueSelector.vue'), 'utf8')
 
   it('exposes projection, quota and synchronization tabs with permission gates', () => {
     expect(source).toContain("id: 'projections'")
@@ -17,11 +18,21 @@ describe('configurable token statistics admin view', () => {
   it('renders dynamic filters, summary, trend, ranking, detail, completeness and CSV export', () => {
     expect(source).toContain('queryDimensions')
     expect(source).toContain('queryDraft.group_by')
-    expect(source).toContain('Token 汇总')
+    expect(source).toContain('真实累计汇总')
     expect(source).toContain('趋势')
     expect(source).toContain('排行榜')
     expect(source).toContain('数据仍在最终一致同步中')
+    expect(source).toContain('重置快照')
+    expect(source).toContain('重置后有效用量')
+    expect(source).toContain('reset_snapshots_available')
+    expect(source).toContain('row.reset_snapshot')
+    expect(source).toContain('row.effective_value')
     expect(source).toContain('exportCSV')
+    expect(source).toContain('重置快照')
+    expect(source).toContain('重置后有效用量')
+    expect(source).toContain('row.reset_snapshot')
+    expect(source).toContain('row.effective_value')
+    expect(source).toContain('reset_snapshots_available')
     expect(source).toContain("localStorage.setItem('token-stat-query-projection'")
   })
 
@@ -62,15 +73,45 @@ describe('configurable token statistics admin view', () => {
     expect(source).toContain('onQuotaValueChange(dimension.code)')
   })
 
-  it('supports wildcard quota values and a debounced API key selector that stores IDs', () => {
-		expect(source).toContain("{ type: 'wildcard' }")
-		expect(source).toContain('keyword.length < 2')
-		expect(source).toContain('}, 400)')
-		expect(source).toContain('apiKeySearchController?.abort()')
-		expect(source).toContain('version === apiKeySearchVersion')
-		expect(source).toContain('quotaValues.api_key_id = key.id')
-		expect(source).toContain('key.masked_key')
-	})
+  it('shares searchable dimension selectors and stores API key IDs', () => {
+    expect(source).toContain("{ type: 'wildcard' }")
+    expect(source).toContain('TokenQuotaDimensionValueSelector')
+    expect(source).toContain('resetAccountModels')
+    expect(selector).toContain('<Select')
+    expect(selector).toContain('searchable')
+    expect(selector).toContain('keyword.length < 2')
+    expect(selector).toContain('}, 400)')
+    expect(selector).toContain('apiKeySearchController?.abort()')
+    expect(selector).toContain('version === apiKeySearchVersion')
+    expect(selector).toContain("emit('update:modelValue', key.id)")
+    expect(selector).toContain('key.masked_key')
+  })
+
+  it('provides a permission-gated, registry-driven quota reset form and confirmation', () => {
+    expect(source).toContain('data-test="quota-reset-form"')
+    expect(source).toContain("v-if=\"can('token_quota.update')\"")
+    expect(source).toContain('v-for="dimension in dimensions"')
+    expect(source).toContain('v-for="metric in quotaMetrics"')
+    expect(source).toContain('metrics.value.filter(item => item.allow_quota)')
+    expect(source).toContain("metric_code: 'total_tokens'")
+    expect(source).toContain('window.confirm')
+    expect(source).toContain('真实累计统计和报表不会被清零')
+    expect(source).toContain('dynamicTokenStatisticsAPI.resetQuotaUsage')
+  })
+
+  it('shows all reset outcomes and encourages retry after partial success', () => {
+    expect(source).toContain('限额用量已重置')
+    expect(source).toContain('限额用量部分重置')
+    expect(source).toContain('没有适用的已启用限额')
+    expect(source).toContain('当前周期没有可重置用量')
+    expect(source).toContain('可以再次点击重置')
+    expect(source).toContain('resetResult.failed_count')
+    expect(source).toContain('匹配到的限额规则')
+    expect(source).toContain('命中的额度条目')
+    expect(source).toContain('resetResult.matched_quotas')
+    expect(source).toContain('resetResult.matched_entries')
+    expect(source).toContain('matched_quota_ids')
+  })
 
   it('shows the concrete dimension scope of every quota', () => {
     expect(source).toContain('<th>适用范围</th>')

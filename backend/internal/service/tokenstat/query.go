@@ -35,21 +35,28 @@ type UsageQueryInput struct {
 	PageSize     int
 }
 
+type QuotaResetBaselineReader interface {
+	ReadBaselines(ctx context.Context, identities []StatisticIdentity) ([]int64, error)
+}
+
 type UsageQueryRow struct {
-	PeriodStart time.Time                        `json:"period_start"`
-	PeriodEnd   time.Time                        `json:"period_end"`
-	Dimensions  map[DimensionCode]DimensionValue `json:"dimensions"`
-	Value       int64                            `json:"value"`
+	PeriodStart    time.Time                        `json:"period_start"`
+	PeriodEnd      time.Time                        `json:"period_end"`
+	Dimensions     map[DimensionCode]DimensionValue `json:"dimensions"`
+	Value          int64                            `json:"value"`
+	ResetSnapshot  *int64                           `json:"reset_snapshot,omitempty"`
+	EffectiveValue *int64                           `json:"effective_value,omitempty"`
 }
 
 type UsageQueryResult struct {
-	Rows                []UsageQueryRow `json:"rows"`
-	Total               int             `json:"total"`
-	Summary             int64           `json:"summary"`
-	ProjectionEnabledAt *time.Time      `json:"projection_enabled_at,omitempty"`
-	LastSyncedAt        *time.Time      `json:"last_synced_at,omitempty"`
-	Complete            bool            `json:"complete"`
-	Consistency         string          `json:"consistency"`
+	Rows                    []UsageQueryRow `json:"rows"`
+	Total                   int             `json:"total"`
+	Summary                 int64           `json:"summary"`
+	ProjectionEnabledAt     *time.Time      `json:"projection_enabled_at,omitempty"`
+	LastSyncedAt            *time.Time      `json:"last_synced_at,omitempty"`
+	Complete                bool            `json:"complete"`
+	Consistency             string          `json:"consistency"`
+	ResetSnapshotsAvailable bool            `json:"reset_snapshots_available"`
 }
 
 type DepartmentUsageRow struct {
@@ -117,10 +124,11 @@ func (s *ProjectionAdminService) GetSyncStatus(ctx context.Context) (*SyncStatus
 }
 
 type queryBucket struct {
-	start      time.Time
-	end        time.Time
-	dimensions map[DimensionCode]DimensionValue
-	value      int64
+	start         time.Time
+	end           time.Time
+	dimensions    map[DimensionCode]DimensionValue
+	value         int64
+	resetSnapshot int64
 }
 
 func (s *ProjectionAdminService) QueryUsage(ctx context.Context, input UsageQueryInput) (*UsageQueryResult, error) {
@@ -167,12 +175,32 @@ func (s *ProjectionAdminService) QueryUsage(ctx context.Context, input UsageQuer
 		return nil, fmt.Errorf("query result exceeds %d source rows; narrow the range or add filters", maxQueryRows)
 	}
 
+	resetSnapshots := make([]int64, len(rows))
+	resetSnapshotsAvailable := s.quotaResetBaselines != nil
+	if resetSnapshotsAvailable && len(rows) > 0 {
+		identities := make([]StatisticIdentity, len(rows))
+		for index, row := range rows {
+			var dimensionHash [16]byte
+			copy(dimensionHash[:], row.DimensionHash)
+			identities[index] = StatisticIdentity{
+				Period:       Period{Type: PeriodType(row.PeriodType), Start: row.PeriodStart, End: row.PeriodEnd},
+				ProjectionID: row.ProjectionID, DimensionHash: dimensionHash, MetricCode: MetricCode(row.MetricCode),
+			}
+		}
+		baselines, baselineErr := s.quotaResetBaselines.ReadBaselines(ctx, identities)
+		if baselineErr == nil && len(baselines) == len(rows) {
+			resetSnapshots = baselines
+		} else {
+			resetSnapshotsAvailable = false
+		}
+	}
+
 	buckets := make(map[string]*queryBucket)
 	var summary int64
 	var lastSynced *time.Time
 	complete := true
 	now := time.Now()
-	for _, row := range rows {
+	for rowIndex, row := range rows {
 		key, dimensions, err := queryGroupKey(row, input.GroupBy)
 		if err != nil {
 			return nil, err
@@ -184,6 +212,9 @@ func (s *ProjectionAdminService) QueryUsage(ctx context.Context, input UsageQuer
 			buckets[key] = bucket
 		}
 		bucket.value += row.MetricValue
+		if resetSnapshotsAvailable {
+			bucket.resetSnapshot += resetSnapshots[rowIndex]
+		}
 		summary += row.MetricValue
 		if lastSynced == nil || row.LastSyncedAt.After(*lastSynced) {
 			value := row.LastSyncedAt
@@ -195,10 +226,20 @@ func (s *ProjectionAdminService) QueryUsage(ctx context.Context, input UsageQuer
 	}
 	resultRows := make([]UsageQueryRow, 0, len(buckets))
 	for _, bucket := range buckets {
-		resultRows = append(resultRows, UsageQueryRow{
+		row := UsageQueryRow{
 			PeriodStart: bucket.start, PeriodEnd: bucket.end,
 			Dimensions: bucket.dimensions, Value: bucket.value,
-		})
+		}
+		if resetSnapshotsAvailable {
+			resetSnapshot := bucket.resetSnapshot
+			effectiveValue := bucket.value - resetSnapshot
+			if effectiveValue < 0 {
+				effectiveValue = 0
+			}
+			row.ResetSnapshot = &resetSnapshot
+			row.EffectiveValue = &effectiveValue
+		}
+		resultRows = append(resultRows, row)
 	}
 	sortUsageQueryRows(resultRows, input.Sort)
 	total := len(resultRows)
@@ -213,7 +254,7 @@ func (s *ProjectionAdminService) QueryUsage(ctx context.Context, input UsageQuer
 	return &UsageQueryResult{
 		Rows: resultRows[startIndex:endIndex], Total: total, Summary: summary,
 		ProjectionEnabledAt: projection.EnabledAt, LastSyncedAt: lastSynced,
-		Complete: complete, Consistency: "mysql_eventual",
+		Complete: complete, Consistency: "mysql_eventual", ResetSnapshotsAvailable: resetSnapshotsAvailable,
 	}, nil
 }
 

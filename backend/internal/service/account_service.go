@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
@@ -12,6 +13,8 @@ import (
 var (
 	ErrAccountNotFound      = infraerrors.NotFound("ACCOUNT_NOT_FOUND", "account not found")
 	ErrAccountNilInput      = infraerrors.BadRequest("ACCOUNT_NIL_INPUT", "account input cannot be nil")
+	ErrAccountNameRequired  = infraerrors.BadRequest("ACCOUNT_NAME_REQUIRED", "account name is required")
+	ErrAccountNameExists    = infraerrors.Conflict("ACCOUNT_NAME_EXISTS", "account name already exists")
 	ErrAccountNotInFallback = infraerrors.BadRequest("ACCOUNT_NOT_IN_FALLBACK", "account is not in proxy fallback state")
 )
 
@@ -26,6 +29,9 @@ type AccountRepository interface {
 	GetByIDs(ctx context.Context, ids []int64) ([]*Account, error)
 	// ExistsByID 检查账号是否存在，仅返回布尔值，用于删除前的轻量级存在性检查
 	ExistsByID(ctx context.Context, id int64) (bool, error)
+	// ExistsByName checks an account name among non-deleted accounts.
+	// excludeID is ignored when <= 0 and is used by updates to exclude itself.
+	ExistsByName(ctx context.Context, name string, excludeID int64) (bool, error)
 	// GetByCRSAccountID finds an account previously synced from CRS.
 	// Returns (nil, nil) if not found.
 	GetByCRSAccountID(ctx context.Context, crsAccountID string) (*Account, error)
@@ -140,6 +146,21 @@ type groupExistenceBatchChecker interface {
 	ExistsByIDs(ctx context.Context, ids []int64) (map[int64]bool, error)
 }
 
+func validateAccountNameAvailable(ctx context.Context, repo AccountRepository, name string, excludeID int64) (string, error) {
+	normalized := strings.TrimSpace(name)
+	if normalized == "" {
+		return "", ErrAccountNameRequired
+	}
+	exists, err := repo.ExistsByName(ctx, normalized, excludeID)
+	if err != nil {
+		return "", fmt.Errorf("check account name: %w", err)
+	}
+	if exists {
+		return "", ErrAccountNameExists
+	}
+	return normalized, nil
+}
+
 // NewAccountService 创建账号服务实例
 func NewAccountService(accountRepo AccountRepository, groupRepo GroupRepository) *AccountService {
 	return &AccountService{
@@ -150,6 +171,10 @@ func NewAccountService(accountRepo AccountRepository, groupRepo GroupRepository)
 
 // Create 创建账号
 func (s *AccountService) Create(ctx context.Context, req CreateAccountRequest) (*Account, error) {
+	name, err := validateAccountNameAvailable(ctx, s.accountRepo, req.Name, 0)
+	if err != nil {
+		return nil, err
+	}
 	// 验证分组是否存在（如果指定了分组）
 	if len(req.GroupIDs) > 0 {
 		if err := s.validateGroupIDsExist(ctx, req.GroupIDs); err != nil {
@@ -159,7 +184,7 @@ func (s *AccountService) Create(ctx context.Context, req CreateAccountRequest) (
 
 	// 创建账号
 	account := &Account{
-		Name:        req.Name,
+		Name:        name,
 		Notes:       normalizeAccountNotes(req.Notes),
 		Platform:    req.Platform,
 		Type:        req.Type,
@@ -249,7 +274,11 @@ func (s *AccountService) Update(ctx context.Context, id int64, req UpdateAccount
 
 	// 更新字段
 	if req.Name != nil {
-		account.Name = *req.Name
+		name, nameErr := validateAccountNameAvailable(ctx, s.accountRepo, *req.Name, id)
+		if nameErr != nil {
+			return nil, nameErr
+		}
+		account.Name = name
 	}
 	if req.Notes != nil {
 		account.Notes = normalizeAccountNotes(req.Notes)

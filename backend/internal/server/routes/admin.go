@@ -179,6 +179,7 @@ func registerDynamicTokenStatisticsRoutes(admin *gin.RouterGroup, h *handler.Han
 		adminDELETE(routes, stats, "/quotas/:id", rbac.PermissionTokenQuotaUpdate, h.Admin.DynamicTokenStatistics.DeleteQuota)
 		adminPOST(routes, stats, "/quotas/:id/enable", rbac.PermissionTokenQuotaUpdate, h.Admin.DynamicTokenStatistics.EnableQuota)
 		adminPOST(routes, stats, "/quotas/:id/disable", rbac.PermissionTokenQuotaUpdate, h.Admin.DynamicTokenStatistics.DisableQuota)
+		adminPOST(routes, stats, "/quota-usage/reset", rbac.PermissionTokenQuotaUpdate, h.Admin.DynamicTokenStatistics.ResetQuotaUsage)
 		adminPOST(routes, stats, "/query", rbac.PermissionTokenUsageRead, h.Admin.DynamicTokenStatistics.QueryUsage)
 		adminGET(routes, stats, "/status", rbac.PermissionTokenUsageRead, h.Admin.DynamicTokenStatistics.SyncStatus)
 	}

@@ -19,7 +19,9 @@ func TestCurrentUsageReaderMatchesAccumulatorForThreePeriods(t *testing.T) {
 
 	location, err := time.LoadLocation("Asia/Shanghai")
 	require.NoError(t, err)
-	periods := domain.NaturalPeriods(time.Date(2026, 7, 31, 12, 0, 0, 0, location), location)
+	at := time.Date(2026, 7, 31, 12, 0, 0, 0, location)
+	mini.SetTime(at)
+	periods := domain.NaturalPeriods(at, location)
 	identity, err := domain.BuildDimensionIdentity(
 		[]domain.DimensionCode{domain.DimensionUserID, domain.DimensionAPIKeyID, domain.DimensionGroupID, domain.DimensionRouteAlias},
 		map[domain.DimensionCode]domain.DimensionValue{

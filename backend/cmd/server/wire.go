@@ -52,6 +52,11 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 
 		// BuildInfo provider
 		provideServiceBuildInfo,
+		provideTokenStatRepository,
+		provideCurrentDirtyIdentityReader,
+		provideQuotaResetStore,
+		provideResetIdentityDiscoveryService,
+		provideQuotaResetService,
 		provideDynamicTokenStatisticsBootstrap,
 		provideExternalProvisioningHandler,
 
@@ -76,7 +81,34 @@ func provideExternalProvisioningHandler(cfg *config.Config, client *ent.Client, 
 
 type dynamicTokenStatisticsBootstrap struct{}
 
-func provideDynamicTokenStatisticsBootstrap(client *ent.Client, db *sql.DB, redisClient *redis.Client, cfg *config.Config, projections *tokenstat.ProjectionAdminService) (*dynamicTokenStatisticsBootstrap, error) {
+func provideTokenStatRepository(db *sql.DB) *tokenstatrepo.Repository {
+	return tokenstatrepo.NewRepository(db)
+}
+
+func provideCurrentDirtyIdentityReader(client *redis.Client) *tokenstatrepo.CurrentDirtyIdentityReader {
+	return tokenstatrepo.NewCurrentDirtyIdentityReader(client)
+}
+
+func provideQuotaResetStore(client *redis.Client, cfg *config.Config) *tokenstatrepo.RedisQuotaResetStore {
+	dynamic := cfg.Gateway.DynamicTokenStatistics
+	return tokenstatrepo.NewRedisQuotaResetStore(client, dynamic.ShardCount, dynamic.OrphanTTLDays)
+}
+
+func provideResetIdentityDiscoveryService(projections *tokenstat.ProjectionAdminService, dirty *tokenstatrepo.CurrentDirtyIdentityReader, aggregates *tokenstatrepo.Repository, cfg *config.Config) (*tokenstat.ResetIdentityDiscoveryService, error) {
+	dynamic := cfg.Gateway.DynamicTokenStatistics
+	location, err := time.LoadLocation(dynamic.Timezone)
+	if err != nil {
+		return nil, err
+	}
+	return tokenstat.NewResetIdentityDiscoveryService(projections, dirty, aggregates, location, dynamic.MySQLBatchSize), nil
+}
+
+func provideQuotaResetService(discovery *tokenstat.ResetIdentityDiscoveryService, store *tokenstatrepo.RedisQuotaResetStore, runtime *tokenstat.RuntimeController, projections *tokenstat.ProjectionAdminService, cfg *config.Config) *tokenstat.QuotaResetService {
+	projections.AttachQuotaResetBaselineReader(store)
+	return tokenstat.NewQuotaResetService(discovery, store, runtime, cfg.Gateway.DynamicTokenStatistics.BatchSize)
+}
+
+func provideDynamicTokenStatisticsBootstrap(client *ent.Client, aggregates *tokenstatrepo.Repository, redisClient *redis.Client, cfg *config.Config, projections *tokenstat.ProjectionAdminService) (*dynamicTokenStatisticsBootstrap, error) {
 	if err := projections.RefreshActive(context.Background()); err != nil {
 		return nil, err
 	}
@@ -90,7 +122,7 @@ func provideDynamicTokenStatisticsBootstrap(client *ent.Client, db *sql.DB, redi
 		return nil, err
 	}
 	tokenstat.SetDefaultPipeline(pipeline)
-	quotaChecker := tokenstat.NewQuotaChecker(tokenstat.NewRedisQuotaCounterReader(redisClient), dynamic.ShardCount)
+	quotaChecker := tokenstat.NewQuotaChecker(tokenstatrepo.NewQuotaReader(redisClient), dynamic.ShardCount)
 	if err := projections.LoadQuotaRules(context.Background(), quotaChecker); err != nil {
 		return nil, err
 	}
@@ -106,7 +138,6 @@ func provideDynamicTokenStatisticsBootstrap(client *ent.Client, db *sql.DB, redi
 		singleQuotaTimeout = 50 * time.Millisecond
 	}
 	tokenstat.SetDefaultQuotaSingleTimeout(singleQuotaTimeout)
-	aggregates := tokenstatrepo.NewRepository(db)
 	syncEngine := tokenstatrepo.NewSyncEngine(redisClient, aggregates, dynamic.MySQLBatchSize)
 	syncEngine.Start(context.Background(), time.Duration(dynamic.SyncIntervalMinutes)*time.Minute)
 	location, err := time.LoadLocation(dynamic.Timezone)

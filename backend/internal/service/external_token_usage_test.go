@@ -14,7 +14,9 @@ type externalTokenDimensionLookupStub struct {
 	user                      *User
 	group                     *Group
 	key                       *APIKey
+	account                   *Account
 	userErr, groupErr, keyErr error
+	accountErr                error
 }
 
 type externalProjectionStub []tokenstat.ProjectionDefinition
@@ -123,15 +125,57 @@ func (s *externalTokenDimensionLookupStub) FindGroupByName(context.Context, stri
 func (s *externalTokenDimensionLookupStub) FindAPIKeyByKey(context.Context, string) (*APIKey, error) {
 	return s.key, s.keyErr
 }
+func (s *externalTokenDimensionLookupStub) FindAccountByName(context.Context, string) (*Account, error) {
+	return s.account, s.accountErr
+}
 
 func validExternalTokenLookup() *externalTokenDimensionLookupStub {
 	groupID := int64(2)
 	return &externalTokenDimensionLookupStub{
-		user:  &User{ID: 1, Email: "ldap@example.com"},
-		group: &Group{ID: groupID, ModelRouting: map[string][]int64{"gpt-main": {3}}},
-		key:   &APIKey{ID: 4, UserID: 1, GroupID: &groupID, Name: "ldap-key", Key: "sk-ldap-key-0123456789"},
+		user:    &User{ID: 1, Email: "ldap@example.com"},
+		group:   &Group{ID: groupID, ModelRouting: map[string][]int64{"gpt-main": {3}}},
+		key:     &APIKey{ID: 4, UserID: 1, GroupID: &groupID, Name: "ldap-key", Key: "sk-ldap-key-0123456789"},
+		account: &Account{ID: 5, Name: "model-account"},
 	}
 }
+
+func TestExternalTokenUsageResolveQuotaResetDimensions(t *testing.T) {
+	svc := NewExternalTokenUsageService(validExternalTokenLookup())
+	username, apiKey, groupName, accountName := " ldap@example.com ", " sk-ldap-key-0123456789 ", " public ", " model-account "
+	routeAlias, upstreamModel := " shared-route ", " claude-sonnet-4 "
+	got, err := svc.ResolveQuotaResetDimensions(context.Background(), ExternalTokenQuotaResetDimensions{
+		Username: &username, APIKey: &apiKey, GroupName: &groupName, AccountName: &accountName,
+		RouteAlias: &routeAlias, UpstreamModel: &upstreamModel,
+	})
+	require.NoError(t, err)
+	require.Equal(t, tokenstat.Int64Value(1), got[tokenstat.DimensionUserID])
+	require.Equal(t, tokenstat.Int64Value(4), got[tokenstat.DimensionAPIKeyID])
+	require.Equal(t, tokenstat.Int64Value(2), got[tokenstat.DimensionGroupID])
+	require.Equal(t, tokenstat.Int64Value(5), got[tokenstat.DimensionAccountID])
+	require.Equal(t, tokenstat.StringValue("shared-route"), got[tokenstat.DimensionRouteAlias])
+	require.Equal(t, tokenstat.StringValue("claude-sonnet-4"), got[tokenstat.DimensionUpstreamModel])
+}
+
+func TestExternalTokenUsageResolveQuotaResetSingleStringDimensions(t *testing.T) {
+	svc := NewExternalTokenUsageService(validExternalTokenLookup())
+	for _, test := range []struct {
+		name  string
+		input ExternalTokenQuotaResetDimensions
+		code  tokenstat.DimensionCode
+		value string
+	}{
+		{name: "route alias without group", input: ExternalTokenQuotaResetDimensions{RouteAlias: stringPointer("shared-route")}, code: tokenstat.DimensionRouteAlias, value: "shared-route"},
+		{name: "upstream model without account", input: ExternalTokenQuotaResetDimensions{UpstreamModel: stringPointer("claude-sonnet-4")}, code: tokenstat.DimensionUpstreamModel, value: "claude-sonnet-4"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := svc.ResolveQuotaResetDimensions(context.Background(), test.input)
+			require.NoError(t, err)
+			require.Equal(t, map[tokenstat.DimensionCode]tokenstat.DimensionValue{test.code: tokenstat.StringValue(test.value)}, got)
+		})
+	}
+}
+
+func stringPointer(value string) *string { return &value }
 
 func TestExternalTokenUsageResolveDimensions(t *testing.T) {
 	svc := NewExternalTokenUsageService(validExternalTokenLookup())

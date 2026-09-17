@@ -252,7 +252,15 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 	affiliateHandler := admin.NewAffiliateHandler(affiliateService, adminService)
 	complianceHandler := admin.NewComplianceHandler(settingService)
 	runtimeController := tokenstat.NewRuntimeController(redisClient, configConfig)
-	dynamicTokenStatisticsHandler := admin.NewDynamicTokenStatisticsHandler(projectionAdminService, runtimeController)
+	currentDirtyIdentityReader := provideCurrentDirtyIdentityReader(redisClient)
+	tokenstatRepository := provideTokenStatRepository(db)
+	resetIdentityDiscoveryService, err := provideResetIdentityDiscoveryService(projectionAdminService, currentDirtyIdentityReader, tokenstatRepository, configConfig)
+	if err != nil {
+		return nil, err
+	}
+	redisQuotaResetStore := provideQuotaResetStore(redisClient, configConfig)
+	quotaResetService := provideQuotaResetService(resetIdentityDiscoveryService, redisQuotaResetStore, runtimeController, projectionAdminService, configConfig)
+	dynamicTokenStatisticsHandler := admin.NewDynamicTokenStatisticsHandler(projectionAdminService, runtimeController, quotaResetService)
 	sceneAccountDailyUsageService, err := service.ProvideSceneAccountDailyUsageService(client, projectionAdminService, runtimeController, configConfig)
 	if err != nil {
 		return nil, err
@@ -283,7 +291,7 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 	if err != nil {
 		return nil, err
 	}
-	externalTokenUsageHandler := handler.NewExternalTokenUsageHandler(externalTokenUsageService)
+	externalTokenUsageHandler := handler.NewExternalTokenUsageHandler(externalTokenUsageService, quotaResetService)
 	externalSceneAccountDailyUsageHandler := handler.NewExternalSceneAccountDailyUsageHandler(sceneAccountDailyUsageService)
 	idempotencyCoordinator := service.ProvideIdempotencyCoordinator(idempotencyRepository, configConfig)
 	idempotencyCleanupService := service.ProvideIdempotencyCleanupService(idempotencyRepository, configConfig)
@@ -295,7 +303,7 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 	rbacRegistry := rbac.NewRegistry()
 	engine := server.ProvideRouter(configConfig, handlers, jwtAuthMiddleware, adminAuthMiddleware, adminIdentityAuthMiddleware, apiKeyAuthMiddleware, apiKeyService, subscriptionService, opsService, settingService, redisClient, permissionService, rbacRegistry)
 	httpServer := server.ProvideHTTPServer(configConfig, engine)
-	mainDynamicTokenStatisticsBootstrap, err := provideDynamicTokenStatisticsBootstrap(client, db, redisClient, configConfig, projectionAdminService)
+	mainDynamicTokenStatisticsBootstrap, err := provideDynamicTokenStatisticsBootstrap(client, tokenstatRepository, redisClient, configConfig, projectionAdminService)
 	if err != nil {
 		return nil, err
 	}
@@ -339,7 +347,34 @@ func provideExternalProvisioningHandler(cfg *config.Config, client *ent.Client, 
 
 type dynamicTokenStatisticsBootstrap struct{}
 
-func provideDynamicTokenStatisticsBootstrap(client *ent.Client, db *sql.DB, redisClient *redis.Client, cfg *config.Config, projections *tokenstat.ProjectionAdminService) (*dynamicTokenStatisticsBootstrap, error) {
+func provideTokenStatRepository(db *sql.DB) *tokenstat2.Repository {
+	return tokenstat2.NewRepository(db)
+}
+
+func provideCurrentDirtyIdentityReader(client *redis.Client) *tokenstat2.CurrentDirtyIdentityReader {
+	return tokenstat2.NewCurrentDirtyIdentityReader(client)
+}
+
+func provideQuotaResetStore(client *redis.Client, cfg *config.Config) *tokenstat2.RedisQuotaResetStore {
+	dynamic := cfg.Gateway.DynamicTokenStatistics
+	return tokenstat2.NewRedisQuotaResetStore(client, dynamic.ShardCount, dynamic.OrphanTTLDays)
+}
+
+func provideResetIdentityDiscoveryService(projections *tokenstat.ProjectionAdminService, dirty *tokenstat2.CurrentDirtyIdentityReader, aggregates *tokenstat2.Repository, cfg *config.Config) (*tokenstat.ResetIdentityDiscoveryService, error) {
+	dynamic := cfg.Gateway.DynamicTokenStatistics
+	location, err := time.LoadLocation(dynamic.Timezone)
+	if err != nil {
+		return nil, err
+	}
+	return tokenstat.NewResetIdentityDiscoveryService(projections, dirty, aggregates, location, dynamic.MySQLBatchSize), nil
+}
+
+func provideQuotaResetService(discovery *tokenstat.ResetIdentityDiscoveryService, store *tokenstat2.RedisQuotaResetStore, runtime *tokenstat.RuntimeController, projections *tokenstat.ProjectionAdminService, cfg *config.Config) *tokenstat.QuotaResetService {
+	projections.AttachQuotaResetBaselineReader(store)
+	return tokenstat.NewQuotaResetService(discovery, store, runtime, cfg.Gateway.DynamicTokenStatistics.BatchSize)
+}
+
+func provideDynamicTokenStatisticsBootstrap(client *ent.Client, aggregates *tokenstat2.Repository, redisClient *redis.Client, cfg *config.Config, projections *tokenstat.ProjectionAdminService) (*dynamicTokenStatisticsBootstrap, error) {
 	if err := projections.RefreshActive(context.Background()); err != nil {
 		return nil, err
 	}
@@ -353,7 +388,7 @@ func provideDynamicTokenStatisticsBootstrap(client *ent.Client, db *sql.DB, redi
 		return nil, err
 	}
 	tokenstat.SetDefaultPipeline(pipeline)
-	quotaChecker := tokenstat.NewQuotaChecker(tokenstat.NewRedisQuotaCounterReader(redisClient), dynamic.ShardCount)
+	quotaChecker := tokenstat.NewQuotaChecker(tokenstat2.NewQuotaReader(redisClient), dynamic.ShardCount)
 	if err := projections.LoadQuotaRules(context.Background(), quotaChecker); err != nil {
 		return nil, err
 	}
@@ -369,7 +404,6 @@ func provideDynamicTokenStatisticsBootstrap(client *ent.Client, db *sql.DB, redi
 		singleQuotaTimeout = 50 * time.Millisecond
 	}
 	tokenstat.SetDefaultQuotaSingleTimeout(singleQuotaTimeout)
-	aggregates := tokenstat2.NewRepository(db)
 	syncEngine := tokenstat2.NewSyncEngine(redisClient, aggregates, dynamic.MySQLBatchSize)
 	syncEngine.Start(context.Background(), time.Duration(dynamic.SyncIntervalMinutes)*time.Minute)
 	location, err := time.LoadLocation(dynamic.Timezone)

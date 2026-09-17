@@ -2797,6 +2797,13 @@ func (s *adminServiceImpl) GetAccountsByIDs(ctx context.Context, ids []int64) ([
 }
 
 func (s *adminServiceImpl) CreateAccount(ctx context.Context, input *CreateAccountInput) (*Account, error) {
+	if input == nil {
+		return nil, ErrAccountNilInput
+	}
+	name, err := validateAccountNameAvailable(ctx, s.accountRepo, input.Name, 0)
+	if err != nil {
+		return nil, err
+	}
 	if err := validateAccountModelMapping(input.Type, input.Credentials); err != nil {
 		return nil, err
 	}
@@ -2825,7 +2832,7 @@ func (s *adminServiceImpl) CreateAccount(ctx context.Context, input *CreateAccou
 	}
 
 	account := &Account{
-		Name:            input.Name,
+		Name:            name,
 		Notes:           normalizeAccountNotes(input.Notes),
 		Platform:        input.Platform,
 		Type:            input.Type,
@@ -2915,7 +2922,11 @@ func (s *adminServiceImpl) UpdateAccount(ctx context.Context, id int64, input *U
 	wasOveragesEnabled := account.IsOveragesEnabled()
 
 	if input.Name != "" {
-		account.Name = input.Name
+		name, nameErr := validateAccountNameAvailable(ctx, s.accountRepo, input.Name, id)
+		if nameErr != nil {
+			return nil, nameErr
+		}
+		account.Name = name
 	}
 	if input.Type != "" {
 		account.Type = input.Type
