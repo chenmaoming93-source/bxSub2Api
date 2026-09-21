@@ -1,6 +1,6 @@
 <template>
-  <AppLayout>
-    <div class="space-y-6 p-4 sm:p-6">
+  <component :is="embedded ? 'div' : AppLayout" :class="{ 'ui-v2-embedded-page': embedded }">
+    <div class="space-y-6" :class="embedded ? '' : 'p-4 sm:p-6'">
       <header class="overflow-hidden rounded-2xl border border-primary-100 bg-gradient-to-br from-primary-50 via-white to-indigo-50 p-6 shadow-sm dark:border-primary-900/40 dark:from-primary-950/40 dark:via-dark-800 dark:to-indigo-950/30">
         <div class="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
           <div>
@@ -314,10 +314,11 @@
       @confirm="confirmDeleteQuota"
       @cancel="deletingQuota = undefined"
     />
-  </AppLayout>
+  </component>
 </template>
 
 <script setup lang="ts">
+defineOptions({ name: 'TokenStatisticsView' })
 import { computed, onMounted, reactive, ref } from 'vue'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import Icon from '@/components/icons/Icon.vue'
@@ -331,6 +332,8 @@ import * as groupsAPI from '@/api/admin/groups'
 import * as accountsAPI from '@/api/admin/accounts'
 import { usePermission } from '@/composables/usePermission'
 import type { Account, AdminGroup, AdminUser, SelectOption } from '@/types'
+
+withDefaults(defineProps<{ embedded?: boolean }>(), { embedded: false })
 
 const { can } = usePermission()
 const tabs = [

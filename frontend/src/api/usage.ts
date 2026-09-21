@@ -11,6 +11,7 @@ import type {
   PaginatedResponse,
   TrendDataPoint,
   ModelStat,
+  GroupStat,
   UserErrorRequest,
   UserErrorRequestDetail,
   UserErrorListParams
@@ -70,6 +71,42 @@ export interface ModelStatsResponse {
   models: ModelStat[]
   start_date: string
   end_date: string
+}
+
+export interface UserDashboardGroupStatsResponse {
+  groups: GroupStat[]
+  start_date: string
+  end_date: string
+  limit: number
+}
+
+export interface UserLatencyTrendPoint {
+  date: string
+  requests: number
+  average_duration_ms: number
+}
+
+export interface UserLatencyTrendResponse {
+  trend: UserLatencyTrendPoint[]
+  start_date: string
+  end_date: string
+  granularity: string
+  limit: number
+}
+
+export interface UserLatencyPercentiles {
+  p50: number | null
+  p90: number | null
+  p95: number | null
+  p99: number | null
+  sample_count: number
+}
+
+export interface UserLatencyPercentilesResponse {
+  percentiles: UserLatencyPercentiles
+  start_date: string
+  end_date: string
+  limit: number
 }
 
 export interface ApiKeyDailyUsagePoint {
@@ -256,6 +293,37 @@ export async function getDashboardModels(params?: {
   return data
 }
 
+export async function getDashboardGroups(params: {
+  start_date?: string
+  end_date?: string
+  timezone?: string
+  limit?: number
+} = {}): Promise<UserDashboardGroupStatsResponse> {
+  const { data } = await apiClient.get<UserDashboardGroupStatsResponse>('/usage/dashboard/groups', { params })
+  return data
+}
+
+export async function getDashboardLatencyTrend(params: {
+  start_date?: string
+  end_date?: string
+  timezone?: string
+  granularity?: 'hour' | 'day' | 'week' | 'month'
+  limit?: number
+} = {}): Promise<UserLatencyTrendResponse> {
+  const { data } = await apiClient.get<UserLatencyTrendResponse>('/usage/dashboard/latency-trend', { params })
+  return data
+}
+
+export async function getDashboardLatencyPercentiles(params: {
+  start_date?: string
+  end_date?: string
+  timezone?: string
+  limit?: number
+} = {}): Promise<UserLatencyPercentilesResponse> {
+  const { data } = await apiClient.get<UserLatencyPercentilesResponse>('/usage/dashboard/latency-percentiles', { params })
+  return data
+}
+
 /**
  * Get daily usage details for one API key owned by the current user.
  * @param apiKeyId - API key ID
@@ -334,6 +402,9 @@ export const usageAPI = {
   getDashboardStats,
   getDashboardTrend,
   getDashboardModels,
+  getDashboardGroups,
+  getDashboardLatencyTrend,
+  getDashboardLatencyPercentiles,
   getMyApiKeyDailyUsage,
   getDashboardApiKeysUsage,
   // Error requests

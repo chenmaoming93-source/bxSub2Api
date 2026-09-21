@@ -76,6 +76,56 @@ export interface OpsPercentiles {
   max_ms?: number | null
 }
 
+export interface OpsModelLatencyPercentile {
+  model: string
+  request_count: number
+  avg_ms?: number | null
+  p50_ms?: number | null
+  p90_ms?: number | null
+  p95_ms?: number | null
+  p99_ms?: number | null
+}
+
+export interface OpsModelLatencyPercentilesResponse {
+  start_time: string
+  end_time: string
+  platform: string
+  group_id?: number | null
+  model: string
+  models: OpsModelLatencyPercentile[]
+}
+
+export interface OpsModelLatencyTrendPoint {
+  bucket_start: string
+  model: string
+  request_count: number
+  avg_ms?: number | null
+  p50_ms?: number | null
+  p90_ms?: number | null
+  p95_ms?: number | null
+  p99_ms?: number | null
+}
+
+export interface OpsModelLatencyTrendResponse {
+  start_time: string
+  end_time: string
+  platform: string
+  group_id?: number | null
+  model: string
+  bucket: string
+  points: OpsModelLatencyTrendPoint[]
+}
+
+export interface OpsModelLatencyParams {
+  time_range?: '5m' | '30m' | '1h' | '6h' | '24h'
+  start_time?: string
+  end_time?: string
+  platform?: string
+  group_id?: number | null
+  model?: string
+  mode?: OpsQueryMode
+}
+
 export interface OpsThroughputTrendPoint {
   bucket_start: string
   request_count: number
@@ -976,6 +1026,28 @@ export async function getDashboardOverview(
   return data
 }
 
+export async function getDashboardModelLatencyPercentiles(
+  params: OpsModelLatencyParams,
+  options: OpsRequestOptions = {}
+): Promise<OpsModelLatencyPercentilesResponse> {
+  const { data } = await apiClient.get<OpsModelLatencyPercentilesResponse>('/admin/ops/dashboard/model-latency-percentiles', {
+    params,
+    signal: options.signal
+  })
+  return data
+}
+
+export async function getDashboardModelLatencyTrend(
+  params: OpsModelLatencyParams,
+  options: OpsRequestOptions = {}
+): Promise<OpsModelLatencyTrendResponse> {
+  const { data } = await apiClient.get<OpsModelLatencyTrendResponse>('/admin/ops/dashboard/model-latency-trend', {
+    params,
+    signal: options.signal
+  })
+  return data
+}
+
 export async function getDashboardSnapshotV2(
   params: {
   time_range?: '5m' | '30m' | '1h' | '6h' | '24h'
@@ -1300,6 +1372,8 @@ async function updateMetricThresholds(thresholds: OpsMetricThresholds): Promise<
 export const opsAPI = {
   getDashboardSnapshotV2,
   getDashboardOverview,
+  getDashboardModelLatencyPercentiles,
+  getDashboardModelLatencyTrend,
   getThroughputTrend,
   getLatencyHistogram,
   getErrorTrend,

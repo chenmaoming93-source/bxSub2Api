@@ -510,6 +510,146 @@ func (h *UsageHandler) DashboardModels(c *gin.Context) {
 	})
 }
 
+const (
+	defaultUserDashboardLimit       = 20
+	maxUserDashboardLimit           = 100
+	defaultUserLatencySampleLimit   = 10000
+	maxUserLatencySampleLimit       = 100000
+	maxUserDashboardDateRangeInDays = 366
+)
+
+func parseStrictUserDashboardRange(c *gin.Context) (time.Time, time.Time, bool) {
+	userTZ := c.Query("timezone")
+	now := timezone.NowInUserLocation(userTZ)
+	startTime := timezone.StartOfDayInUserLocation(now.AddDate(0, 0, -7), userTZ)
+	endTime := timezone.StartOfDayInUserLocation(now.AddDate(0, 0, 1), userTZ)
+	var err error
+	if raw := strings.TrimSpace(c.Query("start_date")); raw != "" {
+		startTime, err = timezone.ParseInUserLocation("2006-01-02", raw, userTZ)
+		if err != nil {
+			response.BadRequest(c, "Invalid start_date format, use YYYY-MM-DD")
+			return time.Time{}, time.Time{}, false
+		}
+	}
+	if raw := strings.TrimSpace(c.Query("end_date")); raw != "" {
+		endTime, err = timezone.ParseInUserLocation("2006-01-02", raw, userTZ)
+		if err != nil {
+			response.BadRequest(c, "Invalid end_date format, use YYYY-MM-DD")
+			return time.Time{}, time.Time{}, false
+		}
+		endTime = endTime.AddDate(0, 0, 1)
+	}
+	if !startTime.Before(endTime) {
+		response.BadRequest(c, "start_date must not be after end_date")
+		return time.Time{}, time.Time{}, false
+	}
+	if endTime.Sub(startTime) > maxUserDashboardDateRangeInDays*24*time.Hour {
+		response.BadRequest(c, "Date range cannot exceed 366 days")
+		return time.Time{}, time.Time{}, false
+	}
+	return startTime, endTime, true
+}
+
+func parseBoundedDashboardLimit(c *gin.Context, defaultLimit, maxLimit int) (int, bool) {
+	raw := strings.TrimSpace(c.Query("limit"))
+	if raw == "" {
+		return defaultLimit, true
+	}
+	limit, err := strconv.Atoi(raw)
+	if err != nil || limit <= 0 || limit > maxLimit {
+		response.BadRequest(c, "Invalid limit")
+		return 0, false
+	}
+	return limit, true
+}
+
+func parseUserDashboardGranularity(c *gin.Context) (string, bool) {
+	granularity := strings.TrimSpace(c.DefaultQuery("granularity", "day"))
+	switch granularity {
+	case "hour", "day", "week", "month":
+		return granularity, true
+	default:
+		response.BadRequest(c, "Invalid granularity, allowed values: hour, day, week, month")
+		return "", false
+	}
+}
+
+// DashboardGroups returns current-user scene/group token usage.
+// GET /api/v1/usage/dashboard/groups
+func (h *UsageHandler) DashboardGroups(c *gin.Context) {
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+	startTime, endTime, ok := parseStrictUserDashboardRange(c)
+	if !ok {
+		return
+	}
+	limit, ok := parseBoundedDashboardLimit(c, defaultUserDashboardLimit, maxUserDashboardLimit)
+	if !ok {
+		return
+	}
+	groups, err := h.usageService.GetUserGroupStats(c.Request.Context(), subject.UserID, startTime, endTime, limit)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, gin.H{"groups": groups, "start_date": startTime.Format("2006-01-02"), "end_date": endTime.AddDate(0, 0, -1).Format("2006-01-02"), "limit": limit})
+}
+
+// DashboardLatencyTrend returns current-user average latency buckets.
+// GET /api/v1/usage/dashboard/latency-trend
+func (h *UsageHandler) DashboardLatencyTrend(c *gin.Context) {
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+	startTime, endTime, ok := parseStrictUserDashboardRange(c)
+	if !ok {
+		return
+	}
+	granularity, ok := parseUserDashboardGranularity(c)
+	if !ok {
+		return
+	}
+	limit, ok := parseBoundedDashboardLimit(c, maxUserDashboardLimit, maxUserDashboardLimit)
+	if !ok {
+		return
+	}
+	trend, err := h.usageService.GetUserLatencyTrend(c.Request.Context(), subject.UserID, startTime, endTime, granularity, limit)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, gin.H{"trend": trend, "start_date": startTime.Format("2006-01-02"), "end_date": endTime.AddDate(0, 0, -1).Format("2006-01-02"), "granularity": granularity, "limit": limit})
+}
+
+// DashboardLatencyPercentiles returns current-user request duration percentiles.
+// GET /api/v1/usage/dashboard/latency-percentiles
+func (h *UsageHandler) DashboardLatencyPercentiles(c *gin.Context) {
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+	startTime, endTime, ok := parseStrictUserDashboardRange(c)
+	if !ok {
+		return
+	}
+	limit, ok := parseBoundedDashboardLimit(c, defaultUserLatencySampleLimit, maxUserLatencySampleLimit)
+	if !ok {
+		return
+	}
+	percentiles, err := h.usageService.GetUserLatencyPercentiles(c.Request.Context(), subject.UserID, startTime, endTime, limit)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, gin.H{"percentiles": percentiles, "start_date": startTime.Format("2006-01-02"), "end_date": endTime.AddDate(0, 0, -1).Format("2006-01-02"), "limit": limit})
+}
+
 // BatchAPIKeysUsageRequest represents the request for batch API keys usage
 type BatchAPIKeysUsageRequest struct {
 	APIKeyIDs []int64 `json:"api_key_ids" binding:"required"`

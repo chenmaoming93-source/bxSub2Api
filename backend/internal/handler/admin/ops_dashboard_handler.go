@@ -136,6 +136,90 @@ func (h *OpsHandler) GetDashboardLatencyHistogram(c *gin.Context) {
 	response.Success(c, data)
 }
 
+// GetDashboardModelLatencyPercentiles returns request latency percentiles grouped by model.
+// GET /api/v1/admin/ops/dashboard/model-latency-percentiles
+func (h *OpsHandler) GetDashboardModelLatencyPercentiles(c *gin.Context) {
+	if h.opsService == nil {
+		response.Error(c, http.StatusServiceUnavailable, "Ops service not available")
+		return
+	}
+	if err := h.opsService.RequireMonitoringEnabled(c.Request.Context()); err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+
+	filter, err := parseOpsModelLatencyFilter(c)
+	if err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+	data, err := h.opsService.GetModelLatencyPercentiles(c.Request.Context(), filter)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, data)
+}
+
+// GetDashboardModelLatencyTrend returns bucketed request latency percentiles grouped by model.
+// GET /api/v1/admin/ops/dashboard/model-latency-trend
+func (h *OpsHandler) GetDashboardModelLatencyTrend(c *gin.Context) {
+	if h.opsService == nil {
+		response.Error(c, http.StatusServiceUnavailable, "Ops service not available")
+		return
+	}
+	if err := h.opsService.RequireMonitoringEnabled(c.Request.Context()); err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+
+	filter, err := parseOpsModelLatencyFilter(c)
+	if err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+	bucketSeconds := pickThroughputBucketSeconds(filter.EndTime.Sub(filter.StartTime))
+	data, err := h.opsService.GetModelLatencyTrend(c.Request.Context(), filter, bucketSeconds)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, data)
+}
+
+func parseOpsModelLatencyFilter(c *gin.Context) (*service.OpsDashboardFilter, error) {
+	if c == nil {
+		return nil, fmt.Errorf("invalid request")
+	}
+	startTime, endTime, err := parseOpsTimeRange(c, "1h")
+	if err != nil {
+		return nil, err
+	}
+	platform := strings.TrimSpace(c.Query("platform"))
+	if len(platform) > 64 {
+		return nil, fmt.Errorf("invalid platform: max length is 64")
+	}
+	model := strings.TrimSpace(c.Query("model"))
+	if len(model) > 255 {
+		return nil, fmt.Errorf("invalid model: max length is 255")
+	}
+	filter := &service.OpsDashboardFilter{
+		StartTime: startTime,
+		EndTime:   endTime,
+		Platform:  platform,
+		Model:     model,
+		QueryMode: parseOpsQueryMode(c),
+	}
+	if value := strings.TrimSpace(c.Query("group_id")); value != "" {
+		groupID, parseErr := strconv.ParseInt(value, 10, 64)
+		if parseErr != nil || groupID <= 0 {
+			return nil, fmt.Errorf("invalid group_id")
+		}
+		filter.GroupID = &groupID
+	}
+	return filter, nil
+}
+
 // GetDashboardErrorTrend returns error counts time series (raw path).
 // GET /api/v1/admin/ops/dashboard/error-trend
 func (h *OpsHandler) GetDashboardErrorTrend(c *gin.Context) {

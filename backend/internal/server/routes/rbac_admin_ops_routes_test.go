@@ -14,6 +14,8 @@ func TestRBACAdminOpsReadWriteAndWebSocketPermissions(t *testing.T) {
 	source := string(data)
 	for _, check := range []string{
 		`"/qps", rbac.PermissionOpsRead`,
+		`"/dashboard/model-latency-percentiles", rbac.PermissionOpsRead`,
+		`"/dashboard/model-latency-trend", rbac.PermissionOpsRead`,
 		`"/alert-rules", rbac.PermissionOpsUpdate`,
 		`"/errors/:id/resolve", rbac.PermissionOpsLogsManage`,
 		`"/system-logs/cleanup", rbac.PermissionOpsLogsManage`,

@@ -194,7 +194,7 @@ const rawRoutes: RouteRecordRaw[] = [
   {
     path: '/dashboard',
     name: 'Dashboard',
-    component: () => import('@/views/user/DashboardView.vue'),
+    component: () => import('@/views/user/UserDashboardV2View.vue'),
     meta: {
       requiresAuth: true,
       title: 'Dashboard',
@@ -216,7 +216,7 @@ const rawRoutes: RouteRecordRaw[] = [
   {
     path: '/usage',
     name: 'Usage',
-    component: () => import('@/views/user/UsageView.vue'),
+    component: () => import('@/views/user/UserUsageV2View.vue'),
     meta: {
       requiresAuth: true,
       title: 'Usage Records',
@@ -375,7 +375,7 @@ const rawRoutes: RouteRecordRaw[] = [
   {
     path: '/admin/dashboard',
     name: 'AdminDashboard',
-    component: () => import('@/views/admin/DashboardView.vue'),
+    component: () => import('@/views/admin/AdminDashboardV2View.vue'),
     meta: {
       requiresAuth: true,
       title: 'Admin Dashboard',
@@ -386,7 +386,7 @@ const rawRoutes: RouteRecordRaw[] = [
   {
     path: '/admin/ops',
     name: 'AdminOps',
-    component: () => import('@/views/admin/ops/OpsDashboard.vue'),
+    component: () => import('@/views/admin/ops/AdminOpsV2View.vue'),
     meta: {
       requiresAuth: true,
       title: 'Ops Monitoring',
@@ -408,7 +408,7 @@ const rawRoutes: RouteRecordRaw[] = [
   {
     path: '/admin/roles',
     name: 'AdminRoles',
-    component: () => import('@/views/admin/RolesView.vue'),
+    component: () => import('@/views/admin/RolesV2View.vue'),
     meta: {
       requiresAuth: true,
       title: 'Roles'
@@ -417,48 +417,12 @@ const rawRoutes: RouteRecordRaw[] = [
   {
     path: '/admin/groups',
     name: 'AdminGroups',
-    component: () => import('@/views/admin/GroupsView.vue'),
+    component: () => import('@/views/admin/GroupsV2View.vue'),
     meta: {
       requiresAuth: true,
       title: 'Group Management',
       titleKey: 'admin.groups.title',
       descriptionKey: 'admin.groups.description'
-    }
-  },
-  {
-    path: '/admin/default-group-routing',
-    name: 'AdminDefaultGroupRouting',
-    component: () => import('@/views/admin/DefaultGroupRoutingView.vue'),
-    meta: {
-      requiresAuth: true,
-      titleKey: 'admin.defaultGroupRouting.title',
-      descriptionKey: 'admin.defaultGroupRouting.description'
-    }
-  },
-  {
-    path: '/admin/channels',
-    redirect: '/admin/channels/pricing'
-  },
-  {
-    path: '/admin/channels/pricing',
-    name: 'AdminChannels',
-    component: () => import('@/views/admin/ChannelsView.vue'),
-    meta: {
-      requiresAuth: true,
-      title: 'Channel Management',
-      titleKey: 'admin.channels.title',
-      descriptionKey: 'admin.channels.description'
-    }
-  },
-  {
-    path: '/admin/channels/monitor',
-    name: 'AdminChannelMonitor',
-    component: () => import('@/views/admin/ChannelMonitorView.vue'),
-    meta: {
-      requiresAuth: true,
-      title: 'Channel Monitor',
-      titleKey: 'admin.channelMonitor.title',
-      descriptionKey: 'admin.channelMonitor.description'
     }
   },
   {
@@ -472,20 +436,9 @@ const rawRoutes: RouteRecordRaw[] = [
     }
   },
   {
-    path: '/admin/subscriptions',
-    name: 'AdminSubscriptions',
-    component: () => import('@/views/admin/SubscriptionsView.vue'),
-    meta: {
-      requiresAuth: true,
-      title: 'Subscription Management',
-      titleKey: 'admin.subscriptions.title',
-      descriptionKey: 'admin.subscriptions.description'
-    }
-  },
-  {
     path: '/admin/accounts',
     name: 'AdminAccounts',
-    component: () => import('@/views/admin/AccountsView.vue'),
+    component: () => import('@/views/admin/AccountsV2View.vue'),
     meta: {
       requiresAuth: true,
       title: 'Account Management',
@@ -494,53 +447,9 @@ const rawRoutes: RouteRecordRaw[] = [
     }
   },
   {
-    path: '/admin/announcements',
-    name: 'AdminAnnouncements',
-    component: () => import('@/views/admin/AnnouncementsView.vue'),
-    meta: {
-      requiresAuth: true,
-      title: 'Announcements',
-      titleKey: 'admin.announcements.title',
-      descriptionKey: 'admin.announcements.description'
-    }
-  },
-  {
-    path: '/admin/proxies',
-    name: 'AdminProxies',
-    component: () => import('@/views/admin/ProxiesView.vue'),
-    meta: {
-      requiresAuth: true,
-      title: 'Proxy Management',
-      titleKey: 'admin.proxies.title',
-      descriptionKey: 'admin.proxies.description'
-    }
-  },
-  {
-    path: '/admin/redeem',
-    name: 'AdminRedeem',
-    component: () => import('@/views/admin/RedeemView.vue'),
-    meta: {
-      requiresAuth: true,
-      title: 'Redeem Code Management',
-      titleKey: 'admin.redeem.title',
-      descriptionKey: 'admin.redeem.description'
-    }
-  },
-  {
-    path: '/admin/promo-codes',
-    name: 'AdminPromoCodes',
-    component: () => import('@/views/admin/PromoCodesView.vue'),
-    meta: {
-      requiresAuth: true,
-      title: 'Promo Code Management',
-      titleKey: 'admin.promo.title',
-      descriptionKey: 'admin.promo.description'
-    }
-  },
-  {
     path: '/admin/settings',
     name: 'AdminSettings',
-    component: () => import('@/views/admin/SettingsView.vue'),
+    component: () => import('@/views/admin/SettingsV2View.vue'),
     meta: {
       requiresAuth: true,
       title: 'System Settings',
@@ -563,7 +472,7 @@ const rawRoutes: RouteRecordRaw[] = [
   {
     path: '/admin/usage',
     name: 'AdminUsage',
-    component: () => import('@/views/admin/UsageView.vue'),
+    component: () => import('@/views/admin/AdminUsageV2View.vue'),
     meta: {
       requiresAuth: true,
       title: 'Usage Records',
@@ -583,7 +492,7 @@ const rawRoutes: RouteRecordRaw[] = [
   {
     path: '/admin/token-statistics',
     name: 'AdminTokenStatistics',
-    component: () => import('@/views/admin/TokenStatisticsView.vue'),
+    component: () => import('@/views/admin/TokenStatisticsV2View.vue'),
     meta: {
       requiresAuth: true,
       title: 'Configurable Token Statistics'
@@ -852,8 +761,6 @@ router.beforeEach(async (to, _from, next) => {
   if (authStore.isSimpleMode) {
     const restrictedPaths = [
       '/admin/groups',
-      '/admin/subscriptions',
-      '/admin/redeem',
       '/subscriptions',
       '/redeem'
     ]

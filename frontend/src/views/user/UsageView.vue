@@ -1,8 +1,8 @@
 <template>
-  <AppLayout>
+  <component :is="embedded ? 'div' : AppLayout">
     <TablePageLayout>
       <template #actions>
-        <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <div v-if="!compact" class="grid grid-cols-2 gap-4 lg:grid-cols-4">
           <!-- Total Requests -->
           <div class="card p-4">
           <div class="flex items-center gap-3">
@@ -398,7 +398,7 @@
         />
       </template>
     </TablePageLayout>
-  </AppLayout>
+  </component>
 
   <!-- Token Tooltip Portal -->
   <Teleport to="body">
@@ -646,6 +646,9 @@ import {
   hasImageOutputCost,
 } from '@/utils/imageUsage'
 
+const props = withDefaults(defineProps<{ compact?: boolean; embedded?: boolean }>(), { compact: false, embedded: false })
+const compact = computed(() => props.compact)
+const embedded = computed(() => props.embedded)
 const { t } = useI18n()
 const appStore = useAppStore()
 
@@ -1117,6 +1120,6 @@ const switchToErrors = () => {
 onMounted(() => {
   loadApiKeys()
   loadUsageLogs()
-  loadUsageStats()
+  if (!props.compact) loadUsageStats()
 })
 </script>

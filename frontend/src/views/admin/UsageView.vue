@@ -1,6 +1,7 @@
 <template>
-  <AppLayout>
+  <component :is="embedded ? 'div' : AppLayout">
     <div class="space-y-6">
+      <template v-if="!compact">
       <UsageStatsCards :stats="usageStats" />
       <!-- Charts Section -->
       <div class="space-y-4">
@@ -143,7 +144,17 @@
            <p class="text-xs text-gray-500 dark:text-gray-400">{{ t('admin.usage.sceneUsage.meta', { timezone: sceneUsage.timezone, syncedAt: sceneUsage.last_synced_at || '-' }) }}</p>
          </div>
        </section>
-       <UsageFilters v-model="filters" :start-date="startDate" :end-date="endDate" :exporting="exporting" :model-options="modelNameOptions" @change="applyFilters" @refresh="refreshData" @reset="resetFilters" @cleanup="openCleanupDialog" @export="exportToExcel">
+       </template>
+      <div v-if="compact" class="admin-usage-v2__tabs">
+        <button type="button" :class="{ 'admin-usage-v2__tab--active': activeTab === 'usage' }" @click="activeTab = 'usage'">用量明细</button>
+        <button type="button" :class="{ 'admin-usage-v2__tab--active': activeTab === 'errors' }" @click="switchToErrorsTab">错误请求</button>
+      </div>
+      <div v-if="compact" class="admin-usage-v2__range-bar">
+        <span>日期范围</span>
+        <DateRangePicker v-model:start-date="startDate" v-model:end-date="endDate" @change="onDateRangeChange" />
+        <button type="button" class="btn btn-primary" @click="applyFilters">查询</button>
+      </div>
+        <UsageFilters v-model="filters" :start-date="startDate" :end-date="endDate" :exporting="exporting" :model-options="modelNameOptions" @change="applyFilters" @refresh="refreshData" @reset="resetFilters" @cleanup="openCleanupDialog" @export="exportToExcel">
         <template #after-reset>
           <div class="relative" ref="columnDropdownRef">
             <button
@@ -180,7 +191,7 @@
 
       </template>
        </UsageFilters>
-      <div class="mb-4 flex gap-2 border-b border-gray-200 dark:border-dark-700">
+      <div v-if="!compact" class="mb-4 flex gap-2 border-b border-gray-200 dark:border-dark-700">
         <button class="tab" :class="{ 'tab-active': activeTab === 'usage' }" @click="activeTab = 'usage'">
           {{ t('usage.tabs.usage') }}
         </button>
@@ -238,7 +249,7 @@
       </template>
     </BaseDialog>
     </div>
-  </AppLayout>
+  </component>
   <UsageExportProgress :show="exportProgress.show" :progress="exportProgress.progress" :current="exportProgress.current" :total="exportProgress.total" :estimated-time="exportProgress.estimatedTime" @cancel="cancelExport" />
   <UsageCleanupDialog
     :show="cleanupDialogVisible"
@@ -281,6 +292,9 @@ import DepartmentUserUsageChart from '@/components/charts/DepartmentUserUsageCha
 import Icon from '@/components/icons/Icon.vue'
 import type { AdminUsageLog, TrendDataPoint, ModelStat, GroupStat, EndpointStat, AdminUser, AdminGroup } from '@/types'; import type { AdminUsageStatsResponse, AdminUsageQueryParams, SceneAccountDailyUsageResponse, DepartmentUsageResponse, DepartmentUserUsageResponse } from '@/api/admin/usage'
 
+const props = withDefaults(defineProps<{ compact?: boolean; embedded?: boolean }>(), { compact: false, embedded: false })
+const compact = computed(() => props.compact)
+const embedded = computed(() => props.embedded)
 const { t } = useI18n()
 const appStore = useAppStore()
 type DistributionMetric = 'tokens' | 'actual_cost'
@@ -680,13 +694,15 @@ const loadSceneUsage = async () => {
 }
 
 const applyFilters = () => {
-  loadSceneUsage()
+  if (!props.compact) {
+    loadSceneUsage()
+    invalidateModelStatsCache()
+    loadStats()
+    loadModelStats(modelDistributionSource.value, true)
+    loadChartData()
+  }
   pagination.page = 1
-  invalidateModelStatsCache()
   loadLogs()
-  loadStats()
-  loadModelStats(modelDistributionSource.value, true)
-  loadChartData()
   errPage.value = 1
   if (activeTab.value === 'errors') {
     loadAdminErrors()
@@ -695,13 +711,15 @@ const applyFilters = () => {
   }
 }
 const refreshData = () => {
-  loadDepartmentStats()
-  loadSceneUsage()
-  invalidateModelStatsCache()
+  if (!props.compact) {
+    loadDepartmentStats()
+    loadSceneUsage()
+    invalidateModelStatsCache()
+    loadStats(true)
+    loadModelStats(modelDistributionSource.value, true)
+    loadChartData()
+  }
   loadLogs()
-  loadStats(true)
-  loadModelStats(modelDistributionSource.value, true)
-  loadChartData()
   if (activeTab.value === 'errors') loadAdminErrors()
 }
 const resetFilters = () => {
@@ -912,16 +930,18 @@ const handleColumnClickOutside = (event: MouseEvent) => {
 
 onMounted(() => {
   applyRouteQueryFilters()
-  loadSceneGroupOptions()
-  loadDepartmentStats()
-  loadSceneUsage()
   loadLogs()
-  loadStats()
-  loadModelStats(modelDistributionSource.value, true)
-  window.setTimeout(() => {
-    void loadChartData()
-  }, 120)
   loadSavedColumns()
+  if (!props.compact) {
+    loadSceneGroupOptions()
+    loadDepartmentStats()
+    loadSceneUsage()
+    loadStats()
+    loadModelStats(modelDistributionSource.value, true)
+    window.setTimeout(() => {
+      void loadChartData()
+    }, 120)
+  }
   document.addEventListener('click', handleColumnClickOutside)
 })
 onUnmounted(() => { abortController?.abort(); exportAbortController?.abort(); document.removeEventListener('click', handleColumnClickOutside) })
@@ -932,3 +952,11 @@ watch(modelDistributionSource, (source) => {
 
 defineExpose({ requestedModelStats, refreshData })
 </script>
+
+<style scoped>
+.admin-usage-v2__tabs { display: flex; gap: 1.5rem; margin-bottom: 1rem; border-bottom: 1px solid var(--ui-v2-border); }
+.admin-usage-v2__tabs button { padding: .7rem .25rem; border: 0; border-bottom: 2px solid transparent; color: var(--ui-v2-muted); background: transparent; font-weight: 650; cursor: pointer; }
+.admin-usage-v2__tabs button:hover, .admin-usage-v2__tab--active { color: var(--ui-v2-primary) !important; border-bottom-color: var(--ui-v2-primary) !important; }
+.admin-usage-v2__range-bar { display: flex; flex-wrap: wrap; align-items: center; gap: .75rem; padding: .9rem 1rem; border: 1px solid var(--ui-v2-border); border-radius: 12px; background: var(--ui-v2-card); }
+.admin-usage-v2__range-bar > span { color: var(--ui-v2-text); font-size: .8125rem; font-weight: 700; }
+</style>

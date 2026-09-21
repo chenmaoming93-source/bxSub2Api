@@ -1,5 +1,5 @@
 <template>
-  <AppLayout>
+  <component :is="embedded ? 'div' : AppLayout" :class="{ 'ui-v2-embedded-page': embedded }">
     <div class="mx-auto max-w-6xl space-y-6">
       <!-- Loading State -->
       <div v-if="loading" class="flex items-center justify-center py-12">
@@ -5424,15 +5424,6 @@
             <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
               {{ t('admin.settings.features.channelMonitor.description') }}
             </p>
-            <p class="mt-1.5 text-xs">
-              <router-link
-                to="/admin/channels/monitor"
-                class="inline-flex items-center gap-1 text-primary-600 hover:underline dark:text-primary-400"
-              >
-                {{ t('admin.settings.features.channelMonitor.configureLink') }}
-                <span aria-hidden="true">→</span>
-              </router-link>
-            </p>
           </div>
           <div class="space-y-5 p-6">
             <div class="flex items-center justify-between">
@@ -5473,15 +5464,6 @@
             </h2>
             <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
               {{ t('admin.settings.features.availableChannels.description') }}
-            </p>
-            <p class="mt-1.5 text-xs">
-              <router-link
-                to="/admin/channels/pricing"
-                class="inline-flex items-center gap-1 text-primary-600 hover:underline dark:text-primary-400"
-              >
-                {{ t('admin.settings.features.availableChannels.configureLink') }}
-                <span aria-hidden="true">→</span>
-              </router-link>
             </p>
           </div>
           <div class="space-y-5 p-6">
@@ -6946,10 +6928,11 @@
         @cancel="cancelAffiliateConfirm"
       />
     </div>
-  </AppLayout>
+  </component>
 </template>
 
 <script setup lang="ts">
+defineOptions({ name: 'SettingsView' })
 import { ref, reactive, computed, onMounted, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { adminAPI } from "@/api";
@@ -7009,6 +6992,8 @@ import {
   normalizeRegistrationEmailSuffixDomains,
   parseRegistrationEmailSuffixWhitelistInput,
 } from "@/utils/registrationEmailPolicy";
+
+withDefaults(defineProps<{ embedded?: boolean }>(), { embedded: false });
 
 const { t, locale } = useI18n();
 const appStore = useAppStore();

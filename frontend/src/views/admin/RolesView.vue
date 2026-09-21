@@ -1,6 +1,6 @@
 <template>
-  <AppLayout>
-    <div class="space-y-6 p-6">
+  <component :is="embedded ? 'div' : AppLayout" :class="{ 'ui-v2-embedded-page': embedded }">
+    <div class="space-y-6" :class="{ 'p-6': !embedded }">
       <div class="flex items-center justify-between">
         <div><h1 class="text-2xl font-semibold">角色与权限</h1><p class="text-sm text-gray-500">权限编码由系统维护，角色可组合授权。</p></div>
         <div class="flex gap-2">
@@ -72,15 +72,18 @@
         </form>
       </div>
     </div>
-  </AppLayout>
+  </component>
 </template>
 
 <script setup lang="ts">
+defineOptions({ name: 'RolesView' })
 import { computed, onMounted, ref } from 'vue'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import { adminAPI } from '@/api/admin'
 import type { RBACPermission, RBACRole } from '@/api/admin/rbac'
 import { usePermission } from '@/composables/usePermission'
+
+withDefaults(defineProps<{ embedded?: boolean }>(), { embedded: false })
 
 const { can } = usePermission()
 const roles = ref<RBACRole[]>([])

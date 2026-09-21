@@ -1,5 +1,5 @@
 <template>
-  <AppLayout>
+  <component :is="embedded ? 'div' : AppLayout" :class="{ 'ui-v2-embedded-page': embedded }">
     <TablePageLayout>
       <template #filters>
         <div
@@ -3056,10 +3056,11 @@
       :group="concurrencyViewGroup"
       @close="showConcurrencyViewModal = false"
     />
-  </AppLayout>
+  </component>
 </template>
 
 <script setup lang="ts">
+defineOptions({ name: 'GroupsView' })
 import { ref, reactive, computed, onMounted, onUnmounted, watch } from "vue";
 import { useI18n } from "vue-i18n";
 import { useAppStore } from "@/stores/app";
@@ -3120,6 +3121,8 @@ import {
   type ModelRoutingValidationCode,
 } from "./groupsModelRouting";
 import { extractUpstreamModel } from "@/components/admin/group/groupModelRoutingEditor";
+
+withDefaults(defineProps<{ embedded?: boolean }>(), { embedded: false });
 
 const { t } = useI18n();
 const appStore = useAppStore();

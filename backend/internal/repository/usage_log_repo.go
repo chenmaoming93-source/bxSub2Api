@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -2267,6 +2268,119 @@ func (r *usageLogRepository) GetUserModelStats(ctx context.Context, userID int64
 		return nil, err
 	}
 	return results, nil
+}
+
+// GetUserGroupStats returns the user's top group/scene usage ordered by tokens.
+func (r *usageLogRepository) GetUserGroupStats(ctx context.Context, userID int64, startTime, endTime time.Time, limit int) (results []usagestats.GroupStat, err error) {
+	const query = `
+		SELECT
+			COALESCE(ul.group_id, 0),
+			COALESCE(g.name, ''),
+			COUNT(*) AS requests,
+			COALESCE(SUM(ul.input_tokens + ul.output_tokens + ul.cache_creation_tokens + ul.cache_read_tokens), 0) AS total_tokens,
+			COALESCE(SUM(ul.total_cost), 0) AS cost,
+			COALESCE(SUM(ul.actual_cost), 0) AS actual_cost,
+			COALESCE(SUM(COALESCE(ul.account_stats_cost, ul.total_cost) * COALESCE(ul.account_rate_multiplier, 1)), 0) AS account_cost
+		FROM usage_logs ul
+		LEFT JOIN ` + "`groups`" + ` g ON g.id = ul.group_id
+		WHERE ul.user_id = ? AND ul.created_at >= ? AND ul.created_at < ?
+		GROUP BY ul.group_id, g.name
+		ORDER BY total_tokens DESC
+		LIMIT ?`
+	rows, err := r.sql.QueryContext(ctx, query, userID, startTime, endTime, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if closeErr := rows.Close(); closeErr != nil && err == nil {
+			err = closeErr
+			results = nil
+		}
+	}()
+	results = make([]usagestats.GroupStat, 0)
+	for rows.Next() {
+		var row usagestats.GroupStat
+		if err := rows.Scan(&row.GroupID, &row.GroupName, &row.Requests, &row.TotalTokens, &row.Cost, &row.ActualCost, &row.AccountCost); err != nil {
+			return nil, err
+		}
+		results = append(results, row)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return results, nil
+}
+
+// GetUserLatencyTrend returns the most recent average-duration buckets for one user.
+func (r *usageLogRepository) GetUserLatencyTrend(ctx context.Context, userID int64, startTime, endTime time.Time, granularity string, limit int) (results []usagestats.UserLatencyTrendPoint, err error) {
+	dateFormat := safeDateFormat(granularity)
+	query := fmt.Sprintf(`
+		SELECT bucket_date, requests, average_duration_ms
+		FROM (
+			SELECT DATE_FORMAT(created_at, '%s') AS bucket_date,
+				COUNT(duration_ms) AS requests,
+				COALESCE(AVG(duration_ms), 0) AS average_duration_ms
+			FROM usage_logs
+			WHERE user_id = ? AND created_at >= ? AND created_at < ? AND duration_ms IS NOT NULL
+			GROUP BY bucket_date
+			ORDER BY bucket_date DESC
+			LIMIT ?
+		) recent_buckets
+		ORDER BY bucket_date ASC`, dateFormat)
+	rows, err := r.sql.QueryContext(ctx, query, userID, startTime, endTime, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if closeErr := rows.Close(); closeErr != nil && err == nil {
+			err = closeErr
+			results = nil
+		}
+	}()
+	results = make([]usagestats.UserLatencyTrendPoint, 0)
+	for rows.Next() {
+		var row usagestats.UserLatencyTrendPoint
+		if err := rows.Scan(&row.Date, &row.Requests, &row.AverageDurationMs); err != nil {
+			return nil, err
+		}
+		results = append(results, row)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return results, nil
+}
+
+// GetUserLatencyPercentiles computes continuous duration percentiles from the user's latest bounded samples.
+func (r *usageLogRepository) GetUserLatencyPercentiles(ctx context.Context, userID int64, startTime, endTime time.Time, limit int) (*usagestats.UserLatencyPercentiles, error) {
+	const query = `
+		SELECT duration_ms
+		FROM usage_logs
+		WHERE user_id = ? AND created_at >= ? AND created_at < ? AND duration_ms IS NOT NULL
+		ORDER BY created_at DESC
+		LIMIT ?`
+	rows, err := r.sql.QueryContext(ctx, query, userID, startTime, endTime, limit)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+	values := make([]int, 0, limit)
+	for rows.Next() {
+		var value int
+		if err := rows.Scan(&value); err != nil {
+			return nil, err
+		}
+		values = append(values, value)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	sort.Ints(values)
+	computed := opsPercentilesFromSortedInts(values)
+	return &usagestats.UserLatencyPercentiles{
+		P50: computed.P50, P90: computed.P90, P95: computed.P95, P99: computed.P99,
+		SampleCount: int64(len(values)),
+	}, nil
 }
 
 // UsageLogFilters represents filters for usage log queries

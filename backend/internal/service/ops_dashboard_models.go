@@ -8,6 +8,7 @@ type OpsDashboardFilter struct {
 
 	Platform string
 	GroupID  *int64
+	Model    string
 
 	// QueryMode controls whether dashboard queries should use raw logs or pre-aggregated tables.
 	// Expected values: auto/raw/preagg (see OpsQueryMode).
@@ -67,6 +68,46 @@ type OpsDashboardOverview struct {
 
 	Duration OpsPercentiles `json:"duration"`
 	TTFT     OpsPercentiles `json:"ttft"`
+}
+
+type OpsModelLatencyPercentile struct {
+	Model        string `json:"model"`
+	RequestCount int64  `json:"request_count"`
+	AvgMS        *int   `json:"avg_ms"`
+	P50MS        *int   `json:"p50_ms"`
+	P90MS        *int   `json:"p90_ms"`
+	P95MS        *int   `json:"p95_ms"`
+	P99MS        *int   `json:"p99_ms"`
+}
+
+type OpsModelLatencyPercentilesResponse struct {
+	StartTime time.Time                    `json:"start_time"`
+	EndTime   time.Time                    `json:"end_time"`
+	Platform  string                       `json:"platform"`
+	GroupID   *int64                       `json:"group_id"`
+	Model     string                       `json:"model"`
+	Models    []*OpsModelLatencyPercentile `json:"models"`
+}
+
+type OpsModelLatencyTrendPoint struct {
+	BucketStart  time.Time `json:"bucket_start"`
+	Model        string    `json:"model"`
+	RequestCount int64     `json:"request_count"`
+	AvgMS        *int      `json:"avg_ms"`
+	P50MS        *int      `json:"p50_ms"`
+	P90MS        *int      `json:"p90_ms"`
+	P95MS        *int      `json:"p95_ms"`
+	P99MS        *int      `json:"p99_ms"`
+}
+
+type OpsModelLatencyTrendResponse struct {
+	StartTime time.Time                    `json:"start_time"`
+	EndTime   time.Time                    `json:"end_time"`
+	Platform  string                       `json:"platform"`
+	GroupID   *int64                       `json:"group_id"`
+	Model     string                       `json:"model"`
+	Bucket    string                       `json:"bucket"`
+	Points    []*OpsModelLatencyTrendPoint `json:"points"`
 }
 
 type OpsLatencyHistogramBucket struct {

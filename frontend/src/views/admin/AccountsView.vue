@@ -1,5 +1,5 @@
-﻿<template>
-  <AppLayout>
+<template>
+  <component :is="embedded ? 'div' : AppLayout" :class="{ 'ui-v2-embedded-page': embedded }">
     <TablePageLayout>
       <template #filters>
         <div class="flex flex-wrap-reverse items-start justify-between gap-3">
@@ -424,10 +424,11 @@
     </ConfirmDialog>
     <ErrorPassthroughRulesModal :show="showErrorPassthrough" @close="showErrorPassthrough = false" />
     <TLSFingerprintProfilesModal :show="showTLSFingerprintProfiles" @close="showTLSFingerprintProfiles = false" />
-  </AppLayout>
+  </component>
 </template>
 
 <script setup lang="ts">
+defineOptions({ name: 'AccountsView' })
 import { ref, reactive, computed, onMounted, onUnmounted, toRaw, watch } from 'vue'
 import { useIntervalFn } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
@@ -468,6 +469,8 @@ import { buildOpenAIUsageRefreshKey } from '@/utils/accountUsageRefresh'
 import { formatDateTime, formatRelativeTime } from '@/utils/format'
 import { proxyExpiryBadgeClass, proxyExpiryLabelKey } from '@/utils/proxyExpiry'
 import type { Account, AccountPlatform, AccountType, Proxy as AccountProxy, AdminGroup, WindowStats, ClaudeModel } from '@/types'
+
+withDefaults(defineProps<{ embedded?: boolean }>(), { embedded: false })
 
 const { t } = useI18n()
 const appStore = useAppStore()

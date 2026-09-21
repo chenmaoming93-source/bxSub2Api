@@ -133,6 +133,23 @@ type GroupStat struct {
 	AccountCost float64 `json:"account_cost"` // 账号成本
 }
 
+// UserLatencyTrendPoint represents average request latency for one user-owned time bucket.
+type UserLatencyTrendPoint struct {
+	Date              string  `json:"date"`
+	Requests          int64   `json:"requests"`
+	AverageDurationMs float64 `json:"average_duration_ms"`
+}
+
+// UserLatencyPercentiles represents duration percentiles for one user's requests.
+// Nil percentile values indicate that the selected range has no duration samples.
+type UserLatencyPercentiles struct {
+	P50         *int  `json:"p50"`
+	P90         *int  `json:"p90"`
+	P95         *int  `json:"p95"`
+	P99         *int  `json:"p99"`
+	SampleCount int64 `json:"sample_count"`
+}
+
 // UserUsageTrendPoint represents user usage trend data point
 type UserUsageTrendPoint struct {
 	Date       string  `json:"date"`

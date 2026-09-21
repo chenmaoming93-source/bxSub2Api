@@ -126,8 +126,6 @@ function simulateGuard(
   if (authState.isSimpleMode) {
     const restrictedPaths = [
       '/admin/groups',
-      '/admin/subscriptions',
-      '/admin/redeem',
       '/subscriptions',
       '/redeem',
     ]
@@ -299,22 +297,6 @@ describe('路由守卫逻辑', () => {
         hasPendingAuthSession: false,
       }
       const redirect = simulateGuard('/admin/groups', {}, authState)
-      expect(redirect).toBe('/welcome')
-    })
-
-    it('管理员简易模式访问 /admin/subscriptions 重定向', () => {
-      const authState: MockAuthState = {
-        isAuthenticated: true,
-        isAdmin: true,
-        isSimpleMode: true,
-        backendModeEnabled: false,
-        hasPendingAuthSession: false,
-      }
-      const redirect = simulateGuard(
-        '/admin/subscriptions',
-        {},
-        authState
-      )
       expect(redirect).toBe('/welcome')
     })
 

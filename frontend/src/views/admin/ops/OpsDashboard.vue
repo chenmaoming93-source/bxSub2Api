@@ -1,5 +1,5 @@
 <template>
-  <component :is="isFullscreen ? 'div' : AppLayout" :class="isFullscreen ? 'flex min-h-screen flex-col justify-center bg-gray-50 dark:bg-dark-950' : ''">
+  <component :is="embedded ? 'div' : (isFullscreen ? 'div' : AppLayout)" :class="isFullscreen ? 'flex min-h-screen flex-col justify-center bg-gray-50 dark:bg-dark-950' : ''">
     <div :class="[isFullscreen ? 'p-4 md:p-6' : '', 'space-y-6 pb-12']">
       <div
         v-if="errorMessage"
@@ -84,6 +84,16 @@
         />
       </div>
 
+      <!-- Model latency analysis -->
+      <OpsModelLatencyPanel
+        v-if="opsEnabled && !(loading && !hasLoadedOnce)"
+        :time-range="timeRange"
+        :platform="platform"
+        :group-id="groupId"
+        :query-mode="queryMode"
+        @open-details="handleOpenRequestDetails"
+      />
+
       <!-- Row: OpenAI Token Stats -->
       <div v-if="opsEnabled && showOpenAITokenStats && !(loading && !hasLoadedOnce)" class="grid grid-cols-1 gap-6">
         <OpsOpenAITokenStatsCard
@@ -161,6 +171,7 @@ import OpsErrorDistributionChart from './components/OpsErrorDistributionChart.vu
 import OpsErrorDetailsModal from './components/OpsErrorDetailsModal.vue'
 import OpsErrorTrendChart from './components/OpsErrorTrendChart.vue'
 import OpsLatencyChart from './components/OpsLatencyChart.vue'
+import OpsModelLatencyPanel from './components/OpsModelLatencyPanel.vue'
 import OpsThroughputTrendChart from './components/OpsThroughputTrendChart.vue'
 import OpsSwitchRateTrendChart from './components/OpsSwitchRateTrendChart.vue'
 import OpsAlertEventsCard from './components/OpsAlertEventsCard.vue'
@@ -170,6 +181,8 @@ import OpsRequestDetailsModal, { type OpsRequestDetailsPreset } from './componen
 import OpsSettingsDialog from './components/OpsSettingsDialog.vue'
 import OpsAlertRulesCard from './components/OpsAlertRulesCard.vue'
 
+const props = withDefaults(defineProps<{ embedded?: boolean }>(), { embedded: false })
+const embedded = computed(() => props.embedded)
 const route = useRoute()
 const router = useRouter()
 const appStore = useAppStore()

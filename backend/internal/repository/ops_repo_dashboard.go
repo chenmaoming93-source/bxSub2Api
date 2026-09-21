@@ -995,14 +995,16 @@ func isQueryTimeoutErr(err error) bool {
 func buildUsageWhere(filter *service.OpsDashboardFilter, start, end time.Time, startIndex int) (join string, where string, args []any, nextIndex int) {
 	platform := ""
 	groupID := (*int64)(nil)
+	model := ""
 	if filter != nil {
 		platform = strings.TrimSpace(strings.ToLower(filter.Platform))
 		groupID = filter.GroupID
+		model = strings.TrimSpace(filter.Model)
 	}
 
 	idx := startIndex
-	clauses := make([]string, 0, 4)
-	args = make([]any, 0, 4)
+	clauses := make([]string, 0, 5)
+	args = make([]any, 0, 5)
 
 	args = append(args, start)
 	clauses = append(clauses, fmt.Sprintf("ul.created_at >= ?/*%d*/", idx))
@@ -1022,6 +1024,11 @@ func buildUsageWhere(filter *service.OpsDashboardFilter, start, end time.Time, s
 		join = "LEFT JOIN `groups` g ON g.id = ul.group_id LEFT JOIN accounts a ON a.id = ul.account_id"
 		args = append(args, platform)
 		clauses = append(clauses, fmt.Sprintf("COALESCE(NULLIF(g.platform,''), a.platform) = ?/*%d*/", idx))
+		idx++
+	}
+	if model != "" {
+		args = append(args, model)
+		clauses = append(clauses, fmt.Sprintf("COALESCE(NULLIF(TRIM(ul.requested_model), ''), ul.model) = ?/*%d*/", idx))
 		idx++
 	}
 

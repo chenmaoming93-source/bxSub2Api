@@ -309,6 +309,8 @@ func registerOpsRoutes(admin *gin.RouterGroup, h *handler.Handlers, routes *rbac
 		adminGET(routes, ops, "/dashboard/overview", rbac.PermissionOpsRead, h.Admin.Ops.GetDashboardOverview)
 		adminGET(routes, ops, "/dashboard/throughput-trend", rbac.PermissionOpsRead, h.Admin.Ops.GetDashboardThroughputTrend)
 		adminGET(routes, ops, "/dashboard/latency-histogram", rbac.PermissionOpsRead, h.Admin.Ops.GetDashboardLatencyHistogram)
+		adminGET(routes, ops, "/dashboard/model-latency-percentiles", rbac.PermissionOpsRead, h.Admin.Ops.GetDashboardModelLatencyPercentiles)
+		adminGET(routes, ops, "/dashboard/model-latency-trend", rbac.PermissionOpsRead, h.Admin.Ops.GetDashboardModelLatencyTrend)
 		adminGET(routes, ops, "/dashboard/error-trend", rbac.PermissionOpsRead, h.Admin.Ops.GetDashboardErrorTrend)
 		adminGET(routes, ops, "/dashboard/error-distribution", rbac.PermissionOpsRead, h.Admin.Ops.GetDashboardErrorDistribution)
 		adminGET(routes, ops, "/dashboard/openai-token-stats", rbac.PermissionOpsRead, h.Admin.Ops.GetDashboardOpenAITokenStats)

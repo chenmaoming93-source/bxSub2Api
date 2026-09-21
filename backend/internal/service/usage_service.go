@@ -325,6 +325,33 @@ func (s *UsageService) GetUserModelStats(ctx context.Context, userID int64, star
 	return stats, nil
 }
 
+// GetUserGroupStats returns top group/scene token usage for one user.
+func (s *UsageService) GetUserGroupStats(ctx context.Context, userID int64, startTime, endTime time.Time, limit int) ([]usagestats.GroupStat, error) {
+	stats, err := s.usageRepo.GetUserGroupStats(ctx, userID, startTime, endTime, limit)
+	if err != nil {
+		return nil, fmt.Errorf("get user group stats: %w", err)
+	}
+	return stats, nil
+}
+
+// GetUserLatencyTrend returns average duration by time bucket for one user.
+func (s *UsageService) GetUserLatencyTrend(ctx context.Context, userID int64, startTime, endTime time.Time, granularity string, limit int) ([]usagestats.UserLatencyTrendPoint, error) {
+	trend, err := s.usageRepo.GetUserLatencyTrend(ctx, userID, startTime, endTime, granularity, limit)
+	if err != nil {
+		return nil, fmt.Errorf("get user latency trend: %w", err)
+	}
+	return trend, nil
+}
+
+// GetUserLatencyPercentiles returns duration percentiles for one user.
+func (s *UsageService) GetUserLatencyPercentiles(ctx context.Context, userID int64, startTime, endTime time.Time, limit int) (*usagestats.UserLatencyPercentiles, error) {
+	percentiles, err := s.usageRepo.GetUserLatencyPercentiles(ctx, userID, startTime, endTime, limit)
+	if err != nil {
+		return nil, fmt.Errorf("get user latency percentiles: %w", err)
+	}
+	return percentiles, nil
+}
+
 // GetAPIKeyModelStats returns per-model usage stats for a specific API Key.
 func (s *UsageService) GetAPIKeyModelStats(ctx context.Context, apiKeyID int64, startTime, endTime time.Time) ([]usagestats.ModelStat, error) {
 	stats, err := s.usageRepo.GetModelStatsWithFilters(ctx, startTime, endTime, 0, apiKeyID, 0, 0, nil, nil, nil)

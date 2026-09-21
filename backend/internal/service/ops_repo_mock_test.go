@@ -14,6 +14,8 @@ type opsRepoMock struct {
 	DeleteSystemLogsFn            func(ctx context.Context, filter *OpsSystemLogCleanupFilter) (int64, error)
 	InsertSystemLogCleanupAuditFn func(ctx context.Context, input *OpsSystemLogCleanupAudit) error
 	LookupDeletedKeyAuditFn       func(ctx context.Context, key string) (*DeletedKeyAuditResult, error)
+	GetModelLatencyPercentilesFn  func(ctx context.Context, filter *OpsDashboardFilter) (*OpsModelLatencyPercentilesResponse, error)
+	GetModelLatencyTrendFn        func(ctx context.Context, filter *OpsDashboardFilter, bucketSeconds int) (*OpsModelLatencyTrendResponse, error)
 }
 
 func (m *opsRepoMock) InsertErrorLog(ctx context.Context, input *OpsInsertErrorLogInput) (int64, error) {
@@ -92,6 +94,20 @@ func (m *opsRepoMock) GetThroughputTrend(ctx context.Context, filter *OpsDashboa
 
 func (m *opsRepoMock) GetLatencyHistogram(ctx context.Context, filter *OpsDashboardFilter) (*OpsLatencyHistogramResponse, error) {
 	return &OpsLatencyHistogramResponse{}, nil
+}
+
+func (m *opsRepoMock) GetModelLatencyPercentiles(ctx context.Context, filter *OpsDashboardFilter) (*OpsModelLatencyPercentilesResponse, error) {
+	if m.GetModelLatencyPercentilesFn != nil {
+		return m.GetModelLatencyPercentilesFn(ctx, filter)
+	}
+	return &OpsModelLatencyPercentilesResponse{Models: []*OpsModelLatencyPercentile{}}, nil
+}
+
+func (m *opsRepoMock) GetModelLatencyTrend(ctx context.Context, filter *OpsDashboardFilter, bucketSeconds int) (*OpsModelLatencyTrendResponse, error) {
+	if m.GetModelLatencyTrendFn != nil {
+		return m.GetModelLatencyTrendFn(ctx, filter, bucketSeconds)
+	}
+	return &OpsModelLatencyTrendResponse{Points: []*OpsModelLatencyTrendPoint{}}, nil
 }
 
 func (m *opsRepoMock) GetErrorTrend(ctx context.Context, filter *OpsDashboardFilter, bucketSeconds int) (*OpsErrorTrendResponse, error) {

@@ -93,6 +93,9 @@ func RegisterUserRoutes(
 			rbacRoutes.GET(usage, "/dashboard/stats", rbac.PermissionUsageSelfRead, h.Usage.DashboardStats)
 			rbacRoutes.GET(usage, "/dashboard/trend", rbac.PermissionUsageSelfRead, h.Usage.DashboardTrend)
 			rbacRoutes.GET(usage, "/dashboard/models", rbac.PermissionUsageSelfRead, h.Usage.DashboardModels)
+			rbacRoutes.GET(usage, "/dashboard/groups", rbac.PermissionUsageSelfRead, h.Usage.DashboardGroups)
+			rbacRoutes.GET(usage, "/dashboard/latency-trend", rbac.PermissionUsageSelfRead, h.Usage.DashboardLatencyTrend)
+			rbacRoutes.GET(usage, "/dashboard/latency-percentiles", rbac.PermissionUsageSelfRead, h.Usage.DashboardLatencyPercentiles)
 			rbacRoutes.POST(usage, "/dashboard/api-keys-usage", rbac.PermissionUsageSelfRead, h.Usage.DashboardAPIKeysUsage)
 		}
 

@@ -5,6 +5,7 @@ import router from './router'
 import i18n, { initI18n } from './i18n'
 import { useAppStore } from '@/stores/app'
 import './style.css'
+import './components/ui-v2/styles.css'
 import { permissionDirective } from '@/directives/permission'
 
 function initThemeClass() {

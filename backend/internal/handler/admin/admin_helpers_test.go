@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/netip"
+	"strings"
 	"testing"
 	"time"
 
@@ -190,6 +191,38 @@ func TestParseOpsQueryMode(t *testing.T) {
 	c.Request = httptest.NewRequest(http.MethodGet, "/?mode=raw", nil)
 	require.Equal(t, service.ParseOpsQueryMode("raw"), parseOpsQueryMode(c))
 	require.Equal(t, service.OpsQueryMode(""), parseOpsQueryMode(nil))
+}
+
+func TestParseOpsModelLatencyFilter(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodGet, "/?start_time=2026-03-01T08:00:00%2B08:00&end_time=2026-03-01T09:00:00%2B08:00&platform=OpenAI&group_id=8&model=gpt-5&mode=raw", nil)
+
+	filter, err := parseOpsModelLatencyFilter(c)
+	require.NoError(t, err)
+	require.True(t, filter.StartTime.Equal(time.Date(2026, 3, 1, 0, 0, 0, 0, time.UTC)))
+	require.Equal(t, "OpenAI", filter.Platform)
+	require.Equal(t, int64(8), *filter.GroupID)
+	require.Equal(t, "gpt-5", filter.Model)
+	require.Equal(t, service.OpsQueryModeRaw, filter.QueryMode)
+}
+
+func TestParseOpsModelLatencyFilter_InvalidAndOutOfRange(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	for _, rawURL := range []string{
+		"/?group_id=0",
+		"/?group_id=invalid",
+		"/?start_time=2026-01-01T00:00:00Z&end_time=2026-02-15T00:00:00Z",
+		"/?model=" + strings.Repeat("m", 256),
+		"/?platform=" + strings.Repeat("p", 65),
+	} {
+		w := httptest.NewRecorder()
+		c, _ := gin.CreateTestContext(w)
+		c.Request = httptest.NewRequest(http.MethodGet, rawURL, nil)
+		_, err := parseOpsModelLatencyFilter(c)
+		require.Error(t, err, "url=%s", rawURL)
+	}
 }
 
 func TestOpsAlertRuleValidation(t *testing.T) {
