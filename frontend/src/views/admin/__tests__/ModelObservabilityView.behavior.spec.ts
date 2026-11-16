@@ -100,8 +100,14 @@ const DrilldownPanelStub = defineComponent({
 })
 const PressureHeatmapStub = defineComponent({
   name: 'PressureHeatmap',
+  props: ['rowLabels'],
   emits: ['select'],
   template: '<button data-testid="heatmap" @click="$emit(\'select\', { row: \'7\', column: \'10:00\', cell: { actual_concurrency: 8, concurrency_limit: 10 } })">heatmap</button>',
+})
+const TokenTrendChartStub = defineComponent({
+  name: 'TokenTrendChart',
+  props: ['groupBy', 'dimensionLabels'],
+  template: '<div data-testid="token-trend" />',
 })
 
 function mountView() {
@@ -109,7 +115,7 @@ function mountView() {
     global: {
       stubs: {
         AppLayout: AppLayoutStub,
-        TokenTrendChart: true,
+        TokenTrendChart: TokenTrendChartStub,
         QualityTrendChart: true,
         PressureRanking: true,
         PressureHeatmap: PressureHeatmapStub,
@@ -170,5 +176,25 @@ describe('ModelObservabilityView interactions', () => {
     await flushPromises()
     expect(mocks.observability?.filters.groupIds).toEqual([])
     expect(wrapper.getComponent(DrilldownPanelStub).props('focus')).toMatchObject({ kind: 'group', key: '7' })
+  })
+
+  it('passes human-readable names for heatmap row keys', async () => {
+    const wrapper = mountView()
+    await flushPromises()
+    mocks.observability!.heatmapGroupBy.value = 'account_id'
+    await flushPromises()
+    expect(wrapper.getComponent(PressureHeatmapStub).props('rowLabels')).toMatchObject({
+      '4': 'claude-pro-01',
+    })
+  })
+
+  it('passes the selected trend dimension and display labels to Token trend', async () => {
+    const wrapper = mountView()
+    await flushPromises()
+    mocks.observability!.groupBy.value = 'account_id'
+    await flushPromises()
+    const chart = wrapper.getComponent(TokenTrendChartStub)
+    expect(chart.props('groupBy')).toBe('account_id')
+    expect(chart.props('dimensionLabels')).toMatchObject({ '4': 'claude-pro-01' })
   })
 })

@@ -207,6 +207,8 @@
             :response="trend"
             :concurrency="concurrencyOverlay"
             :token-metric="tokenMetric"
+            :group-by="groupBy"
+            :dimension-labels="trendDimensionLabels"
             :loading="trendLoading"
             :error="trendError"
           />
@@ -261,6 +263,8 @@
           :response="heatmap"
           :value-kind="heatmapValueKind"
           :single-account-filtered="filters.accountIds.length === 1"
+          :row-labels="heatmapRowLabels"
+          :value-kind-help="heatmapValueKindHelp"
           :error="heatmapError"
           @select="handleHeatmapSelection"
         />
@@ -339,6 +343,7 @@ import type {
   AccountFilterOption,
   UserFilterOption,
   ObservabilityFilters,
+  ObservabilityGroupBy,
   ObservabilityWindow,
 } from '@/api/admin/observability'
 import { useObservability } from '@/composables/useObservability'
@@ -649,6 +654,45 @@ const activeAccountPoints = computed(() => {
       .filter((cell) => cell.column === column && cell.available && (cell.actual_concurrency || 0) > 0)
       .map((cell) => cell.row),
   ).size)
+})
+
+function dimensionLabelsFor(groupBy: ObservabilityGroupBy) {
+  const options = snapshot.value?.filter_options
+  const labels: Record<string, string> = {}
+  if (groupBy === 'account_id') {
+    for (const account of options?.accounts || []) {
+      labels[String(account.account_id)] = account.name || t('admin.observability.accountRef', { id: account.account_id })
+    }
+    for (const row of snapshot.value?.top_accounts || []) {
+      if (!labels[row.key]) labels[row.key] = row.name || t('admin.observability.accountRef', { id: row.key })
+    }
+  } else if (groupBy === 'group_id') {
+    for (const group of options?.groups || []) {
+      labels[String(group.id)] = group.name || t('admin.observability.groupRef', { id: group.id })
+    }
+    for (const row of snapshot.value?.top_groups || []) {
+      if (!labels[row.key]) labels[row.key] = row.name || t('admin.observability.groupRef', { id: row.key })
+    }
+  } else if (groupBy === 'user_id') {
+    for (const user of options?.users || []) {
+      labels[String(user.user_id)] = user.email || `${t('admin.observability.user')} #${user.user_id}`
+    }
+    for (const row of snapshot.value?.top_users || []) {
+      if (!labels[row.key]) labels[row.key] = row.name || `${t('admin.observability.user')} #${row.key}`
+    }
+  } else if (groupBy === 'route_alias') {
+    for (const row of snapshot.value?.top_aliases || []) {
+      labels[row.key] = row.name || row.key
+    }
+  }
+  return labels
+}
+
+const heatmapRowLabels = computed(() => dimensionLabelsFor(heatmapGroupBy.value))
+const trendDimensionLabels = computed(() => dimensionLabelsFor(groupBy.value))
+const heatmapValueKindHelp = computed(() => {
+  if (heatmapValueKind.value === 'error_rate') return t('admin.observability.heatmapErrorRateHelp')
+  return ''
 })
 
 const maxPressurePoints = computed(() => {

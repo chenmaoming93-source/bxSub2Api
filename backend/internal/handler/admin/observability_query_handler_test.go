@@ -46,6 +46,21 @@ func (concurrencyHeatmapStub) QueryHistory(_ context.Context, filter service.Con
 	}, nil
 }
 
+type zeroConcurrencyHeatmapStub struct{}
+
+func (zeroConcurrencyHeatmapStub) QueryHistory(_ context.Context, filter service.ConcurrencyHistoryFilter) (service.ConcurrencyHistoryResult, error) {
+	bucket := filter.End.Add(-time.Second).UTC().Truncate(5 * time.Minute)
+	return service.ConcurrencyHistoryResult{
+		Available: true, QualityStatus: "healthy",
+		Rows: []service.ConcurrencyHistoryRow{{
+			BucketStart: bucket, SampleKind: service.ConcurrencySampleKindRoute,
+			AccountID: 101, GroupID: 7, RouteAlias: "coding",
+			CurrentPeak: 0, EffectiveLimit: 10, PeakRatioActual: 0, PeakRatioLimit: 10,
+			PeakRatioSampleAt: bucket.Add(42 * time.Second),
+		}},
+	}, nil
+}
+
 func (s *queryRollupLoaderStub) LoadSnapshotRollup(_ context.Context, _, _ time.Time, _ observability.Bucket, filter observability.Filter) (service.ObservabilitySnapshotRollup, error) {
 	s.rollupCalls++
 	return service.ObservabilitySnapshotRollup{
@@ -60,17 +75,31 @@ func (s *queryRollupLoaderStub) LoadSnapshotRollup(_ context.Context, _, _ time.
 func (s *queryRollupLoaderStub) LoadSnapshotSeries(_ context.Context, _, end time.Time, _ observability.Bucket, _ observability.Filter, dimension string, _ []int64, _ []string) ([]service.SnapshotSeriesBucket, error) {
 	s.seriesCalls++
 	bucketStart := end.Add(-time.Second).UTC().Truncate(5 * time.Minute)
-	totals := service.SnapshotRollupTotals{RequestCount: 10, SuccessCount: 9, ErrorCount: 1, TotalTokens: 100}
+	totals := service.SnapshotRollupTotals{
+		RequestCount: 10, SuccessCount: 9, ErrorCount: 1,
+		InputTokens: 40, OutputTokens: 50, CacheCreationTokens: 5, CacheReadTokens: 5, TotalTokens: 100,
+	}
 	if dimension == "" {
 		return []service.SnapshotSeriesBucket{{BucketStart: bucketStart, Totals: totals}}, nil
+	}
+	if dimension == "user_id" {
+		return []service.SnapshotSeriesBucket{{BucketStart: bucketStart, DimensionID: 1, Totals: totals}}, nil
 	}
 	first := totals
 	first.RequestCount = 6
 	first.TotalTokens = 70
+	first.InputTokens = 30
+	first.OutputTokens = 35
+	first.CacheCreationTokens = 3
+	first.CacheReadTokens = 2
 	first.ErrorCount = 1
 	second := totals
 	second.RequestCount = 4
 	second.TotalTokens = 30
+	second.InputTokens = 10
+	second.OutputTokens = 15
+	second.CacheCreationTokens = 2
+	second.CacheReadTokens = 3
 	second.ErrorCount = 0
 	return []service.SnapshotSeriesBucket{
 		{BucketStart: bucketStart, DimensionID: 7, Totals: first},
@@ -93,6 +122,9 @@ func TestObservabilityQueryGroupByKeepsCanonicalSummary(t *testing.T) {
 	require.Equal(t, seriesSummaryValue(plain, "summary_total_tokens"), seriesSummaryValue(grouped, "summary_total_tokens"))
 	require.Equal(t, seriesSummaryValue(grouped, "summary_total_requests"), sumDimensionSeries(grouped, "requests:"))
 	require.Equal(t, seriesSummaryValue(grouped, "summary_total_tokens"), sumDimensionSeries(grouped, "tokens:"))
+	require.Equal(t, 40.0, sumDimensionSeries(grouped, "input_tokens:"))
+	require.Equal(t, 50.0, sumDimensionSeries(grouped, "output_tokens:"))
+	require.Equal(t, 10.0, sumDimensionSeries(grouped, "cache_tokens:"))
 
 	heatmapRequest := base
 	heatmapRequest.GroupBy = "group_id"
@@ -114,6 +146,22 @@ func TestObservabilityQueryGroupByKeepsCanonicalSummary(t *testing.T) {
 	_, err = query.Timeseries(context.Background(), groupedRequest)
 	require.NoError(t, err)
 	require.Equal(t, beforeSeriesCalls, loader.seriesCalls, "5s cache must avoid a second series query")
+}
+
+func TestObservabilityUserRequestHeatmap(t *testing.T) {
+	loader := &queryRollupLoaderStub{now: time.Now().UTC()}
+	query := service.NewObservabilityQueryService(loader, nil)
+
+	for _, valueKind := range []string{"token_rate", "error_rate"} {
+		response, err := query.Heatmap(context.Background(), service.ObservabilityQueryRequest{
+			Window: observability.Window1h, Bucket: observability.Bucket5m,
+			GroupBy: "user_id", ValueKind: valueKind,
+		})
+		require.NoError(t, err)
+		require.True(t, response.Available)
+		require.Equal(t, []string{"1"}, response.Rows)
+		require.NotEmpty(t, response.Cells)
+	}
 }
 
 func TestObservabilityQueryUnavailableStatesAndDSTLabels(t *testing.T) {
@@ -149,6 +197,29 @@ func TestObservabilityQuerySampledConcurrencyHeatmapUsesPersistedPeak(t *testing
 		if cell.ActualConcurrency == 8 && cell.ConcurrencyLimit == 10 && cell.Value == 0.8 {
 			require.NotNil(t, cell.SampleAt)
 			found = true
+		}
+	}
+	require.True(t, found)
+}
+
+func TestObservabilitySampledConcurrencyHeatmapShowsRealZeroSamples(t *testing.T) {
+	loader := &queryRollupLoaderStub{now: time.Now().UTC()}
+	query := service.NewObservabilityQueryService(loader, zeroConcurrencyHeatmapStub{})
+	response, err := query.Heatmap(context.Background(), service.ObservabilityQueryRequest{
+		Window: observability.Window1h, Bucket: observability.Bucket5m,
+		GroupBy: "group_id", ValueKind: "sampled_concurrency",
+	})
+	require.NoError(t, err)
+	require.True(t, response.Available)
+	require.NotEmpty(t, response.Cells)
+	found := false
+	for _, cell := range response.Cells {
+		if cell.Available {
+			require.Equal(t, 0, cell.ActualConcurrency)
+			require.Equal(t, 10, cell.ConcurrencyLimit)
+			require.Zero(t, cell.Value)
+			found = true
+			break
 		}
 	}
 	require.True(t, found)

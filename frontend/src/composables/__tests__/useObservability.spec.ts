@@ -213,4 +213,29 @@ describe('useObservability polling', () => {
     })
     wrapper.unmount()
   })
+
+  it('refreshes only the time series when the trend dimension changes', async () => {
+    let api!: ReturnType<typeof useObservability>
+    const wrapper = mount(defineComponent({
+      setup() {
+        api = useObservability()
+        return () => null
+      },
+    }))
+    await flushPromises()
+    snapshotMock.mockClear()
+    trendMock.mockClear()
+    latencyMock.mockClear()
+    heatmapMock.mockClear()
+
+    api.groupBy.value = 'account_id'
+    await flushPromises()
+
+    expect(snapshotMock).not.toHaveBeenCalled()
+    expect(trendMock).toHaveBeenCalledTimes(1)
+    expect(trendMock.mock.calls[0][0].groupBy).toBe('account_id')
+    expect(latencyMock).not.toHaveBeenCalled()
+    expect(heatmapMock).not.toHaveBeenCalled()
+    wrapper.unmount()
+  })
 })

@@ -32,6 +32,72 @@ describe('observability chart adapters', () => {
     expect(tokenChartDatasets(['10:00', '10:05'], payload)).toEqual([])
   })
 
+  it('renders all supported Token metrics as named dimension series', () => {
+    const labels = ['10:00', '10:05']
+    const metrics = [
+      ['total', 'tokens'],
+      ['input', 'input_tokens'],
+      ['output', 'output_tokens'],
+      ['cache', 'cache_tokens'],
+    ] as const
+    for (const [metric, prefix] of metrics) {
+      const payload = response({
+        series: [
+          { key: `${metric === 'total' ? 'total' : metric}_tokens`, name: 'Overall', points: [30, 40] },
+          { key: `${prefix}:7`, name: '7', points: [10, 15] },
+          { key: `${prefix}:8`, name: '8', points: [20, 25] },
+        ],
+      })
+      const datasets = tokenChartDatasets(
+        labels,
+        payload,
+        [],
+        metric,
+        (key, fallback) => key === 'overall_token' ? 'Overall Token' : fallback,
+        'account_id',
+        { '7': 'claude-pro-01', '8': 'codex-team-a' },
+      )
+      expect(datasets.find((item) => item.label === 'claude-pro-01')).toMatchObject({ data: [10, 15] })
+      expect(datasets.find((item) => item.label === 'codex-team-a')).toMatchObject({ data: [20, 25] })
+      expect(datasets.some((item) => item.label === 'Overall Token')).toBe(true)
+    }
+  })
+
+  it('keeps the top eight dimensions and reconciles the remainder into Other', () => {
+    const labels = ['10:00']
+    const grouped = Array.from({ length: 9 }, (_value, index) => ({
+      key: `tokens:${index}`,
+      name: String(index),
+      points: [10],
+    }))
+    const payload = response({
+      labels,
+      series: [
+        { key: 'total_tokens', name: 'Overall Token', points: [100] },
+        ...grouped,
+      ],
+    })
+    const labelsByKey = Object.fromEntries(grouped.map((item, index) => [String(index), `账号 ${index}`]))
+    const datasets = tokenChartDatasets(
+      labels,
+      payload,
+      [],
+      'total',
+      (key, fallback) => key === 'dimension_other'
+        ? '其他'
+        : key === 'overall_token' ? 'Overall Token' : fallback,
+      'account_id',
+      labelsByKey,
+    )
+    const dimensionDatasets = datasets.filter((item) => item.yAxisID === 'yTokens')
+    expect(dimensionDatasets.map((item) => item.label)).toContain('其他')
+    expect(dimensionDatasets.some((item) => item.label === '账号 8')).toBe(false)
+    const splitTotal = dimensionDatasets
+      .filter((item) => item.label !== 'Overall Token')
+      .reduce((total, item) => total + item.data[0], 0)
+    expect(splitTotal).toBe(100)
+  })
+
   it('hides zero-looking TTFT when histogram samples are missing', () => {
     const payload = response({
       meta: {

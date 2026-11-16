@@ -2,7 +2,14 @@
   <article class="min-w-0 rounded-2xl border border-gray-200 bg-white p-4 dark:border-dark-600 dark:bg-dark-800">
     <div class="mb-3 flex flex-wrap items-center justify-between gap-2">
       <h2 class="text-base font-semibold text-gray-900 dark:text-white">{{ t('admin.observability.pressureHeatmap') }}</h2>
-      <span class="text-xs text-gray-500">{{ valueKindLabel }}</span>
+      <span
+        class="inline-flex cursor-help items-center gap-1 text-xs text-gray-500"
+        :title="valueKindHelp || valueKindLabel"
+        :aria-label="valueKindHelp || valueKindLabel"
+      >
+        {{ valueKindLabel }}
+        <span v-if="valueKindHelp" aria-hidden="true" class="text-[10px]">ⓘ</span>
+      </span>
     </div>
     <div v-if="error" class="py-8 text-center text-sm text-red-600 dark:text-red-400" role="alert">{{ error }}</div>
     <div v-else-if="!response?.available" class="rounded-xl bg-gray-50 py-10 text-center text-sm text-gray-500 dark:bg-dark-700">
@@ -11,7 +18,7 @@
     <div v-else-if="matrix.rows.length" class="relative overflow-x-auto">
       <div v-if="hovered" class="pointer-events-none absolute right-2 top-1 z-20 w-52 rounded-xl border border-gray-200 bg-white p-3 text-xs shadow-xl dark:border-dark-600 dark:bg-dark-700">
         <div class="flex items-center justify-between gap-2">
-          <b class="truncate text-gray-900 dark:text-white">{{ hovered.row }}</b>
+          <b class="truncate text-gray-900 dark:text-white">{{ rowLabel(hovered.row) }}</b>
           <span class="shrink-0 text-gray-500">{{ hovered.column }}</span>
         </div>
         <div v-if="valueKind === 'sampled_concurrency'" class="mt-2">
@@ -30,7 +37,7 @@
         </thead>
         <tbody>
           <tr v-for="(row, rowIndex) in matrix.rows" :key="row">
-            <th class="sticky left-0 bg-white px-2 py-1 text-left font-medium dark:bg-dark-800">{{ row }}</th>
+            <th class="sticky left-0 bg-white px-2 py-1 text-left font-medium dark:bg-dark-800">{{ rowLabel(row) }}</th>
             <td v-for="(cell, columnIndex) in matrix.cells[rowIndex]" :key="`${row}-${columnIndex}`">
               <button
                 v-if="cell.available"
@@ -68,6 +75,8 @@ const props = defineProps<{
   response: HeatmapResponse | null
   valueKind: string
   singleAccountFiltered?: boolean
+  rowLabels?: Record<string, string>
+  valueKindHelp?: string
   error?: string
 }>()
 export interface HeatmapSelection {
@@ -120,11 +129,16 @@ function formatValue(value: number) {
   return value.toFixed(props.valueKind === 'token_rate' ? 1 : 0)
 }
 
+function rowLabel(row: string) {
+  return props.rowLabels?.[row] || row
+}
+
 function tooltipTitle(row: string, columnIndex: number, cell: HeatmapMatrix['cells'][number][number]) {
+  const label = rowLabel(row)
   if (props.valueKind === 'sampled_concurrency') {
-    return `${row} · ${matrix.value.columns[columnIndex]} · ${cell.actual_concurrency ?? 0}/${cell.concurrency_limit ?? 0} · ${cell.sample_at || t('admin.observability.noSampleTime')}`
+    return `${label} · ${matrix.value.columns[columnIndex]} · ${cell.actual_concurrency ?? 0}/${cell.concurrency_limit ?? 0} · ${cell.sample_at || t('admin.observability.noSampleTime')}`
   }
-  return `${row} · ${matrix.value.columns[columnIndex]} · ${formatValue(cell.value)}`
+  return `${label} · ${matrix.value.columns[columnIndex]} · ${formatValue(cell.value)}`
 }
 
 function formatTime(value: string) {

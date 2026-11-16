@@ -36,7 +36,7 @@ import {
 } from 'chart.js'
 import { Line } from 'vue-chartjs'
 import { useObservabilityI18n } from './useObservabilityI18n'
-import type { TimeSeriesResponse } from '@/api/admin/observability'
+import type { ObservabilityGroupBy, TimeSeriesResponse } from '@/api/admin/observability'
 import { tokenChartDatasets } from './chartData'
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend, Filler)
@@ -47,6 +47,8 @@ const props = defineProps<{
   response: TimeSeriesResponse | null
   concurrency: number[]
   tokenMetric?: 'total' | 'input' | 'output' | 'cache'
+  groupBy?: ObservabilityGroupBy
+  dimensionLabels?: Record<string, string>
   loading?: boolean
   error?: string
 }>()
@@ -64,9 +66,13 @@ const datasets = computed(() => tokenChartDatasets(
       cache_tokens: t('admin.observability.cache'),
       total_requests: t('admin.observability.requests'),
       sampled_concurrency: t('admin.observability.sampledConcurrency'),
+      dimension_other: t('admin.observability.dimensionOther'),
+      overall_token: t('admin.observability.overallToken'),
     }
     return labels[key] || fallback
   },
+  props.groupBy,
+  props.dimensionLabels || {},
 ))
 const options = {
   responsive: true,

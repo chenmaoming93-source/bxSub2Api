@@ -1,10 +1,12 @@
 import type {
   HeatmapResponse,
+  ObservabilityGroupBy,
   Series,
   TimeSeriesResponse,
 } from '@/api/admin/observability'
 
 export interface ChartDataset {
+  key?: string
   label: string
   data: number[]
   borderColor: string
@@ -13,6 +15,8 @@ export interface ChartDataset {
   tension?: number
   yAxisID?: string
   borderDash?: number[]
+  order?: number
+  hidden?: boolean
 }
 
 type LabelResolver = (key: string, fallback: string) => string
@@ -27,13 +31,70 @@ export function tokenChartDatasets(
   concurrency: number[] = [],
   metric: 'total' | 'input' | 'output' | 'cache' = 'total',
   labelFor: LabelResolver = (_key, fallback) => fallback,
+  groupBy?: ObservabilityGroupBy,
+  dimensionLabels: Record<string, string> = {},
+  maxDimensionSeries = 8,
 ): ChartDataset[] {
   if (!response) return []
   const datasets: ChartDataset[] = []
   const tokenKey = metric === 'total' ? 'total_tokens' : `${metric}_tokens`
   const tokens = response.series.find((item) => item.key === tokenKey)
   const requests = response.series.find((item) => item.key === 'total_requests')
-  if (tokens?.points.length === labels.length) {
+  const groupedPrefix = metric === 'total' ? 'tokens:' : `${metric}_tokens:`
+  const grouped = groupBy
+    ? alignedSeries(labels, response.series)
+      .filter((item) => item.key.startsWith(groupedPrefix) && !item.key.endsWith(':other'))
+      .sort((left, right) => sumPoints(right.points) - sumPoints(left.points))
+    : []
+
+  if (grouped.length > 0) {
+    const colors = ['#14b8a6', '#3b82f6', '#8b5cf6', '#f59e0b', '#ec4899', '#06b6d4', '#84cc16', '#f97316']
+    grouped.slice(0, maxDimensionSeries).forEach((item, index) => {
+      const dimensionKey = item.key.slice(groupedPrefix.length)
+      const color = colors[index % colors.length]
+      datasets.push({
+        label: dimensionLabels[dimensionKey] || labelFor(item.key, item.name || dimensionKey),
+        data: [...item.points],
+        borderColor: color,
+        backgroundColor: `${color}20`,
+        fill: false,
+        tension: 0.25,
+        yAxisID: 'yTokens',
+        order: 2,
+      })
+    })
+    if (tokens?.points.length === labels.length) {
+      const displayed = grouped.slice(0, maxDimensionSeries)
+      const other = labels.map((_label, index) => {
+        const displayedTotal = displayed.reduce((total, item) => total + (item.points[index] || 0), 0)
+        return Math.max(0, (tokens.points[index] || 0) - displayedTotal)
+      })
+      if (other.some((value) => value > 0)) {
+        datasets.push({
+          label: labelFor('dimension_other', 'Other'),
+          data: other,
+          borderColor: '#64748b',
+          backgroundColor: '#64748b20',
+          fill: false,
+          tension: 0.25,
+          borderDash: [4, 3],
+          yAxisID: 'yTokens',
+          order: 2,
+        })
+      }
+      datasets.push({
+        label: labelFor('overall_token', tokens.name || 'Overall Token'),
+        data: [...tokens.points],
+        borderColor: '#94a3b8',
+        backgroundColor: '#94a3b820',
+        fill: false,
+        tension: 0.2,
+        borderDash: [7, 4],
+        yAxisID: 'yTokens',
+        order: 1,
+      })
+    }
+  } else if (tokens?.points.length === labels.length) {
     datasets.push({
       label: labelFor(tokenKey, tokens.name || 'Tokens'),
       data: [...tokens.points],
@@ -70,6 +131,10 @@ export function tokenChartDatasets(
   return datasets
 }
 
+function sumPoints(points: number[]) {
+  return points.reduce((total, value) => total + (Number(value) || 0), 0)
+}
+
 export function qualityChartDatasets(
   labels: string[],
   response: TimeSeriesResponse | null,
@@ -98,6 +163,7 @@ export function qualityChartDatasets(
       const color = definitions.find((definition) => definition.key === item.key)?.color || '#64748b'
       const rate = item.key.endsWith('_rate')
       return {
+        key: item.key,
         label: labelFor(item.key, item.name || item.key),
         data: rate ? item.points.map((point) => point * 100) : [...item.points],
         borderColor: color,
@@ -109,6 +175,7 @@ export function qualityChartDatasets(
     })
   if (labels.length && mode !== 'failure') {
     datasets.push({
+      key: 'slo_2000ms',
       label: labelFor('slo_2000ms', 'SLO 2000ms'),
       data: labels.map(() => 2000),
       borderColor: '#94a3b8',

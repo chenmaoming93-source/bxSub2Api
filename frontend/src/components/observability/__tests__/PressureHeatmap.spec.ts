@@ -51,6 +51,44 @@ describe('PressureHeatmap', () => {
     expect(wrapper.emitted('select')?.[0]?.[0]).toMatchObject({ row: '7', column: '10:00' })
   })
 
+  it('renders row display names while preserving the raw key for selection', async () => {
+    const response: HeatmapResponse = {
+      meta, value_kind: 'error_rate', available: true,
+      rows: ['7'], columns: ['10:00'],
+      cells: [{ row: '7', column: '10:00', value: 0.12, available: true }],
+    }
+    const wrapper = mount(PressureHeatmap, {
+      props: {
+        response,
+        valueKind: 'error_rate',
+        rowLabels: { '7': 'DS-ZLX测试' },
+      },
+    })
+    expect(wrapper.get('tbody th').text()).toBe('DS-ZLX测试')
+    await wrapper.get('button').trigger('mouseenter')
+    expect(wrapper.text()).toContain('DS-ZLX测试')
+    await wrapper.get('button').trigger('click')
+    expect(wrapper.emitted('select')?.[0]?.[0]).toMatchObject({ row: '7' })
+  })
+
+  it('explains the error-rate metric on hover', () => {
+    const wrapper = mount(PressureHeatmap, {
+      props: {
+        response: {
+          meta,
+          value_kind: 'error_rate',
+          available: true,
+          rows: ['7'],
+          columns: ['10:00'],
+          cells: [{ row: '7', column: '10:00', value: 0.1, available: true }],
+        },
+        valueKind: 'error_rate',
+        valueKindHelp: 'admin.observability.heatmapErrorRateHelp',
+      },
+    })
+    expect(wrapper.get('[title="admin.observability.heatmapErrorRateHelp"]').text()).toContain('admin.observability.errorRate')
+  })
+
   it('shows paired actual/limit values and sample time in the hover tooltip', async () => {
     const response: HeatmapResponse = {
       meta, value_kind: 'sampled_concurrency', available: true,

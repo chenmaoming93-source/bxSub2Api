@@ -337,7 +337,7 @@ func (s *ObservabilityQueryService) requestHeatmap(ctx context.Context, request 
 	if groupBy == "" {
 		groupBy = "group_id"
 	}
-	if !validGroupBy(groupBy) || groupBy == "user_id" {
+	if !validGroupBy(groupBy) {
 		return observability.HeatmapResponse{}, fmt.Errorf("unsupported heatmap group_by %q", groupBy)
 	}
 	selected, ids, aliases, err := s.selectedDimensions(ctx, request, groupBy, prepared.start, prepared.end)
@@ -454,7 +454,8 @@ func (s *ObservabilityQueryService) concurrencyHeatmap(ctx context.Context, requ
 		}
 		if limit > 0 {
 			current := heatValue{actual: actual, limit: limit, sampleAt: sampledAt, ratio: float64(actual) / float64(limit)}
-			if current.ratio > values[keyCell].ratio {
+			existing, exists := values[keyCell]
+			if !exists || current.ratio > existing.ratio {
 				values[keyCell] = current
 			}
 		}
@@ -508,12 +509,20 @@ func groupSeriesByBucket(rows []SnapshotSeriesBucket, plan []observability.Bucke
 	for key, buckets := range byKey {
 		requests := bucketValues(plan, buckets, func(v SnapshotRollupTotals) float64 { return float64(v.RequestCount) })
 		tokens := bucketValues(plan, buckets, func(v SnapshotRollupTotals) float64 { return float64(v.TotalTokens) })
+		inputTokens := bucketValues(plan, buckets, func(v SnapshotRollupTotals) float64 { return float64(v.InputTokens) })
+		outputTokens := bucketValues(plan, buckets, func(v SnapshotRollupTotals) float64 { return float64(v.OutputTokens) })
+		cacheTokens := bucketValues(plan, buckets, func(v SnapshotRollupTotals) float64 {
+			return float64(v.CacheCreationTokens + v.CacheReadTokens)
+		})
 		failures := bucketValues(plan, buckets, func(v SnapshotRollupTotals) float64 { return float64(v.ErrorCount) })
 		business := bucketValues(plan, buckets, func(v SnapshotRollupTotals) float64 { return float64(v.BusinessLimitedCount) })
 		sla := bucketValues(plan, buckets, func(v SnapshotRollupTotals) float64 { return float64(v.SLAErrorCount) })
 		out = append(out,
 			observability.Series{Key: "requests:" + key, Name: key, Points: requests},
 			observability.Series{Key: "tokens:" + key, Name: key, Points: tokens},
+			observability.Series{Key: "input_tokens:" + key, Name: key, Points: inputTokens},
+			observability.Series{Key: "output_tokens:" + key, Name: key, Points: outputTokens},
+			observability.Series{Key: "cache_tokens:" + key, Name: key, Points: cacheTokens},
 			observability.Series{Key: "error_count:" + key, Name: key, Points: failures},
 			observability.Series{Key: "business_limited_count:" + key, Name: key, Points: business},
 			observability.Series{Key: "sla_error_count:" + key, Name: key, Points: sla},
@@ -524,7 +533,10 @@ func groupSeriesByBucket(rows []SnapshotSeriesBucket, plan []observability.Bucke
 
 func otherSeries(plan []observability.BucketPoint, overall map[time.Time]SnapshotRollupTotals, grouped []observability.Series) []observability.Series {
 	out := make([]observability.Series, 0)
-	metrics := []string{"requests", "tokens", "error_count", "business_limited_count", "sla_error_count"}
+	metrics := []string{
+		"requests", "tokens", "input_tokens", "output_tokens", "cache_tokens",
+		"error_count", "business_limited_count", "sla_error_count",
+	}
 	for _, metric := range metrics {
 		points := make([]float64, len(plan))
 		for index, point := range plan {
@@ -535,6 +547,12 @@ func otherSeries(plan []observability.BucketPoint, overall map[time.Time]Snapsho
 				value = float64(total.RequestCount)
 			case "tokens":
 				value = float64(total.TotalTokens)
+			case "input_tokens":
+				value = float64(total.InputTokens)
+			case "output_tokens":
+				value = float64(total.OutputTokens)
+			case "cache_tokens":
+				value = float64(total.CacheCreationTokens + total.CacheReadTokens)
 			case "error_count":
 				value = float64(total.ErrorCount)
 			case "business_limited_count":

@@ -1,11 +1,11 @@
 # MVP Progress
 
 - Protocol: `mvp-list/v1`
-- Source plan: `dashboard-demo/revision-v2/design-spec.md` + `prototype.html`（当前确认设计；`MVP-001`～`MVP-015` 保留历史基线）
+- Source plan: `dashboard-demo/revision-v2/design-spec.md` + `prototype.html`（当前确认设计；`MVP-001`～`MVP-015` 保留历史基线；`MVP-025`～`MVP-027` 为 A 环境后续修复）
 - Target effort per MVP: 1 focused developer-day
 - Update batch size: 2 completed MVPs
-- Last updated: `2026-11-16T10:55:00+08:00`
-- Overall: `24/24 (100%)`
+- Last updated: `2026-11-16T19:30:00+08:00`
+- Overall: `27/27 (100%)`
 
 ## Status Rules
 
@@ -42,6 +42,9 @@
 | MVP-022 | [MVP-022-inline-linked-drilldown.md](./MVP-022-inline-linked-drilldown.md) | DONE | MVP-021 | 1.5 days | 2026-11-13 | [evidence](./MVP-022-inline-linked-drilldown.md#completion-evidence) |
 | MVP-023 | [MVP-023-interaction-responsive-hardening.md](./MVP-023-interaction-responsive-hardening.md) | DONE | MVP-020, MVP-021, MVP-022 | 1 day | 2026-11-13 | [evidence](./MVP-023-interaction-responsive-hardening.md#completion-evidence) |
 | MVP-024 | [MVP-024-visual-e2e-performance-release.md](./MVP-024-visual-e2e-performance-release.md) | DONE | MVP-022, MVP-023 | 1.5 days | 2026-11-16 | [evidence](./MVP-024-visual-e2e-performance-release.md#completion-evidence) |
+| MVP-025 | [MVP-025-trend-dimension-series-rendering.md](./MVP-025-trend-dimension-series-rendering.md) | DONE | MVP-020, MVP-024 | 1 day | 2026-11-16 | [evidence](./MVP-025-trend-dimension-series-rendering.md#completion-evidence) |
+| MVP-026 | [MVP-026-heatmap-user-dimension-labels.md](./MVP-026-heatmap-user-dimension-labels.md) | DONE | MVP-024 | 0.75 day | 2026-11-16 | [evidence](./MVP-026-heatmap-user-dimension-labels.md#completion-evidence) |
+| MVP-027 | [MVP-027-rate-semantics-tooltips.md](./MVP-027-rate-semantics-tooltips.md) | DONE | MVP-020, MVP-026 | 0.5 day | 2026-11-16 | [evidence](./MVP-027-rate-semantics-tooltips.md#completion-evidence) |
 
 ## Dependency Notes
 
@@ -52,6 +55,9 @@
 - 观测台为纯只读页面，不包含切流、候选容量写入、阈值应用、处置审计或回滚。
 - 当前修订批次的计划关键路径：`{MVP-016, MVP-017} → MVP-019 → MVP-021 → MVP-022 → MVP-023 → MVP-024`。
 - 后端支路：`MVP-017` 与 `MVP-018` 可在 `MVP-016` 推进期间并行；`MVP-020` 可在 `MVP-019` 完成后与 `MVP-021` 并行。
+- 后续修复支路：`MVP-020 + MVP-024 → MVP-025`，用于补齐趋势维度切换后的真实拆分渲染。
+- 热力图修复：`MVP-024 → MVP-026`，已补齐用户维度查询、对象名称、真实零并发样本和错误率展示。
+- 指标解释：`MVP-020 + MVP-026 → MVP-027`，已补齐三个失败类指标和热力图错误率口径。
 - 历史 `MVP-001`～`MVP-015` 保留原编号、完成时间和证据；新增批次只描述当前设计相对现有实现的差额。
 
 ## Planning Assumptions
