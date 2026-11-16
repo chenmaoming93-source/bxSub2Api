@@ -1,98 +1,27 @@
--- Persist the final matched model-routing alias on success and error facts.
--- Historical rows stay NULL; this file deliberately performs no JSON or data
--- backfill. It is safe to execute again because every DDL statement is guarded
--- by information_schema checks.
+-- MySQL manual migration: persist the matched model-routing alias.
+-- Historical rows remain NULL; no backfill is performed.
+-- If an object already exists, skip only that duplicate statement.
 
--- usage_logs.route_alias
-SET @sub2api_add_usage_route_alias = (
-  SELECT IF(
-    COUNT(*) = 0,
-    'ALTER TABLE `usage_logs` ADD COLUMN `route_alias` VARCHAR(255) NULL',
-    'DO 0'
-  )
-  FROM information_schema.columns
-  WHERE table_schema = DATABASE()
-    AND table_name = 'usage_logs'
-    AND column_name = 'route_alias'
-);
-PREPARE sub2api_add_usage_route_alias_stmt FROM @sub2api_add_usage_route_alias;
-EXECUTE sub2api_add_usage_route_alias_stmt;
-DEALLOCATE PREPARE sub2api_add_usage_route_alias_stmt;
+ALTER TABLE usage_logs
+  ADD COLUMN route_alias VARCHAR(255) NULL;
 
--- ops_error_logs.route_alias
-SET @sub2api_add_ops_route_alias = (
-  SELECT IF(
-    COUNT(*) = 0,
-    'ALTER TABLE `ops_error_logs` ADD COLUMN `route_alias` VARCHAR(255) NULL',
-    'DO 0'
-  )
-  FROM information_schema.columns
-  WHERE table_schema = DATABASE()
-    AND table_name = 'ops_error_logs'
-    AND column_name = 'route_alias'
-);
-PREPARE sub2api_add_ops_route_alias_stmt FROM @sub2api_add_ops_route_alias;
-EXECUTE sub2api_add_ops_route_alias_stmt;
-DEALLOCATE PREPARE sub2api_add_ops_route_alias_stmt;
+ALTER TABLE ops_error_logs
+  ADD COLUMN route_alias VARCHAR(255) NULL;
 
--- Group-scoped observability queries.
-SET @sub2api_add_usage_group_route_time_index = (
-  SELECT IF(
-    COUNT(*) = 0,
-    'CREATE INDEX `idx_usage_logs_group_route_time` ON `usage_logs` (`group_id`, `route_alias`, `created_at`)',
-    'DO 0'
-  )
-  FROM information_schema.statistics
-  WHERE table_schema = DATABASE()
-    AND table_name = 'usage_logs'
-    AND index_name = 'idx_usage_logs_group_route_time'
-);
-PREPARE sub2api_add_usage_group_route_time_index_stmt FROM @sub2api_add_usage_group_route_time_index;
-EXECUTE sub2api_add_usage_group_route_time_index_stmt;
-DEALLOCATE PREPARE sub2api_add_usage_group_route_time_index_stmt;
+CREATE INDEX idx_usage_logs_group_route_time
+  ON usage_logs (group_id, route_alias, created_at);
 
-SET @sub2api_add_ops_group_route_time_index = (
-  SELECT IF(
-    COUNT(*) = 0,
-    'CREATE INDEX `idx_ops_error_logs_group_route_time` ON `ops_error_logs` (`group_id`, `route_alias`, `created_at`)',
-    'DO 0'
-  )
-  FROM information_schema.statistics
-  WHERE table_schema = DATABASE()
-    AND table_name = 'ops_error_logs'
-    AND index_name = 'idx_ops_error_logs_group_route_time'
-);
-PREPARE sub2api_add_ops_group_route_time_index_stmt FROM @sub2api_add_ops_group_route_time_index;
-EXECUTE sub2api_add_ops_group_route_time_index_stmt;
-DEALLOCATE PREPARE sub2api_add_ops_group_route_time_index_stmt;
+CREATE INDEX idx_ops_error_logs_group_route_time
+  ON ops_error_logs (group_id, route_alias, created_at);
 
--- Route-only trend/filter queries that do not constrain group_id.
-SET @sub2api_add_usage_route_time_index = (
-  SELECT IF(
-    COUNT(*) = 0,
-    'CREATE INDEX `idx_usage_logs_route_time` ON `usage_logs` (`route_alias`, `created_at`)',
-    'DO 0'
-  )
-  FROM information_schema.statistics
-  WHERE table_schema = DATABASE()
-    AND table_name = 'usage_logs'
-    AND index_name = 'idx_usage_logs_route_time'
-);
-PREPARE sub2api_add_usage_route_time_index_stmt FROM @sub2api_add_usage_route_time_index;
-EXECUTE sub2api_add_usage_route_time_index_stmt;
-DEALLOCATE PREPARE sub2api_add_usage_route_time_index_stmt;
+CREATE INDEX idx_usage_logs_route_time
+  ON usage_logs (route_alias, created_at);
 
-SET @sub2api_add_ops_route_time_index = (
-  SELECT IF(
-    COUNT(*) = 0,
-    'CREATE INDEX `idx_ops_error_logs_route_time` ON `ops_error_logs` (`route_alias`, `created_at`)',
-    'DO 0'
-  )
-  FROM information_schema.statistics
-  WHERE table_schema = DATABASE()
-    AND table_name = 'ops_error_logs'
-    AND index_name = 'idx_ops_error_logs_route_time'
-);
-PREPARE sub2api_add_ops_route_time_index_stmt FROM @sub2api_add_ops_route_time_index;
-EXECUTE sub2api_add_ops_route_time_index_stmt;
-DEALLOCATE PREPARE sub2api_add_ops_route_time_index_stmt;
+CREATE INDEX idx_ops_error_logs_route_time
+  ON ops_error_logs (route_alias, created_at);
+
+-- Verification
+SHOW COLUMNS FROM usage_logs LIKE 'route_alias';
+SHOW COLUMNS FROM ops_error_logs LIKE 'route_alias';
+SHOW INDEX FROM usage_logs WHERE Key_name LIKE 'idx_usage_logs_%route_time';
+SHOW INDEX FROM ops_error_logs WHERE Key_name LIKE 'idx_ops_error_logs_%route_time';

@@ -1,48 +1,17 @@
--- Preserve the exact sample that produced the highest concurrency-pressure
--- ratio. The values must be read together; taking independent MAX(current)
--- and MAX(limit) can pair measurements from different moments.
+-- MySQL manual migration: retain the exact maximum-pressure sample.
+-- Use this file instead of auto-migration 160 when the runtime user has no DDL permission.
+-- If a column already exists, skip only that duplicate statement.
 
-SET @sub2api_add_obs_peak_ratio_actual = (
-  SELECT IF(
-    COUNT(*) = 0,
-    'ALTER TABLE `observability_concurrency_bucket` ADD COLUMN `peak_ratio_actual` INT NOT NULL DEFAULT 0',
-    'DO 0'
-  )
-  FROM information_schema.columns
-  WHERE table_schema = DATABASE()
-    AND table_name = 'observability_concurrency_bucket'
-    AND column_name = 'peak_ratio_actual'
-);
-PREPARE sub2api_add_obs_peak_ratio_actual_stmt FROM @sub2api_add_obs_peak_ratio_actual;
-EXECUTE sub2api_add_obs_peak_ratio_actual_stmt;
-DEALLOCATE PREPARE sub2api_add_obs_peak_ratio_actual_stmt;
+ALTER TABLE observability_concurrency_bucket
+  ADD COLUMN peak_ratio_actual INT NOT NULL DEFAULT 0;
 
-SET @sub2api_add_obs_peak_ratio_limit = (
-  SELECT IF(
-    COUNT(*) = 0,
-    'ALTER TABLE `observability_concurrency_bucket` ADD COLUMN `peak_ratio_limit` INT NOT NULL DEFAULT 0',
-    'DO 0'
-  )
-  FROM information_schema.columns
-  WHERE table_schema = DATABASE()
-    AND table_name = 'observability_concurrency_bucket'
-    AND column_name = 'peak_ratio_limit'
-);
-PREPARE sub2api_add_obs_peak_ratio_limit_stmt FROM @sub2api_add_obs_peak_ratio_limit;
-EXECUTE sub2api_add_obs_peak_ratio_limit_stmt;
-DEALLOCATE PREPARE sub2api_add_obs_peak_ratio_limit_stmt;
+ALTER TABLE observability_concurrency_bucket
+  ADD COLUMN peak_ratio_limit INT NOT NULL DEFAULT 0;
 
-SET @sub2api_add_obs_peak_ratio_sample_at = (
-  SELECT IF(
-    COUNT(*) = 0,
-    'ALTER TABLE `observability_concurrency_bucket` ADD COLUMN `peak_ratio_sample_at` DATETIME(6) NULL',
-    'DO 0'
-  )
-  FROM information_schema.columns
-  WHERE table_schema = DATABASE()
-    AND table_name = 'observability_concurrency_bucket'
-    AND column_name = 'peak_ratio_sample_at'
-);
-PREPARE sub2api_add_obs_peak_ratio_sample_at_stmt FROM @sub2api_add_obs_peak_ratio_sample_at;
-EXECUTE sub2api_add_obs_peak_ratio_sample_at_stmt;
-DEALLOCATE PREPARE sub2api_add_obs_peak_ratio_sample_at_stmt;
+ALTER TABLE observability_concurrency_bucket
+  ADD COLUMN peak_ratio_sample_at DATETIME(6) NULL;
+
+-- Verification
+SHOW COLUMNS FROM observability_concurrency_bucket LIKE 'peak_ratio_actual';
+SHOW COLUMNS FROM observability_concurrency_bucket LIKE 'peak_ratio_limit';
+SHOW COLUMNS FROM observability_concurrency_bucket LIKE 'peak_ratio_sample_at';

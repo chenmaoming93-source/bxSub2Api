@@ -38,8 +38,7 @@ CREATE TABLE IF NOT EXISTS `observability_concurrency_sampler_state` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT INTO `observability_concurrency_sampler_state`
+INSERT IGNORE INTO `observability_concurrency_sampler_state`
   (`id`, `quality_status`)
 VALUES
-  (1, 'unknown')
-ON DUPLICATE KEY UPDATE `id` = VALUES(`id`);
+  (1, 'unknown');
