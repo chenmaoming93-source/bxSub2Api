@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 
 	"github.com/Wei-Shaw/sub2api/internal/rbac"
 )
@@ -63,6 +64,66 @@ func (r *RBACRepository) LoadActiveGrants(ctx context.Context, userID int64) ([]
 		return nil, fmt.Errorf("iterate active RBAC grants: %w", err)
 	}
 	return grants, nil
+}
+
+func (r *RBACRepository) ListSuperAdminUserIDs(ctx context.Context, userIDs []int64) ([]int64, error) {
+	if len(userIDs) == 0 {
+		return []int64{}, nil
+	}
+	placeholders := make([]string, len(userIDs))
+	args := make([]any, len(userIDs))
+	for i, userID := range userIDs {
+		placeholders[i] = "?"
+		args[i] = userID
+	}
+	rows, err := r.db.QueryContext(ctx, `
+		SELECT DISTINCT scoped.user_id
+		FROM (
+			SELECT user_role.user_id
+			FROM rbac_user_roles AS user_role
+			JOIN rbac_roles AS role_row
+			  ON role_row.id = user_role.role_id
+			 AND role_row.code = 'admin'
+			 AND role_row.status = 'active'
+			 AND role_row.deleted_at IS NULL
+			UNION
+			SELECT user_role.user_id
+			FROM rbac_user_roles AS user_role
+			JOIN rbac_roles AS role_row
+			  ON role_row.id = user_role.role_id
+			 AND role_row.status = 'active'
+			 AND role_row.deleted_at IS NULL
+			JOIN rbac_role_permissions AS role_permission
+			  ON role_permission.role_id = role_row.id
+			JOIN rbac_permissions AS permission_row
+			  ON permission_row.id = role_permission.permission_id
+			 AND permission_row.code = '*'
+			 AND permission_row.status = 'active'
+			 AND permission_row.deleted_at IS NULL
+			UNION
+			SELECT id AS user_id
+			FROM users
+			WHERE role = 'admin' AND deleted_at IS NULL
+		) AS scoped
+		WHERE scoped.user_id IN (`+strings.Join(placeholders, ",")+`)
+	`, args...)
+	if err != nil {
+		return nil, fmt.Errorf("query super administrator users: %w", err)
+	}
+	defer rows.Close()
+
+	result := make([]int64, 0)
+	for rows.Next() {
+		var userID int64
+		if err := rows.Scan(&userID); err != nil {
+			return nil, fmt.Errorf("scan super administrator user: %w", err)
+		}
+		result = append(result, userID)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate super administrator users: %w", err)
+	}
+	return result, nil
 }
 
 func (r *RBACRepository) GetUserVersion(ctx context.Context, userID int64) (int64, error) {

@@ -51,6 +51,12 @@ type IdempotencyRecord func(*sql.Selector)
 // IdentityAdoptionDecision is the predicate function for identityadoptiondecision builders.
 type IdentityAdoptionDecision func(*sql.Selector)
 
+// ObservabilityConcurrencyBucket is the predicate function for observabilityconcurrencybucket builders.
+type ObservabilityConcurrencyBucket func(*sql.Selector)
+
+// ObservabilityRequestBucket is the predicate function for observabilityrequestbucket builders.
+type ObservabilityRequestBucket func(*sql.Selector)
+
 // PaymentAuditLog is the predicate function for paymentauditlog builders.
 type PaymentAuditLog func(*sql.Selector)
 

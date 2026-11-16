@@ -2,11 +2,15 @@ package handler
 
 import (
 	"context"
+	"net/http"
+	"net/http/httptest"
 	"sync/atomic"
 	"testing"
 	"time"
 
+	middleware2 "github.com/Wei-Shaw/sub2api/internal/server/middleware"
 	"github.com/Wei-Shaw/sub2api/internal/service"
+	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
 )
 
@@ -108,6 +112,48 @@ func TestConcurrencyHelper_TryAcquireUserSlot(t *testing.T) {
 
 	release()
 	require.Equal(t, int32(1), atomic.LoadInt32(&cache.releaseUserCalled))
+}
+
+func TestConcurrencyHelper_SuperAdminSkipsOnlyUserSlot(t *testing.T) {
+	var accountAcquireCalls int32
+	cache := &concurrencyCacheMock{
+		acquireUserSlotFn: func(context.Context, int64, int, string) (bool, error) {
+			return false, nil
+		},
+		acquireAccountSlotFn: func(context.Context, int64, int, string) (bool, error) {
+			atomic.AddInt32(&accountAcquireCalls, 1)
+			return true, nil
+		},
+	}
+	helper := NewConcurrencyHelper(service.NewConcurrencyService(cache), SSEPingFormatNone, time.Second)
+	gin.SetMode(gin.TestMode)
+	recorder := httptest.NewRecorder()
+	context, _ := gin.CreateTestContext(recorder)
+	context.Request = httptest.NewRequest(http.MethodPost, "/v1/messages", nil)
+	context.Set(string(middleware2.ContextKeyUser), middleware2.AuthSubject{
+		UserID: 42, Concurrency: 1, SuperAdmin: true,
+	})
+
+	release, err := helper.AcquireUserSlotWithWait(context, 42, 1, false, new(bool))
+	require.NoError(t, err)
+	require.NotNil(t, release)
+	release()
+	require.Equal(t, int32(0), atomic.LoadInt32(&cache.releaseUserCalled))
+
+	release, acquired, err := helper.TryAcquireUserSlotForSubject(context.Request.Context(), 42, 1, true)
+	require.NoError(t, err)
+	require.True(t, acquired)
+	release()
+
+	_, acquired, err = helper.TryAcquireUserSlotForSubject(context.Request.Context(), 42, 1, false)
+	require.NoError(t, err)
+	require.False(t, acquired, "normal users must still acquire the user slot")
+
+	accountRelease, err := helper.AcquireAccountSlotWithWait(context, 9, 1, false, new(bool))
+	require.NoError(t, err)
+	require.NotNil(t, accountRelease)
+	accountRelease()
+	require.Equal(t, int32(1), atomic.LoadInt32(&accountAcquireCalls), "account shared capacity must remain enforced")
 }
 
 func TestConcurrencyHelper_TryAcquireAccountSlot_NotAcquired(t *testing.T) {

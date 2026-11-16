@@ -114,6 +114,11 @@ export const FeatureFlags = {
     mode: 'opt-in',
     label: 'Risk Control',
   }),
+  observability: defineFlag({
+    key: 'observability_enabled',
+    mode: 'opt-in',
+    label: 'Model Observability',
+  }),
   affiliate: defineFlag({
     key: 'affiliate_enabled',
     mode: 'opt-in',

@@ -257,6 +257,13 @@ type ConcurrencyService struct {
 	accountLoadCacheMu  sync.RWMutex
 	accountLoadCache    map[string]cachedAccountLoadBatch
 	accountLoadGroup    singleflight.Group
+
+	waitObserverMu sync.RWMutex
+	waitObserver   AccountWaitObserver
+}
+
+type AccountWaitObserver interface {
+	RecordAccountWait(accountID int64, wait time.Duration)
 }
 
 type cachedAccountLoadBatch struct {
@@ -506,6 +513,27 @@ func (s *ConcurrencyService) GetAccountWaitingCount(ctx context.Context, account
 		return 0, nil
 	}
 	return s.cache.GetAccountWaitingCount(ctx, accountID)
+}
+
+func (s *ConcurrencyService) SetAccountWaitObserver(observer AccountWaitObserver) {
+	if s == nil {
+		return
+	}
+	s.waitObserverMu.Lock()
+	s.waitObserver = observer
+	s.waitObserverMu.Unlock()
+}
+
+func (s *ConcurrencyService) RecordAccountWait(accountID int64, wait time.Duration) {
+	if s == nil || accountID <= 0 || wait <= 0 {
+		return
+	}
+	s.waitObserverMu.RLock()
+	observer := s.waitObserver
+	s.waitObserverMu.RUnlock()
+	if observer != nil {
+		observer.RecordAccountWait(accountID, wait)
+	}
 }
 
 // CalculateMaxWait calculates the maximum wait queue size for a user

@@ -142,6 +142,26 @@ func (_u *UsageLogUpdate) ClearUpstreamModel() *UsageLogUpdate {
 	return _u
 }
 
+// SetRouteAlias sets the "route_alias" field.
+func (_u *UsageLogUpdate) SetRouteAlias(v string) *UsageLogUpdate {
+	_u.mutation.SetRouteAlias(v)
+	return _u
+}
+
+// SetNillableRouteAlias sets the "route_alias" field if the given value is not nil.
+func (_u *UsageLogUpdate) SetNillableRouteAlias(v *string) *UsageLogUpdate {
+	if v != nil {
+		_u.SetRouteAlias(*v)
+	}
+	return _u
+}
+
+// ClearRouteAlias clears the value of the "route_alias" field.
+func (_u *UsageLogUpdate) ClearRouteAlias() *UsageLogUpdate {
+	_u.mutation.ClearRouteAlias()
+	return _u
+}
+
 // SetChannelID sets the "channel_id" field.
 func (_u *UsageLogUpdate) SetChannelID(v int64) *UsageLogUpdate {
 	_u.mutation.ResetChannelID()
@@ -934,6 +954,11 @@ func (_u *UsageLogUpdate) check() error {
 			return &ValidationError{Name: "upstream_model", err: fmt.Errorf(`ent: validator failed for field "UsageLog.upstream_model": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.RouteAlias(); ok {
+		if err := usagelog.RouteAliasValidator(v); err != nil {
+			return &ValidationError{Name: "route_alias", err: fmt.Errorf(`ent: validator failed for field "UsageLog.route_alias": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.ModelMappingChain(); ok {
 		if err := usagelog.ModelMappingChainValidator(v); err != nil {
 			return &ValidationError{Name: "model_mapping_chain", err: fmt.Errorf(`ent: validator failed for field "UsageLog.model_mapping_chain": %w`, err)}
@@ -1020,6 +1045,12 @@ func (_u *UsageLogUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.UpstreamModelCleared() {
 		_spec.ClearField(usagelog.FieldUpstreamModel, field.TypeString)
+	}
+	if value, ok := _u.mutation.RouteAlias(); ok {
+		_spec.SetField(usagelog.FieldRouteAlias, field.TypeString, value)
+	}
+	if _u.mutation.RouteAliasCleared() {
+		_spec.ClearField(usagelog.FieldRouteAlias, field.TypeString)
 	}
 	if value, ok := _u.mutation.ChannelID(); ok {
 		_spec.SetField(usagelog.FieldChannelID, field.TypeInt64, value)
@@ -1485,6 +1516,26 @@ func (_u *UsageLogUpdateOne) SetNillableUpstreamModel(v *string) *UsageLogUpdate
 // ClearUpstreamModel clears the value of the "upstream_model" field.
 func (_u *UsageLogUpdateOne) ClearUpstreamModel() *UsageLogUpdateOne {
 	_u.mutation.ClearUpstreamModel()
+	return _u
+}
+
+// SetRouteAlias sets the "route_alias" field.
+func (_u *UsageLogUpdateOne) SetRouteAlias(v string) *UsageLogUpdateOne {
+	_u.mutation.SetRouteAlias(v)
+	return _u
+}
+
+// SetNillableRouteAlias sets the "route_alias" field if the given value is not nil.
+func (_u *UsageLogUpdateOne) SetNillableRouteAlias(v *string) *UsageLogUpdateOne {
+	if v != nil {
+		_u.SetRouteAlias(*v)
+	}
+	return _u
+}
+
+// ClearRouteAlias clears the value of the "route_alias" field.
+func (_u *UsageLogUpdateOne) ClearRouteAlias() *UsageLogUpdateOne {
+	_u.mutation.ClearRouteAlias()
 	return _u
 }
 
@@ -2293,6 +2344,11 @@ func (_u *UsageLogUpdateOne) check() error {
 			return &ValidationError{Name: "upstream_model", err: fmt.Errorf(`ent: validator failed for field "UsageLog.upstream_model": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.RouteAlias(); ok {
+		if err := usagelog.RouteAliasValidator(v); err != nil {
+			return &ValidationError{Name: "route_alias", err: fmt.Errorf(`ent: validator failed for field "UsageLog.route_alias": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.ModelMappingChain(); ok {
 		if err := usagelog.ModelMappingChainValidator(v); err != nil {
 			return &ValidationError{Name: "model_mapping_chain", err: fmt.Errorf(`ent: validator failed for field "UsageLog.model_mapping_chain": %w`, err)}
@@ -2396,6 +2452,12 @@ func (_u *UsageLogUpdateOne) sqlSave(ctx context.Context) (_node *UsageLog, err 
 	}
 	if _u.mutation.UpstreamModelCleared() {
 		_spec.ClearField(usagelog.FieldUpstreamModel, field.TypeString)
+	}
+	if value, ok := _u.mutation.RouteAlias(); ok {
+		_spec.SetField(usagelog.FieldRouteAlias, field.TypeString, value)
+	}
+	if _u.mutation.RouteAliasCleared() {
+		_spec.ClearField(usagelog.FieldRouteAlias, field.TypeString)
 	}
 	if value, ok := _u.mutation.ChannelID(); ok {
 		_spec.SetField(usagelog.FieldChannelID, field.TypeInt64, value)

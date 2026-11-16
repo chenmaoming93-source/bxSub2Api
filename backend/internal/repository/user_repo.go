@@ -156,6 +156,34 @@ func (r *userRepository) GetByID(ctx context.Context, id int64) (*service.User, 
 	return out, nil
 }
 
+// GetByIDs loads users and their allowed groups in two bounded queries. The
+// observability snapshot uses this optional batch method to avoid fixed-size
+// per-row label lookups when rendering top users.
+func (r *userRepository) GetByIDs(ctx context.Context, ids []int64) ([]service.User, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	entities, err := r.client.User.Query().
+		Where(dbuser.IDIn(ids...)).
+		All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	groups, err := r.loadAllowedGroups(ctx, ids)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]service.User, 0, len(entities))
+	for _, entity := range entities {
+		item := userEntityToService(entity)
+		if values, ok := groups[entity.ID]; ok {
+			item.AllowedGroups = values
+		}
+		out = append(out, *item)
+	}
+	return out, nil
+}
+
 func (r *userRepository) GetByIDIncludeDeleted(ctx context.Context, id int64) (*service.User, error) {
 	ctx = mixins.SkipSoftDelete(ctx)
 	m, err := r.client.User.Query().Where(dbuser.IDEQ(id)).Only(ctx)
@@ -511,6 +539,9 @@ func (r *userRepository) ListWithFilters(ctx context.Context, params pagination.
 			apikey.DeletedAtIsNil(),
 		))
 	}
+	if filters.ExcludeSuperAdmins {
+		q = q.Where(excludeSuperAdminUsersPredicate())
+	}
 
 	// If attribute filters are specified, we need to filter by user IDs first
 	var allowedUserIDs []int64
@@ -590,6 +621,42 @@ func (r *userRepository) ListWithFilters(ctx context.Context, params pagination.
 	}
 
 	return outUsers, paginationResultFromTotal(int64(total), params), nil
+}
+
+func excludeSuperAdminUsersPredicate() predicate.User {
+	return predicate.User(func(s *entsql.Selector) {
+		s.Where(entsql.P(func(b *entsql.Builder) {
+			b.Ident(s.C(dbuser.FieldRole)).
+				WriteString(` <> 'admin' AND NOT EXISTS (
+				SELECT 1
+				FROM rbac_user_roles AS quota_user_role
+				JOIN rbac_roles AS quota_role
+				  ON quota_role.id = quota_user_role.role_id
+				 AND quota_role.status = 'active'
+				 AND quota_role.deleted_at IS NULL
+				WHERE quota_user_role.user_id = `).
+				Ident(s.C(dbuser.FieldID)).
+				WriteString(` AND quota_role.code = 'admin'
+			) AND NOT EXISTS (
+				SELECT 1
+				FROM rbac_user_roles AS wildcard_user_role
+				JOIN rbac_roles AS wildcard_role
+				  ON wildcard_role.id = wildcard_user_role.role_id
+				 AND wildcard_role.status = 'active'
+				 AND wildcard_role.deleted_at IS NULL
+				JOIN rbac_role_permissions AS wildcard_role_permission
+				  ON wildcard_role_permission.role_id = wildcard_role.id
+				JOIN rbac_permissions AS wildcard_permission
+				  ON wildcard_permission.id = wildcard_role_permission.permission_id
+				 AND wildcard_permission.code = '*'
+				 AND wildcard_permission.status = 'active'
+				 AND wildcard_permission.deleted_at IS NULL
+				WHERE wildcard_user_role.user_id = `).
+				Ident(s.C(dbuser.FieldID)).
+				WriteString(`)
+			)`)
+		}))
+	})
 }
 
 func userListOrder(params pagination.PaginationParams) []func(*entsql.Selector) {

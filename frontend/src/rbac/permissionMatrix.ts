@@ -44,6 +44,7 @@ export const pagePermissionMatrix: PagePermissionDefinition[] = [
   { path: '/admin', permission: 'dashboard.read', classification: 'rbac' },
   { path: '/admin/dashboard', permission: 'dashboard.read', classification: 'rbac' },
   { path: '/admin/ops', permission: 'ops.read', classification: 'rbac' },
+  { path: '/admin/observability', permission: 'observability.read', classification: 'rbac' },
   { path: '/admin/users', permission: 'users.read', classification: 'rbac' },
   { path: '/admin/roles', permission: 'roles.read', classification: 'rbac' },
   { path: '/admin/groups', permission: 'groups.read', classification: 'rbac' },

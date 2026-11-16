@@ -395,6 +395,17 @@ const rawRoutes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/admin/observability',
+    name: 'AdminObservability',
+    component: () => import('@/views/admin/ModelObservabilityView.vue'),
+    meta: {
+      requiresAuth: true,
+      title: 'Model Observability',
+      titleKey: 'admin.observability.title',
+      descriptionKey: 'admin.observability.description'
+    }
+  },
+  {
     path: '/admin/users',
     name: 'AdminUsers',
     component: () => import('@/views/admin/UsersView.vue'),
@@ -814,6 +825,21 @@ router.beforeEach(async (to, _from, next) => {
   if (requiredPermissions.length > 0 && !permissionAllowed) {
     next('/welcome')
     return
+  }
+
+  if (to.path.startsWith('/admin/observability')) {
+    if (!adminSettingsStore.loaded) {
+      try {
+        await adminSettingsStore.fetch()
+      } catch {
+        next('/welcome')
+        return
+      }
+    }
+    if (!adminSettingsStore.observabilityEnabled) {
+      next(authStore.can('settings.read') ? '/admin/settings' : '/welcome')
+      return
+    }
   }
 
   if (to.path.startsWith('/admin/') && authStore.isAdmin) {

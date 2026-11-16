@@ -7,6 +7,7 @@ import "github.com/gin-gonic/gin"
 type AuthSubject struct {
 	UserID      int64
 	Concurrency int
+	SuperAdmin  bool
 }
 
 func GetAuthSubjectFromContext(c *gin.Context) (AuthSubject, bool) {

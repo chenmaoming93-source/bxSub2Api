@@ -17,13 +17,13 @@ import (
 )
 
 type Account struct {
-	ID                      int64
-	Name                    string
-	Notes                   *string
-	Platform                string
-	Type                    string
-	Credentials             map[string]any
-	Extra                   map[string]any
+	ID          int64
+	Name        string
+	Notes       *string
+	Platform    string
+	Type        string
+	Credentials map[string]any
+	Extra       map[string]any
 	// ModelAttributes 模型基本属性（JSON map，属性名为 key，{description, value} 为值）。
 	// nil = 未配置；空 map = 显式空配置。后端信任前端，value 原样存储。
 	ModelAttributes         domain.ModelAttributes
@@ -533,6 +533,33 @@ func (a *Account) FirstModelMappingValue() string {
 	}
 	sort.Strings(keys)
 	return strings.TrimSpace(mapping[keys[0]])
+}
+
+// BoundModel returns the account's single upstream model. Historical rows may
+// still contain more than one mapping entry; this method deliberately resolves
+// them deterministically while ModelBindingLegacyMulti reports the data issue.
+func (a *Account) BoundModel() string {
+	return a.FirstModelMappingValue()
+}
+
+// ModelBindingLegacyMulti reports whether a historical account still contains
+// more than one non-blank model_mapping key. Reads remain deterministic and
+// non-mutating; remediation is an explicit operator action.
+func (a *Account) ModelBindingLegacyMulti() bool {
+	if a == nil {
+		return false
+	}
+	count := 0
+	for key := range a.GetModelMapping() {
+		if strings.TrimSpace(key) == "" {
+			continue
+		}
+		count++
+		if count > 1 {
+			return true
+		}
+	}
+	return false
 }
 
 func (a *Account) resolveModelMapping(rawMapping map[string]any) map[string]string {

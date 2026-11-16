@@ -84,15 +84,16 @@ const (
 	PermissionDataManagementRead    = "data_management.read"
 	PermissionDataManagementUpdate  = "data_management.update"
 
-	PermissionOpsRead          = "ops.read"
-	PermissionOpsUpdate        = "ops.update"
-	PermissionOpsLogsManage    = "ops.logs.manage"
-	PermissionUsageAdminRead   = "usage.admin.read"
-	PermissionUsageAdminManage = "usage.admin.manage"
-	PermissionTokenUsageRead   = "token_usage.read"
-	PermissionTokenUsageManage = "token_usage.manage"
-	PermissionTokenQuotaRead   = "token_quota.read"
-	PermissionTokenQuotaUpdate = "token_quota.update"
+	PermissionOpsRead           = "ops.read"
+	PermissionOpsUpdate         = "ops.update"
+	PermissionOpsLogsManage     = "ops.logs.manage"
+	PermissionObservabilityRead = "observability.read"
+	PermissionUsageAdminRead    = "usage.admin.read"
+	PermissionUsageAdminManage  = "usage.admin.manage"
+	PermissionTokenUsageRead    = "token_usage.read"
+	PermissionTokenUsageManage  = "token_usage.manage"
+	PermissionTokenQuotaRead    = "token_quota.read"
+	PermissionTokenQuotaUpdate  = "token_quota.update"
 
 	PermissionAnnouncementsRead   = "announcements.read"
 	PermissionAnnouncementsCreate = "announcements.create"
@@ -237,7 +238,10 @@ func buildCatalog() []PermissionDefinition {
 	add("backups", RiskCritical, [3]string{PermissionBackupsRestore, "恢复备份", "从备份恢复系统"})
 	add("data_management", RiskLow, [3]string{PermissionDataManagementRead, "查看数据管理", "查看数据源和任务"})
 	add("data_management", RiskHigh, [3]string{PermissionDataManagementUpdate, "修改数据管理", "修改数据源或执行任务"})
-	add("ops", RiskLow, [3]string{PermissionOpsRead, "查看运维信息", "查看指标、错误和日志"})
+	add("ops", RiskLow,
+		[3]string{PermissionOpsRead, "查看运维信息", "查看指标、错误和日志"},
+		[3]string{PermissionObservabilityRead, "查看模型观测台", "查看只读模型使用、压力和质量观测"},
+	)
 	add("ops", RiskHigh,
 		[3]string{PermissionOpsUpdate, "修改运维配置", "修改告警、通知和运行时设置"},
 		[3]string{PermissionOpsLogsManage, "管理运维日志", "解决错误或清理系统日志"},

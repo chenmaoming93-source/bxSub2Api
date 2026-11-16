@@ -2106,6 +2106,12 @@ func (s *adminServiceImpl) CreateGroup(ctx context.Context, input *CreateGroupIn
 		return nil, ErrGroupExists
 	}
 
+	if group.ModelRoutingEnabled {
+		if err := s.validateModelRoutingBoundModels(ctx, group.ModelRouting); err != nil {
+			return nil, err
+		}
+	}
+
 	if err := s.groupRepo.Create(ctx, group); err != nil {
 		return nil, err
 	}
@@ -2347,6 +2353,11 @@ func (s *adminServiceImpl) UpdateGroup(ctx context.Context, id int64, input *Upd
 	if input.ModelRoutingEnabled != nil {
 		group.ModelRoutingEnabled = *input.ModelRoutingEnabled
 	}
+	if group.ModelRoutingEnabled && (input.ModelRouting != nil || input.ModelRoutingEnabled != nil) {
+		if err := s.validateModelRoutingBoundModels(ctx, group.ModelRouting); err != nil {
+			return nil, err
+		}
+	}
 	if input.MCPXMLInject != nil {
 		group.MCPXMLInject = *input.MCPXMLInject
 	}
@@ -2464,6 +2475,79 @@ func (s *adminServiceImpl) UpdateGroup(ctx context.Context, id int64, input *Upd
 	}
 
 	return group, nil
+}
+
+func (s *adminServiceImpl) validateModelRoutingBoundModels(ctx context.Context, raw any) error {
+	var data json.RawMessage
+	switch value := raw.(type) {
+	case nil:
+		return nil
+	case json.RawMessage:
+		data = value
+	case []byte:
+		data = value
+	default:
+		encoded, err := json.Marshal(value)
+		if err != nil {
+			return infraerrors.BadRequest("ACCOUNT_MODEL_ROUTING_INVALID", err.Error())
+		}
+		data = encoded
+	}
+	if len(data) == 0 || strings.TrimSpace(string(data)) == "null" {
+		return nil
+	}
+	config, err := domain.ParseModelRoutingConfig(data)
+	if err != nil {
+		return infraerrors.BadRequest("ACCOUNT_MODEL_ROUTING_INVALID", err.Error())
+	}
+	accountIDs := make([]int64, 0)
+	seen := make(map[int64]struct{})
+	for _, candidates := range config {
+		for _, candidate := range candidates {
+			for _, accountID := range candidate.AccountIDs {
+				if _, exists := seen[accountID]; exists {
+					continue
+				}
+				seen[accountID] = struct{}{}
+				accountIDs = append(accountIDs, accountID)
+			}
+		}
+	}
+	if len(accountIDs) == 0 {
+		return nil
+	}
+	accounts, err := s.accountRepo.GetByIDs(ctx, accountIDs)
+	if err != nil {
+		return err
+	}
+	accountByID := make(map[int64]*Account, len(accounts))
+	for _, account := range accounts {
+		if account != nil {
+			accountByID[account.ID] = account
+		}
+	}
+	for _, accountID := range accountIDs {
+		account := accountByID[accountID]
+		if account == nil {
+			return infraerrors.BadRequest(
+				"ACCOUNT_MODEL_ROUTING_ACCOUNT_MISSING",
+				fmt.Sprintf("model-routing candidate account %d does not exist", accountID),
+			)
+		}
+		if account.ModelBindingLegacyMulti() {
+			return infraerrors.BadRequest(
+				"ACCOUNT_MULTIPLE_UPSTREAM_MODELS",
+				fmt.Sprintf("model-routing candidate account %d is a legacy multi-model account; split it before binding", accountID),
+			)
+		}
+		if account.BoundModel() == "" {
+			return infraerrors.BadRequest(
+				"ACCOUNT_BOUND_MODEL_REQUIRED",
+				fmt.Sprintf("model-routing candidate account %d must define exactly one model_mapping entry", accountID),
+			)
+		}
+	}
+	return nil
 }
 
 func (s *adminServiceImpl) DeleteGroup(ctx context.Context, id int64) error {
@@ -3152,6 +3236,28 @@ func (s *adminServiceImpl) BulkUpdateAccounts(ctx context.Context, input *BulkUp
 	if input.RateMultiplier != nil {
 		if *input.RateMultiplier < 0 {
 			return nil, errors.New("rate_multiplier must be >= 0")
+		}
+	}
+	if _, updatesModelMapping := input.Credentials["model_mapping"]; updatesModelMapping {
+		accounts, err := s.accountRepo.GetByIDs(ctx, input.AccountIDs)
+		if err != nil {
+			return nil, err
+		}
+		accountByID := make(map[int64]*Account, len(accounts))
+		for _, account := range accounts {
+			if account != nil {
+				accountByID[account.ID] = account
+			}
+		}
+		for _, accountID := range input.AccountIDs {
+			account := accountByID[accountID]
+			if account == nil {
+				return nil, fmt.Errorf("account %d not found", accountID)
+			}
+			merged := MergePreservingSensitiveCreds(account.Credentials, input.Credentials)
+			if err := validateAccountModelMapping(account.Type, merged); err != nil {
+				return nil, err
+			}
 		}
 	}
 

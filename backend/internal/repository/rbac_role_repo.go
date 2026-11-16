@@ -160,4 +160,25 @@ func (r *RBACRepository) GetRolePermissions(ctx context.Context, roleID int64) (
 	return values, rows.Err()
 }
 
+func (r *RBACRepository) ListUserIDsByRoleID(ctx context.Context, roleID int64) ([]int64, error) {
+	rows, err := r.db.QueryContext(ctx, `
+		SELECT DISTINCT user_id
+		FROM rbac_user_roles
+		WHERE role_id = ?
+	`, roleID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	userIDs := make([]int64, 0)
+	for rows.Next() {
+		var userID int64
+		if err := rows.Scan(&userID); err != nil {
+			return nil, err
+		}
+		userIDs = append(userIDs, userID)
+	}
+	return userIDs, rows.Err()
+}
+
 var _ service.RBACRoleRepository = (*RBACRepository)(nil)

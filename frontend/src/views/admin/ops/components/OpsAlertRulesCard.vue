@@ -44,7 +44,7 @@ const saving = ref(false)
 const editingId = ref<number | null>(null)
 const draft = ref<AlertRule | null>(null)
 
-type MetricGroup = 'system' | 'group' | 'account'
+type MetricGroup = 'system' | 'group' | 'account' | 'observability'
 
 interface MetricDefinition {
   type: MetricType
@@ -60,6 +60,13 @@ const groupMetricTypes = new Set<MetricType>([
   'group_available_accounts',
   'group_available_ratio',
   'group_rate_limit_ratio'
+])
+const observabilityMetricTypes = new Set<MetricType>([
+  'observability_client_failure_rate',
+  'observability_business_limited_rate',
+  'observability_sla_error_rate',
+  'observability_ttft_p95_ms',
+  'observability_concurrency_saturation'
 ])
 
 function parsePositiveInt(value: unknown): number | null {
@@ -85,6 +92,9 @@ const isGroupMetricSelected = computed(() => {
   const metricType = draft.value?.metric_type
   return metricType ? groupMetricTypes.has(metricType) : false
 })
+const isObservabilityMetricSelected = computed(() =>
+  draft.value ? observabilityMetricTypes.has(draft.value.metric_type) : false,
+)
 
 const draftGroupId = computed<number | null>({
   get() {
@@ -236,6 +246,51 @@ const metricDefinitions = computed(() => {
       description: t('admin.ops.alertRules.metricDescriptions.overloadAccountCount'),
       recommendedOperator: '>',
       recommendedThreshold: 0
+    },
+    {
+      type: 'observability_client_failure_rate',
+      group: 'observability',
+      label: t('admin.ops.alertRules.metrics.observabilityFailureRate'),
+      description: t('admin.ops.alertRules.metricDescriptions.observabilityFailureRate'),
+      recommendedOperator: '>',
+      recommendedThreshold: 2,
+      unit: '%'
+    },
+    {
+      type: 'observability_business_limited_rate',
+      group: 'observability',
+      label: t('admin.ops.alertRules.metrics.observabilityBusinessRate'),
+      description: t('admin.ops.alertRules.metricDescriptions.observabilityBusinessRate'),
+      recommendedOperator: '>',
+      recommendedThreshold: 5,
+      unit: '%'
+    },
+    {
+      type: 'observability_sla_error_rate',
+      group: 'observability',
+      label: t('admin.ops.alertRules.metrics.observabilitySLARate'),
+      description: t('admin.ops.alertRules.metricDescriptions.observabilitySLARate'),
+      recommendedOperator: '>',
+      recommendedThreshold: 1,
+      unit: '%'
+    },
+    {
+      type: 'observability_ttft_p95_ms',
+      group: 'observability',
+      label: t('admin.ops.alertRules.metrics.observabilityTTFTP95'),
+      description: t('admin.ops.alertRules.metricDescriptions.observabilityTTFTP95'),
+      recommendedOperator: '>',
+      recommendedThreshold: 2000,
+      unit: 'ms'
+    },
+    {
+      type: 'observability_concurrency_saturation',
+      group: 'observability',
+      label: t('admin.ops.alertRules.metrics.observabilitySaturation'),
+      description: t('admin.ops.alertRules.metricDescriptions.observabilitySaturation'),
+      recommendedOperator: '>',
+      recommendedThreshold: 90,
+      unit: '%'
     }
   ] satisfies MetricDefinition[]
 })
@@ -262,7 +317,7 @@ const metricOptions = computed(() => {
     ]
   }
 
-  return [...buildGroup('system'), ...buildGroup('group'), ...buildGroup('account')]
+  return [...buildGroup('system'), ...buildGroup('group'), ...buildGroup('account'), ...buildGroup('observability')]
 })
 
 const operatorOptions = computed(() => {
@@ -296,6 +351,18 @@ function newRuleDraft(): AlertRule {
   }
 }
 
+function updateObservabilityFilter(key: 'route_alias' | 'account_id', raw: string) {
+  if (!draft.value) return
+  if (!draft.value.filters) draft.value.filters = {}
+  const value = raw.trim()
+  if (!value) {
+    delete draft.value.filters[key]
+    if (Object.keys(draft.value.filters).length === 0) delete draft.value.filters
+    return
+  }
+  draft.value.filters[key] = key === 'account_id' ? Number(value) : value
+}
+
 function openCreate() {
   editingId.value = null
   draft.value = newRuleDraft()
@@ -316,6 +383,16 @@ const editorValidation = computed(() => {
   if (!r.metric_type) errors.push(t('admin.ops.alertRules.validation.metricRequired'))
   if (groupMetricTypes.has(r.metric_type) && !parsePositiveInt(r.filters?.group_id)) {
     errors.push(t('admin.ops.alertRules.validation.groupIdRequired'))
+  }
+  if (
+    observabilityMetricTypes.has(r.metric_type) &&
+    (
+      !parsePositiveInt(r.filters?.group_id) ||
+      !parsePositiveInt(r.filters?.account_id) ||
+      !String(r.filters?.route_alias || '').trim()
+    )
+  ) {
+    errors.push(t('admin.ops.alertRules.validation.observabilityObjectRequired'))
   }
   if (!r.operator) errors.push(t('admin.ops.alertRules.validation.operatorRequired'))
   if (!(typeof r.threshold === 'number' && Number.isFinite(r.threshold)))
@@ -536,6 +613,30 @@ function cancelDelete() {
               {{ isGroupMetricSelected ? t('admin.ops.alertRules.hints.groupRequired') : t('admin.ops.alertRules.hints.groupOptional') }}
             </p>
           </div>
+
+          <template v-if="isObservabilityMetricSelected">
+            <div>
+              <label class="input-label">Route alias</label>
+              <input
+                class="input"
+                type="text"
+                :value="draft?.filters?.route_alias || ''"
+                placeholder="coding-fast"
+                @input="updateObservabilityFilter('route_alias', ($event.target as HTMLInputElement).value)"
+              />
+            </div>
+            <div>
+              <label class="input-label">Account ID</label>
+              <input
+                class="input"
+                type="number"
+                min="1"
+                :value="draft?.filters?.account_id || ''"
+                placeholder="101"
+                @input="updateObservabilityFilter('account_id', ($event.target as HTMLInputElement).value)"
+              />
+            </div>
+          </template>
 
           <div>
             <label class="input-label">{{ t('admin.ops.alertRules.form.threshold') }}</label>

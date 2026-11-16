@@ -81,6 +81,13 @@ func (s *PermissionService) GetEffectivePermissions(ctx context.Context, userID 
 	return value.(EffectivePermissions), nil
 }
 
+func (s *PermissionService) SuperAdminUserIDs(ctx context.Context, userIDs []int64) ([]int64, error) {
+	if s == nil || s.repository == nil || len(userIDs) == 0 {
+		return []int64{}, nil
+	}
+	return s.repository.ListSuperAdminUserIDs(ctx, userIDs)
+}
+
 func (s *PermissionService) currentVersions(ctx context.Context, userID int64) (int64, int64, error) {
 	userVersion, err := s.repository.GetUserVersion(ctx, userID)
 	if err != nil {

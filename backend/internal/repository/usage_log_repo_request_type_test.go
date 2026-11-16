@@ -29,6 +29,7 @@ func TestUsageLogRepositoryCreateSyncRequestTypeAndLegacyFields(t *testing.T) {
 		RequestID:      "req-1",
 		Model:          "gpt-5",
 		RequestedModel: "gpt-5",
+		RouteAlias:     "coding-fast",
 		InputTokens:    10,
 		OutputTokens:   20,
 		TotalCost:      1,
@@ -91,6 +92,7 @@ func TestUsageLogRepositoryCreateSyncRequestTypeAndLegacyFields(t *testing.T) {
 			sqlmock.AnyArg(), // billing_tier
 			sqlmock.AnyArg(), // billing_mode
 			sqlmock.AnyArg(), // account_stats_cost
+			log.RouteAlias,   // route_alias
 			createdAt,
 		).
 		WillReturnResult(sqlmock.NewResult(99, 1))
@@ -177,6 +179,7 @@ func TestUsageLogRepositoryCreate_PersistsServiceTier(t *testing.T) {
 			sqlmock.AnyArg(), // billing_tier
 			sqlmock.AnyArg(), // billing_mode
 			sqlmock.AnyArg(), // account_stats_cost
+			sqlmock.AnyArg(), // route_alias
 			createdAt,
 		).
 		WillReturnResult(sqlmock.NewResult(100, 1))
@@ -244,6 +247,30 @@ func TestPrepareUsageLogInsert_ArgCountMatchesTypes(t *testing.T) {
 
 	columns := strings.Split(strings.ReplaceAll(strings.TrimSpace(usageLogInsertColumns), "\n", ""), ",")
 	require.Len(t, prepared.args, len(columns))
+}
+
+func TestPrepareUsageLogInsert_PersistsRouteAliasAndWritesNullForEmpty(t *testing.T) {
+	columns := strings.Split(strings.ReplaceAll(strings.TrimSpace(usageLogInsertColumns), "\n", ""), ",")
+	routeAliasIndex := -1
+	for index, column := range columns {
+		if strings.TrimSpace(column) == "route_alias" {
+			routeAliasIndex = index
+			break
+		}
+	}
+	require.NotEqual(t, -1, routeAliasIndex)
+
+	withAlias := prepareUsageLogInsert(&service.UsageLog{
+		UserID: 1, APIKeyID: 2, AccountID: 3, RequestID: "req-route",
+		Model: "gpt-5", RequestedModel: "coding-fast", RouteAlias: " coding-fast ",
+	})
+	require.Equal(t, "coding-fast", withAlias.args[routeAliasIndex])
+
+	withoutAlias := prepareUsageLogInsert(&service.UsageLog{
+		UserID: 1, APIKeyID: 2, AccountID: 3, RequestID: "req-no-route",
+		Model: "gpt-5", RequestedModel: "gpt-5",
+	})
+	require.Nil(t, withoutAlias.args[routeAliasIndex])
 }
 
 func TestPrepareUsageLogInsert_PersistsImageSizeMetadata(t *testing.T) {
@@ -648,6 +675,7 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			sql.NullString{},
 			sql.NullString{},
 			sql.NullFloat64{},
+			sql.NullString{Valid: true, String: "coding-fast"},
 			now,
 		}})
 		require.NoError(t, err)
@@ -716,11 +744,14 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			sql.NullString{},  // billing_tier
 			sql.NullString{},  // billing_mode
 			sql.NullFloat64{}, // account_stats_cost
+			sql.NullString{Valid: true, String: "coding-fast"},
 			now,
 		}})
 		require.NoError(t, err)
 		require.NotNil(t, log.ServiceTier)
 		require.Equal(t, "priority", *log.ServiceTier)
+		require.Equal(t, "coding-fast", log.RouteAlias)
+		require.False(t, log.RouteAliasLegacyInferred)
 		require.Equal(t, service.RequestTypeWSV2, log.RequestType)
 		require.True(t, log.Stream)
 		require.True(t, log.OpenAIWSMode)
@@ -768,6 +799,7 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			sql.NullString{},  // billing_tier
 			sql.NullString{},  // billing_mode
 			sql.NullFloat64{}, // account_stats_cost
+			sql.NullString{},
 			now,
 		}})
 		require.NoError(t, err)
@@ -820,6 +852,7 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			sql.NullString{},  // billing_tier
 			sql.NullString{},  // billing_mode
 			sql.NullFloat64{}, // account_stats_cost
+			sql.NullString{},
 			now,
 		}})
 		require.NoError(t, err)

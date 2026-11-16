@@ -1,0 +1,67 @@
+{
+  "version": "observability/v1",
+  "read_only": true,
+  "bucket_windows": [
+    {
+      "window": "1h",
+      "bucket": "5m"
+    },
+    {
+      "window": "6h",
+      "bucket": "15m"
+    },
+    {
+      "window": "24h",
+      "bucket": "1h"
+    },
+    {
+      "window": "7d",
+      "bucket": "6h"
+    }
+  ],
+  "range_kinds": [
+    "1h",
+    "6h",
+    "24h",
+    "7d",
+    "today",
+    "yesterday",
+    "custom"
+  ],
+  "dimensions": [
+    {
+      "code": "user_id",
+      "display_name": "用户"
+    },
+    {
+      "code": "group_id",
+      "display_name": "分组"
+    },
+    {
+      "code": "route_alias",
+      "display_name": "路由别名"
+    },
+    {
+      "code": "account_id",
+      "display_name": "模型账号"
+    }
+  ],
+  "metric_codes": [
+    "total_tokens",
+    "request_count",
+    "avg_duration_ms",
+    "avg_first_token_ms",
+    "failure_rate"
+  ],
+  "failure_metrics": [
+    "client_failure_rate",
+    "business_limited_rate",
+    "sla_error_rate",
+    "upstream_error_rate"
+  ],
+  "max_filter_values": 50,
+  "default_page_size": 20,
+  "max_page_size": 100,
+  "ratio_scale": "0..1",
+  "requested_dimension_count": 4
+}

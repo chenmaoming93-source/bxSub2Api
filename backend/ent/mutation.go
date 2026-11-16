@@ -27,6 +27,8 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/group"
 	"github.com/Wei-Shaw/sub2api/ent/idempotencyrecord"
 	"github.com/Wei-Shaw/sub2api/ent/identityadoptiondecision"
+	"github.com/Wei-Shaw/sub2api/ent/observabilityconcurrencybucket"
+	"github.com/Wei-Shaw/sub2api/ent/observabilityrequestbucket"
 	"github.com/Wei-Shaw/sub2api/ent/paymentauditlog"
 	"github.com/Wei-Shaw/sub2api/ent/paymentorder"
 	"github.com/Wei-Shaw/sub2api/ent/paymentproviderinstance"
@@ -73,54 +75,56 @@ const (
 	OpUpdateOne = ent.OpUpdateOne
 
 	// Node types.
-	TypeAPIKey                        = "APIKey"
-	TypeAccount                       = "Account"
-	TypeAccountGroup                  = "AccountGroup"
-	TypeAnnouncement                  = "Announcement"
-	TypeAnnouncementRead              = "AnnouncementRead"
-	TypeAuthIdentity                  = "AuthIdentity"
-	TypeAuthIdentityChannel           = "AuthIdentityChannel"
-	TypeChannelMonitor                = "ChannelMonitor"
-	TypeChannelMonitorDailyRollup     = "ChannelMonitorDailyRollup"
-	TypeChannelMonitorHistory         = "ChannelMonitorHistory"
-	TypeChannelMonitorRequestTemplate = "ChannelMonitorRequestTemplate"
-	TypeErrorPassthroughRule          = "ErrorPassthroughRule"
-	TypeGroup                         = "Group"
-	TypeIdempotencyRecord             = "IdempotencyRecord"
-	TypeIdentityAdoptionDecision      = "IdentityAdoptionDecision"
-	TypePaymentAuditLog               = "PaymentAuditLog"
-	TypePaymentOrder                  = "PaymentOrder"
-	TypePaymentProviderInstance       = "PaymentProviderInstance"
-	TypePendingAuthSession            = "PendingAuthSession"
-	TypePromoCode                     = "PromoCode"
-	TypePromoCodeUsage                = "PromoCodeUsage"
-	TypeProxy                         = "Proxy"
-	TypeRBACAuditLog                  = "RBACAuditLog"
-	TypeRBACPermission                = "RBACPermission"
-	TypeRBACPolicyState               = "RBACPolicyState"
-	TypeRBACRole                      = "RBACRole"
-	TypeRBACRolePermission            = "RBACRolePermission"
-	TypeRBACUserRole                  = "RBACUserRole"
-	TypeRBACUserVersion               = "RBACUserVersion"
-	TypeRedeemCode                    = "RedeemCode"
-	TypeSecurityCheckLog              = "SecurityCheckLog"
-	TypeSecuritySecret                = "SecuritySecret"
-	TypeSetting                       = "Setting"
-	TypeSubscriptionPlan              = "SubscriptionPlan"
-	TypeTLSFingerprintProfile         = "TLSFingerprintProfile"
-	TypeTokenStatAggregate            = "TokenStatAggregate"
-	TypeTokenStatPeriodState          = "TokenStatPeriodState"
-	TypeTokenStatProjection           = "TokenStatProjection"
-	TypeTokenStatProjectionMetric     = "TokenStatProjectionMetric"
-	TypeTokenStatQuotaRule            = "TokenStatQuotaRule"
-	TypeUsageCleanupTask              = "UsageCleanupTask"
-	TypeUsageLog                      = "UsageLog"
-	TypeUser                          = "User"
-	TypeUserAllowedGroup              = "UserAllowedGroup"
-	TypeUserAttributeDefinition       = "UserAttributeDefinition"
-	TypeUserAttributeValue            = "UserAttributeValue"
-	TypeUserPlatformQuota             = "UserPlatformQuota"
-	TypeUserSubscription              = "UserSubscription"
+	TypeAPIKey                         = "APIKey"
+	TypeAccount                        = "Account"
+	TypeAccountGroup                   = "AccountGroup"
+	TypeAnnouncement                   = "Announcement"
+	TypeAnnouncementRead               = "AnnouncementRead"
+	TypeAuthIdentity                   = "AuthIdentity"
+	TypeAuthIdentityChannel            = "AuthIdentityChannel"
+	TypeChannelMonitor                 = "ChannelMonitor"
+	TypeChannelMonitorDailyRollup      = "ChannelMonitorDailyRollup"
+	TypeChannelMonitorHistory          = "ChannelMonitorHistory"
+	TypeChannelMonitorRequestTemplate  = "ChannelMonitorRequestTemplate"
+	TypeErrorPassthroughRule           = "ErrorPassthroughRule"
+	TypeGroup                          = "Group"
+	TypeIdempotencyRecord              = "IdempotencyRecord"
+	TypeIdentityAdoptionDecision       = "IdentityAdoptionDecision"
+	TypeObservabilityConcurrencyBucket = "ObservabilityConcurrencyBucket"
+	TypeObservabilityRequestBucket     = "ObservabilityRequestBucket"
+	TypePaymentAuditLog                = "PaymentAuditLog"
+	TypePaymentOrder                   = "PaymentOrder"
+	TypePaymentProviderInstance        = "PaymentProviderInstance"
+	TypePendingAuthSession             = "PendingAuthSession"
+	TypePromoCode                      = "PromoCode"
+	TypePromoCodeUsage                 = "PromoCodeUsage"
+	TypeProxy                          = "Proxy"
+	TypeRBACAuditLog                   = "RBACAuditLog"
+	TypeRBACPermission                 = "RBACPermission"
+	TypeRBACPolicyState                = "RBACPolicyState"
+	TypeRBACRole                       = "RBACRole"
+	TypeRBACRolePermission             = "RBACRolePermission"
+	TypeRBACUserRole                   = "RBACUserRole"
+	TypeRBACUserVersion                = "RBACUserVersion"
+	TypeRedeemCode                     = "RedeemCode"
+	TypeSecurityCheckLog               = "SecurityCheckLog"
+	TypeSecuritySecret                 = "SecuritySecret"
+	TypeSetting                        = "Setting"
+	TypeSubscriptionPlan               = "SubscriptionPlan"
+	TypeTLSFingerprintProfile          = "TLSFingerprintProfile"
+	TypeTokenStatAggregate             = "TokenStatAggregate"
+	TypeTokenStatPeriodState           = "TokenStatPeriodState"
+	TypeTokenStatProjection            = "TokenStatProjection"
+	TypeTokenStatProjectionMetric      = "TokenStatProjectionMetric"
+	TypeTokenStatQuotaRule             = "TokenStatQuotaRule"
+	TypeUsageCleanupTask               = "UsageCleanupTask"
+	TypeUsageLog                       = "UsageLog"
+	TypeUser                           = "User"
+	TypeUserAllowedGroup               = "UserAllowedGroup"
+	TypeUserAttributeDefinition        = "UserAttributeDefinition"
+	TypeUserAttributeValue             = "UserAttributeValue"
+	TypeUserPlatformQuota              = "UserPlatformQuota"
+	TypeUserSubscription               = "UserSubscription"
 )
 
 // APIKeyMutation represents an operation that mutates the APIKey nodes in the graph.
@@ -20489,6 +20493,5932 @@ func (m *IdentityAdoptionDecisionMutation) ResetEdge(name string) error {
 		return nil
 	}
 	return fmt.Errorf("unknown IdentityAdoptionDecision edge %s", name)
+}
+
+// ObservabilityConcurrencyBucketMutation represents an operation that mutates the ObservabilityConcurrencyBucket nodes in the graph.
+type ObservabilityConcurrencyBucketMutation struct {
+	config
+	op                   Op
+	typ                  string
+	id                   *int64
+	window_seconds       *int
+	addwindow_seconds    *int
+	bucket_start         *time.Time
+	sample_kind          *string
+	dimension_hash       *string
+	account_id           *int64
+	addaccount_id        *int64
+	group_id             *int64
+	addgroup_id          *int64
+	route_alias          *string
+	current_peak         *int
+	addcurrent_peak      *int
+	current_sum          *int64
+	addcurrent_sum       *int64
+	sample_count         *int64
+	addsample_count      *int64
+	effective_limit      *int
+	addeffective_limit   *int
+	waiting_peak         *int
+	addwaiting_peak      *int
+	peak_ratio_actual    *int
+	addpeak_ratio_actual *int
+	peak_ratio_limit     *int
+	addpeak_ratio_limit  *int
+	peak_ratio_sample_at *time.Time
+	wait_sum_ms          *int64
+	addwait_sum_ms       *int64
+	wait_sample_count    *int64
+	addwait_sample_count *int64
+	first_sampled_at     *time.Time
+	last_sampled_at      *time.Time
+	updated_at           *time.Time
+	clearedFields        map[string]struct{}
+	done                 bool
+	oldValue             func(context.Context) (*ObservabilityConcurrencyBucket, error)
+	predicates           []predicate.ObservabilityConcurrencyBucket
+}
+
+var _ ent.Mutation = (*ObservabilityConcurrencyBucketMutation)(nil)
+
+// observabilityconcurrencybucketOption allows management of the mutation configuration using functional options.
+type observabilityconcurrencybucketOption func(*ObservabilityConcurrencyBucketMutation)
+
+// newObservabilityConcurrencyBucketMutation creates new mutation for the ObservabilityConcurrencyBucket entity.
+func newObservabilityConcurrencyBucketMutation(c config, op Op, opts ...observabilityconcurrencybucketOption) *ObservabilityConcurrencyBucketMutation {
+	m := &ObservabilityConcurrencyBucketMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeObservabilityConcurrencyBucket,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withObservabilityConcurrencyBucketID sets the ID field of the mutation.
+func withObservabilityConcurrencyBucketID(id int64) observabilityconcurrencybucketOption {
+	return func(m *ObservabilityConcurrencyBucketMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *ObservabilityConcurrencyBucket
+		)
+		m.oldValue = func(ctx context.Context) (*ObservabilityConcurrencyBucket, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().ObservabilityConcurrencyBucket.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withObservabilityConcurrencyBucket sets the old ObservabilityConcurrencyBucket of the mutation.
+func withObservabilityConcurrencyBucket(node *ObservabilityConcurrencyBucket) observabilityconcurrencybucketOption {
+	return func(m *ObservabilityConcurrencyBucketMutation) {
+		m.oldValue = func(context.Context) (*ObservabilityConcurrencyBucket, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m ObservabilityConcurrencyBucketMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m ObservabilityConcurrencyBucketMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *ObservabilityConcurrencyBucketMutation) ID() (id int64, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *ObservabilityConcurrencyBucketMutation) IDs(ctx context.Context) ([]int64, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int64{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().ObservabilityConcurrencyBucket.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetWindowSeconds sets the "window_seconds" field.
+func (m *ObservabilityConcurrencyBucketMutation) SetWindowSeconds(i int) {
+	m.window_seconds = &i
+	m.addwindow_seconds = nil
+}
+
+// WindowSeconds returns the value of the "window_seconds" field in the mutation.
+func (m *ObservabilityConcurrencyBucketMutation) WindowSeconds() (r int, exists bool) {
+	v := m.window_seconds
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldWindowSeconds returns the old "window_seconds" field's value of the ObservabilityConcurrencyBucket entity.
+// If the ObservabilityConcurrencyBucket object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ObservabilityConcurrencyBucketMutation) OldWindowSeconds(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldWindowSeconds is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldWindowSeconds requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldWindowSeconds: %w", err)
+	}
+	return oldValue.WindowSeconds, nil
+}
+
+// AddWindowSeconds adds i to the "window_seconds" field.
+func (m *ObservabilityConcurrencyBucketMutation) AddWindowSeconds(i int) {
+	if m.addwindow_seconds != nil {
+		*m.addwindow_seconds += i
+	} else {
+		m.addwindow_seconds = &i
+	}
+}
+
+// AddedWindowSeconds returns the value that was added to the "window_seconds" field in this mutation.
+func (m *ObservabilityConcurrencyBucketMutation) AddedWindowSeconds() (r int, exists bool) {
+	v := m.addwindow_seconds
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetWindowSeconds resets all changes to the "window_seconds" field.
+func (m *ObservabilityConcurrencyBucketMutation) ResetWindowSeconds() {
+	m.window_seconds = nil
+	m.addwindow_seconds = nil
+}
+
+// SetBucketStart sets the "bucket_start" field.
+func (m *ObservabilityConcurrencyBucketMutation) SetBucketStart(t time.Time) {
+	m.bucket_start = &t
+}
+
+// BucketStart returns the value of the "bucket_start" field in the mutation.
+func (m *ObservabilityConcurrencyBucketMutation) BucketStart() (r time.Time, exists bool) {
+	v := m.bucket_start
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldBucketStart returns the old "bucket_start" field's value of the ObservabilityConcurrencyBucket entity.
+// If the ObservabilityConcurrencyBucket object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ObservabilityConcurrencyBucketMutation) OldBucketStart(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldBucketStart is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldBucketStart requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldBucketStart: %w", err)
+	}
+	return oldValue.BucketStart, nil
+}
+
+// ResetBucketStart resets all changes to the "bucket_start" field.
+func (m *ObservabilityConcurrencyBucketMutation) ResetBucketStart() {
+	m.bucket_start = nil
+}
+
+// SetSampleKind sets the "sample_kind" field.
+func (m *ObservabilityConcurrencyBucketMutation) SetSampleKind(s string) {
+	m.sample_kind = &s
+}
+
+// SampleKind returns the value of the "sample_kind" field in the mutation.
+func (m *ObservabilityConcurrencyBucketMutation) SampleKind() (r string, exists bool) {
+	v := m.sample_kind
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSampleKind returns the old "sample_kind" field's value of the ObservabilityConcurrencyBucket entity.
+// If the ObservabilityConcurrencyBucket object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ObservabilityConcurrencyBucketMutation) OldSampleKind(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSampleKind is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSampleKind requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSampleKind: %w", err)
+	}
+	return oldValue.SampleKind, nil
+}
+
+// ResetSampleKind resets all changes to the "sample_kind" field.
+func (m *ObservabilityConcurrencyBucketMutation) ResetSampleKind() {
+	m.sample_kind = nil
+}
+
+// SetDimensionHash sets the "dimension_hash" field.
+func (m *ObservabilityConcurrencyBucketMutation) SetDimensionHash(s string) {
+	m.dimension_hash = &s
+}
+
+// DimensionHash returns the value of the "dimension_hash" field in the mutation.
+func (m *ObservabilityConcurrencyBucketMutation) DimensionHash() (r string, exists bool) {
+	v := m.dimension_hash
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDimensionHash returns the old "dimension_hash" field's value of the ObservabilityConcurrencyBucket entity.
+// If the ObservabilityConcurrencyBucket object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ObservabilityConcurrencyBucketMutation) OldDimensionHash(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDimensionHash is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDimensionHash requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDimensionHash: %w", err)
+	}
+	return oldValue.DimensionHash, nil
+}
+
+// ResetDimensionHash resets all changes to the "dimension_hash" field.
+func (m *ObservabilityConcurrencyBucketMutation) ResetDimensionHash() {
+	m.dimension_hash = nil
+}
+
+// SetAccountID sets the "account_id" field.
+func (m *ObservabilityConcurrencyBucketMutation) SetAccountID(i int64) {
+	m.account_id = &i
+	m.addaccount_id = nil
+}
+
+// AccountID returns the value of the "account_id" field in the mutation.
+func (m *ObservabilityConcurrencyBucketMutation) AccountID() (r int64, exists bool) {
+	v := m.account_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAccountID returns the old "account_id" field's value of the ObservabilityConcurrencyBucket entity.
+// If the ObservabilityConcurrencyBucket object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ObservabilityConcurrencyBucketMutation) OldAccountID(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAccountID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAccountID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAccountID: %w", err)
+	}
+	return oldValue.AccountID, nil
+}
+
+// AddAccountID adds i to the "account_id" field.
+func (m *ObservabilityConcurrencyBucketMutation) AddAccountID(i int64) {
+	if m.addaccount_id != nil {
+		*m.addaccount_id += i
+	} else {
+		m.addaccount_id = &i
+	}
+}
+
+// AddedAccountID returns the value that was added to the "account_id" field in this mutation.
+func (m *ObservabilityConcurrencyBucketMutation) AddedAccountID() (r int64, exists bool) {
+	v := m.addaccount_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetAccountID resets all changes to the "account_id" field.
+func (m *ObservabilityConcurrencyBucketMutation) ResetAccountID() {
+	m.account_id = nil
+	m.addaccount_id = nil
+}
+
+// SetGroupID sets the "group_id" field.
+func (m *ObservabilityConcurrencyBucketMutation) SetGroupID(i int64) {
+	m.group_id = &i
+	m.addgroup_id = nil
+}
+
+// GroupID returns the value of the "group_id" field in the mutation.
+func (m *ObservabilityConcurrencyBucketMutation) GroupID() (r int64, exists bool) {
+	v := m.group_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldGroupID returns the old "group_id" field's value of the ObservabilityConcurrencyBucket entity.
+// If the ObservabilityConcurrencyBucket object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ObservabilityConcurrencyBucketMutation) OldGroupID(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldGroupID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldGroupID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldGroupID: %w", err)
+	}
+	return oldValue.GroupID, nil
+}
+
+// AddGroupID adds i to the "group_id" field.
+func (m *ObservabilityConcurrencyBucketMutation) AddGroupID(i int64) {
+	if m.addgroup_id != nil {
+		*m.addgroup_id += i
+	} else {
+		m.addgroup_id = &i
+	}
+}
+
+// AddedGroupID returns the value that was added to the "group_id" field in this mutation.
+func (m *ObservabilityConcurrencyBucketMutation) AddedGroupID() (r int64, exists bool) {
+	v := m.addgroup_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetGroupID resets all changes to the "group_id" field.
+func (m *ObservabilityConcurrencyBucketMutation) ResetGroupID() {
+	m.group_id = nil
+	m.addgroup_id = nil
+}
+
+// SetRouteAlias sets the "route_alias" field.
+func (m *ObservabilityConcurrencyBucketMutation) SetRouteAlias(s string) {
+	m.route_alias = &s
+}
+
+// RouteAlias returns the value of the "route_alias" field in the mutation.
+func (m *ObservabilityConcurrencyBucketMutation) RouteAlias() (r string, exists bool) {
+	v := m.route_alias
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRouteAlias returns the old "route_alias" field's value of the ObservabilityConcurrencyBucket entity.
+// If the ObservabilityConcurrencyBucket object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ObservabilityConcurrencyBucketMutation) OldRouteAlias(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRouteAlias is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRouteAlias requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRouteAlias: %w", err)
+	}
+	return oldValue.RouteAlias, nil
+}
+
+// ClearRouteAlias clears the value of the "route_alias" field.
+func (m *ObservabilityConcurrencyBucketMutation) ClearRouteAlias() {
+	m.route_alias = nil
+	m.clearedFields[observabilityconcurrencybucket.FieldRouteAlias] = struct{}{}
+}
+
+// RouteAliasCleared returns if the "route_alias" field was cleared in this mutation.
+func (m *ObservabilityConcurrencyBucketMutation) RouteAliasCleared() bool {
+	_, ok := m.clearedFields[observabilityconcurrencybucket.FieldRouteAlias]
+	return ok
+}
+
+// ResetRouteAlias resets all changes to the "route_alias" field.
+func (m *ObservabilityConcurrencyBucketMutation) ResetRouteAlias() {
+	m.route_alias = nil
+	delete(m.clearedFields, observabilityconcurrencybucket.FieldRouteAlias)
+}
+
+// SetCurrentPeak sets the "current_peak" field.
+func (m *ObservabilityConcurrencyBucketMutation) SetCurrentPeak(i int) {
+	m.current_peak = &i
+	m.addcurrent_peak = nil
+}
+
+// CurrentPeak returns the value of the "current_peak" field in the mutation.
+func (m *ObservabilityConcurrencyBucketMutation) CurrentPeak() (r int, exists bool) {
+	v := m.current_peak
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCurrentPeak returns the old "current_peak" field's value of the ObservabilityConcurrencyBucket entity.
+// If the ObservabilityConcurrencyBucket object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ObservabilityConcurrencyBucketMutation) OldCurrentPeak(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCurrentPeak is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCurrentPeak requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCurrentPeak: %w", err)
+	}
+	return oldValue.CurrentPeak, nil
+}
+
+// AddCurrentPeak adds i to the "current_peak" field.
+func (m *ObservabilityConcurrencyBucketMutation) AddCurrentPeak(i int) {
+	if m.addcurrent_peak != nil {
+		*m.addcurrent_peak += i
+	} else {
+		m.addcurrent_peak = &i
+	}
+}
+
+// AddedCurrentPeak returns the value that was added to the "current_peak" field in this mutation.
+func (m *ObservabilityConcurrencyBucketMutation) AddedCurrentPeak() (r int, exists bool) {
+	v := m.addcurrent_peak
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetCurrentPeak resets all changes to the "current_peak" field.
+func (m *ObservabilityConcurrencyBucketMutation) ResetCurrentPeak() {
+	m.current_peak = nil
+	m.addcurrent_peak = nil
+}
+
+// SetCurrentSum sets the "current_sum" field.
+func (m *ObservabilityConcurrencyBucketMutation) SetCurrentSum(i int64) {
+	m.current_sum = &i
+	m.addcurrent_sum = nil
+}
+
+// CurrentSum returns the value of the "current_sum" field in the mutation.
+func (m *ObservabilityConcurrencyBucketMutation) CurrentSum() (r int64, exists bool) {
+	v := m.current_sum
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCurrentSum returns the old "current_sum" field's value of the ObservabilityConcurrencyBucket entity.
+// If the ObservabilityConcurrencyBucket object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ObservabilityConcurrencyBucketMutation) OldCurrentSum(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCurrentSum is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCurrentSum requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCurrentSum: %w", err)
+	}
+	return oldValue.CurrentSum, nil
+}
+
+// AddCurrentSum adds i to the "current_sum" field.
+func (m *ObservabilityConcurrencyBucketMutation) AddCurrentSum(i int64) {
+	if m.addcurrent_sum != nil {
+		*m.addcurrent_sum += i
+	} else {
+		m.addcurrent_sum = &i
+	}
+}
+
+// AddedCurrentSum returns the value that was added to the "current_sum" field in this mutation.
+func (m *ObservabilityConcurrencyBucketMutation) AddedCurrentSum() (r int64, exists bool) {
+	v := m.addcurrent_sum
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetCurrentSum resets all changes to the "current_sum" field.
+func (m *ObservabilityConcurrencyBucketMutation) ResetCurrentSum() {
+	m.current_sum = nil
+	m.addcurrent_sum = nil
+}
+
+// SetSampleCount sets the "sample_count" field.
+func (m *ObservabilityConcurrencyBucketMutation) SetSampleCount(i int64) {
+	m.sample_count = &i
+	m.addsample_count = nil
+}
+
+// SampleCount returns the value of the "sample_count" field in the mutation.
+func (m *ObservabilityConcurrencyBucketMutation) SampleCount() (r int64, exists bool) {
+	v := m.sample_count
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSampleCount returns the old "sample_count" field's value of the ObservabilityConcurrencyBucket entity.
+// If the ObservabilityConcurrencyBucket object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ObservabilityConcurrencyBucketMutation) OldSampleCount(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSampleCount is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSampleCount requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSampleCount: %w", err)
+	}
+	return oldValue.SampleCount, nil
+}
+
+// AddSampleCount adds i to the "sample_count" field.
+func (m *ObservabilityConcurrencyBucketMutation) AddSampleCount(i int64) {
+	if m.addsample_count != nil {
+		*m.addsample_count += i
+	} else {
+		m.addsample_count = &i
+	}
+}
+
+// AddedSampleCount returns the value that was added to the "sample_count" field in this mutation.
+func (m *ObservabilityConcurrencyBucketMutation) AddedSampleCount() (r int64, exists bool) {
+	v := m.addsample_count
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetSampleCount resets all changes to the "sample_count" field.
+func (m *ObservabilityConcurrencyBucketMutation) ResetSampleCount() {
+	m.sample_count = nil
+	m.addsample_count = nil
+}
+
+// SetEffectiveLimit sets the "effective_limit" field.
+func (m *ObservabilityConcurrencyBucketMutation) SetEffectiveLimit(i int) {
+	m.effective_limit = &i
+	m.addeffective_limit = nil
+}
+
+// EffectiveLimit returns the value of the "effective_limit" field in the mutation.
+func (m *ObservabilityConcurrencyBucketMutation) EffectiveLimit() (r int, exists bool) {
+	v := m.effective_limit
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEffectiveLimit returns the old "effective_limit" field's value of the ObservabilityConcurrencyBucket entity.
+// If the ObservabilityConcurrencyBucket object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ObservabilityConcurrencyBucketMutation) OldEffectiveLimit(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEffectiveLimit is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEffectiveLimit requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEffectiveLimit: %w", err)
+	}
+	return oldValue.EffectiveLimit, nil
+}
+
+// AddEffectiveLimit adds i to the "effective_limit" field.
+func (m *ObservabilityConcurrencyBucketMutation) AddEffectiveLimit(i int) {
+	if m.addeffective_limit != nil {
+		*m.addeffective_limit += i
+	} else {
+		m.addeffective_limit = &i
+	}
+}
+
+// AddedEffectiveLimit returns the value that was added to the "effective_limit" field in this mutation.
+func (m *ObservabilityConcurrencyBucketMutation) AddedEffectiveLimit() (r int, exists bool) {
+	v := m.addeffective_limit
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetEffectiveLimit resets all changes to the "effective_limit" field.
+func (m *ObservabilityConcurrencyBucketMutation) ResetEffectiveLimit() {
+	m.effective_limit = nil
+	m.addeffective_limit = nil
+}
+
+// SetWaitingPeak sets the "waiting_peak" field.
+func (m *ObservabilityConcurrencyBucketMutation) SetWaitingPeak(i int) {
+	m.waiting_peak = &i
+	m.addwaiting_peak = nil
+}
+
+// WaitingPeak returns the value of the "waiting_peak" field in the mutation.
+func (m *ObservabilityConcurrencyBucketMutation) WaitingPeak() (r int, exists bool) {
+	v := m.waiting_peak
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldWaitingPeak returns the old "waiting_peak" field's value of the ObservabilityConcurrencyBucket entity.
+// If the ObservabilityConcurrencyBucket object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ObservabilityConcurrencyBucketMutation) OldWaitingPeak(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldWaitingPeak is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldWaitingPeak requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldWaitingPeak: %w", err)
+	}
+	return oldValue.WaitingPeak, nil
+}
+
+// AddWaitingPeak adds i to the "waiting_peak" field.
+func (m *ObservabilityConcurrencyBucketMutation) AddWaitingPeak(i int) {
+	if m.addwaiting_peak != nil {
+		*m.addwaiting_peak += i
+	} else {
+		m.addwaiting_peak = &i
+	}
+}
+
+// AddedWaitingPeak returns the value that was added to the "waiting_peak" field in this mutation.
+func (m *ObservabilityConcurrencyBucketMutation) AddedWaitingPeak() (r int, exists bool) {
+	v := m.addwaiting_peak
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetWaitingPeak resets all changes to the "waiting_peak" field.
+func (m *ObservabilityConcurrencyBucketMutation) ResetWaitingPeak() {
+	m.waiting_peak = nil
+	m.addwaiting_peak = nil
+}
+
+// SetPeakRatioActual sets the "peak_ratio_actual" field.
+func (m *ObservabilityConcurrencyBucketMutation) SetPeakRatioActual(i int) {
+	m.peak_ratio_actual = &i
+	m.addpeak_ratio_actual = nil
+}
+
+// PeakRatioActual returns the value of the "peak_ratio_actual" field in the mutation.
+func (m *ObservabilityConcurrencyBucketMutation) PeakRatioActual() (r int, exists bool) {
+	v := m.peak_ratio_actual
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPeakRatioActual returns the old "peak_ratio_actual" field's value of the ObservabilityConcurrencyBucket entity.
+// If the ObservabilityConcurrencyBucket object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ObservabilityConcurrencyBucketMutation) OldPeakRatioActual(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPeakRatioActual is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPeakRatioActual requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPeakRatioActual: %w", err)
+	}
+	return oldValue.PeakRatioActual, nil
+}
+
+// AddPeakRatioActual adds i to the "peak_ratio_actual" field.
+func (m *ObservabilityConcurrencyBucketMutation) AddPeakRatioActual(i int) {
+	if m.addpeak_ratio_actual != nil {
+		*m.addpeak_ratio_actual += i
+	} else {
+		m.addpeak_ratio_actual = &i
+	}
+}
+
+// AddedPeakRatioActual returns the value that was added to the "peak_ratio_actual" field in this mutation.
+func (m *ObservabilityConcurrencyBucketMutation) AddedPeakRatioActual() (r int, exists bool) {
+	v := m.addpeak_ratio_actual
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetPeakRatioActual resets all changes to the "peak_ratio_actual" field.
+func (m *ObservabilityConcurrencyBucketMutation) ResetPeakRatioActual() {
+	m.peak_ratio_actual = nil
+	m.addpeak_ratio_actual = nil
+}
+
+// SetPeakRatioLimit sets the "peak_ratio_limit" field.
+func (m *ObservabilityConcurrencyBucketMutation) SetPeakRatioLimit(i int) {
+	m.peak_ratio_limit = &i
+	m.addpeak_ratio_limit = nil
+}
+
+// PeakRatioLimit returns the value of the "peak_ratio_limit" field in the mutation.
+func (m *ObservabilityConcurrencyBucketMutation) PeakRatioLimit() (r int, exists bool) {
+	v := m.peak_ratio_limit
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPeakRatioLimit returns the old "peak_ratio_limit" field's value of the ObservabilityConcurrencyBucket entity.
+// If the ObservabilityConcurrencyBucket object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ObservabilityConcurrencyBucketMutation) OldPeakRatioLimit(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPeakRatioLimit is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPeakRatioLimit requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPeakRatioLimit: %w", err)
+	}
+	return oldValue.PeakRatioLimit, nil
+}
+
+// AddPeakRatioLimit adds i to the "peak_ratio_limit" field.
+func (m *ObservabilityConcurrencyBucketMutation) AddPeakRatioLimit(i int) {
+	if m.addpeak_ratio_limit != nil {
+		*m.addpeak_ratio_limit += i
+	} else {
+		m.addpeak_ratio_limit = &i
+	}
+}
+
+// AddedPeakRatioLimit returns the value that was added to the "peak_ratio_limit" field in this mutation.
+func (m *ObservabilityConcurrencyBucketMutation) AddedPeakRatioLimit() (r int, exists bool) {
+	v := m.addpeak_ratio_limit
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetPeakRatioLimit resets all changes to the "peak_ratio_limit" field.
+func (m *ObservabilityConcurrencyBucketMutation) ResetPeakRatioLimit() {
+	m.peak_ratio_limit = nil
+	m.addpeak_ratio_limit = nil
+}
+
+// SetPeakRatioSampleAt sets the "peak_ratio_sample_at" field.
+func (m *ObservabilityConcurrencyBucketMutation) SetPeakRatioSampleAt(t time.Time) {
+	m.peak_ratio_sample_at = &t
+}
+
+// PeakRatioSampleAt returns the value of the "peak_ratio_sample_at" field in the mutation.
+func (m *ObservabilityConcurrencyBucketMutation) PeakRatioSampleAt() (r time.Time, exists bool) {
+	v := m.peak_ratio_sample_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPeakRatioSampleAt returns the old "peak_ratio_sample_at" field's value of the ObservabilityConcurrencyBucket entity.
+// If the ObservabilityConcurrencyBucket object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ObservabilityConcurrencyBucketMutation) OldPeakRatioSampleAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPeakRatioSampleAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPeakRatioSampleAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPeakRatioSampleAt: %w", err)
+	}
+	return oldValue.PeakRatioSampleAt, nil
+}
+
+// ClearPeakRatioSampleAt clears the value of the "peak_ratio_sample_at" field.
+func (m *ObservabilityConcurrencyBucketMutation) ClearPeakRatioSampleAt() {
+	m.peak_ratio_sample_at = nil
+	m.clearedFields[observabilityconcurrencybucket.FieldPeakRatioSampleAt] = struct{}{}
+}
+
+// PeakRatioSampleAtCleared returns if the "peak_ratio_sample_at" field was cleared in this mutation.
+func (m *ObservabilityConcurrencyBucketMutation) PeakRatioSampleAtCleared() bool {
+	_, ok := m.clearedFields[observabilityconcurrencybucket.FieldPeakRatioSampleAt]
+	return ok
+}
+
+// ResetPeakRatioSampleAt resets all changes to the "peak_ratio_sample_at" field.
+func (m *ObservabilityConcurrencyBucketMutation) ResetPeakRatioSampleAt() {
+	m.peak_ratio_sample_at = nil
+	delete(m.clearedFields, observabilityconcurrencybucket.FieldPeakRatioSampleAt)
+}
+
+// SetWaitSumMs sets the "wait_sum_ms" field.
+func (m *ObservabilityConcurrencyBucketMutation) SetWaitSumMs(i int64) {
+	m.wait_sum_ms = &i
+	m.addwait_sum_ms = nil
+}
+
+// WaitSumMs returns the value of the "wait_sum_ms" field in the mutation.
+func (m *ObservabilityConcurrencyBucketMutation) WaitSumMs() (r int64, exists bool) {
+	v := m.wait_sum_ms
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldWaitSumMs returns the old "wait_sum_ms" field's value of the ObservabilityConcurrencyBucket entity.
+// If the ObservabilityConcurrencyBucket object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ObservabilityConcurrencyBucketMutation) OldWaitSumMs(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldWaitSumMs is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldWaitSumMs requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldWaitSumMs: %w", err)
+	}
+	return oldValue.WaitSumMs, nil
+}
+
+// AddWaitSumMs adds i to the "wait_sum_ms" field.
+func (m *ObservabilityConcurrencyBucketMutation) AddWaitSumMs(i int64) {
+	if m.addwait_sum_ms != nil {
+		*m.addwait_sum_ms += i
+	} else {
+		m.addwait_sum_ms = &i
+	}
+}
+
+// AddedWaitSumMs returns the value that was added to the "wait_sum_ms" field in this mutation.
+func (m *ObservabilityConcurrencyBucketMutation) AddedWaitSumMs() (r int64, exists bool) {
+	v := m.addwait_sum_ms
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetWaitSumMs resets all changes to the "wait_sum_ms" field.
+func (m *ObservabilityConcurrencyBucketMutation) ResetWaitSumMs() {
+	m.wait_sum_ms = nil
+	m.addwait_sum_ms = nil
+}
+
+// SetWaitSampleCount sets the "wait_sample_count" field.
+func (m *ObservabilityConcurrencyBucketMutation) SetWaitSampleCount(i int64) {
+	m.wait_sample_count = &i
+	m.addwait_sample_count = nil
+}
+
+// WaitSampleCount returns the value of the "wait_sample_count" field in the mutation.
+func (m *ObservabilityConcurrencyBucketMutation) WaitSampleCount() (r int64, exists bool) {
+	v := m.wait_sample_count
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldWaitSampleCount returns the old "wait_sample_count" field's value of the ObservabilityConcurrencyBucket entity.
+// If the ObservabilityConcurrencyBucket object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ObservabilityConcurrencyBucketMutation) OldWaitSampleCount(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldWaitSampleCount is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldWaitSampleCount requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldWaitSampleCount: %w", err)
+	}
+	return oldValue.WaitSampleCount, nil
+}
+
+// AddWaitSampleCount adds i to the "wait_sample_count" field.
+func (m *ObservabilityConcurrencyBucketMutation) AddWaitSampleCount(i int64) {
+	if m.addwait_sample_count != nil {
+		*m.addwait_sample_count += i
+	} else {
+		m.addwait_sample_count = &i
+	}
+}
+
+// AddedWaitSampleCount returns the value that was added to the "wait_sample_count" field in this mutation.
+func (m *ObservabilityConcurrencyBucketMutation) AddedWaitSampleCount() (r int64, exists bool) {
+	v := m.addwait_sample_count
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetWaitSampleCount resets all changes to the "wait_sample_count" field.
+func (m *ObservabilityConcurrencyBucketMutation) ResetWaitSampleCount() {
+	m.wait_sample_count = nil
+	m.addwait_sample_count = nil
+}
+
+// SetFirstSampledAt sets the "first_sampled_at" field.
+func (m *ObservabilityConcurrencyBucketMutation) SetFirstSampledAt(t time.Time) {
+	m.first_sampled_at = &t
+}
+
+// FirstSampledAt returns the value of the "first_sampled_at" field in the mutation.
+func (m *ObservabilityConcurrencyBucketMutation) FirstSampledAt() (r time.Time, exists bool) {
+	v := m.first_sampled_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldFirstSampledAt returns the old "first_sampled_at" field's value of the ObservabilityConcurrencyBucket entity.
+// If the ObservabilityConcurrencyBucket object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ObservabilityConcurrencyBucketMutation) OldFirstSampledAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldFirstSampledAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldFirstSampledAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldFirstSampledAt: %w", err)
+	}
+	return oldValue.FirstSampledAt, nil
+}
+
+// ResetFirstSampledAt resets all changes to the "first_sampled_at" field.
+func (m *ObservabilityConcurrencyBucketMutation) ResetFirstSampledAt() {
+	m.first_sampled_at = nil
+}
+
+// SetLastSampledAt sets the "last_sampled_at" field.
+func (m *ObservabilityConcurrencyBucketMutation) SetLastSampledAt(t time.Time) {
+	m.last_sampled_at = &t
+}
+
+// LastSampledAt returns the value of the "last_sampled_at" field in the mutation.
+func (m *ObservabilityConcurrencyBucketMutation) LastSampledAt() (r time.Time, exists bool) {
+	v := m.last_sampled_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastSampledAt returns the old "last_sampled_at" field's value of the ObservabilityConcurrencyBucket entity.
+// If the ObservabilityConcurrencyBucket object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ObservabilityConcurrencyBucketMutation) OldLastSampledAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastSampledAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastSampledAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastSampledAt: %w", err)
+	}
+	return oldValue.LastSampledAt, nil
+}
+
+// ResetLastSampledAt resets all changes to the "last_sampled_at" field.
+func (m *ObservabilityConcurrencyBucketMutation) ResetLastSampledAt() {
+	m.last_sampled_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *ObservabilityConcurrencyBucketMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *ObservabilityConcurrencyBucketMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the ObservabilityConcurrencyBucket entity.
+// If the ObservabilityConcurrencyBucket object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ObservabilityConcurrencyBucketMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *ObservabilityConcurrencyBucketMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// Where appends a list predicates to the ObservabilityConcurrencyBucketMutation builder.
+func (m *ObservabilityConcurrencyBucketMutation) Where(ps ...predicate.ObservabilityConcurrencyBucket) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the ObservabilityConcurrencyBucketMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *ObservabilityConcurrencyBucketMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.ObservabilityConcurrencyBucket, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *ObservabilityConcurrencyBucketMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *ObservabilityConcurrencyBucketMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (ObservabilityConcurrencyBucket).
+func (m *ObservabilityConcurrencyBucketMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *ObservabilityConcurrencyBucketMutation) Fields() []string {
+	fields := make([]string, 0, 20)
+	if m.window_seconds != nil {
+		fields = append(fields, observabilityconcurrencybucket.FieldWindowSeconds)
+	}
+	if m.bucket_start != nil {
+		fields = append(fields, observabilityconcurrencybucket.FieldBucketStart)
+	}
+	if m.sample_kind != nil {
+		fields = append(fields, observabilityconcurrencybucket.FieldSampleKind)
+	}
+	if m.dimension_hash != nil {
+		fields = append(fields, observabilityconcurrencybucket.FieldDimensionHash)
+	}
+	if m.account_id != nil {
+		fields = append(fields, observabilityconcurrencybucket.FieldAccountID)
+	}
+	if m.group_id != nil {
+		fields = append(fields, observabilityconcurrencybucket.FieldGroupID)
+	}
+	if m.route_alias != nil {
+		fields = append(fields, observabilityconcurrencybucket.FieldRouteAlias)
+	}
+	if m.current_peak != nil {
+		fields = append(fields, observabilityconcurrencybucket.FieldCurrentPeak)
+	}
+	if m.current_sum != nil {
+		fields = append(fields, observabilityconcurrencybucket.FieldCurrentSum)
+	}
+	if m.sample_count != nil {
+		fields = append(fields, observabilityconcurrencybucket.FieldSampleCount)
+	}
+	if m.effective_limit != nil {
+		fields = append(fields, observabilityconcurrencybucket.FieldEffectiveLimit)
+	}
+	if m.waiting_peak != nil {
+		fields = append(fields, observabilityconcurrencybucket.FieldWaitingPeak)
+	}
+	if m.peak_ratio_actual != nil {
+		fields = append(fields, observabilityconcurrencybucket.FieldPeakRatioActual)
+	}
+	if m.peak_ratio_limit != nil {
+		fields = append(fields, observabilityconcurrencybucket.FieldPeakRatioLimit)
+	}
+	if m.peak_ratio_sample_at != nil {
+		fields = append(fields, observabilityconcurrencybucket.FieldPeakRatioSampleAt)
+	}
+	if m.wait_sum_ms != nil {
+		fields = append(fields, observabilityconcurrencybucket.FieldWaitSumMs)
+	}
+	if m.wait_sample_count != nil {
+		fields = append(fields, observabilityconcurrencybucket.FieldWaitSampleCount)
+	}
+	if m.first_sampled_at != nil {
+		fields = append(fields, observabilityconcurrencybucket.FieldFirstSampledAt)
+	}
+	if m.last_sampled_at != nil {
+		fields = append(fields, observabilityconcurrencybucket.FieldLastSampledAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, observabilityconcurrencybucket.FieldUpdatedAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *ObservabilityConcurrencyBucketMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case observabilityconcurrencybucket.FieldWindowSeconds:
+		return m.WindowSeconds()
+	case observabilityconcurrencybucket.FieldBucketStart:
+		return m.BucketStart()
+	case observabilityconcurrencybucket.FieldSampleKind:
+		return m.SampleKind()
+	case observabilityconcurrencybucket.FieldDimensionHash:
+		return m.DimensionHash()
+	case observabilityconcurrencybucket.FieldAccountID:
+		return m.AccountID()
+	case observabilityconcurrencybucket.FieldGroupID:
+		return m.GroupID()
+	case observabilityconcurrencybucket.FieldRouteAlias:
+		return m.RouteAlias()
+	case observabilityconcurrencybucket.FieldCurrentPeak:
+		return m.CurrentPeak()
+	case observabilityconcurrencybucket.FieldCurrentSum:
+		return m.CurrentSum()
+	case observabilityconcurrencybucket.FieldSampleCount:
+		return m.SampleCount()
+	case observabilityconcurrencybucket.FieldEffectiveLimit:
+		return m.EffectiveLimit()
+	case observabilityconcurrencybucket.FieldWaitingPeak:
+		return m.WaitingPeak()
+	case observabilityconcurrencybucket.FieldPeakRatioActual:
+		return m.PeakRatioActual()
+	case observabilityconcurrencybucket.FieldPeakRatioLimit:
+		return m.PeakRatioLimit()
+	case observabilityconcurrencybucket.FieldPeakRatioSampleAt:
+		return m.PeakRatioSampleAt()
+	case observabilityconcurrencybucket.FieldWaitSumMs:
+		return m.WaitSumMs()
+	case observabilityconcurrencybucket.FieldWaitSampleCount:
+		return m.WaitSampleCount()
+	case observabilityconcurrencybucket.FieldFirstSampledAt:
+		return m.FirstSampledAt()
+	case observabilityconcurrencybucket.FieldLastSampledAt:
+		return m.LastSampledAt()
+	case observabilityconcurrencybucket.FieldUpdatedAt:
+		return m.UpdatedAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *ObservabilityConcurrencyBucketMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case observabilityconcurrencybucket.FieldWindowSeconds:
+		return m.OldWindowSeconds(ctx)
+	case observabilityconcurrencybucket.FieldBucketStart:
+		return m.OldBucketStart(ctx)
+	case observabilityconcurrencybucket.FieldSampleKind:
+		return m.OldSampleKind(ctx)
+	case observabilityconcurrencybucket.FieldDimensionHash:
+		return m.OldDimensionHash(ctx)
+	case observabilityconcurrencybucket.FieldAccountID:
+		return m.OldAccountID(ctx)
+	case observabilityconcurrencybucket.FieldGroupID:
+		return m.OldGroupID(ctx)
+	case observabilityconcurrencybucket.FieldRouteAlias:
+		return m.OldRouteAlias(ctx)
+	case observabilityconcurrencybucket.FieldCurrentPeak:
+		return m.OldCurrentPeak(ctx)
+	case observabilityconcurrencybucket.FieldCurrentSum:
+		return m.OldCurrentSum(ctx)
+	case observabilityconcurrencybucket.FieldSampleCount:
+		return m.OldSampleCount(ctx)
+	case observabilityconcurrencybucket.FieldEffectiveLimit:
+		return m.OldEffectiveLimit(ctx)
+	case observabilityconcurrencybucket.FieldWaitingPeak:
+		return m.OldWaitingPeak(ctx)
+	case observabilityconcurrencybucket.FieldPeakRatioActual:
+		return m.OldPeakRatioActual(ctx)
+	case observabilityconcurrencybucket.FieldPeakRatioLimit:
+		return m.OldPeakRatioLimit(ctx)
+	case observabilityconcurrencybucket.FieldPeakRatioSampleAt:
+		return m.OldPeakRatioSampleAt(ctx)
+	case observabilityconcurrencybucket.FieldWaitSumMs:
+		return m.OldWaitSumMs(ctx)
+	case observabilityconcurrencybucket.FieldWaitSampleCount:
+		return m.OldWaitSampleCount(ctx)
+	case observabilityconcurrencybucket.FieldFirstSampledAt:
+		return m.OldFirstSampledAt(ctx)
+	case observabilityconcurrencybucket.FieldLastSampledAt:
+		return m.OldLastSampledAt(ctx)
+	case observabilityconcurrencybucket.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown ObservabilityConcurrencyBucket field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ObservabilityConcurrencyBucketMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case observabilityconcurrencybucket.FieldWindowSeconds:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetWindowSeconds(v)
+		return nil
+	case observabilityconcurrencybucket.FieldBucketStart:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetBucketStart(v)
+		return nil
+	case observabilityconcurrencybucket.FieldSampleKind:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSampleKind(v)
+		return nil
+	case observabilityconcurrencybucket.FieldDimensionHash:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDimensionHash(v)
+		return nil
+	case observabilityconcurrencybucket.FieldAccountID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAccountID(v)
+		return nil
+	case observabilityconcurrencybucket.FieldGroupID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetGroupID(v)
+		return nil
+	case observabilityconcurrencybucket.FieldRouteAlias:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRouteAlias(v)
+		return nil
+	case observabilityconcurrencybucket.FieldCurrentPeak:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCurrentPeak(v)
+		return nil
+	case observabilityconcurrencybucket.FieldCurrentSum:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCurrentSum(v)
+		return nil
+	case observabilityconcurrencybucket.FieldSampleCount:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSampleCount(v)
+		return nil
+	case observabilityconcurrencybucket.FieldEffectiveLimit:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEffectiveLimit(v)
+		return nil
+	case observabilityconcurrencybucket.FieldWaitingPeak:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetWaitingPeak(v)
+		return nil
+	case observabilityconcurrencybucket.FieldPeakRatioActual:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPeakRatioActual(v)
+		return nil
+	case observabilityconcurrencybucket.FieldPeakRatioLimit:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPeakRatioLimit(v)
+		return nil
+	case observabilityconcurrencybucket.FieldPeakRatioSampleAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPeakRatioSampleAt(v)
+		return nil
+	case observabilityconcurrencybucket.FieldWaitSumMs:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetWaitSumMs(v)
+		return nil
+	case observabilityconcurrencybucket.FieldWaitSampleCount:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetWaitSampleCount(v)
+		return nil
+	case observabilityconcurrencybucket.FieldFirstSampledAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetFirstSampledAt(v)
+		return nil
+	case observabilityconcurrencybucket.FieldLastSampledAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastSampledAt(v)
+		return nil
+	case observabilityconcurrencybucket.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown ObservabilityConcurrencyBucket field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *ObservabilityConcurrencyBucketMutation) AddedFields() []string {
+	var fields []string
+	if m.addwindow_seconds != nil {
+		fields = append(fields, observabilityconcurrencybucket.FieldWindowSeconds)
+	}
+	if m.addaccount_id != nil {
+		fields = append(fields, observabilityconcurrencybucket.FieldAccountID)
+	}
+	if m.addgroup_id != nil {
+		fields = append(fields, observabilityconcurrencybucket.FieldGroupID)
+	}
+	if m.addcurrent_peak != nil {
+		fields = append(fields, observabilityconcurrencybucket.FieldCurrentPeak)
+	}
+	if m.addcurrent_sum != nil {
+		fields = append(fields, observabilityconcurrencybucket.FieldCurrentSum)
+	}
+	if m.addsample_count != nil {
+		fields = append(fields, observabilityconcurrencybucket.FieldSampleCount)
+	}
+	if m.addeffective_limit != nil {
+		fields = append(fields, observabilityconcurrencybucket.FieldEffectiveLimit)
+	}
+	if m.addwaiting_peak != nil {
+		fields = append(fields, observabilityconcurrencybucket.FieldWaitingPeak)
+	}
+	if m.addpeak_ratio_actual != nil {
+		fields = append(fields, observabilityconcurrencybucket.FieldPeakRatioActual)
+	}
+	if m.addpeak_ratio_limit != nil {
+		fields = append(fields, observabilityconcurrencybucket.FieldPeakRatioLimit)
+	}
+	if m.addwait_sum_ms != nil {
+		fields = append(fields, observabilityconcurrencybucket.FieldWaitSumMs)
+	}
+	if m.addwait_sample_count != nil {
+		fields = append(fields, observabilityconcurrencybucket.FieldWaitSampleCount)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *ObservabilityConcurrencyBucketMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case observabilityconcurrencybucket.FieldWindowSeconds:
+		return m.AddedWindowSeconds()
+	case observabilityconcurrencybucket.FieldAccountID:
+		return m.AddedAccountID()
+	case observabilityconcurrencybucket.FieldGroupID:
+		return m.AddedGroupID()
+	case observabilityconcurrencybucket.FieldCurrentPeak:
+		return m.AddedCurrentPeak()
+	case observabilityconcurrencybucket.FieldCurrentSum:
+		return m.AddedCurrentSum()
+	case observabilityconcurrencybucket.FieldSampleCount:
+		return m.AddedSampleCount()
+	case observabilityconcurrencybucket.FieldEffectiveLimit:
+		return m.AddedEffectiveLimit()
+	case observabilityconcurrencybucket.FieldWaitingPeak:
+		return m.AddedWaitingPeak()
+	case observabilityconcurrencybucket.FieldPeakRatioActual:
+		return m.AddedPeakRatioActual()
+	case observabilityconcurrencybucket.FieldPeakRatioLimit:
+		return m.AddedPeakRatioLimit()
+	case observabilityconcurrencybucket.FieldWaitSumMs:
+		return m.AddedWaitSumMs()
+	case observabilityconcurrencybucket.FieldWaitSampleCount:
+		return m.AddedWaitSampleCount()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ObservabilityConcurrencyBucketMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case observabilityconcurrencybucket.FieldWindowSeconds:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddWindowSeconds(v)
+		return nil
+	case observabilityconcurrencybucket.FieldAccountID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddAccountID(v)
+		return nil
+	case observabilityconcurrencybucket.FieldGroupID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddGroupID(v)
+		return nil
+	case observabilityconcurrencybucket.FieldCurrentPeak:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddCurrentPeak(v)
+		return nil
+	case observabilityconcurrencybucket.FieldCurrentSum:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddCurrentSum(v)
+		return nil
+	case observabilityconcurrencybucket.FieldSampleCount:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddSampleCount(v)
+		return nil
+	case observabilityconcurrencybucket.FieldEffectiveLimit:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddEffectiveLimit(v)
+		return nil
+	case observabilityconcurrencybucket.FieldWaitingPeak:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddWaitingPeak(v)
+		return nil
+	case observabilityconcurrencybucket.FieldPeakRatioActual:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddPeakRatioActual(v)
+		return nil
+	case observabilityconcurrencybucket.FieldPeakRatioLimit:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddPeakRatioLimit(v)
+		return nil
+	case observabilityconcurrencybucket.FieldWaitSumMs:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddWaitSumMs(v)
+		return nil
+	case observabilityconcurrencybucket.FieldWaitSampleCount:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddWaitSampleCount(v)
+		return nil
+	}
+	return fmt.Errorf("unknown ObservabilityConcurrencyBucket numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *ObservabilityConcurrencyBucketMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(observabilityconcurrencybucket.FieldRouteAlias) {
+		fields = append(fields, observabilityconcurrencybucket.FieldRouteAlias)
+	}
+	if m.FieldCleared(observabilityconcurrencybucket.FieldPeakRatioSampleAt) {
+		fields = append(fields, observabilityconcurrencybucket.FieldPeakRatioSampleAt)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *ObservabilityConcurrencyBucketMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *ObservabilityConcurrencyBucketMutation) ClearField(name string) error {
+	switch name {
+	case observabilityconcurrencybucket.FieldRouteAlias:
+		m.ClearRouteAlias()
+		return nil
+	case observabilityconcurrencybucket.FieldPeakRatioSampleAt:
+		m.ClearPeakRatioSampleAt()
+		return nil
+	}
+	return fmt.Errorf("unknown ObservabilityConcurrencyBucket nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *ObservabilityConcurrencyBucketMutation) ResetField(name string) error {
+	switch name {
+	case observabilityconcurrencybucket.FieldWindowSeconds:
+		m.ResetWindowSeconds()
+		return nil
+	case observabilityconcurrencybucket.FieldBucketStart:
+		m.ResetBucketStart()
+		return nil
+	case observabilityconcurrencybucket.FieldSampleKind:
+		m.ResetSampleKind()
+		return nil
+	case observabilityconcurrencybucket.FieldDimensionHash:
+		m.ResetDimensionHash()
+		return nil
+	case observabilityconcurrencybucket.FieldAccountID:
+		m.ResetAccountID()
+		return nil
+	case observabilityconcurrencybucket.FieldGroupID:
+		m.ResetGroupID()
+		return nil
+	case observabilityconcurrencybucket.FieldRouteAlias:
+		m.ResetRouteAlias()
+		return nil
+	case observabilityconcurrencybucket.FieldCurrentPeak:
+		m.ResetCurrentPeak()
+		return nil
+	case observabilityconcurrencybucket.FieldCurrentSum:
+		m.ResetCurrentSum()
+		return nil
+	case observabilityconcurrencybucket.FieldSampleCount:
+		m.ResetSampleCount()
+		return nil
+	case observabilityconcurrencybucket.FieldEffectiveLimit:
+		m.ResetEffectiveLimit()
+		return nil
+	case observabilityconcurrencybucket.FieldWaitingPeak:
+		m.ResetWaitingPeak()
+		return nil
+	case observabilityconcurrencybucket.FieldPeakRatioActual:
+		m.ResetPeakRatioActual()
+		return nil
+	case observabilityconcurrencybucket.FieldPeakRatioLimit:
+		m.ResetPeakRatioLimit()
+		return nil
+	case observabilityconcurrencybucket.FieldPeakRatioSampleAt:
+		m.ResetPeakRatioSampleAt()
+		return nil
+	case observabilityconcurrencybucket.FieldWaitSumMs:
+		m.ResetWaitSumMs()
+		return nil
+	case observabilityconcurrencybucket.FieldWaitSampleCount:
+		m.ResetWaitSampleCount()
+		return nil
+	case observabilityconcurrencybucket.FieldFirstSampledAt:
+		m.ResetFirstSampledAt()
+		return nil
+	case observabilityconcurrencybucket.FieldLastSampledAt:
+		m.ResetLastSampledAt()
+		return nil
+	case observabilityconcurrencybucket.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown ObservabilityConcurrencyBucket field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *ObservabilityConcurrencyBucketMutation) AddedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *ObservabilityConcurrencyBucketMutation) AddedIDs(name string) []ent.Value {
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *ObservabilityConcurrencyBucketMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *ObservabilityConcurrencyBucketMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *ObservabilityConcurrencyBucketMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *ObservabilityConcurrencyBucketMutation) EdgeCleared(name string) bool {
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *ObservabilityConcurrencyBucketMutation) ClearEdge(name string) error {
+	return fmt.Errorf("unknown ObservabilityConcurrencyBucket unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *ObservabilityConcurrencyBucketMutation) ResetEdge(name string) error {
+	return fmt.Errorf("unknown ObservabilityConcurrencyBucket edge %s", name)
+}
+
+// ObservabilityRequestBucketMutation represents an operation that mutates the ObservabilityRequestBucket nodes in the graph.
+type ObservabilityRequestBucketMutation struct {
+	config
+	op                        Op
+	typ                       string
+	id                        *int64
+	window_seconds            *int
+	addwindow_seconds         *int
+	bucket_start              *time.Time
+	dimension_hash            *string
+	user_id                   *int64
+	adduser_id                *int64
+	api_key_id                *int64
+	addapi_key_id             *int64
+	group_id                  *int64
+	addgroup_id               *int64
+	route_alias               *string
+	account_id                *int64
+	addaccount_id             *int64
+	request_count             *int64
+	addrequest_count          *int64
+	success_count             *int64
+	addsuccess_count          *int64
+	error_count               *int64
+	adderror_count            *int64
+	sla_error_count           *int64
+	addsla_error_count        *int64
+	business_limited_count    *int64
+	addbusiness_limited_count *int64
+	rate_limited_count        *int64
+	addrate_limited_count     *int64
+	legacy_inferred_count     *int64
+	addlegacy_inferred_count  *int64
+	input_tokens              *int64
+	addinput_tokens           *int64
+	output_tokens             *int64
+	addoutput_tokens          *int64
+	cache_creation_tokens     *int64
+	addcache_creation_tokens  *int64
+	cache_read_tokens         *int64
+	addcache_read_tokens      *int64
+	total_tokens              *int64
+	addtotal_tokens           *int64
+	duration_sample_count     *int64
+	addduration_sample_count  *int64
+	sum_duration_ms           *int64
+	addsum_duration_ms        *int64
+	min_duration_ms           *int64
+	addmin_duration_ms        *int64
+	max_duration_ms           *int64
+	addmax_duration_ms        *int64
+	duration_le_100           *int64
+	addduration_le_100        *int64
+	duration_le_250           *int64
+	addduration_le_250        *int64
+	duration_le_500           *int64
+	addduration_le_500        *int64
+	duration_le_1000          *int64
+	addduration_le_1000       *int64
+	duration_le_2000          *int64
+	addduration_le_2000       *int64
+	duration_le_5000          *int64
+	addduration_le_5000       *int64
+	duration_le_10000         *int64
+	addduration_le_10000      *int64
+	duration_gt_10000         *int64
+	addduration_gt_10000      *int64
+	ttft_sample_count         *int64
+	addttft_sample_count      *int64
+	sum_ttft_ms               *int64
+	addsum_ttft_ms            *int64
+	min_ttft_ms               *int64
+	addmin_ttft_ms            *int64
+	max_ttft_ms               *int64
+	addmax_ttft_ms            *int64
+	ttft_le_100               *int64
+	addttft_le_100            *int64
+	ttft_le_250               *int64
+	addttft_le_250            *int64
+	ttft_le_500               *int64
+	addttft_le_500            *int64
+	ttft_le_1000              *int64
+	addttft_le_1000           *int64
+	ttft_le_2000              *int64
+	addttft_le_2000           *int64
+	ttft_le_5000              *int64
+	addttft_le_5000           *int64
+	ttft_le_10000             *int64
+	addttft_le_10000          *int64
+	ttft_gt_10000             *int64
+	addttft_gt_10000          *int64
+	last_fact_at              *time.Time
+	updated_at                *time.Time
+	clearedFields             map[string]struct{}
+	done                      bool
+	oldValue                  func(context.Context) (*ObservabilityRequestBucket, error)
+	predicates                []predicate.ObservabilityRequestBucket
+}
+
+var _ ent.Mutation = (*ObservabilityRequestBucketMutation)(nil)
+
+// observabilityrequestbucketOption allows management of the mutation configuration using functional options.
+type observabilityrequestbucketOption func(*ObservabilityRequestBucketMutation)
+
+// newObservabilityRequestBucketMutation creates new mutation for the ObservabilityRequestBucket entity.
+func newObservabilityRequestBucketMutation(c config, op Op, opts ...observabilityrequestbucketOption) *ObservabilityRequestBucketMutation {
+	m := &ObservabilityRequestBucketMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeObservabilityRequestBucket,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withObservabilityRequestBucketID sets the ID field of the mutation.
+func withObservabilityRequestBucketID(id int64) observabilityrequestbucketOption {
+	return func(m *ObservabilityRequestBucketMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *ObservabilityRequestBucket
+		)
+		m.oldValue = func(ctx context.Context) (*ObservabilityRequestBucket, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().ObservabilityRequestBucket.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withObservabilityRequestBucket sets the old ObservabilityRequestBucket of the mutation.
+func withObservabilityRequestBucket(node *ObservabilityRequestBucket) observabilityrequestbucketOption {
+	return func(m *ObservabilityRequestBucketMutation) {
+		m.oldValue = func(context.Context) (*ObservabilityRequestBucket, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m ObservabilityRequestBucketMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m ObservabilityRequestBucketMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *ObservabilityRequestBucketMutation) ID() (id int64, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *ObservabilityRequestBucketMutation) IDs(ctx context.Context) ([]int64, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int64{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().ObservabilityRequestBucket.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetWindowSeconds sets the "window_seconds" field.
+func (m *ObservabilityRequestBucketMutation) SetWindowSeconds(i int) {
+	m.window_seconds = &i
+	m.addwindow_seconds = nil
+}
+
+// WindowSeconds returns the value of the "window_seconds" field in the mutation.
+func (m *ObservabilityRequestBucketMutation) WindowSeconds() (r int, exists bool) {
+	v := m.window_seconds
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldWindowSeconds returns the old "window_seconds" field's value of the ObservabilityRequestBucket entity.
+// If the ObservabilityRequestBucket object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ObservabilityRequestBucketMutation) OldWindowSeconds(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldWindowSeconds is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldWindowSeconds requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldWindowSeconds: %w", err)
+	}
+	return oldValue.WindowSeconds, nil
+}
+
+// AddWindowSeconds adds i to the "window_seconds" field.
+func (m *ObservabilityRequestBucketMutation) AddWindowSeconds(i int) {
+	if m.addwindow_seconds != nil {
+		*m.addwindow_seconds += i
+	} else {
+		m.addwindow_seconds = &i
+	}
+}
+
+// AddedWindowSeconds returns the value that was added to the "window_seconds" field in this mutation.
+func (m *ObservabilityRequestBucketMutation) AddedWindowSeconds() (r int, exists bool) {
+	v := m.addwindow_seconds
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetWindowSeconds resets all changes to the "window_seconds" field.
+func (m *ObservabilityRequestBucketMutation) ResetWindowSeconds() {
+	m.window_seconds = nil
+	m.addwindow_seconds = nil
+}
+
+// SetBucketStart sets the "bucket_start" field.
+func (m *ObservabilityRequestBucketMutation) SetBucketStart(t time.Time) {
+	m.bucket_start = &t
+}
+
+// BucketStart returns the value of the "bucket_start" field in the mutation.
+func (m *ObservabilityRequestBucketMutation) BucketStart() (r time.Time, exists bool) {
+	v := m.bucket_start
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldBucketStart returns the old "bucket_start" field's value of the ObservabilityRequestBucket entity.
+// If the ObservabilityRequestBucket object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ObservabilityRequestBucketMutation) OldBucketStart(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldBucketStart is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldBucketStart requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldBucketStart: %w", err)
+	}
+	return oldValue.BucketStart, nil
+}
+
+// ResetBucketStart resets all changes to the "bucket_start" field.
+func (m *ObservabilityRequestBucketMutation) ResetBucketStart() {
+	m.bucket_start = nil
+}
+
+// SetDimensionHash sets the "dimension_hash" field.
+func (m *ObservabilityRequestBucketMutation) SetDimensionHash(s string) {
+	m.dimension_hash = &s
+}
+
+// DimensionHash returns the value of the "dimension_hash" field in the mutation.
+func (m *ObservabilityRequestBucketMutation) DimensionHash() (r string, exists bool) {
+	v := m.dimension_hash
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDimensionHash returns the old "dimension_hash" field's value of the ObservabilityRequestBucket entity.
+// If the ObservabilityRequestBucket object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ObservabilityRequestBucketMutation) OldDimensionHash(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDimensionHash is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDimensionHash requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDimensionHash: %w", err)
+	}
+	return oldValue.DimensionHash, nil
+}
+
+// ResetDimensionHash resets all changes to the "dimension_hash" field.
+func (m *ObservabilityRequestBucketMutation) ResetDimensionHash() {
+	m.dimension_hash = nil
+}
+
+// SetUserID sets the "user_id" field.
+func (m *ObservabilityRequestBucketMutation) SetUserID(i int64) {
+	m.user_id = &i
+	m.adduser_id = nil
+}
+
+// UserID returns the value of the "user_id" field in the mutation.
+func (m *ObservabilityRequestBucketMutation) UserID() (r int64, exists bool) {
+	v := m.user_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUserID returns the old "user_id" field's value of the ObservabilityRequestBucket entity.
+// If the ObservabilityRequestBucket object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ObservabilityRequestBucketMutation) OldUserID(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUserID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUserID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUserID: %w", err)
+	}
+	return oldValue.UserID, nil
+}
+
+// AddUserID adds i to the "user_id" field.
+func (m *ObservabilityRequestBucketMutation) AddUserID(i int64) {
+	if m.adduser_id != nil {
+		*m.adduser_id += i
+	} else {
+		m.adduser_id = &i
+	}
+}
+
+// AddedUserID returns the value that was added to the "user_id" field in this mutation.
+func (m *ObservabilityRequestBucketMutation) AddedUserID() (r int64, exists bool) {
+	v := m.adduser_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetUserID resets all changes to the "user_id" field.
+func (m *ObservabilityRequestBucketMutation) ResetUserID() {
+	m.user_id = nil
+	m.adduser_id = nil
+}
+
+// SetAPIKeyID sets the "api_key_id" field.
+func (m *ObservabilityRequestBucketMutation) SetAPIKeyID(i int64) {
+	m.api_key_id = &i
+	m.addapi_key_id = nil
+}
+
+// APIKeyID returns the value of the "api_key_id" field in the mutation.
+func (m *ObservabilityRequestBucketMutation) APIKeyID() (r int64, exists bool) {
+	v := m.api_key_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAPIKeyID returns the old "api_key_id" field's value of the ObservabilityRequestBucket entity.
+// If the ObservabilityRequestBucket object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ObservabilityRequestBucketMutation) OldAPIKeyID(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAPIKeyID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAPIKeyID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAPIKeyID: %w", err)
+	}
+	return oldValue.APIKeyID, nil
+}
+
+// AddAPIKeyID adds i to the "api_key_id" field.
+func (m *ObservabilityRequestBucketMutation) AddAPIKeyID(i int64) {
+	if m.addapi_key_id != nil {
+		*m.addapi_key_id += i
+	} else {
+		m.addapi_key_id = &i
+	}
+}
+
+// AddedAPIKeyID returns the value that was added to the "api_key_id" field in this mutation.
+func (m *ObservabilityRequestBucketMutation) AddedAPIKeyID() (r int64, exists bool) {
+	v := m.addapi_key_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetAPIKeyID resets all changes to the "api_key_id" field.
+func (m *ObservabilityRequestBucketMutation) ResetAPIKeyID() {
+	m.api_key_id = nil
+	m.addapi_key_id = nil
+}
+
+// SetGroupID sets the "group_id" field.
+func (m *ObservabilityRequestBucketMutation) SetGroupID(i int64) {
+	m.group_id = &i
+	m.addgroup_id = nil
+}
+
+// GroupID returns the value of the "group_id" field in the mutation.
+func (m *ObservabilityRequestBucketMutation) GroupID() (r int64, exists bool) {
+	v := m.group_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldGroupID returns the old "group_id" field's value of the ObservabilityRequestBucket entity.
+// If the ObservabilityRequestBucket object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ObservabilityRequestBucketMutation) OldGroupID(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldGroupID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldGroupID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldGroupID: %w", err)
+	}
+	return oldValue.GroupID, nil
+}
+
+// AddGroupID adds i to the "group_id" field.
+func (m *ObservabilityRequestBucketMutation) AddGroupID(i int64) {
+	if m.addgroup_id != nil {
+		*m.addgroup_id += i
+	} else {
+		m.addgroup_id = &i
+	}
+}
+
+// AddedGroupID returns the value that was added to the "group_id" field in this mutation.
+func (m *ObservabilityRequestBucketMutation) AddedGroupID() (r int64, exists bool) {
+	v := m.addgroup_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetGroupID resets all changes to the "group_id" field.
+func (m *ObservabilityRequestBucketMutation) ResetGroupID() {
+	m.group_id = nil
+	m.addgroup_id = nil
+}
+
+// SetRouteAlias sets the "route_alias" field.
+func (m *ObservabilityRequestBucketMutation) SetRouteAlias(s string) {
+	m.route_alias = &s
+}
+
+// RouteAlias returns the value of the "route_alias" field in the mutation.
+func (m *ObservabilityRequestBucketMutation) RouteAlias() (r string, exists bool) {
+	v := m.route_alias
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRouteAlias returns the old "route_alias" field's value of the ObservabilityRequestBucket entity.
+// If the ObservabilityRequestBucket object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ObservabilityRequestBucketMutation) OldRouteAlias(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRouteAlias is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRouteAlias requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRouteAlias: %w", err)
+	}
+	return oldValue.RouteAlias, nil
+}
+
+// ClearRouteAlias clears the value of the "route_alias" field.
+func (m *ObservabilityRequestBucketMutation) ClearRouteAlias() {
+	m.route_alias = nil
+	m.clearedFields[observabilityrequestbucket.FieldRouteAlias] = struct{}{}
+}
+
+// RouteAliasCleared returns if the "route_alias" field was cleared in this mutation.
+func (m *ObservabilityRequestBucketMutation) RouteAliasCleared() bool {
+	_, ok := m.clearedFields[observabilityrequestbucket.FieldRouteAlias]
+	return ok
+}
+
+// ResetRouteAlias resets all changes to the "route_alias" field.
+func (m *ObservabilityRequestBucketMutation) ResetRouteAlias() {
+	m.route_alias = nil
+	delete(m.clearedFields, observabilityrequestbucket.FieldRouteAlias)
+}
+
+// SetAccountID sets the "account_id" field.
+func (m *ObservabilityRequestBucketMutation) SetAccountID(i int64) {
+	m.account_id = &i
+	m.addaccount_id = nil
+}
+
+// AccountID returns the value of the "account_id" field in the mutation.
+func (m *ObservabilityRequestBucketMutation) AccountID() (r int64, exists bool) {
+	v := m.account_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAccountID returns the old "account_id" field's value of the ObservabilityRequestBucket entity.
+// If the ObservabilityRequestBucket object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ObservabilityRequestBucketMutation) OldAccountID(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAccountID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAccountID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAccountID: %w", err)
+	}
+	return oldValue.AccountID, nil
+}
+
+// AddAccountID adds i to the "account_id" field.
+func (m *ObservabilityRequestBucketMutation) AddAccountID(i int64) {
+	if m.addaccount_id != nil {
+		*m.addaccount_id += i
+	} else {
+		m.addaccount_id = &i
+	}
+}
+
+// AddedAccountID returns the value that was added to the "account_id" field in this mutation.
+func (m *ObservabilityRequestBucketMutation) AddedAccountID() (r int64, exists bool) {
+	v := m.addaccount_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetAccountID resets all changes to the "account_id" field.
+func (m *ObservabilityRequestBucketMutation) ResetAccountID() {
+	m.account_id = nil
+	m.addaccount_id = nil
+}
+
+// SetRequestCount sets the "request_count" field.
+func (m *ObservabilityRequestBucketMutation) SetRequestCount(i int64) {
+	m.request_count = &i
+	m.addrequest_count = nil
+}
+
+// RequestCount returns the value of the "request_count" field in the mutation.
+func (m *ObservabilityRequestBucketMutation) RequestCount() (r int64, exists bool) {
+	v := m.request_count
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRequestCount returns the old "request_count" field's value of the ObservabilityRequestBucket entity.
+// If the ObservabilityRequestBucket object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ObservabilityRequestBucketMutation) OldRequestCount(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRequestCount is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRequestCount requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRequestCount: %w", err)
+	}
+	return oldValue.RequestCount, nil
+}
+
+// AddRequestCount adds i to the "request_count" field.
+func (m *ObservabilityRequestBucketMutation) AddRequestCount(i int64) {
+	if m.addrequest_count != nil {
+		*m.addrequest_count += i
+	} else {
+		m.addrequest_count = &i
+	}
+}
+
+// AddedRequestCount returns the value that was added to the "request_count" field in this mutation.
+func (m *ObservabilityRequestBucketMutation) AddedRequestCount() (r int64, exists bool) {
+	v := m.addrequest_count
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetRequestCount resets all changes to the "request_count" field.
+func (m *ObservabilityRequestBucketMutation) ResetRequestCount() {
+	m.request_count = nil
+	m.addrequest_count = nil
+}
+
+// SetSuccessCount sets the "success_count" field.
+func (m *ObservabilityRequestBucketMutation) SetSuccessCount(i int64) {
+	m.success_count = &i
+	m.addsuccess_count = nil
+}
+
+// SuccessCount returns the value of the "success_count" field in the mutation.
+func (m *ObservabilityRequestBucketMutation) SuccessCount() (r int64, exists bool) {
+	v := m.success_count
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSuccessCount returns the old "success_count" field's value of the ObservabilityRequestBucket entity.
+// If the ObservabilityRequestBucket object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ObservabilityRequestBucketMutation) OldSuccessCount(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSuccessCount is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSuccessCount requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSuccessCount: %w", err)
+	}
+	return oldValue.SuccessCount, nil
+}
+
+// AddSuccessCount adds i to the "success_count" field.
+func (m *ObservabilityRequestBucketMutation) AddSuccessCount(i int64) {
+	if m.addsuccess_count != nil {
+		*m.addsuccess_count += i
+	} else {
+		m.addsuccess_count = &i
+	}
+}
+
+// AddedSuccessCount returns the value that was added to the "success_count" field in this mutation.
+func (m *ObservabilityRequestBucketMutation) AddedSuccessCount() (r int64, exists bool) {
+	v := m.addsuccess_count
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetSuccessCount resets all changes to the "success_count" field.
+func (m *ObservabilityRequestBucketMutation) ResetSuccessCount() {
+	m.success_count = nil
+	m.addsuccess_count = nil
+}
+
+// SetErrorCount sets the "error_count" field.
+func (m *ObservabilityRequestBucketMutation) SetErrorCount(i int64) {
+	m.error_count = &i
+	m.adderror_count = nil
+}
+
+// ErrorCount returns the value of the "error_count" field in the mutation.
+func (m *ObservabilityRequestBucketMutation) ErrorCount() (r int64, exists bool) {
+	v := m.error_count
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldErrorCount returns the old "error_count" field's value of the ObservabilityRequestBucket entity.
+// If the ObservabilityRequestBucket object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ObservabilityRequestBucketMutation) OldErrorCount(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldErrorCount is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldErrorCount requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldErrorCount: %w", err)
+	}
+	return oldValue.ErrorCount, nil
+}
+
+// AddErrorCount adds i to the "error_count" field.
+func (m *ObservabilityRequestBucketMutation) AddErrorCount(i int64) {
+	if m.adderror_count != nil {
+		*m.adderror_count += i
+	} else {
+		m.adderror_count = &i
+	}
+}
+
+// AddedErrorCount returns the value that was added to the "error_count" field in this mutation.
+func (m *ObservabilityRequestBucketMutation) AddedErrorCount() (r int64, exists bool) {
+	v := m.adderror_count
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetErrorCount resets all changes to the "error_count" field.
+func (m *ObservabilityRequestBucketMutation) ResetErrorCount() {
+	m.error_count = nil
+	m.adderror_count = nil
+}
+
+// SetSLAErrorCount sets the "sla_error_count" field.
+func (m *ObservabilityRequestBucketMutation) SetSLAErrorCount(i int64) {
+	m.sla_error_count = &i
+	m.addsla_error_count = nil
+}
+
+// SLAErrorCount returns the value of the "sla_error_count" field in the mutation.
+func (m *ObservabilityRequestBucketMutation) SLAErrorCount() (r int64, exists bool) {
+	v := m.sla_error_count
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSLAErrorCount returns the old "sla_error_count" field's value of the ObservabilityRequestBucket entity.
+// If the ObservabilityRequestBucket object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ObservabilityRequestBucketMutation) OldSLAErrorCount(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSLAErrorCount is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSLAErrorCount requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSLAErrorCount: %w", err)
+	}
+	return oldValue.SLAErrorCount, nil
+}
+
+// AddSLAErrorCount adds i to the "sla_error_count" field.
+func (m *ObservabilityRequestBucketMutation) AddSLAErrorCount(i int64) {
+	if m.addsla_error_count != nil {
+		*m.addsla_error_count += i
+	} else {
+		m.addsla_error_count = &i
+	}
+}
+
+// AddedSLAErrorCount returns the value that was added to the "sla_error_count" field in this mutation.
+func (m *ObservabilityRequestBucketMutation) AddedSLAErrorCount() (r int64, exists bool) {
+	v := m.addsla_error_count
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetSLAErrorCount resets all changes to the "sla_error_count" field.
+func (m *ObservabilityRequestBucketMutation) ResetSLAErrorCount() {
+	m.sla_error_count = nil
+	m.addsla_error_count = nil
+}
+
+// SetBusinessLimitedCount sets the "business_limited_count" field.
+func (m *ObservabilityRequestBucketMutation) SetBusinessLimitedCount(i int64) {
+	m.business_limited_count = &i
+	m.addbusiness_limited_count = nil
+}
+
+// BusinessLimitedCount returns the value of the "business_limited_count" field in the mutation.
+func (m *ObservabilityRequestBucketMutation) BusinessLimitedCount() (r int64, exists bool) {
+	v := m.business_limited_count
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldBusinessLimitedCount returns the old "business_limited_count" field's value of the ObservabilityRequestBucket entity.
+// If the ObservabilityRequestBucket object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ObservabilityRequestBucketMutation) OldBusinessLimitedCount(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldBusinessLimitedCount is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldBusinessLimitedCount requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldBusinessLimitedCount: %w", err)
+	}
+	return oldValue.BusinessLimitedCount, nil
+}
+
+// AddBusinessLimitedCount adds i to the "business_limited_count" field.
+func (m *ObservabilityRequestBucketMutation) AddBusinessLimitedCount(i int64) {
+	if m.addbusiness_limited_count != nil {
+		*m.addbusiness_limited_count += i
+	} else {
+		m.addbusiness_limited_count = &i
+	}
+}
+
+// AddedBusinessLimitedCount returns the value that was added to the "business_limited_count" field in this mutation.
+func (m *ObservabilityRequestBucketMutation) AddedBusinessLimitedCount() (r int64, exists bool) {
+	v := m.addbusiness_limited_count
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetBusinessLimitedCount resets all changes to the "business_limited_count" field.
+func (m *ObservabilityRequestBucketMutation) ResetBusinessLimitedCount() {
+	m.business_limited_count = nil
+	m.addbusiness_limited_count = nil
+}
+
+// SetRateLimitedCount sets the "rate_limited_count" field.
+func (m *ObservabilityRequestBucketMutation) SetRateLimitedCount(i int64) {
+	m.rate_limited_count = &i
+	m.addrate_limited_count = nil
+}
+
+// RateLimitedCount returns the value of the "rate_limited_count" field in the mutation.
+func (m *ObservabilityRequestBucketMutation) RateLimitedCount() (r int64, exists bool) {
+	v := m.rate_limited_count
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRateLimitedCount returns the old "rate_limited_count" field's value of the ObservabilityRequestBucket entity.
+// If the ObservabilityRequestBucket object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ObservabilityRequestBucketMutation) OldRateLimitedCount(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRateLimitedCount is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRateLimitedCount requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRateLimitedCount: %w", err)
+	}
+	return oldValue.RateLimitedCount, nil
+}
+
+// AddRateLimitedCount adds i to the "rate_limited_count" field.
+func (m *ObservabilityRequestBucketMutation) AddRateLimitedCount(i int64) {
+	if m.addrate_limited_count != nil {
+		*m.addrate_limited_count += i
+	} else {
+		m.addrate_limited_count = &i
+	}
+}
+
+// AddedRateLimitedCount returns the value that was added to the "rate_limited_count" field in this mutation.
+func (m *ObservabilityRequestBucketMutation) AddedRateLimitedCount() (r int64, exists bool) {
+	v := m.addrate_limited_count
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetRateLimitedCount resets all changes to the "rate_limited_count" field.
+func (m *ObservabilityRequestBucketMutation) ResetRateLimitedCount() {
+	m.rate_limited_count = nil
+	m.addrate_limited_count = nil
+}
+
+// SetLegacyInferredCount sets the "legacy_inferred_count" field.
+func (m *ObservabilityRequestBucketMutation) SetLegacyInferredCount(i int64) {
+	m.legacy_inferred_count = &i
+	m.addlegacy_inferred_count = nil
+}
+
+// LegacyInferredCount returns the value of the "legacy_inferred_count" field in the mutation.
+func (m *ObservabilityRequestBucketMutation) LegacyInferredCount() (r int64, exists bool) {
+	v := m.legacy_inferred_count
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLegacyInferredCount returns the old "legacy_inferred_count" field's value of the ObservabilityRequestBucket entity.
+// If the ObservabilityRequestBucket object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ObservabilityRequestBucketMutation) OldLegacyInferredCount(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLegacyInferredCount is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLegacyInferredCount requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLegacyInferredCount: %w", err)
+	}
+	return oldValue.LegacyInferredCount, nil
+}
+
+// AddLegacyInferredCount adds i to the "legacy_inferred_count" field.
+func (m *ObservabilityRequestBucketMutation) AddLegacyInferredCount(i int64) {
+	if m.addlegacy_inferred_count != nil {
+		*m.addlegacy_inferred_count += i
+	} else {
+		m.addlegacy_inferred_count = &i
+	}
+}
+
+// AddedLegacyInferredCount returns the value that was added to the "legacy_inferred_count" field in this mutation.
+func (m *ObservabilityRequestBucketMutation) AddedLegacyInferredCount() (r int64, exists bool) {
+	v := m.addlegacy_inferred_count
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetLegacyInferredCount resets all changes to the "legacy_inferred_count" field.
+func (m *ObservabilityRequestBucketMutation) ResetLegacyInferredCount() {
+	m.legacy_inferred_count = nil
+	m.addlegacy_inferred_count = nil
+}
+
+// SetInputTokens sets the "input_tokens" field.
+func (m *ObservabilityRequestBucketMutation) SetInputTokens(i int64) {
+	m.input_tokens = &i
+	m.addinput_tokens = nil
+}
+
+// InputTokens returns the value of the "input_tokens" field in the mutation.
+func (m *ObservabilityRequestBucketMutation) InputTokens() (r int64, exists bool) {
+	v := m.input_tokens
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldInputTokens returns the old "input_tokens" field's value of the ObservabilityRequestBucket entity.
+// If the ObservabilityRequestBucket object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ObservabilityRequestBucketMutation) OldInputTokens(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldInputTokens is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldInputTokens requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldInputTokens: %w", err)
+	}
+	return oldValue.InputTokens, nil
+}
+
+// AddInputTokens adds i to the "input_tokens" field.
+func (m *ObservabilityRequestBucketMutation) AddInputTokens(i int64) {
+	if m.addinput_tokens != nil {
+		*m.addinput_tokens += i
+	} else {
+		m.addinput_tokens = &i
+	}
+}
+
+// AddedInputTokens returns the value that was added to the "input_tokens" field in this mutation.
+func (m *ObservabilityRequestBucketMutation) AddedInputTokens() (r int64, exists bool) {
+	v := m.addinput_tokens
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetInputTokens resets all changes to the "input_tokens" field.
+func (m *ObservabilityRequestBucketMutation) ResetInputTokens() {
+	m.input_tokens = nil
+	m.addinput_tokens = nil
+}
+
+// SetOutputTokens sets the "output_tokens" field.
+func (m *ObservabilityRequestBucketMutation) SetOutputTokens(i int64) {
+	m.output_tokens = &i
+	m.addoutput_tokens = nil
+}
+
+// OutputTokens returns the value of the "output_tokens" field in the mutation.
+func (m *ObservabilityRequestBucketMutation) OutputTokens() (r int64, exists bool) {
+	v := m.output_tokens
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOutputTokens returns the old "output_tokens" field's value of the ObservabilityRequestBucket entity.
+// If the ObservabilityRequestBucket object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ObservabilityRequestBucketMutation) OldOutputTokens(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOutputTokens is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOutputTokens requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOutputTokens: %w", err)
+	}
+	return oldValue.OutputTokens, nil
+}
+
+// AddOutputTokens adds i to the "output_tokens" field.
+func (m *ObservabilityRequestBucketMutation) AddOutputTokens(i int64) {
+	if m.addoutput_tokens != nil {
+		*m.addoutput_tokens += i
+	} else {
+		m.addoutput_tokens = &i
+	}
+}
+
+// AddedOutputTokens returns the value that was added to the "output_tokens" field in this mutation.
+func (m *ObservabilityRequestBucketMutation) AddedOutputTokens() (r int64, exists bool) {
+	v := m.addoutput_tokens
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetOutputTokens resets all changes to the "output_tokens" field.
+func (m *ObservabilityRequestBucketMutation) ResetOutputTokens() {
+	m.output_tokens = nil
+	m.addoutput_tokens = nil
+}
+
+// SetCacheCreationTokens sets the "cache_creation_tokens" field.
+func (m *ObservabilityRequestBucketMutation) SetCacheCreationTokens(i int64) {
+	m.cache_creation_tokens = &i
+	m.addcache_creation_tokens = nil
+}
+
+// CacheCreationTokens returns the value of the "cache_creation_tokens" field in the mutation.
+func (m *ObservabilityRequestBucketMutation) CacheCreationTokens() (r int64, exists bool) {
+	v := m.cache_creation_tokens
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCacheCreationTokens returns the old "cache_creation_tokens" field's value of the ObservabilityRequestBucket entity.
+// If the ObservabilityRequestBucket object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ObservabilityRequestBucketMutation) OldCacheCreationTokens(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCacheCreationTokens is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCacheCreationTokens requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCacheCreationTokens: %w", err)
+	}
+	return oldValue.CacheCreationTokens, nil
+}
+
+// AddCacheCreationTokens adds i to the "cache_creation_tokens" field.
+func (m *ObservabilityRequestBucketMutation) AddCacheCreationTokens(i int64) {
+	if m.addcache_creation_tokens != nil {
+		*m.addcache_creation_tokens += i
+	} else {
+		m.addcache_creation_tokens = &i
+	}
+}
+
+// AddedCacheCreationTokens returns the value that was added to the "cache_creation_tokens" field in this mutation.
+func (m *ObservabilityRequestBucketMutation) AddedCacheCreationTokens() (r int64, exists bool) {
+	v := m.addcache_creation_tokens
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetCacheCreationTokens resets all changes to the "cache_creation_tokens" field.
+func (m *ObservabilityRequestBucketMutation) ResetCacheCreationTokens() {
+	m.cache_creation_tokens = nil
+	m.addcache_creation_tokens = nil
+}
+
+// SetCacheReadTokens sets the "cache_read_tokens" field.
+func (m *ObservabilityRequestBucketMutation) SetCacheReadTokens(i int64) {
+	m.cache_read_tokens = &i
+	m.addcache_read_tokens = nil
+}
+
+// CacheReadTokens returns the value of the "cache_read_tokens" field in the mutation.
+func (m *ObservabilityRequestBucketMutation) CacheReadTokens() (r int64, exists bool) {
+	v := m.cache_read_tokens
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCacheReadTokens returns the old "cache_read_tokens" field's value of the ObservabilityRequestBucket entity.
+// If the ObservabilityRequestBucket object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ObservabilityRequestBucketMutation) OldCacheReadTokens(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCacheReadTokens is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCacheReadTokens requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCacheReadTokens: %w", err)
+	}
+	return oldValue.CacheReadTokens, nil
+}
+
+// AddCacheReadTokens adds i to the "cache_read_tokens" field.
+func (m *ObservabilityRequestBucketMutation) AddCacheReadTokens(i int64) {
+	if m.addcache_read_tokens != nil {
+		*m.addcache_read_tokens += i
+	} else {
+		m.addcache_read_tokens = &i
+	}
+}
+
+// AddedCacheReadTokens returns the value that was added to the "cache_read_tokens" field in this mutation.
+func (m *ObservabilityRequestBucketMutation) AddedCacheReadTokens() (r int64, exists bool) {
+	v := m.addcache_read_tokens
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetCacheReadTokens resets all changes to the "cache_read_tokens" field.
+func (m *ObservabilityRequestBucketMutation) ResetCacheReadTokens() {
+	m.cache_read_tokens = nil
+	m.addcache_read_tokens = nil
+}
+
+// SetTotalTokens sets the "total_tokens" field.
+func (m *ObservabilityRequestBucketMutation) SetTotalTokens(i int64) {
+	m.total_tokens = &i
+	m.addtotal_tokens = nil
+}
+
+// TotalTokens returns the value of the "total_tokens" field in the mutation.
+func (m *ObservabilityRequestBucketMutation) TotalTokens() (r int64, exists bool) {
+	v := m.total_tokens
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTotalTokens returns the old "total_tokens" field's value of the ObservabilityRequestBucket entity.
+// If the ObservabilityRequestBucket object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ObservabilityRequestBucketMutation) OldTotalTokens(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTotalTokens is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTotalTokens requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTotalTokens: %w", err)
+	}
+	return oldValue.TotalTokens, nil
+}
+
+// AddTotalTokens adds i to the "total_tokens" field.
+func (m *ObservabilityRequestBucketMutation) AddTotalTokens(i int64) {
+	if m.addtotal_tokens != nil {
+		*m.addtotal_tokens += i
+	} else {
+		m.addtotal_tokens = &i
+	}
+}
+
+// AddedTotalTokens returns the value that was added to the "total_tokens" field in this mutation.
+func (m *ObservabilityRequestBucketMutation) AddedTotalTokens() (r int64, exists bool) {
+	v := m.addtotal_tokens
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetTotalTokens resets all changes to the "total_tokens" field.
+func (m *ObservabilityRequestBucketMutation) ResetTotalTokens() {
+	m.total_tokens = nil
+	m.addtotal_tokens = nil
+}
+
+// SetDurationSampleCount sets the "duration_sample_count" field.
+func (m *ObservabilityRequestBucketMutation) SetDurationSampleCount(i int64) {
+	m.duration_sample_count = &i
+	m.addduration_sample_count = nil
+}
+
+// DurationSampleCount returns the value of the "duration_sample_count" field in the mutation.
+func (m *ObservabilityRequestBucketMutation) DurationSampleCount() (r int64, exists bool) {
+	v := m.duration_sample_count
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDurationSampleCount returns the old "duration_sample_count" field's value of the ObservabilityRequestBucket entity.
+// If the ObservabilityRequestBucket object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ObservabilityRequestBucketMutation) OldDurationSampleCount(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDurationSampleCount is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDurationSampleCount requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDurationSampleCount: %w", err)
+	}
+	return oldValue.DurationSampleCount, nil
+}
+
+// AddDurationSampleCount adds i to the "duration_sample_count" field.
+func (m *ObservabilityRequestBucketMutation) AddDurationSampleCount(i int64) {
+	if m.addduration_sample_count != nil {
+		*m.addduration_sample_count += i
+	} else {
+		m.addduration_sample_count = &i
+	}
+}
+
+// AddedDurationSampleCount returns the value that was added to the "duration_sample_count" field in this mutation.
+func (m *ObservabilityRequestBucketMutation) AddedDurationSampleCount() (r int64, exists bool) {
+	v := m.addduration_sample_count
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetDurationSampleCount resets all changes to the "duration_sample_count" field.
+func (m *ObservabilityRequestBucketMutation) ResetDurationSampleCount() {
+	m.duration_sample_count = nil
+	m.addduration_sample_count = nil
+}
+
+// SetSumDurationMs sets the "sum_duration_ms" field.
+func (m *ObservabilityRequestBucketMutation) SetSumDurationMs(i int64) {
+	m.sum_duration_ms = &i
+	m.addsum_duration_ms = nil
+}
+
+// SumDurationMs returns the value of the "sum_duration_ms" field in the mutation.
+func (m *ObservabilityRequestBucketMutation) SumDurationMs() (r int64, exists bool) {
+	v := m.sum_duration_ms
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSumDurationMs returns the old "sum_duration_ms" field's value of the ObservabilityRequestBucket entity.
+// If the ObservabilityRequestBucket object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ObservabilityRequestBucketMutation) OldSumDurationMs(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSumDurationMs is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSumDurationMs requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSumDurationMs: %w", err)
+	}
+	return oldValue.SumDurationMs, nil
+}
+
+// AddSumDurationMs adds i to the "sum_duration_ms" field.
+func (m *ObservabilityRequestBucketMutation) AddSumDurationMs(i int64) {
+	if m.addsum_duration_ms != nil {
+		*m.addsum_duration_ms += i
+	} else {
+		m.addsum_duration_ms = &i
+	}
+}
+
+// AddedSumDurationMs returns the value that was added to the "sum_duration_ms" field in this mutation.
+func (m *ObservabilityRequestBucketMutation) AddedSumDurationMs() (r int64, exists bool) {
+	v := m.addsum_duration_ms
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetSumDurationMs resets all changes to the "sum_duration_ms" field.
+func (m *ObservabilityRequestBucketMutation) ResetSumDurationMs() {
+	m.sum_duration_ms = nil
+	m.addsum_duration_ms = nil
+}
+
+// SetMinDurationMs sets the "min_duration_ms" field.
+func (m *ObservabilityRequestBucketMutation) SetMinDurationMs(i int64) {
+	m.min_duration_ms = &i
+	m.addmin_duration_ms = nil
+}
+
+// MinDurationMs returns the value of the "min_duration_ms" field in the mutation.
+func (m *ObservabilityRequestBucketMutation) MinDurationMs() (r int64, exists bool) {
+	v := m.min_duration_ms
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMinDurationMs returns the old "min_duration_ms" field's value of the ObservabilityRequestBucket entity.
+// If the ObservabilityRequestBucket object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ObservabilityRequestBucketMutation) OldMinDurationMs(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMinDurationMs is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMinDurationMs requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMinDurationMs: %w", err)
+	}
+	return oldValue.MinDurationMs, nil
+}
+
+// AddMinDurationMs adds i to the "min_duration_ms" field.
+func (m *ObservabilityRequestBucketMutation) AddMinDurationMs(i int64) {
+	if m.addmin_duration_ms != nil {
+		*m.addmin_duration_ms += i
+	} else {
+		m.addmin_duration_ms = &i
+	}
+}
+
+// AddedMinDurationMs returns the value that was added to the "min_duration_ms" field in this mutation.
+func (m *ObservabilityRequestBucketMutation) AddedMinDurationMs() (r int64, exists bool) {
+	v := m.addmin_duration_ms
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetMinDurationMs resets all changes to the "min_duration_ms" field.
+func (m *ObservabilityRequestBucketMutation) ResetMinDurationMs() {
+	m.min_duration_ms = nil
+	m.addmin_duration_ms = nil
+}
+
+// SetMaxDurationMs sets the "max_duration_ms" field.
+func (m *ObservabilityRequestBucketMutation) SetMaxDurationMs(i int64) {
+	m.max_duration_ms = &i
+	m.addmax_duration_ms = nil
+}
+
+// MaxDurationMs returns the value of the "max_duration_ms" field in the mutation.
+func (m *ObservabilityRequestBucketMutation) MaxDurationMs() (r int64, exists bool) {
+	v := m.max_duration_ms
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMaxDurationMs returns the old "max_duration_ms" field's value of the ObservabilityRequestBucket entity.
+// If the ObservabilityRequestBucket object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ObservabilityRequestBucketMutation) OldMaxDurationMs(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMaxDurationMs is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMaxDurationMs requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMaxDurationMs: %w", err)
+	}
+	return oldValue.MaxDurationMs, nil
+}
+
+// AddMaxDurationMs adds i to the "max_duration_ms" field.
+func (m *ObservabilityRequestBucketMutation) AddMaxDurationMs(i int64) {
+	if m.addmax_duration_ms != nil {
+		*m.addmax_duration_ms += i
+	} else {
+		m.addmax_duration_ms = &i
+	}
+}
+
+// AddedMaxDurationMs returns the value that was added to the "max_duration_ms" field in this mutation.
+func (m *ObservabilityRequestBucketMutation) AddedMaxDurationMs() (r int64, exists bool) {
+	v := m.addmax_duration_ms
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetMaxDurationMs resets all changes to the "max_duration_ms" field.
+func (m *ObservabilityRequestBucketMutation) ResetMaxDurationMs() {
+	m.max_duration_ms = nil
+	m.addmax_duration_ms = nil
+}
+
+// SetDurationLe100 sets the "duration_le_100" field.
+func (m *ObservabilityRequestBucketMutation) SetDurationLe100(i int64) {
+	m.duration_le_100 = &i
+	m.addduration_le_100 = nil
+}
+
+// DurationLe100 returns the value of the "duration_le_100" field in the mutation.
+func (m *ObservabilityRequestBucketMutation) DurationLe100() (r int64, exists bool) {
+	v := m.duration_le_100
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDurationLe100 returns the old "duration_le_100" field's value of the ObservabilityRequestBucket entity.
+// If the ObservabilityRequestBucket object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ObservabilityRequestBucketMutation) OldDurationLe100(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDurationLe100 is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDurationLe100 requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDurationLe100: %w", err)
+	}
+	return oldValue.DurationLe100, nil
+}
+
+// AddDurationLe100 adds i to the "duration_le_100" field.
+func (m *ObservabilityRequestBucketMutation) AddDurationLe100(i int64) {
+	if m.addduration_le_100 != nil {
+		*m.addduration_le_100 += i
+	} else {
+		m.addduration_le_100 = &i
+	}
+}
+
+// AddedDurationLe100 returns the value that was added to the "duration_le_100" field in this mutation.
+func (m *ObservabilityRequestBucketMutation) AddedDurationLe100() (r int64, exists bool) {
+	v := m.addduration_le_100
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetDurationLe100 resets all changes to the "duration_le_100" field.
+func (m *ObservabilityRequestBucketMutation) ResetDurationLe100() {
+	m.duration_le_100 = nil
+	m.addduration_le_100 = nil
+}
+
+// SetDurationLe250 sets the "duration_le_250" field.
+func (m *ObservabilityRequestBucketMutation) SetDurationLe250(i int64) {
+	m.duration_le_250 = &i
+	m.addduration_le_250 = nil
+}
+
+// DurationLe250 returns the value of the "duration_le_250" field in the mutation.
+func (m *ObservabilityRequestBucketMutation) DurationLe250() (r int64, exists bool) {
+	v := m.duration_le_250
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDurationLe250 returns the old "duration_le_250" field's value of the ObservabilityRequestBucket entity.
+// If the ObservabilityRequestBucket object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ObservabilityRequestBucketMutation) OldDurationLe250(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDurationLe250 is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDurationLe250 requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDurationLe250: %w", err)
+	}
+	return oldValue.DurationLe250, nil
+}
+
+// AddDurationLe250 adds i to the "duration_le_250" field.
+func (m *ObservabilityRequestBucketMutation) AddDurationLe250(i int64) {
+	if m.addduration_le_250 != nil {
+		*m.addduration_le_250 += i
+	} else {
+		m.addduration_le_250 = &i
+	}
+}
+
+// AddedDurationLe250 returns the value that was added to the "duration_le_250" field in this mutation.
+func (m *ObservabilityRequestBucketMutation) AddedDurationLe250() (r int64, exists bool) {
+	v := m.addduration_le_250
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetDurationLe250 resets all changes to the "duration_le_250" field.
+func (m *ObservabilityRequestBucketMutation) ResetDurationLe250() {
+	m.duration_le_250 = nil
+	m.addduration_le_250 = nil
+}
+
+// SetDurationLe500 sets the "duration_le_500" field.
+func (m *ObservabilityRequestBucketMutation) SetDurationLe500(i int64) {
+	m.duration_le_500 = &i
+	m.addduration_le_500 = nil
+}
+
+// DurationLe500 returns the value of the "duration_le_500" field in the mutation.
+func (m *ObservabilityRequestBucketMutation) DurationLe500() (r int64, exists bool) {
+	v := m.duration_le_500
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDurationLe500 returns the old "duration_le_500" field's value of the ObservabilityRequestBucket entity.
+// If the ObservabilityRequestBucket object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ObservabilityRequestBucketMutation) OldDurationLe500(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDurationLe500 is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDurationLe500 requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDurationLe500: %w", err)
+	}
+	return oldValue.DurationLe500, nil
+}
+
+// AddDurationLe500 adds i to the "duration_le_500" field.
+func (m *ObservabilityRequestBucketMutation) AddDurationLe500(i int64) {
+	if m.addduration_le_500 != nil {
+		*m.addduration_le_500 += i
+	} else {
+		m.addduration_le_500 = &i
+	}
+}
+
+// AddedDurationLe500 returns the value that was added to the "duration_le_500" field in this mutation.
+func (m *ObservabilityRequestBucketMutation) AddedDurationLe500() (r int64, exists bool) {
+	v := m.addduration_le_500
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetDurationLe500 resets all changes to the "duration_le_500" field.
+func (m *ObservabilityRequestBucketMutation) ResetDurationLe500() {
+	m.duration_le_500 = nil
+	m.addduration_le_500 = nil
+}
+
+// SetDurationLe1000 sets the "duration_le_1000" field.
+func (m *ObservabilityRequestBucketMutation) SetDurationLe1000(i int64) {
+	m.duration_le_1000 = &i
+	m.addduration_le_1000 = nil
+}
+
+// DurationLe1000 returns the value of the "duration_le_1000" field in the mutation.
+func (m *ObservabilityRequestBucketMutation) DurationLe1000() (r int64, exists bool) {
+	v := m.duration_le_1000
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDurationLe1000 returns the old "duration_le_1000" field's value of the ObservabilityRequestBucket entity.
+// If the ObservabilityRequestBucket object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ObservabilityRequestBucketMutation) OldDurationLe1000(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDurationLe1000 is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDurationLe1000 requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDurationLe1000: %w", err)
+	}
+	return oldValue.DurationLe1000, nil
+}
+
+// AddDurationLe1000 adds i to the "duration_le_1000" field.
+func (m *ObservabilityRequestBucketMutation) AddDurationLe1000(i int64) {
+	if m.addduration_le_1000 != nil {
+		*m.addduration_le_1000 += i
+	} else {
+		m.addduration_le_1000 = &i
+	}
+}
+
+// AddedDurationLe1000 returns the value that was added to the "duration_le_1000" field in this mutation.
+func (m *ObservabilityRequestBucketMutation) AddedDurationLe1000() (r int64, exists bool) {
+	v := m.addduration_le_1000
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetDurationLe1000 resets all changes to the "duration_le_1000" field.
+func (m *ObservabilityRequestBucketMutation) ResetDurationLe1000() {
+	m.duration_le_1000 = nil
+	m.addduration_le_1000 = nil
+}
+
+// SetDurationLe2000 sets the "duration_le_2000" field.
+func (m *ObservabilityRequestBucketMutation) SetDurationLe2000(i int64) {
+	m.duration_le_2000 = &i
+	m.addduration_le_2000 = nil
+}
+
+// DurationLe2000 returns the value of the "duration_le_2000" field in the mutation.
+func (m *ObservabilityRequestBucketMutation) DurationLe2000() (r int64, exists bool) {
+	v := m.duration_le_2000
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDurationLe2000 returns the old "duration_le_2000" field's value of the ObservabilityRequestBucket entity.
+// If the ObservabilityRequestBucket object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ObservabilityRequestBucketMutation) OldDurationLe2000(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDurationLe2000 is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDurationLe2000 requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDurationLe2000: %w", err)
+	}
+	return oldValue.DurationLe2000, nil
+}
+
+// AddDurationLe2000 adds i to the "duration_le_2000" field.
+func (m *ObservabilityRequestBucketMutation) AddDurationLe2000(i int64) {
+	if m.addduration_le_2000 != nil {
+		*m.addduration_le_2000 += i
+	} else {
+		m.addduration_le_2000 = &i
+	}
+}
+
+// AddedDurationLe2000 returns the value that was added to the "duration_le_2000" field in this mutation.
+func (m *ObservabilityRequestBucketMutation) AddedDurationLe2000() (r int64, exists bool) {
+	v := m.addduration_le_2000
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetDurationLe2000 resets all changes to the "duration_le_2000" field.
+func (m *ObservabilityRequestBucketMutation) ResetDurationLe2000() {
+	m.duration_le_2000 = nil
+	m.addduration_le_2000 = nil
+}
+
+// SetDurationLe5000 sets the "duration_le_5000" field.
+func (m *ObservabilityRequestBucketMutation) SetDurationLe5000(i int64) {
+	m.duration_le_5000 = &i
+	m.addduration_le_5000 = nil
+}
+
+// DurationLe5000 returns the value of the "duration_le_5000" field in the mutation.
+func (m *ObservabilityRequestBucketMutation) DurationLe5000() (r int64, exists bool) {
+	v := m.duration_le_5000
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDurationLe5000 returns the old "duration_le_5000" field's value of the ObservabilityRequestBucket entity.
+// If the ObservabilityRequestBucket object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ObservabilityRequestBucketMutation) OldDurationLe5000(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDurationLe5000 is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDurationLe5000 requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDurationLe5000: %w", err)
+	}
+	return oldValue.DurationLe5000, nil
+}
+
+// AddDurationLe5000 adds i to the "duration_le_5000" field.
+func (m *ObservabilityRequestBucketMutation) AddDurationLe5000(i int64) {
+	if m.addduration_le_5000 != nil {
+		*m.addduration_le_5000 += i
+	} else {
+		m.addduration_le_5000 = &i
+	}
+}
+
+// AddedDurationLe5000 returns the value that was added to the "duration_le_5000" field in this mutation.
+func (m *ObservabilityRequestBucketMutation) AddedDurationLe5000() (r int64, exists bool) {
+	v := m.addduration_le_5000
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetDurationLe5000 resets all changes to the "duration_le_5000" field.
+func (m *ObservabilityRequestBucketMutation) ResetDurationLe5000() {
+	m.duration_le_5000 = nil
+	m.addduration_le_5000 = nil
+}
+
+// SetDurationLe10000 sets the "duration_le_10000" field.
+func (m *ObservabilityRequestBucketMutation) SetDurationLe10000(i int64) {
+	m.duration_le_10000 = &i
+	m.addduration_le_10000 = nil
+}
+
+// DurationLe10000 returns the value of the "duration_le_10000" field in the mutation.
+func (m *ObservabilityRequestBucketMutation) DurationLe10000() (r int64, exists bool) {
+	v := m.duration_le_10000
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDurationLe10000 returns the old "duration_le_10000" field's value of the ObservabilityRequestBucket entity.
+// If the ObservabilityRequestBucket object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ObservabilityRequestBucketMutation) OldDurationLe10000(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDurationLe10000 is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDurationLe10000 requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDurationLe10000: %w", err)
+	}
+	return oldValue.DurationLe10000, nil
+}
+
+// AddDurationLe10000 adds i to the "duration_le_10000" field.
+func (m *ObservabilityRequestBucketMutation) AddDurationLe10000(i int64) {
+	if m.addduration_le_10000 != nil {
+		*m.addduration_le_10000 += i
+	} else {
+		m.addduration_le_10000 = &i
+	}
+}
+
+// AddedDurationLe10000 returns the value that was added to the "duration_le_10000" field in this mutation.
+func (m *ObservabilityRequestBucketMutation) AddedDurationLe10000() (r int64, exists bool) {
+	v := m.addduration_le_10000
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetDurationLe10000 resets all changes to the "duration_le_10000" field.
+func (m *ObservabilityRequestBucketMutation) ResetDurationLe10000() {
+	m.duration_le_10000 = nil
+	m.addduration_le_10000 = nil
+}
+
+// SetDurationGt10000 sets the "duration_gt_10000" field.
+func (m *ObservabilityRequestBucketMutation) SetDurationGt10000(i int64) {
+	m.duration_gt_10000 = &i
+	m.addduration_gt_10000 = nil
+}
+
+// DurationGt10000 returns the value of the "duration_gt_10000" field in the mutation.
+func (m *ObservabilityRequestBucketMutation) DurationGt10000() (r int64, exists bool) {
+	v := m.duration_gt_10000
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDurationGt10000 returns the old "duration_gt_10000" field's value of the ObservabilityRequestBucket entity.
+// If the ObservabilityRequestBucket object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ObservabilityRequestBucketMutation) OldDurationGt10000(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDurationGt10000 is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDurationGt10000 requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDurationGt10000: %w", err)
+	}
+	return oldValue.DurationGt10000, nil
+}
+
+// AddDurationGt10000 adds i to the "duration_gt_10000" field.
+func (m *ObservabilityRequestBucketMutation) AddDurationGt10000(i int64) {
+	if m.addduration_gt_10000 != nil {
+		*m.addduration_gt_10000 += i
+	} else {
+		m.addduration_gt_10000 = &i
+	}
+}
+
+// AddedDurationGt10000 returns the value that was added to the "duration_gt_10000" field in this mutation.
+func (m *ObservabilityRequestBucketMutation) AddedDurationGt10000() (r int64, exists bool) {
+	v := m.addduration_gt_10000
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetDurationGt10000 resets all changes to the "duration_gt_10000" field.
+func (m *ObservabilityRequestBucketMutation) ResetDurationGt10000() {
+	m.duration_gt_10000 = nil
+	m.addduration_gt_10000 = nil
+}
+
+// SetTtftSampleCount sets the "ttft_sample_count" field.
+func (m *ObservabilityRequestBucketMutation) SetTtftSampleCount(i int64) {
+	m.ttft_sample_count = &i
+	m.addttft_sample_count = nil
+}
+
+// TtftSampleCount returns the value of the "ttft_sample_count" field in the mutation.
+func (m *ObservabilityRequestBucketMutation) TtftSampleCount() (r int64, exists bool) {
+	v := m.ttft_sample_count
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTtftSampleCount returns the old "ttft_sample_count" field's value of the ObservabilityRequestBucket entity.
+// If the ObservabilityRequestBucket object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ObservabilityRequestBucketMutation) OldTtftSampleCount(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTtftSampleCount is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTtftSampleCount requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTtftSampleCount: %w", err)
+	}
+	return oldValue.TtftSampleCount, nil
+}
+
+// AddTtftSampleCount adds i to the "ttft_sample_count" field.
+func (m *ObservabilityRequestBucketMutation) AddTtftSampleCount(i int64) {
+	if m.addttft_sample_count != nil {
+		*m.addttft_sample_count += i
+	} else {
+		m.addttft_sample_count = &i
+	}
+}
+
+// AddedTtftSampleCount returns the value that was added to the "ttft_sample_count" field in this mutation.
+func (m *ObservabilityRequestBucketMutation) AddedTtftSampleCount() (r int64, exists bool) {
+	v := m.addttft_sample_count
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetTtftSampleCount resets all changes to the "ttft_sample_count" field.
+func (m *ObservabilityRequestBucketMutation) ResetTtftSampleCount() {
+	m.ttft_sample_count = nil
+	m.addttft_sample_count = nil
+}
+
+// SetSumTtftMs sets the "sum_ttft_ms" field.
+func (m *ObservabilityRequestBucketMutation) SetSumTtftMs(i int64) {
+	m.sum_ttft_ms = &i
+	m.addsum_ttft_ms = nil
+}
+
+// SumTtftMs returns the value of the "sum_ttft_ms" field in the mutation.
+func (m *ObservabilityRequestBucketMutation) SumTtftMs() (r int64, exists bool) {
+	v := m.sum_ttft_ms
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSumTtftMs returns the old "sum_ttft_ms" field's value of the ObservabilityRequestBucket entity.
+// If the ObservabilityRequestBucket object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ObservabilityRequestBucketMutation) OldSumTtftMs(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSumTtftMs is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSumTtftMs requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSumTtftMs: %w", err)
+	}
+	return oldValue.SumTtftMs, nil
+}
+
+// AddSumTtftMs adds i to the "sum_ttft_ms" field.
+func (m *ObservabilityRequestBucketMutation) AddSumTtftMs(i int64) {
+	if m.addsum_ttft_ms != nil {
+		*m.addsum_ttft_ms += i
+	} else {
+		m.addsum_ttft_ms = &i
+	}
+}
+
+// AddedSumTtftMs returns the value that was added to the "sum_ttft_ms" field in this mutation.
+func (m *ObservabilityRequestBucketMutation) AddedSumTtftMs() (r int64, exists bool) {
+	v := m.addsum_ttft_ms
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetSumTtftMs resets all changes to the "sum_ttft_ms" field.
+func (m *ObservabilityRequestBucketMutation) ResetSumTtftMs() {
+	m.sum_ttft_ms = nil
+	m.addsum_ttft_ms = nil
+}
+
+// SetMinTtftMs sets the "min_ttft_ms" field.
+func (m *ObservabilityRequestBucketMutation) SetMinTtftMs(i int64) {
+	m.min_ttft_ms = &i
+	m.addmin_ttft_ms = nil
+}
+
+// MinTtftMs returns the value of the "min_ttft_ms" field in the mutation.
+func (m *ObservabilityRequestBucketMutation) MinTtftMs() (r int64, exists bool) {
+	v := m.min_ttft_ms
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMinTtftMs returns the old "min_ttft_ms" field's value of the ObservabilityRequestBucket entity.
+// If the ObservabilityRequestBucket object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ObservabilityRequestBucketMutation) OldMinTtftMs(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMinTtftMs is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMinTtftMs requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMinTtftMs: %w", err)
+	}
+	return oldValue.MinTtftMs, nil
+}
+
+// AddMinTtftMs adds i to the "min_ttft_ms" field.
+func (m *ObservabilityRequestBucketMutation) AddMinTtftMs(i int64) {
+	if m.addmin_ttft_ms != nil {
+		*m.addmin_ttft_ms += i
+	} else {
+		m.addmin_ttft_ms = &i
+	}
+}
+
+// AddedMinTtftMs returns the value that was added to the "min_ttft_ms" field in this mutation.
+func (m *ObservabilityRequestBucketMutation) AddedMinTtftMs() (r int64, exists bool) {
+	v := m.addmin_ttft_ms
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetMinTtftMs resets all changes to the "min_ttft_ms" field.
+func (m *ObservabilityRequestBucketMutation) ResetMinTtftMs() {
+	m.min_ttft_ms = nil
+	m.addmin_ttft_ms = nil
+}
+
+// SetMaxTtftMs sets the "max_ttft_ms" field.
+func (m *ObservabilityRequestBucketMutation) SetMaxTtftMs(i int64) {
+	m.max_ttft_ms = &i
+	m.addmax_ttft_ms = nil
+}
+
+// MaxTtftMs returns the value of the "max_ttft_ms" field in the mutation.
+func (m *ObservabilityRequestBucketMutation) MaxTtftMs() (r int64, exists bool) {
+	v := m.max_ttft_ms
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMaxTtftMs returns the old "max_ttft_ms" field's value of the ObservabilityRequestBucket entity.
+// If the ObservabilityRequestBucket object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ObservabilityRequestBucketMutation) OldMaxTtftMs(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMaxTtftMs is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMaxTtftMs requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMaxTtftMs: %w", err)
+	}
+	return oldValue.MaxTtftMs, nil
+}
+
+// AddMaxTtftMs adds i to the "max_ttft_ms" field.
+func (m *ObservabilityRequestBucketMutation) AddMaxTtftMs(i int64) {
+	if m.addmax_ttft_ms != nil {
+		*m.addmax_ttft_ms += i
+	} else {
+		m.addmax_ttft_ms = &i
+	}
+}
+
+// AddedMaxTtftMs returns the value that was added to the "max_ttft_ms" field in this mutation.
+func (m *ObservabilityRequestBucketMutation) AddedMaxTtftMs() (r int64, exists bool) {
+	v := m.addmax_ttft_ms
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetMaxTtftMs resets all changes to the "max_ttft_ms" field.
+func (m *ObservabilityRequestBucketMutation) ResetMaxTtftMs() {
+	m.max_ttft_ms = nil
+	m.addmax_ttft_ms = nil
+}
+
+// SetTtftLe100 sets the "ttft_le_100" field.
+func (m *ObservabilityRequestBucketMutation) SetTtftLe100(i int64) {
+	m.ttft_le_100 = &i
+	m.addttft_le_100 = nil
+}
+
+// TtftLe100 returns the value of the "ttft_le_100" field in the mutation.
+func (m *ObservabilityRequestBucketMutation) TtftLe100() (r int64, exists bool) {
+	v := m.ttft_le_100
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTtftLe100 returns the old "ttft_le_100" field's value of the ObservabilityRequestBucket entity.
+// If the ObservabilityRequestBucket object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ObservabilityRequestBucketMutation) OldTtftLe100(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTtftLe100 is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTtftLe100 requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTtftLe100: %w", err)
+	}
+	return oldValue.TtftLe100, nil
+}
+
+// AddTtftLe100 adds i to the "ttft_le_100" field.
+func (m *ObservabilityRequestBucketMutation) AddTtftLe100(i int64) {
+	if m.addttft_le_100 != nil {
+		*m.addttft_le_100 += i
+	} else {
+		m.addttft_le_100 = &i
+	}
+}
+
+// AddedTtftLe100 returns the value that was added to the "ttft_le_100" field in this mutation.
+func (m *ObservabilityRequestBucketMutation) AddedTtftLe100() (r int64, exists bool) {
+	v := m.addttft_le_100
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetTtftLe100 resets all changes to the "ttft_le_100" field.
+func (m *ObservabilityRequestBucketMutation) ResetTtftLe100() {
+	m.ttft_le_100 = nil
+	m.addttft_le_100 = nil
+}
+
+// SetTtftLe250 sets the "ttft_le_250" field.
+func (m *ObservabilityRequestBucketMutation) SetTtftLe250(i int64) {
+	m.ttft_le_250 = &i
+	m.addttft_le_250 = nil
+}
+
+// TtftLe250 returns the value of the "ttft_le_250" field in the mutation.
+func (m *ObservabilityRequestBucketMutation) TtftLe250() (r int64, exists bool) {
+	v := m.ttft_le_250
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTtftLe250 returns the old "ttft_le_250" field's value of the ObservabilityRequestBucket entity.
+// If the ObservabilityRequestBucket object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ObservabilityRequestBucketMutation) OldTtftLe250(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTtftLe250 is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTtftLe250 requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTtftLe250: %w", err)
+	}
+	return oldValue.TtftLe250, nil
+}
+
+// AddTtftLe250 adds i to the "ttft_le_250" field.
+func (m *ObservabilityRequestBucketMutation) AddTtftLe250(i int64) {
+	if m.addttft_le_250 != nil {
+		*m.addttft_le_250 += i
+	} else {
+		m.addttft_le_250 = &i
+	}
+}
+
+// AddedTtftLe250 returns the value that was added to the "ttft_le_250" field in this mutation.
+func (m *ObservabilityRequestBucketMutation) AddedTtftLe250() (r int64, exists bool) {
+	v := m.addttft_le_250
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetTtftLe250 resets all changes to the "ttft_le_250" field.
+func (m *ObservabilityRequestBucketMutation) ResetTtftLe250() {
+	m.ttft_le_250 = nil
+	m.addttft_le_250 = nil
+}
+
+// SetTtftLe500 sets the "ttft_le_500" field.
+func (m *ObservabilityRequestBucketMutation) SetTtftLe500(i int64) {
+	m.ttft_le_500 = &i
+	m.addttft_le_500 = nil
+}
+
+// TtftLe500 returns the value of the "ttft_le_500" field in the mutation.
+func (m *ObservabilityRequestBucketMutation) TtftLe500() (r int64, exists bool) {
+	v := m.ttft_le_500
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTtftLe500 returns the old "ttft_le_500" field's value of the ObservabilityRequestBucket entity.
+// If the ObservabilityRequestBucket object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ObservabilityRequestBucketMutation) OldTtftLe500(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTtftLe500 is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTtftLe500 requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTtftLe500: %w", err)
+	}
+	return oldValue.TtftLe500, nil
+}
+
+// AddTtftLe500 adds i to the "ttft_le_500" field.
+func (m *ObservabilityRequestBucketMutation) AddTtftLe500(i int64) {
+	if m.addttft_le_500 != nil {
+		*m.addttft_le_500 += i
+	} else {
+		m.addttft_le_500 = &i
+	}
+}
+
+// AddedTtftLe500 returns the value that was added to the "ttft_le_500" field in this mutation.
+func (m *ObservabilityRequestBucketMutation) AddedTtftLe500() (r int64, exists bool) {
+	v := m.addttft_le_500
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetTtftLe500 resets all changes to the "ttft_le_500" field.
+func (m *ObservabilityRequestBucketMutation) ResetTtftLe500() {
+	m.ttft_le_500 = nil
+	m.addttft_le_500 = nil
+}
+
+// SetTtftLe1000 sets the "ttft_le_1000" field.
+func (m *ObservabilityRequestBucketMutation) SetTtftLe1000(i int64) {
+	m.ttft_le_1000 = &i
+	m.addttft_le_1000 = nil
+}
+
+// TtftLe1000 returns the value of the "ttft_le_1000" field in the mutation.
+func (m *ObservabilityRequestBucketMutation) TtftLe1000() (r int64, exists bool) {
+	v := m.ttft_le_1000
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTtftLe1000 returns the old "ttft_le_1000" field's value of the ObservabilityRequestBucket entity.
+// If the ObservabilityRequestBucket object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ObservabilityRequestBucketMutation) OldTtftLe1000(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTtftLe1000 is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTtftLe1000 requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTtftLe1000: %w", err)
+	}
+	return oldValue.TtftLe1000, nil
+}
+
+// AddTtftLe1000 adds i to the "ttft_le_1000" field.
+func (m *ObservabilityRequestBucketMutation) AddTtftLe1000(i int64) {
+	if m.addttft_le_1000 != nil {
+		*m.addttft_le_1000 += i
+	} else {
+		m.addttft_le_1000 = &i
+	}
+}
+
+// AddedTtftLe1000 returns the value that was added to the "ttft_le_1000" field in this mutation.
+func (m *ObservabilityRequestBucketMutation) AddedTtftLe1000() (r int64, exists bool) {
+	v := m.addttft_le_1000
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetTtftLe1000 resets all changes to the "ttft_le_1000" field.
+func (m *ObservabilityRequestBucketMutation) ResetTtftLe1000() {
+	m.ttft_le_1000 = nil
+	m.addttft_le_1000 = nil
+}
+
+// SetTtftLe2000 sets the "ttft_le_2000" field.
+func (m *ObservabilityRequestBucketMutation) SetTtftLe2000(i int64) {
+	m.ttft_le_2000 = &i
+	m.addttft_le_2000 = nil
+}
+
+// TtftLe2000 returns the value of the "ttft_le_2000" field in the mutation.
+func (m *ObservabilityRequestBucketMutation) TtftLe2000() (r int64, exists bool) {
+	v := m.ttft_le_2000
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTtftLe2000 returns the old "ttft_le_2000" field's value of the ObservabilityRequestBucket entity.
+// If the ObservabilityRequestBucket object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ObservabilityRequestBucketMutation) OldTtftLe2000(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTtftLe2000 is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTtftLe2000 requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTtftLe2000: %w", err)
+	}
+	return oldValue.TtftLe2000, nil
+}
+
+// AddTtftLe2000 adds i to the "ttft_le_2000" field.
+func (m *ObservabilityRequestBucketMutation) AddTtftLe2000(i int64) {
+	if m.addttft_le_2000 != nil {
+		*m.addttft_le_2000 += i
+	} else {
+		m.addttft_le_2000 = &i
+	}
+}
+
+// AddedTtftLe2000 returns the value that was added to the "ttft_le_2000" field in this mutation.
+func (m *ObservabilityRequestBucketMutation) AddedTtftLe2000() (r int64, exists bool) {
+	v := m.addttft_le_2000
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetTtftLe2000 resets all changes to the "ttft_le_2000" field.
+func (m *ObservabilityRequestBucketMutation) ResetTtftLe2000() {
+	m.ttft_le_2000 = nil
+	m.addttft_le_2000 = nil
+}
+
+// SetTtftLe5000 sets the "ttft_le_5000" field.
+func (m *ObservabilityRequestBucketMutation) SetTtftLe5000(i int64) {
+	m.ttft_le_5000 = &i
+	m.addttft_le_5000 = nil
+}
+
+// TtftLe5000 returns the value of the "ttft_le_5000" field in the mutation.
+func (m *ObservabilityRequestBucketMutation) TtftLe5000() (r int64, exists bool) {
+	v := m.ttft_le_5000
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTtftLe5000 returns the old "ttft_le_5000" field's value of the ObservabilityRequestBucket entity.
+// If the ObservabilityRequestBucket object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ObservabilityRequestBucketMutation) OldTtftLe5000(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTtftLe5000 is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTtftLe5000 requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTtftLe5000: %w", err)
+	}
+	return oldValue.TtftLe5000, nil
+}
+
+// AddTtftLe5000 adds i to the "ttft_le_5000" field.
+func (m *ObservabilityRequestBucketMutation) AddTtftLe5000(i int64) {
+	if m.addttft_le_5000 != nil {
+		*m.addttft_le_5000 += i
+	} else {
+		m.addttft_le_5000 = &i
+	}
+}
+
+// AddedTtftLe5000 returns the value that was added to the "ttft_le_5000" field in this mutation.
+func (m *ObservabilityRequestBucketMutation) AddedTtftLe5000() (r int64, exists bool) {
+	v := m.addttft_le_5000
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetTtftLe5000 resets all changes to the "ttft_le_5000" field.
+func (m *ObservabilityRequestBucketMutation) ResetTtftLe5000() {
+	m.ttft_le_5000 = nil
+	m.addttft_le_5000 = nil
+}
+
+// SetTtftLe10000 sets the "ttft_le_10000" field.
+func (m *ObservabilityRequestBucketMutation) SetTtftLe10000(i int64) {
+	m.ttft_le_10000 = &i
+	m.addttft_le_10000 = nil
+}
+
+// TtftLe10000 returns the value of the "ttft_le_10000" field in the mutation.
+func (m *ObservabilityRequestBucketMutation) TtftLe10000() (r int64, exists bool) {
+	v := m.ttft_le_10000
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTtftLe10000 returns the old "ttft_le_10000" field's value of the ObservabilityRequestBucket entity.
+// If the ObservabilityRequestBucket object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ObservabilityRequestBucketMutation) OldTtftLe10000(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTtftLe10000 is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTtftLe10000 requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTtftLe10000: %w", err)
+	}
+	return oldValue.TtftLe10000, nil
+}
+
+// AddTtftLe10000 adds i to the "ttft_le_10000" field.
+func (m *ObservabilityRequestBucketMutation) AddTtftLe10000(i int64) {
+	if m.addttft_le_10000 != nil {
+		*m.addttft_le_10000 += i
+	} else {
+		m.addttft_le_10000 = &i
+	}
+}
+
+// AddedTtftLe10000 returns the value that was added to the "ttft_le_10000" field in this mutation.
+func (m *ObservabilityRequestBucketMutation) AddedTtftLe10000() (r int64, exists bool) {
+	v := m.addttft_le_10000
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetTtftLe10000 resets all changes to the "ttft_le_10000" field.
+func (m *ObservabilityRequestBucketMutation) ResetTtftLe10000() {
+	m.ttft_le_10000 = nil
+	m.addttft_le_10000 = nil
+}
+
+// SetTtftGt10000 sets the "ttft_gt_10000" field.
+func (m *ObservabilityRequestBucketMutation) SetTtftGt10000(i int64) {
+	m.ttft_gt_10000 = &i
+	m.addttft_gt_10000 = nil
+}
+
+// TtftGt10000 returns the value of the "ttft_gt_10000" field in the mutation.
+func (m *ObservabilityRequestBucketMutation) TtftGt10000() (r int64, exists bool) {
+	v := m.ttft_gt_10000
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTtftGt10000 returns the old "ttft_gt_10000" field's value of the ObservabilityRequestBucket entity.
+// If the ObservabilityRequestBucket object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ObservabilityRequestBucketMutation) OldTtftGt10000(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTtftGt10000 is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTtftGt10000 requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTtftGt10000: %w", err)
+	}
+	return oldValue.TtftGt10000, nil
+}
+
+// AddTtftGt10000 adds i to the "ttft_gt_10000" field.
+func (m *ObservabilityRequestBucketMutation) AddTtftGt10000(i int64) {
+	if m.addttft_gt_10000 != nil {
+		*m.addttft_gt_10000 += i
+	} else {
+		m.addttft_gt_10000 = &i
+	}
+}
+
+// AddedTtftGt10000 returns the value that was added to the "ttft_gt_10000" field in this mutation.
+func (m *ObservabilityRequestBucketMutation) AddedTtftGt10000() (r int64, exists bool) {
+	v := m.addttft_gt_10000
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetTtftGt10000 resets all changes to the "ttft_gt_10000" field.
+func (m *ObservabilityRequestBucketMutation) ResetTtftGt10000() {
+	m.ttft_gt_10000 = nil
+	m.addttft_gt_10000 = nil
+}
+
+// SetLastFactAt sets the "last_fact_at" field.
+func (m *ObservabilityRequestBucketMutation) SetLastFactAt(t time.Time) {
+	m.last_fact_at = &t
+}
+
+// LastFactAt returns the value of the "last_fact_at" field in the mutation.
+func (m *ObservabilityRequestBucketMutation) LastFactAt() (r time.Time, exists bool) {
+	v := m.last_fact_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastFactAt returns the old "last_fact_at" field's value of the ObservabilityRequestBucket entity.
+// If the ObservabilityRequestBucket object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ObservabilityRequestBucketMutation) OldLastFactAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastFactAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastFactAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastFactAt: %w", err)
+	}
+	return oldValue.LastFactAt, nil
+}
+
+// ResetLastFactAt resets all changes to the "last_fact_at" field.
+func (m *ObservabilityRequestBucketMutation) ResetLastFactAt() {
+	m.last_fact_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *ObservabilityRequestBucketMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *ObservabilityRequestBucketMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the ObservabilityRequestBucket entity.
+// If the ObservabilityRequestBucket object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ObservabilityRequestBucketMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *ObservabilityRequestBucketMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// Where appends a list predicates to the ObservabilityRequestBucketMutation builder.
+func (m *ObservabilityRequestBucketMutation) Where(ps ...predicate.ObservabilityRequestBucket) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the ObservabilityRequestBucketMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *ObservabilityRequestBucketMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.ObservabilityRequestBucket, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *ObservabilityRequestBucketMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *ObservabilityRequestBucketMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (ObservabilityRequestBucket).
+func (m *ObservabilityRequestBucketMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *ObservabilityRequestBucketMutation) Fields() []string {
+	fields := make([]string, 0, 46)
+	if m.window_seconds != nil {
+		fields = append(fields, observabilityrequestbucket.FieldWindowSeconds)
+	}
+	if m.bucket_start != nil {
+		fields = append(fields, observabilityrequestbucket.FieldBucketStart)
+	}
+	if m.dimension_hash != nil {
+		fields = append(fields, observabilityrequestbucket.FieldDimensionHash)
+	}
+	if m.user_id != nil {
+		fields = append(fields, observabilityrequestbucket.FieldUserID)
+	}
+	if m.api_key_id != nil {
+		fields = append(fields, observabilityrequestbucket.FieldAPIKeyID)
+	}
+	if m.group_id != nil {
+		fields = append(fields, observabilityrequestbucket.FieldGroupID)
+	}
+	if m.route_alias != nil {
+		fields = append(fields, observabilityrequestbucket.FieldRouteAlias)
+	}
+	if m.account_id != nil {
+		fields = append(fields, observabilityrequestbucket.FieldAccountID)
+	}
+	if m.request_count != nil {
+		fields = append(fields, observabilityrequestbucket.FieldRequestCount)
+	}
+	if m.success_count != nil {
+		fields = append(fields, observabilityrequestbucket.FieldSuccessCount)
+	}
+	if m.error_count != nil {
+		fields = append(fields, observabilityrequestbucket.FieldErrorCount)
+	}
+	if m.sla_error_count != nil {
+		fields = append(fields, observabilityrequestbucket.FieldSLAErrorCount)
+	}
+	if m.business_limited_count != nil {
+		fields = append(fields, observabilityrequestbucket.FieldBusinessLimitedCount)
+	}
+	if m.rate_limited_count != nil {
+		fields = append(fields, observabilityrequestbucket.FieldRateLimitedCount)
+	}
+	if m.legacy_inferred_count != nil {
+		fields = append(fields, observabilityrequestbucket.FieldLegacyInferredCount)
+	}
+	if m.input_tokens != nil {
+		fields = append(fields, observabilityrequestbucket.FieldInputTokens)
+	}
+	if m.output_tokens != nil {
+		fields = append(fields, observabilityrequestbucket.FieldOutputTokens)
+	}
+	if m.cache_creation_tokens != nil {
+		fields = append(fields, observabilityrequestbucket.FieldCacheCreationTokens)
+	}
+	if m.cache_read_tokens != nil {
+		fields = append(fields, observabilityrequestbucket.FieldCacheReadTokens)
+	}
+	if m.total_tokens != nil {
+		fields = append(fields, observabilityrequestbucket.FieldTotalTokens)
+	}
+	if m.duration_sample_count != nil {
+		fields = append(fields, observabilityrequestbucket.FieldDurationSampleCount)
+	}
+	if m.sum_duration_ms != nil {
+		fields = append(fields, observabilityrequestbucket.FieldSumDurationMs)
+	}
+	if m.min_duration_ms != nil {
+		fields = append(fields, observabilityrequestbucket.FieldMinDurationMs)
+	}
+	if m.max_duration_ms != nil {
+		fields = append(fields, observabilityrequestbucket.FieldMaxDurationMs)
+	}
+	if m.duration_le_100 != nil {
+		fields = append(fields, observabilityrequestbucket.FieldDurationLe100)
+	}
+	if m.duration_le_250 != nil {
+		fields = append(fields, observabilityrequestbucket.FieldDurationLe250)
+	}
+	if m.duration_le_500 != nil {
+		fields = append(fields, observabilityrequestbucket.FieldDurationLe500)
+	}
+	if m.duration_le_1000 != nil {
+		fields = append(fields, observabilityrequestbucket.FieldDurationLe1000)
+	}
+	if m.duration_le_2000 != nil {
+		fields = append(fields, observabilityrequestbucket.FieldDurationLe2000)
+	}
+	if m.duration_le_5000 != nil {
+		fields = append(fields, observabilityrequestbucket.FieldDurationLe5000)
+	}
+	if m.duration_le_10000 != nil {
+		fields = append(fields, observabilityrequestbucket.FieldDurationLe10000)
+	}
+	if m.duration_gt_10000 != nil {
+		fields = append(fields, observabilityrequestbucket.FieldDurationGt10000)
+	}
+	if m.ttft_sample_count != nil {
+		fields = append(fields, observabilityrequestbucket.FieldTtftSampleCount)
+	}
+	if m.sum_ttft_ms != nil {
+		fields = append(fields, observabilityrequestbucket.FieldSumTtftMs)
+	}
+	if m.min_ttft_ms != nil {
+		fields = append(fields, observabilityrequestbucket.FieldMinTtftMs)
+	}
+	if m.max_ttft_ms != nil {
+		fields = append(fields, observabilityrequestbucket.FieldMaxTtftMs)
+	}
+	if m.ttft_le_100 != nil {
+		fields = append(fields, observabilityrequestbucket.FieldTtftLe100)
+	}
+	if m.ttft_le_250 != nil {
+		fields = append(fields, observabilityrequestbucket.FieldTtftLe250)
+	}
+	if m.ttft_le_500 != nil {
+		fields = append(fields, observabilityrequestbucket.FieldTtftLe500)
+	}
+	if m.ttft_le_1000 != nil {
+		fields = append(fields, observabilityrequestbucket.FieldTtftLe1000)
+	}
+	if m.ttft_le_2000 != nil {
+		fields = append(fields, observabilityrequestbucket.FieldTtftLe2000)
+	}
+	if m.ttft_le_5000 != nil {
+		fields = append(fields, observabilityrequestbucket.FieldTtftLe5000)
+	}
+	if m.ttft_le_10000 != nil {
+		fields = append(fields, observabilityrequestbucket.FieldTtftLe10000)
+	}
+	if m.ttft_gt_10000 != nil {
+		fields = append(fields, observabilityrequestbucket.FieldTtftGt10000)
+	}
+	if m.last_fact_at != nil {
+		fields = append(fields, observabilityrequestbucket.FieldLastFactAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, observabilityrequestbucket.FieldUpdatedAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *ObservabilityRequestBucketMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case observabilityrequestbucket.FieldWindowSeconds:
+		return m.WindowSeconds()
+	case observabilityrequestbucket.FieldBucketStart:
+		return m.BucketStart()
+	case observabilityrequestbucket.FieldDimensionHash:
+		return m.DimensionHash()
+	case observabilityrequestbucket.FieldUserID:
+		return m.UserID()
+	case observabilityrequestbucket.FieldAPIKeyID:
+		return m.APIKeyID()
+	case observabilityrequestbucket.FieldGroupID:
+		return m.GroupID()
+	case observabilityrequestbucket.FieldRouteAlias:
+		return m.RouteAlias()
+	case observabilityrequestbucket.FieldAccountID:
+		return m.AccountID()
+	case observabilityrequestbucket.FieldRequestCount:
+		return m.RequestCount()
+	case observabilityrequestbucket.FieldSuccessCount:
+		return m.SuccessCount()
+	case observabilityrequestbucket.FieldErrorCount:
+		return m.ErrorCount()
+	case observabilityrequestbucket.FieldSLAErrorCount:
+		return m.SLAErrorCount()
+	case observabilityrequestbucket.FieldBusinessLimitedCount:
+		return m.BusinessLimitedCount()
+	case observabilityrequestbucket.FieldRateLimitedCount:
+		return m.RateLimitedCount()
+	case observabilityrequestbucket.FieldLegacyInferredCount:
+		return m.LegacyInferredCount()
+	case observabilityrequestbucket.FieldInputTokens:
+		return m.InputTokens()
+	case observabilityrequestbucket.FieldOutputTokens:
+		return m.OutputTokens()
+	case observabilityrequestbucket.FieldCacheCreationTokens:
+		return m.CacheCreationTokens()
+	case observabilityrequestbucket.FieldCacheReadTokens:
+		return m.CacheReadTokens()
+	case observabilityrequestbucket.FieldTotalTokens:
+		return m.TotalTokens()
+	case observabilityrequestbucket.FieldDurationSampleCount:
+		return m.DurationSampleCount()
+	case observabilityrequestbucket.FieldSumDurationMs:
+		return m.SumDurationMs()
+	case observabilityrequestbucket.FieldMinDurationMs:
+		return m.MinDurationMs()
+	case observabilityrequestbucket.FieldMaxDurationMs:
+		return m.MaxDurationMs()
+	case observabilityrequestbucket.FieldDurationLe100:
+		return m.DurationLe100()
+	case observabilityrequestbucket.FieldDurationLe250:
+		return m.DurationLe250()
+	case observabilityrequestbucket.FieldDurationLe500:
+		return m.DurationLe500()
+	case observabilityrequestbucket.FieldDurationLe1000:
+		return m.DurationLe1000()
+	case observabilityrequestbucket.FieldDurationLe2000:
+		return m.DurationLe2000()
+	case observabilityrequestbucket.FieldDurationLe5000:
+		return m.DurationLe5000()
+	case observabilityrequestbucket.FieldDurationLe10000:
+		return m.DurationLe10000()
+	case observabilityrequestbucket.FieldDurationGt10000:
+		return m.DurationGt10000()
+	case observabilityrequestbucket.FieldTtftSampleCount:
+		return m.TtftSampleCount()
+	case observabilityrequestbucket.FieldSumTtftMs:
+		return m.SumTtftMs()
+	case observabilityrequestbucket.FieldMinTtftMs:
+		return m.MinTtftMs()
+	case observabilityrequestbucket.FieldMaxTtftMs:
+		return m.MaxTtftMs()
+	case observabilityrequestbucket.FieldTtftLe100:
+		return m.TtftLe100()
+	case observabilityrequestbucket.FieldTtftLe250:
+		return m.TtftLe250()
+	case observabilityrequestbucket.FieldTtftLe500:
+		return m.TtftLe500()
+	case observabilityrequestbucket.FieldTtftLe1000:
+		return m.TtftLe1000()
+	case observabilityrequestbucket.FieldTtftLe2000:
+		return m.TtftLe2000()
+	case observabilityrequestbucket.FieldTtftLe5000:
+		return m.TtftLe5000()
+	case observabilityrequestbucket.FieldTtftLe10000:
+		return m.TtftLe10000()
+	case observabilityrequestbucket.FieldTtftGt10000:
+		return m.TtftGt10000()
+	case observabilityrequestbucket.FieldLastFactAt:
+		return m.LastFactAt()
+	case observabilityrequestbucket.FieldUpdatedAt:
+		return m.UpdatedAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *ObservabilityRequestBucketMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case observabilityrequestbucket.FieldWindowSeconds:
+		return m.OldWindowSeconds(ctx)
+	case observabilityrequestbucket.FieldBucketStart:
+		return m.OldBucketStart(ctx)
+	case observabilityrequestbucket.FieldDimensionHash:
+		return m.OldDimensionHash(ctx)
+	case observabilityrequestbucket.FieldUserID:
+		return m.OldUserID(ctx)
+	case observabilityrequestbucket.FieldAPIKeyID:
+		return m.OldAPIKeyID(ctx)
+	case observabilityrequestbucket.FieldGroupID:
+		return m.OldGroupID(ctx)
+	case observabilityrequestbucket.FieldRouteAlias:
+		return m.OldRouteAlias(ctx)
+	case observabilityrequestbucket.FieldAccountID:
+		return m.OldAccountID(ctx)
+	case observabilityrequestbucket.FieldRequestCount:
+		return m.OldRequestCount(ctx)
+	case observabilityrequestbucket.FieldSuccessCount:
+		return m.OldSuccessCount(ctx)
+	case observabilityrequestbucket.FieldErrorCount:
+		return m.OldErrorCount(ctx)
+	case observabilityrequestbucket.FieldSLAErrorCount:
+		return m.OldSLAErrorCount(ctx)
+	case observabilityrequestbucket.FieldBusinessLimitedCount:
+		return m.OldBusinessLimitedCount(ctx)
+	case observabilityrequestbucket.FieldRateLimitedCount:
+		return m.OldRateLimitedCount(ctx)
+	case observabilityrequestbucket.FieldLegacyInferredCount:
+		return m.OldLegacyInferredCount(ctx)
+	case observabilityrequestbucket.FieldInputTokens:
+		return m.OldInputTokens(ctx)
+	case observabilityrequestbucket.FieldOutputTokens:
+		return m.OldOutputTokens(ctx)
+	case observabilityrequestbucket.FieldCacheCreationTokens:
+		return m.OldCacheCreationTokens(ctx)
+	case observabilityrequestbucket.FieldCacheReadTokens:
+		return m.OldCacheReadTokens(ctx)
+	case observabilityrequestbucket.FieldTotalTokens:
+		return m.OldTotalTokens(ctx)
+	case observabilityrequestbucket.FieldDurationSampleCount:
+		return m.OldDurationSampleCount(ctx)
+	case observabilityrequestbucket.FieldSumDurationMs:
+		return m.OldSumDurationMs(ctx)
+	case observabilityrequestbucket.FieldMinDurationMs:
+		return m.OldMinDurationMs(ctx)
+	case observabilityrequestbucket.FieldMaxDurationMs:
+		return m.OldMaxDurationMs(ctx)
+	case observabilityrequestbucket.FieldDurationLe100:
+		return m.OldDurationLe100(ctx)
+	case observabilityrequestbucket.FieldDurationLe250:
+		return m.OldDurationLe250(ctx)
+	case observabilityrequestbucket.FieldDurationLe500:
+		return m.OldDurationLe500(ctx)
+	case observabilityrequestbucket.FieldDurationLe1000:
+		return m.OldDurationLe1000(ctx)
+	case observabilityrequestbucket.FieldDurationLe2000:
+		return m.OldDurationLe2000(ctx)
+	case observabilityrequestbucket.FieldDurationLe5000:
+		return m.OldDurationLe5000(ctx)
+	case observabilityrequestbucket.FieldDurationLe10000:
+		return m.OldDurationLe10000(ctx)
+	case observabilityrequestbucket.FieldDurationGt10000:
+		return m.OldDurationGt10000(ctx)
+	case observabilityrequestbucket.FieldTtftSampleCount:
+		return m.OldTtftSampleCount(ctx)
+	case observabilityrequestbucket.FieldSumTtftMs:
+		return m.OldSumTtftMs(ctx)
+	case observabilityrequestbucket.FieldMinTtftMs:
+		return m.OldMinTtftMs(ctx)
+	case observabilityrequestbucket.FieldMaxTtftMs:
+		return m.OldMaxTtftMs(ctx)
+	case observabilityrequestbucket.FieldTtftLe100:
+		return m.OldTtftLe100(ctx)
+	case observabilityrequestbucket.FieldTtftLe250:
+		return m.OldTtftLe250(ctx)
+	case observabilityrequestbucket.FieldTtftLe500:
+		return m.OldTtftLe500(ctx)
+	case observabilityrequestbucket.FieldTtftLe1000:
+		return m.OldTtftLe1000(ctx)
+	case observabilityrequestbucket.FieldTtftLe2000:
+		return m.OldTtftLe2000(ctx)
+	case observabilityrequestbucket.FieldTtftLe5000:
+		return m.OldTtftLe5000(ctx)
+	case observabilityrequestbucket.FieldTtftLe10000:
+		return m.OldTtftLe10000(ctx)
+	case observabilityrequestbucket.FieldTtftGt10000:
+		return m.OldTtftGt10000(ctx)
+	case observabilityrequestbucket.FieldLastFactAt:
+		return m.OldLastFactAt(ctx)
+	case observabilityrequestbucket.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown ObservabilityRequestBucket field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ObservabilityRequestBucketMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case observabilityrequestbucket.FieldWindowSeconds:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetWindowSeconds(v)
+		return nil
+	case observabilityrequestbucket.FieldBucketStart:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetBucketStart(v)
+		return nil
+	case observabilityrequestbucket.FieldDimensionHash:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDimensionHash(v)
+		return nil
+	case observabilityrequestbucket.FieldUserID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUserID(v)
+		return nil
+	case observabilityrequestbucket.FieldAPIKeyID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAPIKeyID(v)
+		return nil
+	case observabilityrequestbucket.FieldGroupID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetGroupID(v)
+		return nil
+	case observabilityrequestbucket.FieldRouteAlias:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRouteAlias(v)
+		return nil
+	case observabilityrequestbucket.FieldAccountID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAccountID(v)
+		return nil
+	case observabilityrequestbucket.FieldRequestCount:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRequestCount(v)
+		return nil
+	case observabilityrequestbucket.FieldSuccessCount:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSuccessCount(v)
+		return nil
+	case observabilityrequestbucket.FieldErrorCount:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetErrorCount(v)
+		return nil
+	case observabilityrequestbucket.FieldSLAErrorCount:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSLAErrorCount(v)
+		return nil
+	case observabilityrequestbucket.FieldBusinessLimitedCount:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetBusinessLimitedCount(v)
+		return nil
+	case observabilityrequestbucket.FieldRateLimitedCount:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRateLimitedCount(v)
+		return nil
+	case observabilityrequestbucket.FieldLegacyInferredCount:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLegacyInferredCount(v)
+		return nil
+	case observabilityrequestbucket.FieldInputTokens:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetInputTokens(v)
+		return nil
+	case observabilityrequestbucket.FieldOutputTokens:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOutputTokens(v)
+		return nil
+	case observabilityrequestbucket.FieldCacheCreationTokens:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCacheCreationTokens(v)
+		return nil
+	case observabilityrequestbucket.FieldCacheReadTokens:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCacheReadTokens(v)
+		return nil
+	case observabilityrequestbucket.FieldTotalTokens:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTotalTokens(v)
+		return nil
+	case observabilityrequestbucket.FieldDurationSampleCount:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDurationSampleCount(v)
+		return nil
+	case observabilityrequestbucket.FieldSumDurationMs:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSumDurationMs(v)
+		return nil
+	case observabilityrequestbucket.FieldMinDurationMs:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMinDurationMs(v)
+		return nil
+	case observabilityrequestbucket.FieldMaxDurationMs:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMaxDurationMs(v)
+		return nil
+	case observabilityrequestbucket.FieldDurationLe100:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDurationLe100(v)
+		return nil
+	case observabilityrequestbucket.FieldDurationLe250:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDurationLe250(v)
+		return nil
+	case observabilityrequestbucket.FieldDurationLe500:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDurationLe500(v)
+		return nil
+	case observabilityrequestbucket.FieldDurationLe1000:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDurationLe1000(v)
+		return nil
+	case observabilityrequestbucket.FieldDurationLe2000:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDurationLe2000(v)
+		return nil
+	case observabilityrequestbucket.FieldDurationLe5000:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDurationLe5000(v)
+		return nil
+	case observabilityrequestbucket.FieldDurationLe10000:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDurationLe10000(v)
+		return nil
+	case observabilityrequestbucket.FieldDurationGt10000:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDurationGt10000(v)
+		return nil
+	case observabilityrequestbucket.FieldTtftSampleCount:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTtftSampleCount(v)
+		return nil
+	case observabilityrequestbucket.FieldSumTtftMs:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSumTtftMs(v)
+		return nil
+	case observabilityrequestbucket.FieldMinTtftMs:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMinTtftMs(v)
+		return nil
+	case observabilityrequestbucket.FieldMaxTtftMs:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMaxTtftMs(v)
+		return nil
+	case observabilityrequestbucket.FieldTtftLe100:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTtftLe100(v)
+		return nil
+	case observabilityrequestbucket.FieldTtftLe250:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTtftLe250(v)
+		return nil
+	case observabilityrequestbucket.FieldTtftLe500:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTtftLe500(v)
+		return nil
+	case observabilityrequestbucket.FieldTtftLe1000:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTtftLe1000(v)
+		return nil
+	case observabilityrequestbucket.FieldTtftLe2000:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTtftLe2000(v)
+		return nil
+	case observabilityrequestbucket.FieldTtftLe5000:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTtftLe5000(v)
+		return nil
+	case observabilityrequestbucket.FieldTtftLe10000:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTtftLe10000(v)
+		return nil
+	case observabilityrequestbucket.FieldTtftGt10000:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTtftGt10000(v)
+		return nil
+	case observabilityrequestbucket.FieldLastFactAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastFactAt(v)
+		return nil
+	case observabilityrequestbucket.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown ObservabilityRequestBucket field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *ObservabilityRequestBucketMutation) AddedFields() []string {
+	var fields []string
+	if m.addwindow_seconds != nil {
+		fields = append(fields, observabilityrequestbucket.FieldWindowSeconds)
+	}
+	if m.adduser_id != nil {
+		fields = append(fields, observabilityrequestbucket.FieldUserID)
+	}
+	if m.addapi_key_id != nil {
+		fields = append(fields, observabilityrequestbucket.FieldAPIKeyID)
+	}
+	if m.addgroup_id != nil {
+		fields = append(fields, observabilityrequestbucket.FieldGroupID)
+	}
+	if m.addaccount_id != nil {
+		fields = append(fields, observabilityrequestbucket.FieldAccountID)
+	}
+	if m.addrequest_count != nil {
+		fields = append(fields, observabilityrequestbucket.FieldRequestCount)
+	}
+	if m.addsuccess_count != nil {
+		fields = append(fields, observabilityrequestbucket.FieldSuccessCount)
+	}
+	if m.adderror_count != nil {
+		fields = append(fields, observabilityrequestbucket.FieldErrorCount)
+	}
+	if m.addsla_error_count != nil {
+		fields = append(fields, observabilityrequestbucket.FieldSLAErrorCount)
+	}
+	if m.addbusiness_limited_count != nil {
+		fields = append(fields, observabilityrequestbucket.FieldBusinessLimitedCount)
+	}
+	if m.addrate_limited_count != nil {
+		fields = append(fields, observabilityrequestbucket.FieldRateLimitedCount)
+	}
+	if m.addlegacy_inferred_count != nil {
+		fields = append(fields, observabilityrequestbucket.FieldLegacyInferredCount)
+	}
+	if m.addinput_tokens != nil {
+		fields = append(fields, observabilityrequestbucket.FieldInputTokens)
+	}
+	if m.addoutput_tokens != nil {
+		fields = append(fields, observabilityrequestbucket.FieldOutputTokens)
+	}
+	if m.addcache_creation_tokens != nil {
+		fields = append(fields, observabilityrequestbucket.FieldCacheCreationTokens)
+	}
+	if m.addcache_read_tokens != nil {
+		fields = append(fields, observabilityrequestbucket.FieldCacheReadTokens)
+	}
+	if m.addtotal_tokens != nil {
+		fields = append(fields, observabilityrequestbucket.FieldTotalTokens)
+	}
+	if m.addduration_sample_count != nil {
+		fields = append(fields, observabilityrequestbucket.FieldDurationSampleCount)
+	}
+	if m.addsum_duration_ms != nil {
+		fields = append(fields, observabilityrequestbucket.FieldSumDurationMs)
+	}
+	if m.addmin_duration_ms != nil {
+		fields = append(fields, observabilityrequestbucket.FieldMinDurationMs)
+	}
+	if m.addmax_duration_ms != nil {
+		fields = append(fields, observabilityrequestbucket.FieldMaxDurationMs)
+	}
+	if m.addduration_le_100 != nil {
+		fields = append(fields, observabilityrequestbucket.FieldDurationLe100)
+	}
+	if m.addduration_le_250 != nil {
+		fields = append(fields, observabilityrequestbucket.FieldDurationLe250)
+	}
+	if m.addduration_le_500 != nil {
+		fields = append(fields, observabilityrequestbucket.FieldDurationLe500)
+	}
+	if m.addduration_le_1000 != nil {
+		fields = append(fields, observabilityrequestbucket.FieldDurationLe1000)
+	}
+	if m.addduration_le_2000 != nil {
+		fields = append(fields, observabilityrequestbucket.FieldDurationLe2000)
+	}
+	if m.addduration_le_5000 != nil {
+		fields = append(fields, observabilityrequestbucket.FieldDurationLe5000)
+	}
+	if m.addduration_le_10000 != nil {
+		fields = append(fields, observabilityrequestbucket.FieldDurationLe10000)
+	}
+	if m.addduration_gt_10000 != nil {
+		fields = append(fields, observabilityrequestbucket.FieldDurationGt10000)
+	}
+	if m.addttft_sample_count != nil {
+		fields = append(fields, observabilityrequestbucket.FieldTtftSampleCount)
+	}
+	if m.addsum_ttft_ms != nil {
+		fields = append(fields, observabilityrequestbucket.FieldSumTtftMs)
+	}
+	if m.addmin_ttft_ms != nil {
+		fields = append(fields, observabilityrequestbucket.FieldMinTtftMs)
+	}
+	if m.addmax_ttft_ms != nil {
+		fields = append(fields, observabilityrequestbucket.FieldMaxTtftMs)
+	}
+	if m.addttft_le_100 != nil {
+		fields = append(fields, observabilityrequestbucket.FieldTtftLe100)
+	}
+	if m.addttft_le_250 != nil {
+		fields = append(fields, observabilityrequestbucket.FieldTtftLe250)
+	}
+	if m.addttft_le_500 != nil {
+		fields = append(fields, observabilityrequestbucket.FieldTtftLe500)
+	}
+	if m.addttft_le_1000 != nil {
+		fields = append(fields, observabilityrequestbucket.FieldTtftLe1000)
+	}
+	if m.addttft_le_2000 != nil {
+		fields = append(fields, observabilityrequestbucket.FieldTtftLe2000)
+	}
+	if m.addttft_le_5000 != nil {
+		fields = append(fields, observabilityrequestbucket.FieldTtftLe5000)
+	}
+	if m.addttft_le_10000 != nil {
+		fields = append(fields, observabilityrequestbucket.FieldTtftLe10000)
+	}
+	if m.addttft_gt_10000 != nil {
+		fields = append(fields, observabilityrequestbucket.FieldTtftGt10000)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *ObservabilityRequestBucketMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case observabilityrequestbucket.FieldWindowSeconds:
+		return m.AddedWindowSeconds()
+	case observabilityrequestbucket.FieldUserID:
+		return m.AddedUserID()
+	case observabilityrequestbucket.FieldAPIKeyID:
+		return m.AddedAPIKeyID()
+	case observabilityrequestbucket.FieldGroupID:
+		return m.AddedGroupID()
+	case observabilityrequestbucket.FieldAccountID:
+		return m.AddedAccountID()
+	case observabilityrequestbucket.FieldRequestCount:
+		return m.AddedRequestCount()
+	case observabilityrequestbucket.FieldSuccessCount:
+		return m.AddedSuccessCount()
+	case observabilityrequestbucket.FieldErrorCount:
+		return m.AddedErrorCount()
+	case observabilityrequestbucket.FieldSLAErrorCount:
+		return m.AddedSLAErrorCount()
+	case observabilityrequestbucket.FieldBusinessLimitedCount:
+		return m.AddedBusinessLimitedCount()
+	case observabilityrequestbucket.FieldRateLimitedCount:
+		return m.AddedRateLimitedCount()
+	case observabilityrequestbucket.FieldLegacyInferredCount:
+		return m.AddedLegacyInferredCount()
+	case observabilityrequestbucket.FieldInputTokens:
+		return m.AddedInputTokens()
+	case observabilityrequestbucket.FieldOutputTokens:
+		return m.AddedOutputTokens()
+	case observabilityrequestbucket.FieldCacheCreationTokens:
+		return m.AddedCacheCreationTokens()
+	case observabilityrequestbucket.FieldCacheReadTokens:
+		return m.AddedCacheReadTokens()
+	case observabilityrequestbucket.FieldTotalTokens:
+		return m.AddedTotalTokens()
+	case observabilityrequestbucket.FieldDurationSampleCount:
+		return m.AddedDurationSampleCount()
+	case observabilityrequestbucket.FieldSumDurationMs:
+		return m.AddedSumDurationMs()
+	case observabilityrequestbucket.FieldMinDurationMs:
+		return m.AddedMinDurationMs()
+	case observabilityrequestbucket.FieldMaxDurationMs:
+		return m.AddedMaxDurationMs()
+	case observabilityrequestbucket.FieldDurationLe100:
+		return m.AddedDurationLe100()
+	case observabilityrequestbucket.FieldDurationLe250:
+		return m.AddedDurationLe250()
+	case observabilityrequestbucket.FieldDurationLe500:
+		return m.AddedDurationLe500()
+	case observabilityrequestbucket.FieldDurationLe1000:
+		return m.AddedDurationLe1000()
+	case observabilityrequestbucket.FieldDurationLe2000:
+		return m.AddedDurationLe2000()
+	case observabilityrequestbucket.FieldDurationLe5000:
+		return m.AddedDurationLe5000()
+	case observabilityrequestbucket.FieldDurationLe10000:
+		return m.AddedDurationLe10000()
+	case observabilityrequestbucket.FieldDurationGt10000:
+		return m.AddedDurationGt10000()
+	case observabilityrequestbucket.FieldTtftSampleCount:
+		return m.AddedTtftSampleCount()
+	case observabilityrequestbucket.FieldSumTtftMs:
+		return m.AddedSumTtftMs()
+	case observabilityrequestbucket.FieldMinTtftMs:
+		return m.AddedMinTtftMs()
+	case observabilityrequestbucket.FieldMaxTtftMs:
+		return m.AddedMaxTtftMs()
+	case observabilityrequestbucket.FieldTtftLe100:
+		return m.AddedTtftLe100()
+	case observabilityrequestbucket.FieldTtftLe250:
+		return m.AddedTtftLe250()
+	case observabilityrequestbucket.FieldTtftLe500:
+		return m.AddedTtftLe500()
+	case observabilityrequestbucket.FieldTtftLe1000:
+		return m.AddedTtftLe1000()
+	case observabilityrequestbucket.FieldTtftLe2000:
+		return m.AddedTtftLe2000()
+	case observabilityrequestbucket.FieldTtftLe5000:
+		return m.AddedTtftLe5000()
+	case observabilityrequestbucket.FieldTtftLe10000:
+		return m.AddedTtftLe10000()
+	case observabilityrequestbucket.FieldTtftGt10000:
+		return m.AddedTtftGt10000()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ObservabilityRequestBucketMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case observabilityrequestbucket.FieldWindowSeconds:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddWindowSeconds(v)
+		return nil
+	case observabilityrequestbucket.FieldUserID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddUserID(v)
+		return nil
+	case observabilityrequestbucket.FieldAPIKeyID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddAPIKeyID(v)
+		return nil
+	case observabilityrequestbucket.FieldGroupID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddGroupID(v)
+		return nil
+	case observabilityrequestbucket.FieldAccountID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddAccountID(v)
+		return nil
+	case observabilityrequestbucket.FieldRequestCount:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddRequestCount(v)
+		return nil
+	case observabilityrequestbucket.FieldSuccessCount:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddSuccessCount(v)
+		return nil
+	case observabilityrequestbucket.FieldErrorCount:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddErrorCount(v)
+		return nil
+	case observabilityrequestbucket.FieldSLAErrorCount:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddSLAErrorCount(v)
+		return nil
+	case observabilityrequestbucket.FieldBusinessLimitedCount:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddBusinessLimitedCount(v)
+		return nil
+	case observabilityrequestbucket.FieldRateLimitedCount:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddRateLimitedCount(v)
+		return nil
+	case observabilityrequestbucket.FieldLegacyInferredCount:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddLegacyInferredCount(v)
+		return nil
+	case observabilityrequestbucket.FieldInputTokens:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddInputTokens(v)
+		return nil
+	case observabilityrequestbucket.FieldOutputTokens:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddOutputTokens(v)
+		return nil
+	case observabilityrequestbucket.FieldCacheCreationTokens:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddCacheCreationTokens(v)
+		return nil
+	case observabilityrequestbucket.FieldCacheReadTokens:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddCacheReadTokens(v)
+		return nil
+	case observabilityrequestbucket.FieldTotalTokens:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddTotalTokens(v)
+		return nil
+	case observabilityrequestbucket.FieldDurationSampleCount:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddDurationSampleCount(v)
+		return nil
+	case observabilityrequestbucket.FieldSumDurationMs:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddSumDurationMs(v)
+		return nil
+	case observabilityrequestbucket.FieldMinDurationMs:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddMinDurationMs(v)
+		return nil
+	case observabilityrequestbucket.FieldMaxDurationMs:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddMaxDurationMs(v)
+		return nil
+	case observabilityrequestbucket.FieldDurationLe100:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddDurationLe100(v)
+		return nil
+	case observabilityrequestbucket.FieldDurationLe250:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddDurationLe250(v)
+		return nil
+	case observabilityrequestbucket.FieldDurationLe500:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddDurationLe500(v)
+		return nil
+	case observabilityrequestbucket.FieldDurationLe1000:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddDurationLe1000(v)
+		return nil
+	case observabilityrequestbucket.FieldDurationLe2000:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddDurationLe2000(v)
+		return nil
+	case observabilityrequestbucket.FieldDurationLe5000:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddDurationLe5000(v)
+		return nil
+	case observabilityrequestbucket.FieldDurationLe10000:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddDurationLe10000(v)
+		return nil
+	case observabilityrequestbucket.FieldDurationGt10000:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddDurationGt10000(v)
+		return nil
+	case observabilityrequestbucket.FieldTtftSampleCount:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddTtftSampleCount(v)
+		return nil
+	case observabilityrequestbucket.FieldSumTtftMs:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddSumTtftMs(v)
+		return nil
+	case observabilityrequestbucket.FieldMinTtftMs:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddMinTtftMs(v)
+		return nil
+	case observabilityrequestbucket.FieldMaxTtftMs:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddMaxTtftMs(v)
+		return nil
+	case observabilityrequestbucket.FieldTtftLe100:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddTtftLe100(v)
+		return nil
+	case observabilityrequestbucket.FieldTtftLe250:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddTtftLe250(v)
+		return nil
+	case observabilityrequestbucket.FieldTtftLe500:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddTtftLe500(v)
+		return nil
+	case observabilityrequestbucket.FieldTtftLe1000:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddTtftLe1000(v)
+		return nil
+	case observabilityrequestbucket.FieldTtftLe2000:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddTtftLe2000(v)
+		return nil
+	case observabilityrequestbucket.FieldTtftLe5000:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddTtftLe5000(v)
+		return nil
+	case observabilityrequestbucket.FieldTtftLe10000:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddTtftLe10000(v)
+		return nil
+	case observabilityrequestbucket.FieldTtftGt10000:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddTtftGt10000(v)
+		return nil
+	}
+	return fmt.Errorf("unknown ObservabilityRequestBucket numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *ObservabilityRequestBucketMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(observabilityrequestbucket.FieldRouteAlias) {
+		fields = append(fields, observabilityrequestbucket.FieldRouteAlias)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *ObservabilityRequestBucketMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *ObservabilityRequestBucketMutation) ClearField(name string) error {
+	switch name {
+	case observabilityrequestbucket.FieldRouteAlias:
+		m.ClearRouteAlias()
+		return nil
+	}
+	return fmt.Errorf("unknown ObservabilityRequestBucket nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *ObservabilityRequestBucketMutation) ResetField(name string) error {
+	switch name {
+	case observabilityrequestbucket.FieldWindowSeconds:
+		m.ResetWindowSeconds()
+		return nil
+	case observabilityrequestbucket.FieldBucketStart:
+		m.ResetBucketStart()
+		return nil
+	case observabilityrequestbucket.FieldDimensionHash:
+		m.ResetDimensionHash()
+		return nil
+	case observabilityrequestbucket.FieldUserID:
+		m.ResetUserID()
+		return nil
+	case observabilityrequestbucket.FieldAPIKeyID:
+		m.ResetAPIKeyID()
+		return nil
+	case observabilityrequestbucket.FieldGroupID:
+		m.ResetGroupID()
+		return nil
+	case observabilityrequestbucket.FieldRouteAlias:
+		m.ResetRouteAlias()
+		return nil
+	case observabilityrequestbucket.FieldAccountID:
+		m.ResetAccountID()
+		return nil
+	case observabilityrequestbucket.FieldRequestCount:
+		m.ResetRequestCount()
+		return nil
+	case observabilityrequestbucket.FieldSuccessCount:
+		m.ResetSuccessCount()
+		return nil
+	case observabilityrequestbucket.FieldErrorCount:
+		m.ResetErrorCount()
+		return nil
+	case observabilityrequestbucket.FieldSLAErrorCount:
+		m.ResetSLAErrorCount()
+		return nil
+	case observabilityrequestbucket.FieldBusinessLimitedCount:
+		m.ResetBusinessLimitedCount()
+		return nil
+	case observabilityrequestbucket.FieldRateLimitedCount:
+		m.ResetRateLimitedCount()
+		return nil
+	case observabilityrequestbucket.FieldLegacyInferredCount:
+		m.ResetLegacyInferredCount()
+		return nil
+	case observabilityrequestbucket.FieldInputTokens:
+		m.ResetInputTokens()
+		return nil
+	case observabilityrequestbucket.FieldOutputTokens:
+		m.ResetOutputTokens()
+		return nil
+	case observabilityrequestbucket.FieldCacheCreationTokens:
+		m.ResetCacheCreationTokens()
+		return nil
+	case observabilityrequestbucket.FieldCacheReadTokens:
+		m.ResetCacheReadTokens()
+		return nil
+	case observabilityrequestbucket.FieldTotalTokens:
+		m.ResetTotalTokens()
+		return nil
+	case observabilityrequestbucket.FieldDurationSampleCount:
+		m.ResetDurationSampleCount()
+		return nil
+	case observabilityrequestbucket.FieldSumDurationMs:
+		m.ResetSumDurationMs()
+		return nil
+	case observabilityrequestbucket.FieldMinDurationMs:
+		m.ResetMinDurationMs()
+		return nil
+	case observabilityrequestbucket.FieldMaxDurationMs:
+		m.ResetMaxDurationMs()
+		return nil
+	case observabilityrequestbucket.FieldDurationLe100:
+		m.ResetDurationLe100()
+		return nil
+	case observabilityrequestbucket.FieldDurationLe250:
+		m.ResetDurationLe250()
+		return nil
+	case observabilityrequestbucket.FieldDurationLe500:
+		m.ResetDurationLe500()
+		return nil
+	case observabilityrequestbucket.FieldDurationLe1000:
+		m.ResetDurationLe1000()
+		return nil
+	case observabilityrequestbucket.FieldDurationLe2000:
+		m.ResetDurationLe2000()
+		return nil
+	case observabilityrequestbucket.FieldDurationLe5000:
+		m.ResetDurationLe5000()
+		return nil
+	case observabilityrequestbucket.FieldDurationLe10000:
+		m.ResetDurationLe10000()
+		return nil
+	case observabilityrequestbucket.FieldDurationGt10000:
+		m.ResetDurationGt10000()
+		return nil
+	case observabilityrequestbucket.FieldTtftSampleCount:
+		m.ResetTtftSampleCount()
+		return nil
+	case observabilityrequestbucket.FieldSumTtftMs:
+		m.ResetSumTtftMs()
+		return nil
+	case observabilityrequestbucket.FieldMinTtftMs:
+		m.ResetMinTtftMs()
+		return nil
+	case observabilityrequestbucket.FieldMaxTtftMs:
+		m.ResetMaxTtftMs()
+		return nil
+	case observabilityrequestbucket.FieldTtftLe100:
+		m.ResetTtftLe100()
+		return nil
+	case observabilityrequestbucket.FieldTtftLe250:
+		m.ResetTtftLe250()
+		return nil
+	case observabilityrequestbucket.FieldTtftLe500:
+		m.ResetTtftLe500()
+		return nil
+	case observabilityrequestbucket.FieldTtftLe1000:
+		m.ResetTtftLe1000()
+		return nil
+	case observabilityrequestbucket.FieldTtftLe2000:
+		m.ResetTtftLe2000()
+		return nil
+	case observabilityrequestbucket.FieldTtftLe5000:
+		m.ResetTtftLe5000()
+		return nil
+	case observabilityrequestbucket.FieldTtftLe10000:
+		m.ResetTtftLe10000()
+		return nil
+	case observabilityrequestbucket.FieldTtftGt10000:
+		m.ResetTtftGt10000()
+		return nil
+	case observabilityrequestbucket.FieldLastFactAt:
+		m.ResetLastFactAt()
+		return nil
+	case observabilityrequestbucket.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown ObservabilityRequestBucket field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *ObservabilityRequestBucketMutation) AddedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *ObservabilityRequestBucketMutation) AddedIDs(name string) []ent.Value {
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *ObservabilityRequestBucketMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *ObservabilityRequestBucketMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *ObservabilityRequestBucketMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 0)
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *ObservabilityRequestBucketMutation) EdgeCleared(name string) bool {
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *ObservabilityRequestBucketMutation) ClearEdge(name string) error {
+	return fmt.Errorf("unknown ObservabilityRequestBucket unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *ObservabilityRequestBucketMutation) ResetEdge(name string) error {
+	return fmt.Errorf("unknown ObservabilityRequestBucket edge %s", name)
 }
 
 // PaymentAuditLogMutation represents an operation that mutates the PaymentAuditLog nodes in the graph.
@@ -48389,6 +54319,7 @@ type UsageLogMutation struct {
 	model                       *string
 	requested_model             *string
 	upstream_model              *string
+	route_alias                 *string
 	channel_id                  *int64
 	addchannel_id               *int64
 	model_mapping_chain         *string
@@ -48830,6 +54761,55 @@ func (m *UsageLogMutation) UpstreamModelCleared() bool {
 func (m *UsageLogMutation) ResetUpstreamModel() {
 	m.upstream_model = nil
 	delete(m.clearedFields, usagelog.FieldUpstreamModel)
+}
+
+// SetRouteAlias sets the "route_alias" field.
+func (m *UsageLogMutation) SetRouteAlias(s string) {
+	m.route_alias = &s
+}
+
+// RouteAlias returns the value of the "route_alias" field in the mutation.
+func (m *UsageLogMutation) RouteAlias() (r string, exists bool) {
+	v := m.route_alias
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRouteAlias returns the old "route_alias" field's value of the UsageLog entity.
+// If the UsageLog object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UsageLogMutation) OldRouteAlias(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRouteAlias is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRouteAlias requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRouteAlias: %w", err)
+	}
+	return oldValue.RouteAlias, nil
+}
+
+// ClearRouteAlias clears the value of the "route_alias" field.
+func (m *UsageLogMutation) ClearRouteAlias() {
+	m.route_alias = nil
+	m.clearedFields[usagelog.FieldRouteAlias] = struct{}{}
+}
+
+// RouteAliasCleared returns if the "route_alias" field was cleared in this mutation.
+func (m *UsageLogMutation) RouteAliasCleared() bool {
+	_, ok := m.clearedFields[usagelog.FieldRouteAlias]
+	return ok
+}
+
+// ResetRouteAlias resets all changes to the "route_alias" field.
+func (m *UsageLogMutation) ResetRouteAlias() {
+	m.route_alias = nil
+	delete(m.clearedFields, usagelog.FieldRouteAlias)
 }
 
 // SetChannelID sets the "channel_id" field.
@@ -50817,7 +56797,7 @@ func (m *UsageLogMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *UsageLogMutation) Fields() []string {
-	fields := make([]string, 0, 41)
+	fields := make([]string, 0, 42)
 	if m.user != nil {
 		fields = append(fields, usagelog.FieldUserID)
 	}
@@ -50838,6 +56818,9 @@ func (m *UsageLogMutation) Fields() []string {
 	}
 	if m.upstream_model != nil {
 		fields = append(fields, usagelog.FieldUpstreamModel)
+	}
+	if m.route_alias != nil {
+		fields = append(fields, usagelog.FieldRouteAlias)
 	}
 	if m.channel_id != nil {
 		fields = append(fields, usagelog.FieldChannelID)
@@ -50963,6 +56946,8 @@ func (m *UsageLogMutation) Field(name string) (ent.Value, bool) {
 		return m.RequestedModel()
 	case usagelog.FieldUpstreamModel:
 		return m.UpstreamModel()
+	case usagelog.FieldRouteAlias:
+		return m.RouteAlias()
 	case usagelog.FieldChannelID:
 		return m.ChannelID()
 	case usagelog.FieldModelMappingChain:
@@ -51054,6 +57039,8 @@ func (m *UsageLogMutation) OldField(ctx context.Context, name string) (ent.Value
 		return m.OldRequestedModel(ctx)
 	case usagelog.FieldUpstreamModel:
 		return m.OldUpstreamModel(ctx)
+	case usagelog.FieldRouteAlias:
+		return m.OldRouteAlias(ctx)
 	case usagelog.FieldChannelID:
 		return m.OldChannelID(ctx)
 	case usagelog.FieldModelMappingChain:
@@ -51179,6 +57166,13 @@ func (m *UsageLogMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetUpstreamModel(v)
+		return nil
+	case usagelog.FieldRouteAlias:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRouteAlias(v)
 		return nil
 	case usagelog.FieldChannelID:
 		v, ok := value.(int64)
@@ -51685,6 +57679,9 @@ func (m *UsageLogMutation) ClearedFields() []string {
 	if m.FieldCleared(usagelog.FieldUpstreamModel) {
 		fields = append(fields, usagelog.FieldUpstreamModel)
 	}
+	if m.FieldCleared(usagelog.FieldRouteAlias) {
+		fields = append(fields, usagelog.FieldRouteAlias)
+	}
 	if m.FieldCleared(usagelog.FieldChannelID) {
 		fields = append(fields, usagelog.FieldChannelID)
 	}
@@ -51752,6 +57749,9 @@ func (m *UsageLogMutation) ClearField(name string) error {
 		return nil
 	case usagelog.FieldUpstreamModel:
 		m.ClearUpstreamModel()
+		return nil
+	case usagelog.FieldRouteAlias:
+		m.ClearRouteAlias()
 		return nil
 	case usagelog.FieldChannelID:
 		m.ClearChannelID()
@@ -51829,6 +57829,9 @@ func (m *UsageLogMutation) ResetField(name string) error {
 		return nil
 	case usagelog.FieldUpstreamModel:
 		m.ResetUpstreamModel()
+		return nil
+	case usagelog.FieldRouteAlias:
+		m.ResetRouteAlias()
 		return nil
 	case usagelog.FieldChannelID:
 		m.ResetChannelID()

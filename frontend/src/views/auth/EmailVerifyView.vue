@@ -529,6 +529,10 @@ async function handleVerify(): Promise<void> {
       persistOAuthTokenContext(data)
       await authStore.setToken(data.access_token)
       authStore.clearPendingAuthSession?.()
+      await router.push(
+        pendingRedirect.value.trim() || data.redirect?.trim() || '/welcome',
+      )
+      return
     } else {
       // Register with verification code
       await authStore.register({
@@ -549,8 +553,9 @@ async function handleVerify(): Promise<void> {
     // Show success toast
     appStore.showSuccess(t('auth.accountCreatedSuccess', { siteName: siteName.value }))
 
-    // Redirect to dashboard
-    await router.push('/welcome')
+    // Normal email registration enters the dashboard; pending OAuth login has
+    // already returned after honoring the provider callback's redirect target.
+    await router.push('/dashboard')
   } catch (error: unknown) {
     errorMessage.value = buildAuthErrorMessage(error, {
       fallback: t('auth.verifyFailed')

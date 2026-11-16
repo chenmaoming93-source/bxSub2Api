@@ -448,6 +448,7 @@
 
           <template #cell-balance_platform_quota="{ row }">
             <button
+              v-if="!row.is_super_admin"
               type="button"
               class="block text-left underline decoration-dashed decoration-gray-300 underline-offset-4 transition-colors hover:decoration-primary-400 dark:decoration-dark-500"
               :title="t('admin.users.platformQuota.cellColumnTooltip')"
@@ -455,6 +456,9 @@
             >
               <UserPlatformQuotaCell :quotas="platformQuotaStats[row.id]" />
             </button>
+            <span v-else class="text-xs font-medium text-emerald-600 dark:text-emerald-400">
+              {{ t('admin.users.platformQuota.superAdminUnlimited') }}
+            </span>
           </template>
 
           <!-- 用量列自定义表头：列名 + 单个排序图标按钮，点击展开"今日/近30天"菜单。
@@ -721,6 +725,7 @@
 
               <!-- Platform Quotas -->
               <button
+                v-if="!user.is_super_admin"
                 @click="handlePlatformQuota(user); closeActionMenu()"
                 class="flex w-full items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-dark-700"
               >
@@ -1318,6 +1323,7 @@ const viewingUser = ref<AdminUser | null>(null)
 const platformQuotaUser = ref<AdminUser | null>(null)
 
 const handlePlatformQuota = (user: AdminUser) => {
+  if (user.is_super_admin) return
   platformQuotaUser.value = user
   showPlatformQuotaModal.value = true
 }

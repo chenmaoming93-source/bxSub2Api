@@ -44,6 +44,10 @@ type Tx struct {
 	IdempotencyRecord *IdempotencyRecordClient
 	// IdentityAdoptionDecision is the client for interacting with the IdentityAdoptionDecision builders.
 	IdentityAdoptionDecision *IdentityAdoptionDecisionClient
+	// ObservabilityConcurrencyBucket is the client for interacting with the ObservabilityConcurrencyBucket builders.
+	ObservabilityConcurrencyBucket *ObservabilityConcurrencyBucketClient
+	// ObservabilityRequestBucket is the client for interacting with the ObservabilityRequestBucket builders.
+	ObservabilityRequestBucket *ObservabilityRequestBucketClient
 	// PaymentAuditLog is the client for interacting with the PaymentAuditLog builders.
 	PaymentAuditLog *PaymentAuditLogClient
 	// PaymentOrder is the client for interacting with the PaymentOrder builders.
@@ -256,6 +260,8 @@ func (tx *Tx) init() {
 	tx.Group = NewGroupClient(tx.config)
 	tx.IdempotencyRecord = NewIdempotencyRecordClient(tx.config)
 	tx.IdentityAdoptionDecision = NewIdentityAdoptionDecisionClient(tx.config)
+	tx.ObservabilityConcurrencyBucket = NewObservabilityConcurrencyBucketClient(tx.config)
+	tx.ObservabilityRequestBucket = NewObservabilityRequestBucketClient(tx.config)
 	tx.PaymentAuditLog = NewPaymentAuditLogClient(tx.config)
 	tx.PaymentOrder = NewPaymentOrderClient(tx.config)
 	tx.PaymentProviderInstance = NewPaymentProviderInstanceClient(tx.config)

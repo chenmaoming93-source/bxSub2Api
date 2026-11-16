@@ -85,6 +85,20 @@ func (_c *UsageLogCreate) SetNillableUpstreamModel(v *string) *UsageLogCreate {
 	return _c
 }
 
+// SetRouteAlias sets the "route_alias" field.
+func (_c *UsageLogCreate) SetRouteAlias(v string) *UsageLogCreate {
+	_c.mutation.SetRouteAlias(v)
+	return _c
+}
+
+// SetNillableRouteAlias sets the "route_alias" field if the given value is not nil.
+func (_c *UsageLogCreate) SetNillableRouteAlias(v *string) *UsageLogCreate {
+	if v != nil {
+		_c.SetRouteAlias(*v)
+	}
+	return _c
+}
+
 // SetChannelID sets the "channel_id" field.
 func (_c *UsageLogCreate) SetChannelID(v int64) *UsageLogCreate {
 	_c.mutation.SetChannelID(v)
@@ -724,6 +738,11 @@ func (_c *UsageLogCreate) check() error {
 			return &ValidationError{Name: "upstream_model", err: fmt.Errorf(`ent: validator failed for field "UsageLog.upstream_model": %w`, err)}
 		}
 	}
+	if v, ok := _c.mutation.RouteAlias(); ok {
+		if err := usagelog.RouteAliasValidator(v); err != nil {
+			return &ValidationError{Name: "route_alias", err: fmt.Errorf(`ent: validator failed for field "UsageLog.route_alias": %w`, err)}
+		}
+	}
 	if v, ok := _c.mutation.ModelMappingChain(); ok {
 		if err := usagelog.ModelMappingChainValidator(v); err != nil {
 			return &ValidationError{Name: "model_mapping_chain", err: fmt.Errorf(`ent: validator failed for field "UsageLog.model_mapping_chain": %w`, err)}
@@ -874,6 +893,10 @@ func (_c *UsageLogCreate) createSpec() (*UsageLog, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.UpstreamModel(); ok {
 		_spec.SetField(usagelog.FieldUpstreamModel, field.TypeString, value)
 		_node.UpstreamModel = &value
+	}
+	if value, ok := _c.mutation.RouteAlias(); ok {
+		_spec.SetField(usagelog.FieldRouteAlias, field.TypeString, value)
+		_node.RouteAlias = &value
 	}
 	if value, ok := _c.mutation.ChannelID(); ok {
 		_spec.SetField(usagelog.FieldChannelID, field.TypeInt64, value)
@@ -1233,6 +1256,24 @@ func (u *UsageLogUpsert) UpdateUpstreamModel() *UsageLogUpsert {
 // ClearUpstreamModel clears the value of the "upstream_model" field.
 func (u *UsageLogUpsert) ClearUpstreamModel() *UsageLogUpsert {
 	u.SetNull(usagelog.FieldUpstreamModel)
+	return u
+}
+
+// SetRouteAlias sets the "route_alias" field.
+func (u *UsageLogUpsert) SetRouteAlias(v string) *UsageLogUpsert {
+	u.Set(usagelog.FieldRouteAlias, v)
+	return u
+}
+
+// UpdateRouteAlias sets the "route_alias" field to the value that was provided on create.
+func (u *UsageLogUpsert) UpdateRouteAlias() *UsageLogUpsert {
+	u.SetExcluded(usagelog.FieldRouteAlias)
+	return u
+}
+
+// ClearRouteAlias clears the value of the "route_alias" field.
+func (u *UsageLogUpsert) ClearRouteAlias() *UsageLogUpsert {
+	u.SetNull(usagelog.FieldRouteAlias)
 	return u
 }
 
@@ -1996,6 +2037,27 @@ func (u *UsageLogUpsertOne) UpdateUpstreamModel() *UsageLogUpsertOne {
 func (u *UsageLogUpsertOne) ClearUpstreamModel() *UsageLogUpsertOne {
 	return u.Update(func(s *UsageLogUpsert) {
 		s.ClearUpstreamModel()
+	})
+}
+
+// SetRouteAlias sets the "route_alias" field.
+func (u *UsageLogUpsertOne) SetRouteAlias(v string) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetRouteAlias(v)
+	})
+}
+
+// UpdateRouteAlias sets the "route_alias" field to the value that was provided on create.
+func (u *UsageLogUpsertOne) UpdateRouteAlias() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateRouteAlias()
+	})
+}
+
+// ClearRouteAlias clears the value of the "route_alias" field.
+func (u *UsageLogUpsertOne) ClearRouteAlias() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearRouteAlias()
 	})
 }
 
@@ -3026,6 +3088,27 @@ func (u *UsageLogUpsertBulk) UpdateUpstreamModel() *UsageLogUpsertBulk {
 func (u *UsageLogUpsertBulk) ClearUpstreamModel() *UsageLogUpsertBulk {
 	return u.Update(func(s *UsageLogUpsert) {
 		s.ClearUpstreamModel()
+	})
+}
+
+// SetRouteAlias sets the "route_alias" field.
+func (u *UsageLogUpsertBulk) SetRouteAlias(v string) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetRouteAlias(v)
+	})
+}
+
+// UpdateRouteAlias sets the "route_alias" field to the value that was provided on create.
+func (u *UsageLogUpsertBulk) UpdateRouteAlias() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateRouteAlias()
+	})
+}
+
+// ClearRouteAlias clears the value of the "route_alias" field.
+func (u *UsageLogUpsertBulk) ClearRouteAlias() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearRouteAlias()
 	})
 }
 

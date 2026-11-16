@@ -15,8 +15,9 @@ var ErrDynamicTokenQuotaExceeded = errors.New("dynamic token quota exceeded")
 // Route resolution appends route_alias, account_id and upstream_model before
 // checking candidate-specific quotas.
 type DynamicTokenRequestIdentity struct {
-	UserID   int64
-	APIKeyID int64
+	UserID     int64
+	APIKeyID   int64
+	SuperAdmin bool
 }
 
 func checkDynamicTokenQuota(ctx context.Context, values map[tokenstat.DimensionCode]tokenstat.DimensionValue) error {
@@ -32,7 +33,7 @@ func checkDynamicQuotaBeforeScheduling(ctx context.Context, groupID *int64, iden
 	if groupID != nil && *groupID > 0 {
 		values[tokenstat.DimensionGroupID] = tokenstat.Int64Value(*groupID)
 	}
-	if identity.UserID > 0 {
+	if identity.UserID > 0 && !dynamicTokenQuotaUserExempt(ctx, identity) {
 		values[tokenstat.DimensionUserID] = tokenstat.Int64Value(identity.UserID)
 	}
 	if identity.APIKeyID > 0 {
@@ -46,7 +47,7 @@ func checkDynamicQuotaAfterSelection(ctx context.Context, groupID *int64, identi
 	if groupID != nil && *groupID > 0 {
 		values[tokenstat.DimensionGroupID] = tokenstat.Int64Value(*groupID)
 	}
-	if identity.UserID > 0 {
+	if identity.UserID > 0 && !dynamicTokenQuotaUserExempt(ctx, identity) {
 		values[tokenstat.DimensionUserID] = tokenstat.Int64Value(identity.UserID)
 	}
 	if identity.APIKeyID > 0 {
@@ -62,6 +63,10 @@ func checkDynamicQuotaAfterSelection(ctx context.Context, groupID *int64, identi
 		values[tokenstat.DimensionUpstreamModel] = tokenstat.StringValue(model)
 	}
 	return checkDynamicTokenQuota(ctx, values)
+}
+
+func dynamicTokenQuotaUserExempt(ctx context.Context, identity DynamicTokenRequestIdentity) bool {
+	return identity.SuperAdmin || IsSuperAdminExempt(ctx)
 }
 
 // CheckDynamicTokenRouteCandidate is the shared model_routing candidate gate

@@ -29,7 +29,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-const usageLogSelectColumns = "id, user_id, api_key_id, account_id, request_id, model, requested_model, upstream_model, group_id, subscription_id, input_tokens, output_tokens, cache_creation_tokens, cache_read_tokens, cache_creation_5m_tokens, cache_creation_1h_tokens, image_output_tokens, image_output_cost, input_cost, output_cost, cache_creation_cost, cache_read_cost, total_cost, actual_cost, rate_multiplier, account_rate_multiplier, billing_type, request_type, stream, openai_ws_mode, duration_ms, first_token_ms, user_agent, ip_address, image_count, image_size, image_input_size, image_output_size, image_size_source, image_size_breakdown, service_tier, reasoning_effort, inbound_endpoint, upstream_endpoint, cache_ttl_overridden, channel_id, model_mapping_chain, billing_tier, billing_mode, account_stats_cost, created_at"
+const usageLogSelectColumns = "id, user_id, api_key_id, account_id, request_id, model, requested_model, upstream_model, group_id, subscription_id, input_tokens, output_tokens, cache_creation_tokens, cache_read_tokens, cache_creation_5m_tokens, cache_creation_1h_tokens, image_output_tokens, image_output_cost, input_cost, output_cost, cache_creation_cost, cache_read_cost, total_cost, actual_cost, rate_multiplier, account_rate_multiplier, billing_type, request_type, stream, openai_ws_mode, duration_ms, first_token_ms, user_agent, ip_address, image_count, image_size, image_input_size, image_output_size, image_size_source, image_size_breakdown, service_tier, reasoning_effort, inbound_endpoint, upstream_endpoint, cache_ttl_overridden, channel_id, model_mapping_chain, billing_tier, billing_mode, account_stats_cost, route_alias, created_at"
 
 // usageLogInsertColumns must stay in the same order as prepareUsageLogInsert().args.
 // When adding a usage_logs column, update this list and prepareUsageLogInsert together.
@@ -43,7 +43,7 @@ const usageLogInsertColumns = `
 	user_agent, ip_address, image_count, image_size, image_input_size, image_output_size,
 	image_size_source, image_size_breakdown, service_tier, reasoning_effort,
 	inbound_endpoint, upstream_endpoint, cache_ttl_overridden, channel_id,
-	model_mapping_chain, billing_tier, billing_mode, account_stats_cost, created_at`
+	model_mapping_chain, billing_tier, billing_mode, account_stats_cost, route_alias, created_at`
 
 const usageLogRequestedModelExpr = "COALESCE(NULLIF(TRIM(requested_model), ''), model)"
 
@@ -784,6 +784,11 @@ func prepareUsageLogInsert(log *service.UsageLog) usageLogInsertPrepared {
 		requestedModel = strings.TrimSpace(log.Model)
 	}
 	upstreamModel := nullString(log.UpstreamModel)
+	routeAlias := strings.TrimSpace(log.RouteAlias)
+	var routeAliasArg any
+	if routeAlias != "" {
+		routeAliasArg = routeAlias
+	}
 
 	var requestIDArg any
 	if requestID != "" {
@@ -845,6 +850,7 @@ func prepareUsageLogInsert(log *service.UsageLog) usageLogInsertPrepared {
 			billingTier,
 			billingMode,
 			log.AccountStatsCost, // account_stats_cost
+			routeAliasArg,        // route_alias
 			createdAt,
 		},
 	}
@@ -3798,6 +3804,7 @@ func scanUsageLog(scanner interface{ Scan(...any) error }) (*service.UsageLog, e
 		billingTier           sql.NullString
 		billingMode           sql.NullString
 		accountStatsCost      sql.NullFloat64
+		routeAlias            sql.NullString
 		createdAt             time.Time
 	)
 
@@ -3852,39 +3859,50 @@ func scanUsageLog(scanner interface{ Scan(...any) error }) (*service.UsageLog, e
 		&billingTier,
 		&billingMode,
 		&accountStatsCost,
+		&routeAlias,
 		&createdAt,
 	); err != nil {
 		return nil, err
 	}
 
+	requestedModelValue := coalesceTrimmedString(requestedModel, model)
+	effectiveRouteAlias := strings.TrimSpace(routeAlias.String)
+	legacyRouteAliasInferred := false
+	if !routeAlias.Valid && requestedModelValue != "" && requestedModelValue != model {
+		effectiveRouteAlias = requestedModelValue
+		legacyRouteAliasInferred = true
+	}
+
 	log := &service.UsageLog{
-		ID:                    id,
-		UserID:                userID,
-		APIKeyID:              apiKeyID,
-		AccountID:             accountID,
-		Model:                 model,
-		RequestedModel:        coalesceTrimmedString(requestedModel, model),
-		InputTokens:           inputTokens,
-		OutputTokens:          outputTokens,
-		CacheCreationTokens:   cacheCreationTokens,
-		CacheReadTokens:       cacheReadTokens,
-		CacheCreation5mTokens: cacheCreation5m,
-		CacheCreation1hTokens: cacheCreation1h,
-		ImageOutputTokens:     imageOutputTokens,
-		ImageOutputCost:       imageOutputCost,
-		InputCost:             inputCost,
-		OutputCost:            outputCost,
-		CacheCreationCost:     cacheCreationCost,
-		CacheReadCost:         cacheReadCost,
-		TotalCost:             totalCost,
-		ActualCost:            actualCost,
-		RateMultiplier:        rateMultiplier,
-		AccountRateMultiplier: nullFloat64Ptr(accountRateMultiplier),
-		BillingType:           int8(billingType),
-		RequestType:           service.RequestTypeFromInt16(requestTypeRaw),
-		ImageCount:            imageCount,
-		CacheTTLOverridden:    cacheTTLOverridden,
-		CreatedAt:             createdAt,
+		ID:                       id,
+		UserID:                   userID,
+		APIKeyID:                 apiKeyID,
+		AccountID:                accountID,
+		Model:                    model,
+		RequestedModel:           requestedModelValue,
+		RouteAlias:               effectiveRouteAlias,
+		RouteAliasLegacyInferred: legacyRouteAliasInferred,
+		InputTokens:              inputTokens,
+		OutputTokens:             outputTokens,
+		CacheCreationTokens:      cacheCreationTokens,
+		CacheReadTokens:          cacheReadTokens,
+		CacheCreation5mTokens:    cacheCreation5m,
+		CacheCreation1hTokens:    cacheCreation1h,
+		ImageOutputTokens:        imageOutputTokens,
+		ImageOutputCost:          imageOutputCost,
+		InputCost:                inputCost,
+		OutputCost:               outputCost,
+		CacheCreationCost:        cacheCreationCost,
+		CacheReadCost:            cacheReadCost,
+		TotalCost:                totalCost,
+		ActualCost:               actualCost,
+		RateMultiplier:           rateMultiplier,
+		AccountRateMultiplier:    nullFloat64Ptr(accountRateMultiplier),
+		BillingType:              int8(billingType),
+		RequestType:              service.RequestTypeFromInt16(requestTypeRaw),
+		ImageCount:               imageCount,
+		CacheTTLOverridden:       cacheTTLOverridden,
+		CreatedAt:                createdAt,
 	}
 	// 先回填 legacy 字段，再基于 legacy + request_type 计算最终请求类型，保证历史数据兼容。
 	log.Stream = stream

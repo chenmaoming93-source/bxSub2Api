@@ -152,6 +152,25 @@ func (r *groupRepository) GetByIDLite(ctx context.Context, id int64) (*service.G
 	return out, nil
 }
 
+// GetByIDsLite loads only group labels in one query. Snapshot rendering does
+// not need account counts or routing graphs, so this avoids per-group lookups.
+func (r *groupRepository) GetByIDsLite(ctx context.Context, ids []int64) ([]service.Group, error) {
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	entities, err := r.client.Group.Query().
+		Where(group.IDIn(ids...)).
+		All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]service.Group, 0, len(entities))
+	for _, entity := range entities {
+		out = append(out, *groupEntityToService(entity))
+	}
+	return out, nil
+}
+
 // GetByNameExact 按清理后的名称精确查询未软删除分组。
 func (r *groupRepository) GetSecurityCheckConfig(ctx context.Context, groupID int64) (domain.SecurityCheckConfig, error) {
 	m, err := r.client.Group.Query().

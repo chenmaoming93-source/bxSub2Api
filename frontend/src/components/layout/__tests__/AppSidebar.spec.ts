@@ -30,3 +30,10 @@ describe('AppSidebar header styles', () => {
     expect(sidebarBrandBlockMatch?.[0]).not.toContain('overflow: hidden;')
   })
 })
+
+describe('AppSidebar observability navigation', () => {
+  it('keeps the observability entry beside existing admin pages', () => {
+    expect(componentSource).toContain("path: '/admin/observability'")
+    expect(componentSource).toContain("t('nav.observability')")
+  })
+})

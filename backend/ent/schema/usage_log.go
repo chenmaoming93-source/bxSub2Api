@@ -53,6 +53,12 @@ func (UsageLog) Fields() []ent.Field {
 			MaxLen(100).
 			Optional().
 			Nillable(),
+		// RouteAlias is the matched groups.model_routing alias. NULL means the
+		// request did not use a route alias or the row predates this column.
+		field.String("route_alias").
+			MaxLen(255).
+			Optional().
+			Nillable(),
 		field.Int64("channel_id").Optional().Nillable().Comment("渠道 ID"),
 		field.String("model_mapping_chain").MaxLen(500).Optional().Nillable().Comment("模型映射链"),
 		field.String("billing_tier").MaxLen(50).Optional().Nillable().Comment("计费层级标签"),
@@ -207,5 +213,8 @@ func (UsageLog) Indexes() []ent.Index {
 		index.Fields("api_key_id", "created_at"),
 		// 分组维度时间范围查询（线上由 SQL 迁移创建 group_id IS NOT NULL 的部分索引）
 		index.Fields("group_id", "created_at"),
+		// Observability filters route utilization by group and time.
+		index.Fields("group_id", "route_alias", "created_at"),
+		index.Fields("route_alias", "created_at"),
 	}
 }

@@ -425,7 +425,7 @@ async function load() {
 }
 async function loadDimensionOptions() {
   const [users, groups, accounts] = await Promise.allSettled([
-    usersAPI.list(1, 1000),
+    usersAPI.list(1, 1000, { exclude_super_admins: true }),
     groupsAPI.getAllIncludingInactive(),
     accountsAPI.list(1, 1000, { lite: 'true' })
   ])

@@ -103,8 +103,11 @@ type UsageLog struct {
 	AccountID int64
 	RequestID string
 	Model     string
-	// RouteAlias is used for group-candidate quota accounting and is not persisted.
+	// RouteAlias is the matched groups.model_routing alias for this request.
 	RouteAlias string
+	// RouteAliasLegacyInferred marks alias values reconstructed from historical
+	// requested_model data because the row predates route_alias persistence.
+	RouteAliasLegacyInferred bool
 	// RequestedModel is the client-requested model name recorded for stable user/admin display.
 	// Empty should be treated as Model for backward compatibility with historical rows.
 	RequestedModel string

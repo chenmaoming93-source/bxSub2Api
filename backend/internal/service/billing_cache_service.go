@@ -739,56 +739,71 @@ func (s *BillingCacheService) checkRPM(ctx context.Context, user *User, group *G
 	if s == nil || s.userRPMCache == nil || user == nil {
 		return nil
 	}
+	superAdmin := user.IsSuperAdmin()
 
 	// ── 第一层：分组级检查（override 或 group.rpm_limit） ──
 	if group != nil {
-		// 解析 override：优先从 auth cache snapshot，nil 时回退 DB。
-		var override *int
-		if user.UserGroupRPMOverride != nil {
-			override = user.UserGroupRPMOverride
-		} else if s.userGroupRateRepo != nil {
-			dbOverride, err := s.userGroupRateRepo.GetRPMOverrideByUserAndGroup(ctx, user.ID, group.ID)
-			if err != nil {
-				logger.LegacyPrintf(
-					"service.billing_cache",
-					"Warning: rpm override lookup failed for user=%d group=%d: %v",
-					user.ID, group.ID, err,
-				)
-			} else {
-				override = dbOverride
-			}
-		}
-
-		if override != nil {
-			// override=0 → 该用户在该分组免检（但 user 级仍会在下面检查）。
-			if *override > 0 {
-				count, incErr := s.userRPMCache.IncrementUserGroupRPM(ctx, user.ID, group.ID)
-				if incErr != nil {
-					logger.LegacyPrintf(
-						"service.billing_cache",
-						"Warning: rpm increment (override) failed for user=%d group=%d: %v",
-						user.ID, group.ID, incErr,
-					)
-					// fail-open
-				} else if count > *override {
+		if superAdmin {
+			// 超级管理员跳过用户专属 override 和用户级上限，但继续执行分组共享 RPM。
+			if group.RPMLimit > 0 {
+				count, err := s.userRPMCache.IncrementUserGroupRPM(ctx, user.ID, group.ID)
+				if err == nil && count > group.RPMLimit {
 					return ErrGroupRPMExceeded
 				}
 			}
-			// override 命中后跳过 group.rpm_limit（override 替代 group），但不 return——继续检查 user 级。
-		} else if group.RPMLimit > 0 {
-			// 无 override，检查 group.rpm_limit。
-			count, err := s.userRPMCache.IncrementUserGroupRPM(ctx, user.ID, group.ID)
-			if err != nil {
-				logger.LegacyPrintf(
-					"service.billing_cache",
-					"Warning: rpm increment (group) failed for user=%d group=%d: %v",
-					user.ID, group.ID, err,
-				)
-				// fail-open
-			} else if count > group.RPMLimit {
-				return ErrGroupRPMExceeded
+		} else {
+			// 解析 override：优先从 auth cache snapshot，nil 时回退 DB。
+			var override *int
+			if user.UserGroupRPMOverride != nil {
+				override = user.UserGroupRPMOverride
+			} else if s.userGroupRateRepo != nil {
+				dbOverride, err := s.userGroupRateRepo.GetRPMOverrideByUserAndGroup(ctx, user.ID, group.ID)
+				if err != nil {
+					logger.LegacyPrintf(
+						"service.billing_cache",
+						"Warning: rpm override lookup failed for user=%d group=%d: %v",
+						user.ID, group.ID, err,
+					)
+				} else {
+					override = dbOverride
+				}
+			}
+
+			if override != nil {
+				// override=0 → 该用户在该分组免检（但 user 级仍会在下面检查）。
+				if *override > 0 {
+					count, incErr := s.userRPMCache.IncrementUserGroupRPM(ctx, user.ID, group.ID)
+					if incErr != nil {
+						logger.LegacyPrintf(
+							"service.billing_cache",
+							"Warning: rpm increment (override) failed for user=%d group=%d: %v",
+							user.ID, group.ID, incErr,
+						)
+						// fail-open
+					} else if count > *override {
+						return ErrGroupRPMExceeded
+					}
+				}
+				// override 命中后跳过 group.rpm_limit（override 替代 group），但不 return——继续检查 user 级。
+			} else if group.RPMLimit > 0 {
+				// 无 override，检查 group.rpm_limit。
+				count, err := s.userRPMCache.IncrementUserGroupRPM(ctx, user.ID, group.ID)
+				if err != nil {
+					logger.LegacyPrintf(
+						"service.billing_cache",
+						"Warning: rpm increment (group) failed for user=%d group=%d: %v",
+						user.ID, group.ID, err,
+					)
+					// fail-open
+				} else if count > group.RPMLimit {
+					return ErrGroupRPMExceeded
+				}
 			}
 		}
+	}
+
+	if superAdmin {
+		return nil
 	}
 
 	// ── 第二层：用户级全局硬上限（始终生效） ──
@@ -809,6 +824,32 @@ func (s *BillingCacheService) checkRPM(ctx context.Context, user *User, group *G
 
 	return nil
 }
+
+func (s *BillingCacheService) checkUserPlatformQuotaEligibilityForUser(
+	ctx context.Context,
+	user *User,
+	platform string,
+) error {
+	if user == nil || user.IsSuperAdmin() {
+		return nil
+	}
+	return s.checkUserPlatformQuotaEligibility(ctx, user.ID, platform)
+}
+
+// CheckUserPlatformQuotaEligibilityForUser applies the user-specific platform
+// quota gate while preserving the super-administrator exemption.
+func (s *BillingCacheService) CheckUserPlatformQuotaEligibilityForUser(
+	ctx context.Context,
+	user *User,
+	platform string,
+) error {
+	return s.checkUserPlatformQuotaEligibilityForUser(ctx, user, platform)
+}
+
+/*
+	The previous inline cascade is intentionally kept above as two explicit
+	branches so that group enforcement remains visible for super administrators.
+*/
 
 // checkBalanceEligibility 检查余额模式资格
 func (s *BillingCacheService) checkBalanceEligibility(ctx context.Context, userID int64) error {

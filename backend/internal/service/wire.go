@@ -12,6 +12,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/internal/pkg/antigravity"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/ldapauth"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/logger"
+	"github.com/Wei-Shaw/sub2api/internal/rbac"
 	tokenstat "github.com/Wei-Shaw/sub2api/internal/service/tokenstat"
 	"github.com/google/wire"
 	"github.com/redis/go-redis/v9"
@@ -223,6 +224,56 @@ func ProvideDashboardAggregationService(repo DashboardAggregationRepository, tim
 	svc.SetLeaderLock(lockCache, db)
 	svc.Start()
 	return svc
+}
+
+// ProvideObservabilityRequestRollupService creates and starts the request
+// observability rollup worker. It only advances its own watermark and never
+// blocks gateway writes.
+func ProvideObservabilityRequestRollupService(repo ObservabilityRequestRollupRepository, timingWheel *TimingWheelService, lockCache LeaderLockCache, db *sql.DB) *ObservabilityRequestRollupService {
+	svc := NewObservabilityRequestRollupService(repo, timingWheel, lockCache, db)
+	svc.Start()
+	return svc
+}
+
+// ProvideConcurrencyHistoryService creates and starts the minute-bucketed
+// account/candidate concurrency sampler.
+func ProvideConcurrencyHistoryService(
+	repo ConcurrencyHistoryRepository,
+	accountRepo AccountRepository,
+	groupRepo GroupRepository,
+	concurrency *ConcurrencyService,
+	timingWheel *TimingWheelService,
+	lockCache LeaderLockCache,
+	db *sql.DB,
+) *ConcurrencyHistoryService {
+	svc := NewConcurrencyHistoryService(repo, accountRepo, groupRepo, concurrency, timingWheel, lockCache, db)
+	svc.Start()
+	return svc
+}
+
+func ProvideObservabilitySnapshotService(
+	loader SnapshotRollupLoader,
+	accountRepo AccountRepository,
+	userRepo UserRepository,
+	groupRepo GroupRepository,
+	concurrency *ConcurrencyHistoryService,
+	tokenstatProvider *tokenstat.ProjectionAdminService,
+) *ObservabilitySnapshotService {
+	return NewObservabilitySnapshotService(loader, accountRepo, userRepo, groupRepo, concurrency, tokenstatProvider)
+}
+
+func ProvideObservabilityQueryService(loader SnapshotRollupLoader, concurrency *ConcurrencyHistoryService) *ObservabilityQueryService {
+	return NewObservabilityQueryService(loader, concurrency)
+}
+
+func ProvideObservabilityPathService(
+	loader ObservabilityPathLoader,
+	userRepo UserRepository,
+	accountRepo AccountRepository,
+	groupRepo GroupRepository,
+	concurrency *ConcurrencyHistoryService,
+) *ObservabilityPathService {
+	return NewObservabilityPathService(loader, userRepo, accountRepo, groupRepo, concurrency)
 }
 
 // ProvideUsageCleanupService 创建并启动使用记录清理任务服务
@@ -585,10 +636,12 @@ func ProvideAPIKeyService(
 	cfg *config.Config,
 	billingCacheService *BillingCacheService,
 	settingService *SettingService,
+	permissionService *rbac.PermissionService,
 ) *APIKeyService {
 	svc := NewAPIKeyService(apiKeyRepo, userRepo, groupRepo, userSubRepo, userGroupRateRepo, cache, cfg)
 	svc.SetRateLimitCacheInvalidator(billingCacheService)
 	svc.SetDefaultGroupResolver(settingService)
+	svc.SetEffectivePermissionProvider(permissionService)
 	return svc
 }
 
@@ -702,6 +755,11 @@ var ProviderSet = wire.NewSet(
 	ProvideSubscriptionExpiryService,
 	ProvideTimingWheelService,
 	ProvideDashboardAggregationService,
+	ProvideObservabilityRequestRollupService,
+	ProvideConcurrencyHistoryService,
+	ProvideObservabilitySnapshotService,
+	ProvideObservabilityQueryService,
+	ProvideObservabilityPathService,
 	ProvideUsageCleanupService,
 	ProvideDeferredService,
 	NewAntigravityQuotaFetcher,

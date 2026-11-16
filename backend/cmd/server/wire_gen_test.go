@@ -65,6 +65,8 @@ func TestProvideCleanup_WithMinimalDependencies_NoPanic(t *testing.T) {
 		proxyExpirySvc,
 		subscriptionExpirySvc,
 		&service.UsageCleanupService{},
+		nil, // observabilityRequestRollup
+		nil, // concurrencyHistory
 		idempotencyCleanupSvc,
 		pricingSvc,
 		emailQueueSvc,

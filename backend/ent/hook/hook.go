@@ -189,6 +189,30 @@ func (f IdentityAdoptionDecisionFunc) Mutate(ctx context.Context, m ent.Mutation
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.IdentityAdoptionDecisionMutation", m)
 }
 
+// The ObservabilityConcurrencyBucketFunc type is an adapter to allow the use of ordinary
+// function as ObservabilityConcurrencyBucket mutator.
+type ObservabilityConcurrencyBucketFunc func(context.Context, *ent.ObservabilityConcurrencyBucketMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f ObservabilityConcurrencyBucketFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.ObservabilityConcurrencyBucketMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ObservabilityConcurrencyBucketMutation", m)
+}
+
+// The ObservabilityRequestBucketFunc type is an adapter to allow the use of ordinary
+// function as ObservabilityRequestBucket mutator.
+type ObservabilityRequestBucketFunc func(context.Context, *ent.ObservabilityRequestBucketMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f ObservabilityRequestBucketFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.ObservabilityRequestBucketMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ObservabilityRequestBucketMutation", m)
+}
+
 // The PaymentAuditLogFunc type is an adapter to allow the use of ordinary
 // function as PaymentAuditLog mutator.
 type PaymentAuditLogFunc func(context.Context, *ent.PaymentAuditLogMutation) (ent.Value, error)

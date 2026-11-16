@@ -63,7 +63,11 @@ type OpsErrorLog struct {
 	UpstreamEndpoint string `json:"upstream_endpoint"`
 	RequestedModel   string `json:"requested_model"`
 	UpstreamModel    string `json:"upstream_model"`
-	RequestType      *int16 `json:"request_type"`
+	RouteAlias       string `json:"route_alias,omitempty"`
+	// LegacyInferred marks historical rows where route_alias was reconstructed
+	// from requested_model because the fact predates alias persistence.
+	LegacyInferred bool   `json:"legacy_inferred,omitempty"`
+	RequestType    *int16 `json:"request_type"`
 
 	// 关联 api_key 名称（LEFT JOIN api_keys 取得；软删只覆盖 key 列，name 保留，故已删 key 仍有原名）。
 	APIKeyName    string `json:"api_key_name,omitempty"`

@@ -75,7 +75,7 @@ func PrincipalFromAuthenticatedSubject() gin.HandlerFunc {
 		authMethod, _ := c.Get("auth_method")
 		method, _ := authMethod.(string)
 		principal := rbac.Principal{
-			Type: rbac.PrincipalUser, UserID: subject.UserID,
+			Type: rbac.PrincipalUser, UserID: subject.UserID, SuperAdmin: subject.SuperAdmin,
 			Status: "active", AuthMethod: method,
 		}
 		if method == "admin_api_key" {

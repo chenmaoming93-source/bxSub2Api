@@ -71,7 +71,10 @@ function providerLabel(provider: EmailOAuthProvider): string {
 }
 
 function startLogin(provider: EmailOAuthProvider): void {
-  const redirectTo = '/welcome'
+  const redirectTo =
+    typeof route.query.redirect === 'string' && route.query.redirect.trim()
+      ? route.query.redirect.trim()
+      : '/welcome'
   const affiliateCode = resolveAffiliateReferralCode(props.affCode, route.query.aff, route.query.aff_code)
   storeOAuthAffiliateCode(affiliateCode)
   window.sessionStorage.setItem(EMAIL_OAUTH_PENDING_PROVIDER_KEY, provider)

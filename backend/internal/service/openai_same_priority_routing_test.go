@@ -123,6 +123,9 @@ func TestOpenAIRouteSamePrioritySelectsLowestRouteLoadRate(t *testing.T) {
 	if selection == nil || selection.Account == nil || selection.Account.ID != 2 {
 		t.Fatalf("selected account=%v, want account 2 with lower same-priority route LoadRate", selection)
 	}
+	if selection.RouteAlias != "test" || selection.UpstreamModel != "upstream-test-model" {
+		t.Fatalf("route attribution alias=%q upstream=%q, want test/upstream-test-model", selection.RouteAlias, selection.UpstreamModel)
+	}
 
 	cache.routeCounts[routeConcurrencyKey(&groupID, "test", 1)] = 10
 	cache.routeCounts[routeConcurrencyKey(&groupID, "test", 2)] = 10

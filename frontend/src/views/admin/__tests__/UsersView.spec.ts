@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 
@@ -223,6 +225,13 @@ describe('admin UsersView', () => {
     resolveSync({ total: 1, ldap_candidates: 1, synced: 1, local_cleared: 0, not_found: 0, failed: 0, duration_ms: 1, started_at: '', finished_at: '' })
     await flushPromises()
     expect(listUsers).toHaveBeenCalledTimes(2)
+  })
+
+  it('does not expose user quota controls for super administrators', () => {
+    const source = readFileSync(resolve(process.cwd(), 'src/views/admin/UsersView.vue'), 'utf8')
+    expect(source).toContain('v-if="!row.is_super_admin"')
+    expect(source).toContain('v-if="!user.is_super_admin"')
+    expect(source).toContain('if (user.is_super_admin) return')
   })
 
 })

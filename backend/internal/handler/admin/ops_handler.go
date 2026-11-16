@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -10,11 +11,30 @@ import (
 	"github.com/Wei-Shaw/sub2api/internal/pkg/response"
 	"github.com/Wei-Shaw/sub2api/internal/server/middleware"
 	"github.com/Wei-Shaw/sub2api/internal/service"
+	"github.com/Wei-Shaw/sub2api/internal/service/observability"
 	"github.com/gin-gonic/gin"
 )
 
 type OpsHandler struct {
-	opsService *service.OpsService
+	opsService            *service.OpsService
+	observabilitySnapshot observabilitySnapshotQuerier
+	observabilityQuery    observabilityQueryQuerier
+	observabilityPath     observabilityPathQuerier
+}
+
+type observabilitySnapshotQuerier interface {
+	Snapshot(ctx context.Context, request service.SnapshotRequest) (service.SnapshotResult, error)
+}
+
+type observabilityQueryQuerier interface {
+	Timeseries(ctx context.Context, request service.ObservabilityQueryRequest) (observability.TimeSeriesResponse, error)
+	LatencyTimeseries(ctx context.Context, request service.ObservabilityQueryRequest) (observability.TimeSeriesResponse, error)
+	Heatmap(ctx context.Context, request service.ObservabilityQueryRequest) (observability.HeatmapResponse, error)
+}
+
+type observabilityPathQuerier interface {
+	Paths(ctx context.Context, query service.ObservabilityPathQuery) (observability.PathsResponse, error)
+	Relations(ctx context.Context, query service.ObservabilityPathQuery) (observability.RelationsResponse, error)
 }
 
 // GetErrorLogByID returns ops error log detail.
@@ -70,6 +90,14 @@ func parseOpsViewParam(c *gin.Context) string {
 
 func NewOpsHandler(opsService *service.OpsService) *OpsHandler {
 	return &OpsHandler{opsService: opsService}
+}
+
+func ProvideOpsHandler(opsService *service.OpsService, snapshot *service.ObservabilitySnapshotService, query *service.ObservabilityQueryService, path *service.ObservabilityPathService) *OpsHandler {
+	h := NewOpsHandler(opsService)
+	h.observabilitySnapshot = snapshot
+	h.observabilityQuery = query
+	h.observabilityPath = path
+	return h
 }
 
 // GetErrorLogs lists ops error logs.

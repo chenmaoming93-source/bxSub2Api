@@ -33,6 +33,7 @@ INSERT INTO ops_error_logs (
   upstream_endpoint,
   requested_model,
   upstream_model,
+  route_alias,
   request_type,
   user_agent,
   error_phase,
@@ -60,7 +61,7 @@ INSERT INTO ops_error_logs (
   deleted_key_name,
   api_key_prefix
 ) VALUES (
-  ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?
+  ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?
 )`
 
 func NewOpsRepository(db *sql.DB) service.OpsRepository {
@@ -146,6 +147,7 @@ func opsInsertErrorLogArgs(input *service.OpsInsertErrorLogInput) []any {
 		opsNullString(input.UpstreamEndpoint),
 		opsNullString(input.RequestedModel),
 		opsNullString(input.UpstreamModel),
+		opsNullString(input.RouteAlias),
 		opsNullInt16(input.RequestType),
 		opsNullString(input.UserAgent),
 		input.ErrorPhase,
@@ -238,6 +240,22 @@ SELECT
   COALESCE(e.upstream_endpoint, ''),
   COALESCE(e.requested_model, ''),
   COALESCE(e.upstream_model, ''),
+  COALESCE(
+    e.route_alias,
+    CASE
+      WHEN e.requested_model IS NOT NULL
+        AND e.requested_model <> ''
+        AND e.requested_model <> e.model
+      THEN e.requested_model
+      ELSE ''
+    END
+  ),
+  (
+    e.route_alias IS NULL
+    AND e.requested_model IS NOT NULL
+    AND e.requested_model <> ''
+    AND e.requested_model <> e.model
+  ),
   e.request_type,
   COALESCE(ak.name, ''),
   ak.deleted_at,
@@ -277,6 +295,8 @@ LIMIT ? OFFSET ?`
 		var apiKeyName string
 		var apiKeyDeletedAt sql.NullTime
 		var deletedKeyName string
+		var routeAlias string
+		var legacyInferred bool
 		if err := rows.Scan(
 			&item.ID,
 			&item.CreatedAt,
@@ -309,6 +329,8 @@ LIMIT ? OFFSET ?`
 			&item.UpstreamEndpoint,
 			&item.RequestedModel,
 			&item.UpstreamModel,
+			&routeAlias,
+			&legacyInferred,
 			&requestType,
 			&apiKeyName,
 			&apiKeyDeletedAt,
@@ -353,6 +375,8 @@ LIMIT ? OFFSET ?`
 			v := int16(requestType.Int64)
 			item.RequestType = &v
 		}
+		item.RouteAlias = routeAlias
+		item.LegacyInferred = legacyInferred
 		if apiKeyName != "" {
 			item.APIKeyName = apiKeyName
 		} else {
@@ -419,6 +443,22 @@ SELECT
   COALESCE(e.upstream_endpoint, ''),
   COALESCE(e.requested_model, ''),
   COALESCE(e.upstream_model, ''),
+  COALESCE(
+    e.route_alias,
+    CASE
+      WHEN e.requested_model IS NOT NULL
+        AND e.requested_model <> ''
+        AND e.requested_model <> e.model
+      THEN e.requested_model
+      ELSE ''
+    END
+  ),
+  (
+    e.route_alias IS NULL
+    AND e.requested_model IS NOT NULL
+    AND e.requested_model <> ''
+    AND e.requested_model <> e.model
+  ),
   e.request_type,
   COALESCE(e.user_agent, ''),
   e.auth_latency_ms,
@@ -499,6 +539,8 @@ LIMIT 1`
 		&out.UpstreamEndpoint,
 		&out.RequestedModel,
 		&out.UpstreamModel,
+		&out.RouteAlias,
+		&out.LegacyInferred,
 		&requestType,
 		&out.UserAgent,
 		&authLatency,
