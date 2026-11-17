@@ -40,7 +40,8 @@ func (concurrencyHeatmapStub) QueryHistory(_ context.Context, filter service.Con
 		Available: true, QualityStatus: "healthy",
 		Rows: []service.ConcurrencyHistoryRow{{
 			BucketStart: bucket, SampleKind: service.ConcurrencySampleKindRoute,
-			AccountID: 101, GroupID: 7, RouteAlias: "coding", CurrentPeak: 5, EffectiveLimit: 10,
+			AccountID: 101, GroupID: 7, RouteAlias: "coding", DimensionName: "coding-group",
+			CurrentPeak: 5, EffectiveLimit: 10,
 			PeakRatioActual: 8, PeakRatioLimit: 10, PeakRatioSampleAt: bucket.Add(42 * time.Second),
 		}},
 	}, nil
@@ -54,7 +55,7 @@ func (zeroConcurrencyHeatmapStub) QueryHistory(_ context.Context, filter service
 		Available: true, QualityStatus: "healthy",
 		Rows: []service.ConcurrencyHistoryRow{{
 			BucketStart: bucket, SampleKind: service.ConcurrencySampleKindRoute,
-			AccountID: 101, GroupID: 7, RouteAlias: "coding",
+			AccountID: 101, GroupID: 7, RouteAlias: "coding", DimensionName: "coding-group",
 			CurrentPeak: 0, EffectiveLimit: 10, PeakRatioActual: 0, PeakRatioLimit: 10,
 			PeakRatioSampleAt: bucket.Add(42 * time.Second),
 		}},
@@ -107,6 +108,19 @@ func (s *queryRollupLoaderStub) LoadSnapshotSeries(_ context.Context, _, end tim
 	}, nil
 }
 
+func (s *queryRollupLoaderStub) LoadSnapshotDimensionNames(_ context.Context, dimension string, _ []int64) (map[int64]string, error) {
+	switch dimension {
+	case "user_id":
+		return map[int64]string{1: "user@example.com"}, nil
+	case "group_id":
+		return map[int64]string{7: "coding", 8: "testing"}, nil
+	case "account_id":
+		return map[int64]string{101: "claude-main"}, nil
+	default:
+		return nil, nil
+	}
+}
+
 func TestObservabilityQueryGroupByKeepsCanonicalSummary(t *testing.T) {
 	loader := &queryRollupLoaderStub{now: time.Now().UTC()}
 	query := service.NewObservabilityQueryService(loader, nil)
@@ -132,6 +146,7 @@ func TestObservabilityQueryGroupByKeepsCanonicalSummary(t *testing.T) {
 	heatmap, err := query.Heatmap(context.Background(), heatmapRequest)
 	require.NoError(t, err)
 	require.True(t, heatmap.Available)
+	require.Equal(t, map[string]string{"7": "coding"}, heatmap.RowNames)
 	require.NotEmpty(t, heatmap.Cells)
 	foundErrorRate := false
 	for _, cell := range heatmap.Cells {
@@ -160,8 +175,22 @@ func TestObservabilityUserRequestHeatmap(t *testing.T) {
 		require.NoError(t, err)
 		require.True(t, response.Available)
 		require.Equal(t, []string{"1"}, response.Rows)
+		require.Equal(t, map[string]string{"1": "user@example.com"}, response.RowNames)
 		require.NotEmpty(t, response.Cells)
 	}
+}
+
+func TestObservabilityGroupRequestHeatmapReturnsRowNames(t *testing.T) {
+	loader := &queryRollupLoaderStub{now: time.Now().UTC()}
+	query := service.NewObservabilityQueryService(loader, nil)
+
+	response, err := query.Heatmap(context.Background(), service.ObservabilityQueryRequest{
+		Window: observability.Window1h, Bucket: observability.Bucket5m,
+		GroupBy: "group_id", ValueKind: "error_rate",
+	})
+	require.NoError(t, err)
+	require.Equal(t, []string{"7"}, response.Rows)
+	require.Equal(t, map[string]string{"7": "coding"}, response.RowNames)
 }
 
 func TestObservabilityQueryUnavailableStatesAndDSTLabels(t *testing.T) {
@@ -192,6 +221,7 @@ func TestObservabilityQuerySampledConcurrencyHeatmapUsesPersistedPeak(t *testing
 	require.NoError(t, err)
 	require.True(t, response.Available)
 	require.Equal(t, []string{"7"}, response.Rows)
+	require.Equal(t, map[string]string{"7": "coding-group"}, response.RowNames)
 	found := false
 	for _, cell := range response.Cells {
 		if cell.ActualConcurrency == 8 && cell.ConcurrencyLimit == 10 && cell.Value == 0.8 {

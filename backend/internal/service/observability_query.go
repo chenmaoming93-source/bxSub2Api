@@ -349,7 +349,27 @@ func (s *ObservabilityQueryService) requestHeatmap(ctx context.Context, request 
 		return observability.HeatmapResponse{}, err
 	}
 	grouped := groupSeriesByBucket(rows, prepared.plan)
-	response := observability.HeatmapResponse{Meta: prepared.meta, ValueKind: valueKind, Available: true, Columns: planLabels(prepared.plan)}
+	rowNames := make(map[string]string)
+	if groupBy == "route_alias" {
+		for _, row := range selected {
+			if alias := strings.TrimSpace(row.RouteAlias); alias != "" {
+				rowNames[alias] = alias
+			}
+		}
+	} else if labelLoader, ok := s.loader.(SnapshotDimensionNameLoader); ok && len(ids) > 0 {
+		if names, lookupErr := labelLoader.LoadSnapshotDimensionNames(ctx, groupBy, ids); lookupErr == nil {
+			for _, row := range selected {
+				key := strconv.FormatInt(row.ID, 10)
+				if name := strings.TrimSpace(names[row.ID]); name != "" {
+					rowNames[key] = name
+				}
+			}
+		}
+	}
+	response := observability.HeatmapResponse{
+		Meta: prepared.meta, ValueKind: valueKind, Available: true,
+		Columns: planLabels(prepared.plan), RowNames: rowNames,
+	}
 	seen := make(map[string]struct{})
 	for index := range selected {
 		key := dimensionSeriesKey(selected[index])
@@ -358,6 +378,11 @@ func (s *ObservabilityQueryService) requestHeatmap(ctx context.Context, request 
 		}
 		seen[key] = struct{}{}
 		response.Rows = append(response.Rows, key)
+	}
+	for key := range rowNames {
+		if _, exists := seen[key]; !exists {
+			delete(rowNames, key)
+		}
 	}
 	sort.Strings(response.Rows)
 	for _, rowKey := range response.Rows {
@@ -433,6 +458,7 @@ func (s *ObservabilityQueryService) concurrencyHeatmap(ctx context.Context, requ
 	}
 	values := make(map[cellKey]heatValue)
 	rowSeen := make(map[string]struct{})
+	rowNames := make(map[string]string)
 	for _, row := range history.Rows {
 		if groupBy == "account_id" && row.SampleKind != ConcurrencySampleKindAccount {
 			continue
@@ -445,6 +471,9 @@ func (s *ObservabilityQueryService) concurrencyHeatmap(ctx context.Context, requ
 			continue
 		}
 		rowSeen[key] = struct{}{}
+		if name := strings.TrimSpace(row.DimensionName); name != "" {
+			rowNames[key] = name
+		}
 		column := alignAPIBucket(row.BucketStart, request.Bucket)
 		keyCell := cellKey{row: key, column: column}
 		actual, limit, sampledAt := row.PeakRatioActual, row.PeakRatioLimit, row.PeakRatioSampleAt
@@ -462,7 +491,7 @@ func (s *ObservabilityQueryService) concurrencyHeatmap(ctx context.Context, requ
 	}
 	response := observability.HeatmapResponse{
 		Meta: prepared.meta, ValueKind: "sampled_concurrency",
-		Columns: planLabels(prepared.plan), Available: history.Available,
+		Columns: planLabels(prepared.plan), Available: history.Available, RowNames: rowNames,
 	}
 	for row := range rowSeen {
 		response.Rows = append(response.Rows, row)

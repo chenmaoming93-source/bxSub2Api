@@ -142,6 +142,7 @@ export interface HeatmapResponse {
   value_kind: string
   available: boolean
   rows: string[]
+  row_names?: Record<string, string>
   columns: string[]
   cells: HeatmapCell[]
 }

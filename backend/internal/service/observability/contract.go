@@ -541,12 +541,13 @@ type HeatmapCell struct {
 }
 
 type HeatmapResponse struct {
-	Meta      Meta          `json:"meta"`
-	ValueKind string        `json:"value_kind"`
-	Available bool          `json:"available"`
-	Rows      []string      `json:"rows"`
-	Columns   []string      `json:"columns"`
-	Cells     []HeatmapCell `json:"cells"`
+	Meta      Meta              `json:"meta"`
+	ValueKind string            `json:"value_kind"`
+	Available bool              `json:"available"`
+	Rows      []string          `json:"rows"`
+	RowNames  map[string]string `json:"row_names,omitempty"`
+	Columns   []string          `json:"columns"`
+	Cells     []HeatmapCell     `json:"cells"`
 }
 
 type PathRow struct {

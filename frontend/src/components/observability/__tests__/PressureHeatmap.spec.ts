@@ -71,6 +71,25 @@ describe('PressureHeatmap', () => {
     expect(wrapper.emitted('select')?.[0]?.[0]).toMatchObject({ row: '7' })
   })
 
+  it('prefers row names supplied by the heatmap response', () => {
+    const response: HeatmapResponse = {
+      meta, value_kind: 'sampled_concurrency', available: true,
+      rows: ['11'], row_names: { '11': '研发分组' }, columns: ['10:00'],
+      cells: [{
+        row: '11', column: '10:00', value: 0, available: true,
+        actual_concurrency: 0, concurrency_limit: 20,
+      }],
+    }
+    const wrapper = mount(PressureHeatmap, {
+      props: {
+        response,
+        valueKind: 'sampled_concurrency',
+        rowLabels: { '11': '错误的旧名称' },
+      },
+    })
+    expect(wrapper.get('tbody th').text()).toBe('研发分组')
+  })
+
   it('explains the error-rate metric on hover', () => {
     const wrapper = mount(PressureHeatmap, {
       props: {

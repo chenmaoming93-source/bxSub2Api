@@ -225,6 +225,14 @@ ORDER BY bucket_start, dimension_id`, column, where, groupBy)
 	return out, rows.Err()
 }
 
+func (r *observabilitySnapshotRepository) LoadSnapshotDimensionNames(
+	ctx context.Context,
+	dimension string,
+	ids []int64,
+) (map[int64]string, error) {
+	return loadObservabilityDimensionNames(ctx, r.db, dimension, ids)
+}
+
 func (r *observabilitySnapshotRepository) loadSnapshotDimension(
 	ctx context.Context,
 	start, end time.Time,

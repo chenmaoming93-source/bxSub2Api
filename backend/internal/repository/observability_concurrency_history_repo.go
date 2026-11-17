@@ -292,7 +292,37 @@ WHERE ` + outerWhere + `
 ORDER BY bucket_start, sample_kind, account_id, group_id, route_alias`
 	args = append(args, sampleKind)
 	args = append(args, inArgs...)
-	return r.queryConcurrencyHistoryRows(ctx, query, args...)
+	history, err := r.queryConcurrencyHistoryRows(ctx, query, args...)
+	if err != nil {
+		return nil, err
+	}
+	if groupBy == "route" {
+		for index := range history {
+			history[index].DimensionName = history[index].RouteAlias
+		}
+		return history, nil
+	}
+
+	dimension := "group_id"
+	ids := make([]int64, 0, len(history))
+	for index := range history {
+		if groupBy == "account_id" {
+			dimension = "account_id"
+			ids = append(ids, history[index].AccountID)
+		} else {
+			ids = append(ids, history[index].GroupID)
+		}
+	}
+	if names, lookupErr := loadObservabilityDimensionNames(ctx, r.db, dimension, ids); lookupErr == nil {
+		for index := range history {
+			key := history[index].GroupID
+			if groupBy == "account_id" {
+				key = history[index].AccountID
+			}
+			history[index].DimensionName = names[key]
+		}
+	}
+	return history, nil
 }
 
 func concurrencyHistoryQuery(filter service.ConcurrencyHistoryFilter, sampledDimension string) (string, []any) {

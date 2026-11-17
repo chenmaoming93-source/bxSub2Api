@@ -31,6 +31,7 @@ type ConcurrencyAggregate struct {
 	BucketStart       time.Time
 	SampleKind        string
 	DimensionHash     string
+	DimensionName     string
 	AccountID         int64
 	GroupID           int64
 	RouteAlias        string

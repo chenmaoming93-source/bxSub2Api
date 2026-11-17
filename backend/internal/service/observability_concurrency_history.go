@@ -421,6 +421,22 @@ func (s *ConcurrencyHistoryService) QueryHistory(ctx context.Context, filter Con
 	return ConcurrencyHistoryResult{Rows: rows, Available: len(rows) > 0, QualityStatus: status}, nil
 }
 
+// QueryConcurrencyHeatmapHistory delegates to repositories that can bound the
+// heatmap to the busiest dimensions before loading their full time series.
+func (s *ConcurrencyHistoryService) QueryConcurrencyHeatmapHistory(
+	ctx context.Context,
+	filter ConcurrencyHistoryFilter,
+	groupBy string,
+	limit int,
+) ([]ConcurrencyHistoryRow, error) {
+	if bounded, ok := s.repo.(interface {
+		QueryConcurrencyHeatmapHistory(context.Context, ConcurrencyHistoryFilter, string, int) ([]ConcurrencyHistoryRow, error)
+	}); ok {
+		return bounded.QueryConcurrencyHeatmapHistory(ctx, filter, groupBy, limit)
+	}
+	return s.repo.QueryConcurrencyHistory(ctx, filter)
+}
+
 func (s *ConcurrencyHistoryService) SamplerState(ctx context.Context) (ConcurrencySamplerState, error) {
 	return s.repo.GetConcurrencySamplerState(ctx)
 }

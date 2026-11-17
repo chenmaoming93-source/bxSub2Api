@@ -77,6 +77,10 @@ type SnapshotRollupLoader interface {
 	LoadSnapshotSeries(ctx context.Context, start, end time.Time, bucket observability.Bucket, filter observability.Filter, dimension string, selectedIDs []int64, selectedAliases []string) ([]SnapshotSeriesBucket, error)
 }
 
+type SnapshotDimensionNameLoader interface {
+	LoadSnapshotDimensionNames(ctx context.Context, dimension string, ids []int64) (map[int64]string, error)
+}
+
 type SnapshotConcurrencyReader interface {
 	CollectCurrent(ctx context.Context, sampledAt time.Time) ([]ConcurrencyCurrentValue, error)
 	QueryHistory(ctx context.Context, filter ConcurrencyHistoryFilter) (ConcurrencyHistoryResult, error)

@@ -130,7 +130,7 @@ function formatValue(value: number) {
 }
 
 function rowLabel(row: string) {
-  return props.rowLabels?.[row] || row
+  return props.response?.row_names?.[row] || props.rowLabels?.[row] || row
 }
 
 function tooltipTitle(row: string, columnIndex: number, cell: HeatmapMatrix['cells'][number][number]) {
