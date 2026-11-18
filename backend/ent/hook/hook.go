@@ -165,6 +165,210 @@ func (f GroupFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.GroupMutation", m)
 }
 
+// The GrowthAccountLedgerFunc type is an adapter to allow the use of ordinary
+// function as GrowthAccountLedger mutator.
+type GrowthAccountLedgerFunc func(context.Context, *ent.GrowthAccountLedgerMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f GrowthAccountLedgerFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.GrowthAccountLedgerMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.GrowthAccountLedgerMutation", m)
+}
+
+// The GrowthAdminAuditFunc type is an adapter to allow the use of ordinary
+// function as GrowthAdminAudit mutator.
+type GrowthAdminAuditFunc func(context.Context, *ent.GrowthAdminAuditMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f GrowthAdminAuditFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.GrowthAdminAuditMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.GrowthAdminAuditMutation", m)
+}
+
+// The GrowthBudgetFunc type is an adapter to allow the use of ordinary
+// function as GrowthBudget mutator.
+type GrowthBudgetFunc func(context.Context, *ent.GrowthBudgetMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f GrowthBudgetFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.GrowthBudgetMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.GrowthBudgetMutation", m)
+}
+
+// The GrowthBudgetEntryFunc type is an adapter to allow the use of ordinary
+// function as GrowthBudgetEntry mutator.
+type GrowthBudgetEntryFunc func(context.Context, *ent.GrowthBudgetEntryMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f GrowthBudgetEntryFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.GrowthBudgetEntryMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.GrowthBudgetEntryMutation", m)
+}
+
+// The GrowthCompletionRequestFunc type is an adapter to allow the use of ordinary
+// function as GrowthCompletionRequest mutator.
+type GrowthCompletionRequestFunc func(context.Context, *ent.GrowthCompletionRequestMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f GrowthCompletionRequestFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.GrowthCompletionRequestMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.GrowthCompletionRequestMutation", m)
+}
+
+// The GrowthExchangeOrderFunc type is an adapter to allow the use of ordinary
+// function as GrowthExchangeOrder mutator.
+type GrowthExchangeOrderFunc func(context.Context, *ent.GrowthExchangeOrderMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f GrowthExchangeOrderFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.GrowthExchangeOrderMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.GrowthExchangeOrderMutation", m)
+}
+
+// The GrowthFulfillmentJobFunc type is an adapter to allow the use of ordinary
+// function as GrowthFulfillmentJob mutator.
+type GrowthFulfillmentJobFunc func(context.Context, *ent.GrowthFulfillmentJobMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f GrowthFulfillmentJobFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.GrowthFulfillmentJobMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.GrowthFulfillmentJobMutation", m)
+}
+
+// The GrowthInventoryLedgerFunc type is an adapter to allow the use of ordinary
+// function as GrowthInventoryLedger mutator.
+type GrowthInventoryLedgerFunc func(context.Context, *ent.GrowthInventoryLedgerMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f GrowthInventoryLedgerFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.GrowthInventoryLedgerMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.GrowthInventoryLedgerMutation", m)
+}
+
+// The GrowthProductFunc type is an adapter to allow the use of ordinary
+// function as GrowthProduct mutator.
+type GrowthProductFunc func(context.Context, *ent.GrowthProductMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f GrowthProductFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.GrowthProductMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.GrowthProductMutation", m)
+}
+
+// The GrowthProductInventoryFunc type is an adapter to allow the use of ordinary
+// function as GrowthProductInventory mutator.
+type GrowthProductInventoryFunc func(context.Context, *ent.GrowthProductInventoryMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f GrowthProductInventoryFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.GrowthProductInventoryMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.GrowthProductInventoryMutation", m)
+}
+
+// The GrowthProductVersionFunc type is an adapter to allow the use of ordinary
+// function as GrowthProductVersion mutator.
+type GrowthProductVersionFunc func(context.Context, *ent.GrowthProductVersionMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f GrowthProductVersionFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.GrowthProductVersionMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.GrowthProductVersionMutation", m)
+}
+
+// The GrowthRewardClaimFunc type is an adapter to allow the use of ordinary
+// function as GrowthRewardClaim mutator.
+type GrowthRewardClaimFunc func(context.Context, *ent.GrowthRewardClaimMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f GrowthRewardClaimFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.GrowthRewardClaimMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.GrowthRewardClaimMutation", m)
+}
+
+// The GrowthTaskFunc type is an adapter to allow the use of ordinary
+// function as GrowthTask mutator.
+type GrowthTaskFunc func(context.Context, *ent.GrowthTaskMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f GrowthTaskFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.GrowthTaskMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.GrowthTaskMutation", m)
+}
+
+// The GrowthTaskRuleFunc type is an adapter to allow the use of ordinary
+// function as GrowthTaskRule mutator.
+type GrowthTaskRuleFunc func(context.Context, *ent.GrowthTaskRuleMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f GrowthTaskRuleFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.GrowthTaskRuleMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.GrowthTaskRuleMutation", m)
+}
+
+// The GrowthTransferFunc type is an adapter to allow the use of ordinary
+// function as GrowthTransfer mutator.
+type GrowthTransferFunc func(context.Context, *ent.GrowthTransferMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f GrowthTransferFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.GrowthTransferMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.GrowthTransferMutation", m)
+}
+
+// The GrowthUserTaskFunc type is an adapter to allow the use of ordinary
+// function as GrowthUserTask mutator.
+type GrowthUserTaskFunc func(context.Context, *ent.GrowthUserTaskMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f GrowthUserTaskFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.GrowthUserTaskMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.GrowthUserTaskMutation", m)
+}
+
+// The GrowthWalletFunc type is an adapter to allow the use of ordinary
+// function as GrowthWallet mutator.
+type GrowthWalletFunc func(context.Context, *ent.GrowthWalletMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f GrowthWalletFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.GrowthWalletMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.GrowthWalletMutation", m)
+}
+
 // The IdempotencyRecordFunc type is an adapter to allow the use of ordinary
 // function as IdempotencyRecord mutator.
 type IdempotencyRecordFunc func(context.Context, *ent.IdempotencyRecordMutation) (ent.Value, error)

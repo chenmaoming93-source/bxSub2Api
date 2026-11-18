@@ -1,3 +1,5 @@
+import growth from './growth.en'
+
 export default {
   // Home Page
   home: {
@@ -7692,5 +7694,5 @@ export default {
       },
     },
   },
-
+  growth,
 }

@@ -177,15 +177,15 @@ func (h *ProvisioningHardening) Middleware() gin.HandlerFunc {
 		// Business-call rate limit (skipped when limiter is nil).
 		if h.limiter != nil {
 			ip := c.ClientIP()
-		if ip == "" {
-			ip = "unknown"
-		}
-		if !h.limiter.AllowBiz(ip) {
-			slog.Warn("provisioning rate limit exceeded",
-				slog.String("event", "provisioning.rate_limit"),
-				slog.String("source_ip", ip),
-			)
-			AbortWithError(c, http.StatusTooManyRequests, "RATE_LIMITED", "Too many requests, please try again later")
+			if ip == "" {
+				ip = "unknown"
+			}
+			if !h.limiter.AllowBiz(ip) {
+				slog.Warn("provisioning rate limit exceeded",
+					slog.String("event", "provisioning.rate_limit"),
+					slog.String("source_ip", ip),
+				)
+				AbortWithError(c, http.StatusTooManyRequests, "RATE_LIMITED", "Too many requests, please try again later")
 				return
 			}
 		}

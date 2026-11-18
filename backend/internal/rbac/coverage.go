@@ -77,6 +77,8 @@ func exclusionReason(path string) string {
 		return "payment provider signature trust boundary"
 	case strings.HasPrefix(path, "/api/v1/integrations/"):
 		return "external integration key trust boundary"
+	case strings.HasPrefix(path, "/api/v1/growth/"):
+		return "internal growth trust boundary (SM2 encrypted payload, no identity auth)"
 	case strings.HasPrefix(path, "/v1/"), strings.HasPrefix(path, "/v1beta/"),
 		strings.HasPrefix(path, "/anthropic/"), strings.HasPrefix(path, "/antigravity/"),
 		path == "/responses", strings.HasPrefix(path, "/responses/"),

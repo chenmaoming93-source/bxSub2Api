@@ -158,6 +158,15 @@ docs/*
 !docs/token-statistics-development-guide.md
 !docs/token-statistics-operation-guide.md
 !docs/token-statistics-acceptance-report.md
+!docs/GROWTH_PLAN_DESIGN.md
+!docs/GROWTH_PLAN_AIWORK_API.md
+!docs/GROWTH_PLAN_AIWORK_DEV.md
+!docs/GROWTH_PLAN_SUB2API_DEV.md
+!docs/GROWTH_PLAN_PAGES_DESIGN.md
+!docs/GROWTH_PLAN_EXTERNAL_API_EXAMPLES.md
+!docs/GROWTH_PLAN_RELEASE_CHANGES.md
+!docs/prototype/
+!docs/prototype/*.html
 !docs/legal/
 !docs/legal/*.md
 .serena/

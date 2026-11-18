@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	growthservice "github.com/Wei-Shaw/sub2api/internal/service/growth"
 	"github.com/gin-gonic/gin"
 	"github.com/google/wire"
 )
@@ -24,4 +25,6 @@ var ProviderSet = wire.NewSet(
 	NewAdminAuthMiddleware,
 	NewAdminIdentityAuthMiddleware,
 	NewAPIKeyAuthMiddleware,
+	growthservice.NewRedisNonceCache,
+	NewGrowthPayloadDecryptor,
 )

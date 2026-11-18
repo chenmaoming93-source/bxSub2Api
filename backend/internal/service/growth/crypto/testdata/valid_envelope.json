@@ -1,0 +1,7 @@
+{
+  "kid": "growth-sm2-v1",
+  "encrypted_key": "BLGAq7XMxc2QK01aONMRcoynoIyWs6Wjni8aEDIbOSEpx/toJT6mGyOdKUf0jQswBX0gkciCAmtFz4KY6ZQ/2tuLBL3+eTnaAMI97y6hIAk0p/wU30Iwt1jv91wWTG9Ux1pBj8SLsIrdtciRquSQ9Yc=",
+  "iv": "ZmVkY2JhOTg3NjU0MzIxMA==",
+  "ciphertext": "9PZTJTjl+KiXCJZdVOiexWdRGJwiZk+ZAGZHtwnqIG1KQHnnHiF2FCHVdg5PKHFCg6LyA0o6epJmP4Rz2e0Vxdhe1jKcRzxvs81SRAUYCdSyhf8NTzLrVL6n6G58OlZxn383x19I3Hh67hHRxmGoP6Hh+jCw5IUhr4InpEYlyZd5xNMjaZaiR4H4YjL2lA60Yvo58qNTVxYTeUz8k0Bh5LEJqLSP9r1Wbms7Dkya9KOO/gly82abIatydeACWoXQSZScXpyKp+zHF/5FbTlNN9L2g0HzEabvEyNB4qdicjLANoDSVjc3HMLg0Q7bOjZJ",
+  "mac": "dq8pdJRcgEgS8asLDUoKjePIbNMn9AezR5Kx53Au29Y="
+}

@@ -13,6 +13,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/internal/config"
 	"github.com/Wei-Shaw/sub2api/internal/handler"
 	"github.com/Wei-Shaw/sub2api/internal/handler/admin"
+	growth2 "github.com/Wei-Shaw/sub2api/internal/handler/growth"
 	"github.com/Wei-Shaw/sub2api/internal/payment"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/ldapauth"
 	"github.com/Wei-Shaw/sub2api/internal/rbac"
@@ -21,6 +22,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/internal/server"
 	"github.com/Wei-Shaw/sub2api/internal/server/middleware"
 	"github.com/Wei-Shaw/sub2api/internal/service"
+	"github.com/Wei-Shaw/sub2api/internal/service/growth"
 	"github.com/Wei-Shaw/sub2api/internal/service/tokenstat"
 	"github.com/redis/go-redis/v9"
 	"log"
@@ -163,6 +165,17 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 	usageHandler := handler.NewUsageHandler(usageService, apiKeyService, opsService, settingService)
 	redeemHandler := handler.NewRedeemHandler(redeemService)
 	subscriptionHandler := handler.NewSubscriptionHandler(subscriptionService)
+	budgetService := growth.NewBudgetService(client)
+	taskService := growth.NewTaskService(client)
+	productService := growth.NewProductService(client)
+	readService := growth.NewReadService(client, configConfig)
+	transferService := growth.NewTransferService(client)
+	checkinService := growth.NewCheckinService(client, transferService, configConfig)
+	completionService := growth.NewCompletionService(client, transferService, configConfig)
+	orderService := growth.NewOrderService(client, transferService)
+	fulfillmentService := growth.NewFulfillmentService(client, transferService)
+	adminGrowthService := growth.NewAdminGrowthService(client, transferService)
+	growthHandler := growth2.NewHandler(budgetService, taskService, productService, readService, checkinService, completionService, orderService, fulfillmentService, adminGrowthService)
 	announcementRepository := repository.NewAnnouncementRepository(client)
 	announcementReadRepository := repository.NewAnnouncementReadRepository(client)
 	announcementService := service.NewAnnouncementService(announcementRepository, announcementReadRepository, userRepository, userSubscriptionRepository)
@@ -302,13 +315,15 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 	externalSceneAccountDailyUsageHandler := handler.NewExternalSceneAccountDailyUsageHandler(sceneAccountDailyUsageService)
 	idempotencyCoordinator := service.ProvideIdempotencyCoordinator(idempotencyRepository, configConfig)
 	idempotencyCleanupService := service.ProvideIdempotencyCleanupService(idempotencyRepository, configConfig)
-	handlers := handler.ProvideHandlers(authHandler, userHandler, apiKeyHandler, usageHandler, redeemHandler, subscriptionHandler, announcementHandler, channelMonitorUserHandler, adminHandlers, gatewayHandler, openAIGatewayHandler, securityCheckService, securityConfigProvider, securityCheckCollector, groupRepository, handlerSettingHandler, totpHandler, handlerPaymentHandler, paymentWebhookHandler, availableChannelHandler, externalProvisioningHandler, externalTokenUsageHandler, externalSceneAccountDailyUsageHandler, idempotencyCoordinator, idempotencyCleanupService)
+	handlers := handler.ProvideHandlers(authHandler, userHandler, apiKeyHandler, usageHandler, redeemHandler, subscriptionHandler, growthHandler, announcementHandler, channelMonitorUserHandler, adminHandlers, gatewayHandler, openAIGatewayHandler, securityCheckService, securityConfigProvider, securityCheckCollector, groupRepository, handlerSettingHandler, totpHandler, handlerPaymentHandler, paymentWebhookHandler, availableChannelHandler, externalProvisioningHandler, externalTokenUsageHandler, externalSceneAccountDailyUsageHandler, idempotencyCoordinator, idempotencyCleanupService)
 	jwtAuthMiddleware := middleware.NewJWTAuthMiddleware(authService, userService)
 	adminAuthMiddleware := middleware.NewAdminAuthMiddleware(authService, userService, settingService)
 	adminIdentityAuthMiddleware := middleware.NewAdminIdentityAuthMiddleware(authService, userService, settingService)
 	apiKeyAuthMiddleware := middleware.NewAPIKeyAuthMiddleware(apiKeyService, subscriptionService, configConfig)
+	redisNonceCache := growth.NewRedisNonceCache(redisClient, configConfig)
+	growthPayloadDecryptor := middleware.NewGrowthPayloadDecryptor(userRepository, redisNonceCache, configConfig)
 	rbacRegistry := rbac.NewRegistry()
-	engine := server.ProvideRouter(configConfig, handlers, jwtAuthMiddleware, adminAuthMiddleware, adminIdentityAuthMiddleware, apiKeyAuthMiddleware, apiKeyService, subscriptionService, opsService, settingService, redisClient, permissionService, rbacRegistry)
+	engine := server.ProvideRouter(configConfig, handlers, jwtAuthMiddleware, adminAuthMiddleware, adminIdentityAuthMiddleware, apiKeyAuthMiddleware, growthPayloadDecryptor, apiKeyService, subscriptionService, opsService, settingService, redisClient, permissionService, rbacRegistry)
 	httpServer := server.ProvideHTTPServer(configConfig, engine)
 	mainDynamicTokenStatisticsBootstrap, err := provideDynamicTokenStatisticsBootstrap(client, tokenstatRepository, redisClient, configConfig, projectionAdminService)
 	if err != nil {
@@ -329,7 +344,7 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 	paymentOrderExpiryService := service.ProvidePaymentOrderExpiryService(paymentService, leaderLockCache, db)
 	channelMonitorRunner := service.ProvideChannelMonitorRunner(channelMonitorService, settingService)
 	userPlatformQuotaUsageFlusher := service.ProvideUserPlatformQuotaUsageFlusher(configConfig, billingCache, serviceUserPlatformQuotaRepository, timingWheelService)
-	v := provideCleanup(mainDynamicTokenStatisticsBootstrap, client, redisClient, opsMetricsCollector, opsAggregationService, opsAlertEvaluatorService, opsCleanupService, opsScheduledReportService, opsSystemLogSink, schedulerSnapshotService, tokenRefreshService, accountExpiryService, proxyExpiryService, subscriptionExpiryService, usageCleanupService, observabilityRequestRollupService, concurrencyHistoryService, idempotencyCleanupService, pricingService, emailQueueService, billingCacheService, usageRecordWorkerPool, subscriptionService, oAuthService, openAIOAuthService, geminiOAuthService, antigravityOAuthService, openAIGatewayService, scheduledTestRunnerService, modelRouteConcurrencyScheduleRefresher, backupService, paymentOrderExpiryService, channelMonitorRunner, userPlatformQuotaUsageFlusher)
+	v := provideCleanup(mainDynamicTokenStatisticsBootstrap, client, redisClient, opsMetricsCollector, opsAggregationService, opsAlertEvaluatorService, opsCleanupService, opsScheduledReportService, opsSystemLogSink, schedulerSnapshotService, tokenRefreshService, accountExpiryService, proxyExpiryService, subscriptionExpiryService, usageCleanupService, observabilityRequestRollupService, concurrencyHistoryService, idempotencyCleanupService, pricingService, emailQueueService, billingCacheService, usageRecordWorkerPool, subscriptionService, oAuthService, openAIOAuthService, geminiOAuthService, antigravityOAuthService, openAIGatewayService, scheduledTestRunnerService, modelRouteConcurrencyScheduleRefresher, backupService, paymentOrderExpiryService, channelMonitorRunner, userPlatformQuotaUsageFlusher, fulfillmentService)
 	application := &Application{
 		Server:  httpServer,
 		Cleanup: v,
@@ -470,6 +485,7 @@ func provideCleanup(
 	paymentOrderExpiry *service.PaymentOrderExpiryService,
 	channelMonitorRunner *service.ChannelMonitorRunner,
 	quotaFlusher *service.UserPlatformQuotaUsageFlusher,
+	growthFulfillment *growth.FulfillmentService,
 ) func() {
 	return func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -642,6 +658,12 @@ func provideCleanup(
 			{"UserPlatformQuotaUsageFlusher", func() error {
 				if quotaFlusher != nil {
 					quotaFlusher.Stop()
+				}
+				return nil
+			}},
+			{"GrowthFulfillmentService", func() error {
+				if growthFulfillment != nil {
+					growthFulfillment.Stop()
 				}
 				return nil
 			}},

@@ -21,6 +21,23 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/channelmonitorrequesttemplate"
 	"github.com/Wei-Shaw/sub2api/ent/errorpassthroughrule"
 	"github.com/Wei-Shaw/sub2api/ent/group"
+	"github.com/Wei-Shaw/sub2api/ent/growthaccountledger"
+	"github.com/Wei-Shaw/sub2api/ent/growthadminaudit"
+	"github.com/Wei-Shaw/sub2api/ent/growthbudget"
+	"github.com/Wei-Shaw/sub2api/ent/growthbudgetentry"
+	"github.com/Wei-Shaw/sub2api/ent/growthcompletionrequest"
+	"github.com/Wei-Shaw/sub2api/ent/growthexchangeorder"
+	"github.com/Wei-Shaw/sub2api/ent/growthfulfillmentjob"
+	"github.com/Wei-Shaw/sub2api/ent/growthinventoryledger"
+	"github.com/Wei-Shaw/sub2api/ent/growthproduct"
+	"github.com/Wei-Shaw/sub2api/ent/growthproductinventory"
+	"github.com/Wei-Shaw/sub2api/ent/growthproductversion"
+	"github.com/Wei-Shaw/sub2api/ent/growthrewardclaim"
+	"github.com/Wei-Shaw/sub2api/ent/growthtask"
+	"github.com/Wei-Shaw/sub2api/ent/growthtaskrule"
+	"github.com/Wei-Shaw/sub2api/ent/growthtransfer"
+	"github.com/Wei-Shaw/sub2api/ent/growthusertask"
+	"github.com/Wei-Shaw/sub2api/ent/growthwallet"
 	"github.com/Wei-Shaw/sub2api/ent/idempotencyrecord"
 	"github.com/Wei-Shaw/sub2api/ent/identityadoptiondecision"
 	"github.com/Wei-Shaw/sub2api/ent/observabilityconcurrencybucket"
@@ -466,6 +483,465 @@ func (f TraverseGroup) Traverse(ctx context.Context, q ent.Query) error {
 		return f(ctx, q)
 	}
 	return fmt.Errorf("unexpected query type %T. expect *ent.GroupQuery", q)
+}
+
+// The GrowthAccountLedgerFunc type is an adapter to allow the use of ordinary function as a Querier.
+type GrowthAccountLedgerFunc func(context.Context, *ent.GrowthAccountLedgerQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f GrowthAccountLedgerFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.GrowthAccountLedgerQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.GrowthAccountLedgerQuery", q)
+}
+
+// The TraverseGrowthAccountLedger type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseGrowthAccountLedger func(context.Context, *ent.GrowthAccountLedgerQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseGrowthAccountLedger) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseGrowthAccountLedger) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.GrowthAccountLedgerQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.GrowthAccountLedgerQuery", q)
+}
+
+// The GrowthAdminAuditFunc type is an adapter to allow the use of ordinary function as a Querier.
+type GrowthAdminAuditFunc func(context.Context, *ent.GrowthAdminAuditQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f GrowthAdminAuditFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.GrowthAdminAuditQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.GrowthAdminAuditQuery", q)
+}
+
+// The TraverseGrowthAdminAudit type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseGrowthAdminAudit func(context.Context, *ent.GrowthAdminAuditQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseGrowthAdminAudit) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseGrowthAdminAudit) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.GrowthAdminAuditQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.GrowthAdminAuditQuery", q)
+}
+
+// The GrowthBudgetFunc type is an adapter to allow the use of ordinary function as a Querier.
+type GrowthBudgetFunc func(context.Context, *ent.GrowthBudgetQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f GrowthBudgetFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.GrowthBudgetQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.GrowthBudgetQuery", q)
+}
+
+// The TraverseGrowthBudget type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseGrowthBudget func(context.Context, *ent.GrowthBudgetQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseGrowthBudget) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseGrowthBudget) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.GrowthBudgetQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.GrowthBudgetQuery", q)
+}
+
+// The GrowthBudgetEntryFunc type is an adapter to allow the use of ordinary function as a Querier.
+type GrowthBudgetEntryFunc func(context.Context, *ent.GrowthBudgetEntryQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f GrowthBudgetEntryFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.GrowthBudgetEntryQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.GrowthBudgetEntryQuery", q)
+}
+
+// The TraverseGrowthBudgetEntry type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseGrowthBudgetEntry func(context.Context, *ent.GrowthBudgetEntryQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseGrowthBudgetEntry) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseGrowthBudgetEntry) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.GrowthBudgetEntryQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.GrowthBudgetEntryQuery", q)
+}
+
+// The GrowthCompletionRequestFunc type is an adapter to allow the use of ordinary function as a Querier.
+type GrowthCompletionRequestFunc func(context.Context, *ent.GrowthCompletionRequestQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f GrowthCompletionRequestFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.GrowthCompletionRequestQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.GrowthCompletionRequestQuery", q)
+}
+
+// The TraverseGrowthCompletionRequest type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseGrowthCompletionRequest func(context.Context, *ent.GrowthCompletionRequestQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseGrowthCompletionRequest) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseGrowthCompletionRequest) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.GrowthCompletionRequestQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.GrowthCompletionRequestQuery", q)
+}
+
+// The GrowthExchangeOrderFunc type is an adapter to allow the use of ordinary function as a Querier.
+type GrowthExchangeOrderFunc func(context.Context, *ent.GrowthExchangeOrderQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f GrowthExchangeOrderFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.GrowthExchangeOrderQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.GrowthExchangeOrderQuery", q)
+}
+
+// The TraverseGrowthExchangeOrder type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseGrowthExchangeOrder func(context.Context, *ent.GrowthExchangeOrderQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseGrowthExchangeOrder) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseGrowthExchangeOrder) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.GrowthExchangeOrderQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.GrowthExchangeOrderQuery", q)
+}
+
+// The GrowthFulfillmentJobFunc type is an adapter to allow the use of ordinary function as a Querier.
+type GrowthFulfillmentJobFunc func(context.Context, *ent.GrowthFulfillmentJobQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f GrowthFulfillmentJobFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.GrowthFulfillmentJobQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.GrowthFulfillmentJobQuery", q)
+}
+
+// The TraverseGrowthFulfillmentJob type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseGrowthFulfillmentJob func(context.Context, *ent.GrowthFulfillmentJobQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseGrowthFulfillmentJob) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseGrowthFulfillmentJob) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.GrowthFulfillmentJobQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.GrowthFulfillmentJobQuery", q)
+}
+
+// The GrowthInventoryLedgerFunc type is an adapter to allow the use of ordinary function as a Querier.
+type GrowthInventoryLedgerFunc func(context.Context, *ent.GrowthInventoryLedgerQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f GrowthInventoryLedgerFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.GrowthInventoryLedgerQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.GrowthInventoryLedgerQuery", q)
+}
+
+// The TraverseGrowthInventoryLedger type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseGrowthInventoryLedger func(context.Context, *ent.GrowthInventoryLedgerQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseGrowthInventoryLedger) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseGrowthInventoryLedger) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.GrowthInventoryLedgerQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.GrowthInventoryLedgerQuery", q)
+}
+
+// The GrowthProductFunc type is an adapter to allow the use of ordinary function as a Querier.
+type GrowthProductFunc func(context.Context, *ent.GrowthProductQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f GrowthProductFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.GrowthProductQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.GrowthProductQuery", q)
+}
+
+// The TraverseGrowthProduct type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseGrowthProduct func(context.Context, *ent.GrowthProductQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseGrowthProduct) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseGrowthProduct) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.GrowthProductQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.GrowthProductQuery", q)
+}
+
+// The GrowthProductInventoryFunc type is an adapter to allow the use of ordinary function as a Querier.
+type GrowthProductInventoryFunc func(context.Context, *ent.GrowthProductInventoryQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f GrowthProductInventoryFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.GrowthProductInventoryQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.GrowthProductInventoryQuery", q)
+}
+
+// The TraverseGrowthProductInventory type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseGrowthProductInventory func(context.Context, *ent.GrowthProductInventoryQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseGrowthProductInventory) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseGrowthProductInventory) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.GrowthProductInventoryQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.GrowthProductInventoryQuery", q)
+}
+
+// The GrowthProductVersionFunc type is an adapter to allow the use of ordinary function as a Querier.
+type GrowthProductVersionFunc func(context.Context, *ent.GrowthProductVersionQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f GrowthProductVersionFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.GrowthProductVersionQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.GrowthProductVersionQuery", q)
+}
+
+// The TraverseGrowthProductVersion type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseGrowthProductVersion func(context.Context, *ent.GrowthProductVersionQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseGrowthProductVersion) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseGrowthProductVersion) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.GrowthProductVersionQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.GrowthProductVersionQuery", q)
+}
+
+// The GrowthRewardClaimFunc type is an adapter to allow the use of ordinary function as a Querier.
+type GrowthRewardClaimFunc func(context.Context, *ent.GrowthRewardClaimQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f GrowthRewardClaimFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.GrowthRewardClaimQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.GrowthRewardClaimQuery", q)
+}
+
+// The TraverseGrowthRewardClaim type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseGrowthRewardClaim func(context.Context, *ent.GrowthRewardClaimQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseGrowthRewardClaim) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseGrowthRewardClaim) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.GrowthRewardClaimQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.GrowthRewardClaimQuery", q)
+}
+
+// The GrowthTaskFunc type is an adapter to allow the use of ordinary function as a Querier.
+type GrowthTaskFunc func(context.Context, *ent.GrowthTaskQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f GrowthTaskFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.GrowthTaskQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.GrowthTaskQuery", q)
+}
+
+// The TraverseGrowthTask type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseGrowthTask func(context.Context, *ent.GrowthTaskQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseGrowthTask) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseGrowthTask) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.GrowthTaskQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.GrowthTaskQuery", q)
+}
+
+// The GrowthTaskRuleFunc type is an adapter to allow the use of ordinary function as a Querier.
+type GrowthTaskRuleFunc func(context.Context, *ent.GrowthTaskRuleQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f GrowthTaskRuleFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.GrowthTaskRuleQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.GrowthTaskRuleQuery", q)
+}
+
+// The TraverseGrowthTaskRule type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseGrowthTaskRule func(context.Context, *ent.GrowthTaskRuleQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseGrowthTaskRule) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseGrowthTaskRule) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.GrowthTaskRuleQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.GrowthTaskRuleQuery", q)
+}
+
+// The GrowthTransferFunc type is an adapter to allow the use of ordinary function as a Querier.
+type GrowthTransferFunc func(context.Context, *ent.GrowthTransferQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f GrowthTransferFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.GrowthTransferQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.GrowthTransferQuery", q)
+}
+
+// The TraverseGrowthTransfer type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseGrowthTransfer func(context.Context, *ent.GrowthTransferQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseGrowthTransfer) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseGrowthTransfer) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.GrowthTransferQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.GrowthTransferQuery", q)
+}
+
+// The GrowthUserTaskFunc type is an adapter to allow the use of ordinary function as a Querier.
+type GrowthUserTaskFunc func(context.Context, *ent.GrowthUserTaskQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f GrowthUserTaskFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.GrowthUserTaskQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.GrowthUserTaskQuery", q)
+}
+
+// The TraverseGrowthUserTask type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseGrowthUserTask func(context.Context, *ent.GrowthUserTaskQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseGrowthUserTask) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseGrowthUserTask) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.GrowthUserTaskQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.GrowthUserTaskQuery", q)
+}
+
+// The GrowthWalletFunc type is an adapter to allow the use of ordinary function as a Querier.
+type GrowthWalletFunc func(context.Context, *ent.GrowthWalletQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f GrowthWalletFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.GrowthWalletQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.GrowthWalletQuery", q)
+}
+
+// The TraverseGrowthWallet type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseGrowthWallet func(context.Context, *ent.GrowthWalletQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseGrowthWallet) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseGrowthWallet) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.GrowthWalletQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.GrowthWalletQuery", q)
 }
 
 // The IdempotencyRecordFunc type is an adapter to allow the use of ordinary function as a Querier.
@@ -1496,6 +1972,40 @@ func NewQuery(q ent.Query) (Query, error) {
 		return &query[*ent.ErrorPassthroughRuleQuery, predicate.ErrorPassthroughRule, errorpassthroughrule.OrderOption]{typ: ent.TypeErrorPassthroughRule, tq: q}, nil
 	case *ent.GroupQuery:
 		return &query[*ent.GroupQuery, predicate.Group, group.OrderOption]{typ: ent.TypeGroup, tq: q}, nil
+	case *ent.GrowthAccountLedgerQuery:
+		return &query[*ent.GrowthAccountLedgerQuery, predicate.GrowthAccountLedger, growthaccountledger.OrderOption]{typ: ent.TypeGrowthAccountLedger, tq: q}, nil
+	case *ent.GrowthAdminAuditQuery:
+		return &query[*ent.GrowthAdminAuditQuery, predicate.GrowthAdminAudit, growthadminaudit.OrderOption]{typ: ent.TypeGrowthAdminAudit, tq: q}, nil
+	case *ent.GrowthBudgetQuery:
+		return &query[*ent.GrowthBudgetQuery, predicate.GrowthBudget, growthbudget.OrderOption]{typ: ent.TypeGrowthBudget, tq: q}, nil
+	case *ent.GrowthBudgetEntryQuery:
+		return &query[*ent.GrowthBudgetEntryQuery, predicate.GrowthBudgetEntry, growthbudgetentry.OrderOption]{typ: ent.TypeGrowthBudgetEntry, tq: q}, nil
+	case *ent.GrowthCompletionRequestQuery:
+		return &query[*ent.GrowthCompletionRequestQuery, predicate.GrowthCompletionRequest, growthcompletionrequest.OrderOption]{typ: ent.TypeGrowthCompletionRequest, tq: q}, nil
+	case *ent.GrowthExchangeOrderQuery:
+		return &query[*ent.GrowthExchangeOrderQuery, predicate.GrowthExchangeOrder, growthexchangeorder.OrderOption]{typ: ent.TypeGrowthExchangeOrder, tq: q}, nil
+	case *ent.GrowthFulfillmentJobQuery:
+		return &query[*ent.GrowthFulfillmentJobQuery, predicate.GrowthFulfillmentJob, growthfulfillmentjob.OrderOption]{typ: ent.TypeGrowthFulfillmentJob, tq: q}, nil
+	case *ent.GrowthInventoryLedgerQuery:
+		return &query[*ent.GrowthInventoryLedgerQuery, predicate.GrowthInventoryLedger, growthinventoryledger.OrderOption]{typ: ent.TypeGrowthInventoryLedger, tq: q}, nil
+	case *ent.GrowthProductQuery:
+		return &query[*ent.GrowthProductQuery, predicate.GrowthProduct, growthproduct.OrderOption]{typ: ent.TypeGrowthProduct, tq: q}, nil
+	case *ent.GrowthProductInventoryQuery:
+		return &query[*ent.GrowthProductInventoryQuery, predicate.GrowthProductInventory, growthproductinventory.OrderOption]{typ: ent.TypeGrowthProductInventory, tq: q}, nil
+	case *ent.GrowthProductVersionQuery:
+		return &query[*ent.GrowthProductVersionQuery, predicate.GrowthProductVersion, growthproductversion.OrderOption]{typ: ent.TypeGrowthProductVersion, tq: q}, nil
+	case *ent.GrowthRewardClaimQuery:
+		return &query[*ent.GrowthRewardClaimQuery, predicate.GrowthRewardClaim, growthrewardclaim.OrderOption]{typ: ent.TypeGrowthRewardClaim, tq: q}, nil
+	case *ent.GrowthTaskQuery:
+		return &query[*ent.GrowthTaskQuery, predicate.GrowthTask, growthtask.OrderOption]{typ: ent.TypeGrowthTask, tq: q}, nil
+	case *ent.GrowthTaskRuleQuery:
+		return &query[*ent.GrowthTaskRuleQuery, predicate.GrowthTaskRule, growthtaskrule.OrderOption]{typ: ent.TypeGrowthTaskRule, tq: q}, nil
+	case *ent.GrowthTransferQuery:
+		return &query[*ent.GrowthTransferQuery, predicate.GrowthTransfer, growthtransfer.OrderOption]{typ: ent.TypeGrowthTransfer, tq: q}, nil
+	case *ent.GrowthUserTaskQuery:
+		return &query[*ent.GrowthUserTaskQuery, predicate.GrowthUserTask, growthusertask.OrderOption]{typ: ent.TypeGrowthUserTask, tq: q}, nil
+	case *ent.GrowthWalletQuery:
+		return &query[*ent.GrowthWalletQuery, predicate.GrowthWallet, growthwallet.OrderOption]{typ: ent.TypeGrowthWallet, tq: q}, nil
 	case *ent.IdempotencyRecordQuery:
 		return &query[*ent.IdempotencyRecordQuery, predicate.IdempotencyRecord, idempotencyrecord.OrderOption]{typ: ent.TypeIdempotencyRecord, tq: q}, nil
 	case *ent.IdentityAdoptionDecisionQuery:

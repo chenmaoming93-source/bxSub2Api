@@ -38,12 +38,13 @@ func TestRBACRouteCoverageKnownExclusionsHaveReasons(t *testing.T) {
 	actual := gin.RoutesInfo{
 		{Method: "POST", Path: "/api/v1/payment/webhook/stripe"},
 		{Method: "POST", Path: "/api/v1/integrations/users"},
+		{Method: "POST", Path: "/api/v1/growth/checkins"},
 		{Method: "POST", Path: "/v1/messages"},
 	}
 	require.NoError(t, RegisterKnownExclusions(actual, registry))
 	report := ValidateRouteCoverage(actual, registry)
 	require.NoError(t, report.Err())
-	require.Equal(t, 3, report.Excluded)
+	require.Equal(t, 4, report.Excluded)
 	for _, route := range registry.Routes() {
 		require.NotEmpty(t, route.ExclusionReason)
 	}

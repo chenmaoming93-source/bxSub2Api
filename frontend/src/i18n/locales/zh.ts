@@ -1,3 +1,5 @@
+import growth from './growth.zh'
+
 export default {
   // Home Page
   home: {
@@ -7871,5 +7873,5 @@ export default {
       },
     },
   },
-
+  growth,
 }

@@ -14,13 +14,13 @@
 
 | 分类 | 数量 |
 |---|---:|
-| 管理员接口 | 362 |
-| 用户个人接口 | 65 |
+| 管理员接口 | 396 |
+| 用户个人接口 | 73 |
 | 公开及登录流程接口 | 54 |
 | 支付回调接口 | 6 |
 | 外部集成接口 | 3 |
 | 模型网关接口 | 32 |
-| **合计** | **522** |
+| **合计** | **564** |
 
 ## 管理员接口
 
@@ -164,6 +164,40 @@
 | POST | `/api/v1/admin/gemini/oauth/auth-url` | 管理员（当前 AdminAuth） | `/admin/accounts`（OAuth 操作） | `admin.go:403` |
 | GET | `/api/v1/admin/gemini/oauth/capabilities` | 管理员（当前 AdminAuth） | `/admin/accounts`（OAuth 操作） | `admin.go:405` |
 | POST | `/api/v1/admin/gemini/oauth/exchange-code` | 管理员（当前 AdminAuth） | `/admin/accounts`（OAuth 操作） | `admin.go:404` |
+| GET | `/api/v1/admin/growth/stats/overview` | 管理员（RBAC `growth.read`） | `/admin/growth?tab=budget` | `admin.go:151` |
+| GET | `/api/v1/admin/growth/budget` | 管理员（RBAC `growth.read`） | `/admin/growth?tab=budget` | `admin.go:152` |
+| GET | `/api/v1/admin/growth/budget/entries` | 管理员（RBAC `growth.read`） | `/admin/growth?tab=budget` | `admin.go:153` |
+| POST | `/api/v1/admin/growth/budget/entries` | 管理员（RBAC `growth.manage`） | `/admin/growth?tab=budget` | `admin.go:154` |
+| GET | `/api/v1/admin/growth/budget/allocations` | 管理员（RBAC `growth.read`） | `/admin/growth?tab=budget` | `admin.go:155` |
+| POST | `/api/v1/admin/growth/budget/allocations` | 管理员（RBAC `growth.manage`） | `/admin/growth?tab=budget` | `admin.go:156` |
+| POST | `/api/v1/admin/growth/tasks/:id/budget/revoke` | 管理员（RBAC `growth.manage`） | `/admin/growth?tab=budget` | `admin.go:157` |
+| GET | `/api/v1/admin/growth/tasks` | 管理员（RBAC `growth.read`） | `/admin/growth?tab=tasks` | `admin.go:158` |
+| POST | `/api/v1/admin/growth/tasks` | 管理员（RBAC `growth.manage`） | `/admin/growth?tab=tasks` | `admin.go:159` |
+| GET | `/api/v1/admin/growth/tasks/:id/rule-versions` | 管理员（RBAC `growth.read`） | `/admin/growth?tab=tasks` | `admin.go:160` |
+| GET | `/api/v1/admin/growth/tasks/:id` | 管理员（RBAC `growth.read`） | `/admin/growth?tab=tasks` | `admin.go:161` |
+| PUT | `/api/v1/admin/growth/tasks/:id` | 管理员（RBAC `growth.manage`） | `/admin/growth?tab=tasks` | `admin.go:162` |
+| POST | `/api/v1/admin/growth/tasks/:id/publish` | 管理员（RBAC `growth.manage`） | `/admin/growth?tab=tasks` | `admin.go:163` |
+| POST | `/api/v1/admin/growth/tasks/:id/offline` | 管理员（RBAC `growth.manage`） | `/admin/growth?tab=tasks` | `admin.go:164` |
+| POST | `/api/v1/admin/growth/tasks/:id/online` | 管理员（RBAC `growth.manage`） | `/admin/growth?tab=tasks` | `admin.go:165` |
+| GET | `/api/v1/admin/growth/products` | 管理员（RBAC `growth.read`） | `/admin/growth?tab=products` | `admin.go:166` |
+| POST | `/api/v1/admin/growth/products` | 管理员（RBAC `growth.manage`） | `/admin/growth?tab=products` | `admin.go:167` |
+| GET | `/api/v1/admin/growth/products/:id/versions` | 管理员（RBAC `growth.read`） | `/admin/growth?tab=products` | `admin.go:168` |
+| GET | `/api/v1/admin/growth/products/:id` | 管理员（RBAC `growth.read`） | `/admin/growth?tab=products` | `admin.go:169` |
+| PUT | `/api/v1/admin/growth/products/:id` | 管理员（RBAC `growth.manage`） | `/admin/growth?tab=products` | `admin.go:170` |
+| POST | `/api/v1/admin/growth/products/:id/publish` | 管理员（RBAC `growth.manage`） | `/admin/growth?tab=products` | `admin.go:171` |
+| POST | `/api/v1/admin/growth/products/:id/stock` | 管理员（RBAC `growth.manage`） | `/admin/growth?tab=products` | `admin.go:172` |
+| POST | `/api/v1/admin/growth/products/:id/offline` | 管理员（RBAC `growth.manage`） | `/admin/growth?tab=products` | `admin.go:173` |
+| GET | `/api/v1/admin/growth/exchanges` | 管理员（RBAC `growth.read`） | `/admin/growth?tab=orders` | `admin.go:174` |
+| GET | `/api/v1/admin/growth/exchanges/:id` | 管理员（RBAC `growth.read`） | `/admin/growth?tab=orders` | `admin.go:175` |
+| POST | `/api/v1/admin/growth/exchanges/:id/retry` | 管理员（RBAC `growth.manage`） | `/admin/growth?tab=orders` | `admin.go:176` |
+| POST | `/api/v1/admin/growth/exchanges/:id/manual-complete` | 管理员（RBAC `growth.manage`） | `/admin/growth?tab=orders` | `admin.go:177` |
+| POST | `/api/v1/admin/growth/exchanges/:id/refund` | 管理员（RBAC `growth.manage`） | `/admin/growth?tab=orders` | `admin.go:178` |
+| GET | `/api/v1/admin/growth/users` | 管理员（RBAC `growth.read`） | `/admin/growth?tab=users` | `admin.go:179` |
+| GET | `/api/v1/admin/growth/users/:id/ledger` | 管理员（RBAC `growth.read`） | `/admin/growth?tab=users` | `admin.go:180` |
+| GET | `/api/v1/admin/growth/users/:id/exchanges` | 管理员（RBAC `growth.read`） | `/admin/growth?tab=users` | `admin.go:181` |
+| POST | `/api/v1/admin/growth/users/:id/adjustments` | 管理员（RBAC `growth.adjust`） | `/admin/growth?tab=users` | `admin.go:182` |
+| GET | `/api/v1/admin/growth/audit-logs` | 管理员（RBAC `growth.read`） | `/admin/growth` | `admin.go:183` |
+| GET | `/api/v1/admin/growth/reconciliation` | 管理员（RBAC `growth.read`） | `/admin/growth` | `admin.go:184` |
 | GET | `/api/v1/admin/groups` | 管理员（当前 AdminAuth） | `/admin/groups`；部分用于 `/admin/default-group-routing` | `admin.go:300` |
 | POST | `/api/v1/admin/groups` | 管理员（当前 AdminAuth） | `/admin/groups`；部分用于 `/admin/default-group-routing` | `admin.go:307` |
 | DELETE | `/api/v1/admin/groups/:id` | 管理员（当前 AdminAuth） | `/admin/groups`；部分用于 `/admin/default-group-routing` | `admin.go:309` |
@@ -396,6 +430,14 @@
 | GET | `/api/v1/auth/me` | 登录用户本人（JWT） | 登录态初始化；所有登录后页面 | `auth.go:225` |
 | POST | `/api/v1/auth/oauth/bind-token` | 登录用户本人（JWT） | `/profile`（第三方账号绑定） | `auth.go:228` |
 | POST | `/api/v1/auth/revoke-all-sessions` | 登录用户本人（JWT） | `/profile` | `auth.go:227` |
+| GET | `/api/v1/user/growth/overview` | 登录用户本人（RBAC `growth.self.read`） | `/growth?tab=overview` | `user_growth.go:12` |
+| GET | `/api/v1/user/growth/tasks` | 登录用户本人（RBAC `growth.self.read`） | `/growth?tab=overview` | `user_growth.go:13` |
+| GET | `/api/v1/user/growth/products` | 登录用户本人（RBAC `growth.self.read`） | `/growth?tab=store` | `user_growth.go:14` |
+| GET | `/api/v1/user/growth/products/:id` | 登录用户本人（RBAC `growth.self.read`） | `/growth?tab=store` | `user_growth.go:15` |
+| GET | `/api/v1/user/growth/exchanges` | 登录用户本人（RBAC `growth.self.read`） | `/growth?tab=store` | `user_growth.go:16` |
+| POST | `/api/v1/user/growth/exchanges` | 登录用户本人（RBAC `growth.self.exchange`） | `/growth?tab=store` | `user_growth.go:17` |
+| GET | `/api/v1/user/growth/exchanges/:id` | 登录用户本人（RBAC `growth.self.read`） | `/growth?tab=store` | `user_growth.go:18` |
+| GET | `/api/v1/user/growth/ledger` | 登录用户本人（RBAC `growth.self.read`） | `/growth?tab=ledger` | `user_growth.go:19` |
 | GET | `/api/v1/payment/channels` | 登录用户本人（JWT，订单归属校验） | `/purchase` 及各支付流程页面 | `payment.go:31` |
 | GET | `/api/v1/payment/checkout-info` | 登录用户本人（JWT，订单归属校验） | `/purchase` 及各支付流程页面 | `payment.go:29` |
 | GET | `/api/v1/payment/config` | 登录用户本人（JWT，订单归属校验） | `/purchase` 及各支付流程页面 | `payment.go:28` |

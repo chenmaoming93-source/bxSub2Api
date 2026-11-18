@@ -143,6 +143,13 @@ func (User) Edges() []ent.Edge {
 			Unique().
 			Annotations(entsql.OnDelete(entsql.Cascade)),
 		edge.To("rbac_audit_logs", RBACAuditLog.Type),
+		edge.To("growth_wallet", GrowthWallet.Type).
+			Unique(),
+		edge.To("growth_user_tasks", GrowthUserTask.Type),
+		edge.To("growth_completion_requests", GrowthCompletionRequest.Type),
+		edge.To("growth_reward_claims", GrowthRewardClaim.Type),
+		edge.To("growth_exchange_orders", GrowthExchangeOrder.Type),
+		edge.To("growth_admin_audits", GrowthAdminAudit.Type),
 	}
 }
 

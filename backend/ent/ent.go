@@ -25,6 +25,23 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/channelmonitorrequesttemplate"
 	"github.com/Wei-Shaw/sub2api/ent/errorpassthroughrule"
 	"github.com/Wei-Shaw/sub2api/ent/group"
+	"github.com/Wei-Shaw/sub2api/ent/growthaccountledger"
+	"github.com/Wei-Shaw/sub2api/ent/growthadminaudit"
+	"github.com/Wei-Shaw/sub2api/ent/growthbudget"
+	"github.com/Wei-Shaw/sub2api/ent/growthbudgetentry"
+	"github.com/Wei-Shaw/sub2api/ent/growthcompletionrequest"
+	"github.com/Wei-Shaw/sub2api/ent/growthexchangeorder"
+	"github.com/Wei-Shaw/sub2api/ent/growthfulfillmentjob"
+	"github.com/Wei-Shaw/sub2api/ent/growthinventoryledger"
+	"github.com/Wei-Shaw/sub2api/ent/growthproduct"
+	"github.com/Wei-Shaw/sub2api/ent/growthproductinventory"
+	"github.com/Wei-Shaw/sub2api/ent/growthproductversion"
+	"github.com/Wei-Shaw/sub2api/ent/growthrewardclaim"
+	"github.com/Wei-Shaw/sub2api/ent/growthtask"
+	"github.com/Wei-Shaw/sub2api/ent/growthtaskrule"
+	"github.com/Wei-Shaw/sub2api/ent/growthtransfer"
+	"github.com/Wei-Shaw/sub2api/ent/growthusertask"
+	"github.com/Wei-Shaw/sub2api/ent/growthwallet"
 	"github.com/Wei-Shaw/sub2api/ent/idempotencyrecord"
 	"github.com/Wei-Shaw/sub2api/ent/identityadoptiondecision"
 	"github.com/Wei-Shaw/sub2api/ent/observabilityconcurrencybucket"
@@ -135,6 +152,23 @@ func checkColumn(t, c string) error {
 			channelmonitorrequesttemplate.Table:  channelmonitorrequesttemplate.ValidColumn,
 			errorpassthroughrule.Table:           errorpassthroughrule.ValidColumn,
 			group.Table:                          group.ValidColumn,
+			growthaccountledger.Table:            growthaccountledger.ValidColumn,
+			growthadminaudit.Table:               growthadminaudit.ValidColumn,
+			growthbudget.Table:                   growthbudget.ValidColumn,
+			growthbudgetentry.Table:              growthbudgetentry.ValidColumn,
+			growthcompletionrequest.Table:        growthcompletionrequest.ValidColumn,
+			growthexchangeorder.Table:            growthexchangeorder.ValidColumn,
+			growthfulfillmentjob.Table:           growthfulfillmentjob.ValidColumn,
+			growthinventoryledger.Table:          growthinventoryledger.ValidColumn,
+			growthproduct.Table:                  growthproduct.ValidColumn,
+			growthproductinventory.Table:         growthproductinventory.ValidColumn,
+			growthproductversion.Table:           growthproductversion.ValidColumn,
+			growthrewardclaim.Table:              growthrewardclaim.ValidColumn,
+			growthtask.Table:                     growthtask.ValidColumn,
+			growthtaskrule.Table:                 growthtaskrule.ValidColumn,
+			growthtransfer.Table:                 growthtransfer.ValidColumn,
+			growthusertask.Table:                 growthusertask.ValidColumn,
+			growthwallet.Table:                   growthwallet.ValidColumn,
 			idempotencyrecord.Table:              idempotencyrecord.ValidColumn,
 			identityadoptiondecision.Table:       identityadoptiondecision.ValidColumn,
 			observabilityconcurrencybucket.Table: observabilityconcurrencybucket.ValidColumn,

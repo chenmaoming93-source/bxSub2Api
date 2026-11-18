@@ -679,6 +679,7 @@ function buildSelfNavItems(withDashboard: boolean): NavItem[] {
     items.push({ path: '/dashboard', label: t('nav.dashboard'), icon: DashboardIcon })
   }
   items.push(
+    { path: '/growth', label: '我的积分', icon: GiftIcon },
     { path: '/keys', label: t('nav.apiKeys'), icon: KeyIcon },
     { path: '/usage', label: t('nav.usage'), icon: ChartIcon, hideInSimpleMode: true },
     { path: '/available-channels', label: t('nav.availableChannels'), icon: ChannelIcon, hideInSimpleMode: true, featureFlag: flagAvailableChannels },
@@ -735,6 +736,7 @@ const adminNavItems = computed((): NavItem[] => {
     { path: '/admin/accounts', label: t('nav.accounts'), icon: GlobeIcon },
     { path: '/admin/groups', label: t('nav.groups'), icon: FolderIcon, hideInSimpleMode: true },
     { path: '/admin/users', label: t('nav.users'), icon: UsersIcon, hideInSimpleMode: true },
+    { path: '/admin/growth', label: '成长计划', icon: GiftIcon, hideInSimpleMode: true },
     { path: '/admin/roles', label: '角色权限', icon: ShieldIcon, hideInSimpleMode: true },
     { path: '/admin/security-check-logs', label: '安全检查日志', icon: ShieldIcon, hideInSimpleMode: true },
     { path: '/admin/token-statistics', label: '可配置 Token 统计', icon: ChartIcon, hideInSimpleMode: true },

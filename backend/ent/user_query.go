@@ -17,6 +17,12 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/apikey"
 	"github.com/Wei-Shaw/sub2api/ent/authidentity"
 	"github.com/Wei-Shaw/sub2api/ent/group"
+	"github.com/Wei-Shaw/sub2api/ent/growthadminaudit"
+	"github.com/Wei-Shaw/sub2api/ent/growthcompletionrequest"
+	"github.com/Wei-Shaw/sub2api/ent/growthexchangeorder"
+	"github.com/Wei-Shaw/sub2api/ent/growthrewardclaim"
+	"github.com/Wei-Shaw/sub2api/ent/growthusertask"
+	"github.com/Wei-Shaw/sub2api/ent/growthwallet"
 	"github.com/Wei-Shaw/sub2api/ent/paymentorder"
 	"github.com/Wei-Shaw/sub2api/ent/pendingauthsession"
 	"github.com/Wei-Shaw/sub2api/ent/predicate"
@@ -36,29 +42,35 @@ import (
 // UserQuery is the builder for querying User entities.
 type UserQuery struct {
 	config
-	ctx                       *QueryContext
-	order                     []user.OrderOption
-	inters                    []Interceptor
-	predicates                []predicate.User
-	withAPIKeys               *APIKeyQuery
-	withRedeemCodes           *RedeemCodeQuery
-	withSubscriptions         *UserSubscriptionQuery
-	withAssignedSubscriptions *UserSubscriptionQuery
-	withAnnouncementReads     *AnnouncementReadQuery
-	withAllowedGroups         *GroupQuery
-	withUsageLogs             *UsageLogQuery
-	withAttributeValues       *UserAttributeValueQuery
-	withPromoCodeUsages       *PromoCodeUsageQuery
-	withPaymentOrders         *PaymentOrderQuery
-	withAuthIdentities        *AuthIdentityQuery
-	withPendingAuthSessions   *PendingAuthSessionQuery
-	withPlatformQuotas        *UserPlatformQuotaQuery
-	withRbacUserRoles         *RBACUserRoleQuery
-	withAssignedRbacUserRoles *RBACUserRoleQuery
-	withRbacUserVersion       *RBACUserVersionQuery
-	withRbacAuditLogs         *RBACAuditLogQuery
-	withUserAllowedGroups     *UserAllowedGroupQuery
-	modifiers                 []func(*sql.Selector)
+	ctx                          *QueryContext
+	order                        []user.OrderOption
+	inters                       []Interceptor
+	predicates                   []predicate.User
+	withAPIKeys                  *APIKeyQuery
+	withRedeemCodes              *RedeemCodeQuery
+	withSubscriptions            *UserSubscriptionQuery
+	withAssignedSubscriptions    *UserSubscriptionQuery
+	withAnnouncementReads        *AnnouncementReadQuery
+	withAllowedGroups            *GroupQuery
+	withUsageLogs                *UsageLogQuery
+	withAttributeValues          *UserAttributeValueQuery
+	withPromoCodeUsages          *PromoCodeUsageQuery
+	withPaymentOrders            *PaymentOrderQuery
+	withAuthIdentities           *AuthIdentityQuery
+	withPendingAuthSessions      *PendingAuthSessionQuery
+	withPlatformQuotas           *UserPlatformQuotaQuery
+	withRbacUserRoles            *RBACUserRoleQuery
+	withAssignedRbacUserRoles    *RBACUserRoleQuery
+	withRbacUserVersion          *RBACUserVersionQuery
+	withRbacAuditLogs            *RBACAuditLogQuery
+	withGrowthWallet             *GrowthWalletQuery
+	withGrowthUserTasks          *GrowthUserTaskQuery
+	withGrowthCompletionRequests *GrowthCompletionRequestQuery
+	withGrowthRewardClaims       *GrowthRewardClaimQuery
+	withGrowthExchangeOrders     *GrowthExchangeOrderQuery
+	withGrowthAdminAudits        *GrowthAdminAuditQuery
+	withUserAllowedGroups        *UserAllowedGroupQuery
+	modifiers                    []func(*sql.Selector)
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -469,6 +481,138 @@ func (_q *UserQuery) QueryRbacAuditLogs() *RBACAuditLogQuery {
 	return query
 }
 
+// QueryGrowthWallet chains the current query on the "growth_wallet" edge.
+func (_q *UserQuery) QueryGrowthWallet() *GrowthWalletQuery {
+	query := (&GrowthWalletClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(growthwallet.Table, growthwallet.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, user.GrowthWalletTable, user.GrowthWalletColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryGrowthUserTasks chains the current query on the "growth_user_tasks" edge.
+func (_q *UserQuery) QueryGrowthUserTasks() *GrowthUserTaskQuery {
+	query := (&GrowthUserTaskClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(growthusertask.Table, growthusertask.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.GrowthUserTasksTable, user.GrowthUserTasksColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryGrowthCompletionRequests chains the current query on the "growth_completion_requests" edge.
+func (_q *UserQuery) QueryGrowthCompletionRequests() *GrowthCompletionRequestQuery {
+	query := (&GrowthCompletionRequestClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(growthcompletionrequest.Table, growthcompletionrequest.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.GrowthCompletionRequestsTable, user.GrowthCompletionRequestsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryGrowthRewardClaims chains the current query on the "growth_reward_claims" edge.
+func (_q *UserQuery) QueryGrowthRewardClaims() *GrowthRewardClaimQuery {
+	query := (&GrowthRewardClaimClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(growthrewardclaim.Table, growthrewardclaim.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.GrowthRewardClaimsTable, user.GrowthRewardClaimsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryGrowthExchangeOrders chains the current query on the "growth_exchange_orders" edge.
+func (_q *UserQuery) QueryGrowthExchangeOrders() *GrowthExchangeOrderQuery {
+	query := (&GrowthExchangeOrderClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(growthexchangeorder.Table, growthexchangeorder.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.GrowthExchangeOrdersTable, user.GrowthExchangeOrdersColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryGrowthAdminAudits chains the current query on the "growth_admin_audits" edge.
+func (_q *UserQuery) QueryGrowthAdminAudits() *GrowthAdminAuditQuery {
+	query := (&GrowthAdminAuditClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(growthadminaudit.Table, growthadminaudit.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.GrowthAdminAuditsTable, user.GrowthAdminAuditsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
 // QueryUserAllowedGroups chains the current query on the "user_allowed_groups" edge.
 func (_q *UserQuery) QueryUserAllowedGroups() *UserAllowedGroupQuery {
 	query := (&UserAllowedGroupClient{config: _q.config}).Query()
@@ -678,29 +822,35 @@ func (_q *UserQuery) Clone() *UserQuery {
 		return nil
 	}
 	return &UserQuery{
-		config:                    _q.config,
-		ctx:                       _q.ctx.Clone(),
-		order:                     append([]user.OrderOption{}, _q.order...),
-		inters:                    append([]Interceptor{}, _q.inters...),
-		predicates:                append([]predicate.User{}, _q.predicates...),
-		withAPIKeys:               _q.withAPIKeys.Clone(),
-		withRedeemCodes:           _q.withRedeemCodes.Clone(),
-		withSubscriptions:         _q.withSubscriptions.Clone(),
-		withAssignedSubscriptions: _q.withAssignedSubscriptions.Clone(),
-		withAnnouncementReads:     _q.withAnnouncementReads.Clone(),
-		withAllowedGroups:         _q.withAllowedGroups.Clone(),
-		withUsageLogs:             _q.withUsageLogs.Clone(),
-		withAttributeValues:       _q.withAttributeValues.Clone(),
-		withPromoCodeUsages:       _q.withPromoCodeUsages.Clone(),
-		withPaymentOrders:         _q.withPaymentOrders.Clone(),
-		withAuthIdentities:        _q.withAuthIdentities.Clone(),
-		withPendingAuthSessions:   _q.withPendingAuthSessions.Clone(),
-		withPlatformQuotas:        _q.withPlatformQuotas.Clone(),
-		withRbacUserRoles:         _q.withRbacUserRoles.Clone(),
-		withAssignedRbacUserRoles: _q.withAssignedRbacUserRoles.Clone(),
-		withRbacUserVersion:       _q.withRbacUserVersion.Clone(),
-		withRbacAuditLogs:         _q.withRbacAuditLogs.Clone(),
-		withUserAllowedGroups:     _q.withUserAllowedGroups.Clone(),
+		config:                       _q.config,
+		ctx:                          _q.ctx.Clone(),
+		order:                        append([]user.OrderOption{}, _q.order...),
+		inters:                       append([]Interceptor{}, _q.inters...),
+		predicates:                   append([]predicate.User{}, _q.predicates...),
+		withAPIKeys:                  _q.withAPIKeys.Clone(),
+		withRedeemCodes:              _q.withRedeemCodes.Clone(),
+		withSubscriptions:            _q.withSubscriptions.Clone(),
+		withAssignedSubscriptions:    _q.withAssignedSubscriptions.Clone(),
+		withAnnouncementReads:        _q.withAnnouncementReads.Clone(),
+		withAllowedGroups:            _q.withAllowedGroups.Clone(),
+		withUsageLogs:                _q.withUsageLogs.Clone(),
+		withAttributeValues:          _q.withAttributeValues.Clone(),
+		withPromoCodeUsages:          _q.withPromoCodeUsages.Clone(),
+		withPaymentOrders:            _q.withPaymentOrders.Clone(),
+		withAuthIdentities:           _q.withAuthIdentities.Clone(),
+		withPendingAuthSessions:      _q.withPendingAuthSessions.Clone(),
+		withPlatformQuotas:           _q.withPlatformQuotas.Clone(),
+		withRbacUserRoles:            _q.withRbacUserRoles.Clone(),
+		withAssignedRbacUserRoles:    _q.withAssignedRbacUserRoles.Clone(),
+		withRbacUserVersion:          _q.withRbacUserVersion.Clone(),
+		withRbacAuditLogs:            _q.withRbacAuditLogs.Clone(),
+		withGrowthWallet:             _q.withGrowthWallet.Clone(),
+		withGrowthUserTasks:          _q.withGrowthUserTasks.Clone(),
+		withGrowthCompletionRequests: _q.withGrowthCompletionRequests.Clone(),
+		withGrowthRewardClaims:       _q.withGrowthRewardClaims.Clone(),
+		withGrowthExchangeOrders:     _q.withGrowthExchangeOrders.Clone(),
+		withGrowthAdminAudits:        _q.withGrowthAdminAudits.Clone(),
+		withUserAllowedGroups:        _q.withUserAllowedGroups.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -894,6 +1044,72 @@ func (_q *UserQuery) WithRbacAuditLogs(opts ...func(*RBACAuditLogQuery)) *UserQu
 	return _q
 }
 
+// WithGrowthWallet tells the query-builder to eager-load the nodes that are connected to
+// the "growth_wallet" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithGrowthWallet(opts ...func(*GrowthWalletQuery)) *UserQuery {
+	query := (&GrowthWalletClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withGrowthWallet = query
+	return _q
+}
+
+// WithGrowthUserTasks tells the query-builder to eager-load the nodes that are connected to
+// the "growth_user_tasks" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithGrowthUserTasks(opts ...func(*GrowthUserTaskQuery)) *UserQuery {
+	query := (&GrowthUserTaskClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withGrowthUserTasks = query
+	return _q
+}
+
+// WithGrowthCompletionRequests tells the query-builder to eager-load the nodes that are connected to
+// the "growth_completion_requests" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithGrowthCompletionRequests(opts ...func(*GrowthCompletionRequestQuery)) *UserQuery {
+	query := (&GrowthCompletionRequestClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withGrowthCompletionRequests = query
+	return _q
+}
+
+// WithGrowthRewardClaims tells the query-builder to eager-load the nodes that are connected to
+// the "growth_reward_claims" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithGrowthRewardClaims(opts ...func(*GrowthRewardClaimQuery)) *UserQuery {
+	query := (&GrowthRewardClaimClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withGrowthRewardClaims = query
+	return _q
+}
+
+// WithGrowthExchangeOrders tells the query-builder to eager-load the nodes that are connected to
+// the "growth_exchange_orders" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithGrowthExchangeOrders(opts ...func(*GrowthExchangeOrderQuery)) *UserQuery {
+	query := (&GrowthExchangeOrderClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withGrowthExchangeOrders = query
+	return _q
+}
+
+// WithGrowthAdminAudits tells the query-builder to eager-load the nodes that are connected to
+// the "growth_admin_audits" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithGrowthAdminAudits(opts ...func(*GrowthAdminAuditQuery)) *UserQuery {
+	query := (&GrowthAdminAuditClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withGrowthAdminAudits = query
+	return _q
+}
+
 // WithUserAllowedGroups tells the query-builder to eager-load the nodes that are connected to
 // the "user_allowed_groups" edge. The optional arguments are used to configure the query builder of the edge.
 func (_q *UserQuery) WithUserAllowedGroups(opts ...func(*UserAllowedGroupQuery)) *UserQuery {
@@ -983,7 +1199,7 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	var (
 		nodes       = []*User{}
 		_spec       = _q.querySpec()
-		loadedTypes = [18]bool{
+		loadedTypes = [24]bool{
 			_q.withAPIKeys != nil,
 			_q.withRedeemCodes != nil,
 			_q.withSubscriptions != nil,
@@ -1001,6 +1217,12 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 			_q.withAssignedRbacUserRoles != nil,
 			_q.withRbacUserVersion != nil,
 			_q.withRbacAuditLogs != nil,
+			_q.withGrowthWallet != nil,
+			_q.withGrowthUserTasks != nil,
+			_q.withGrowthCompletionRequests != nil,
+			_q.withGrowthRewardClaims != nil,
+			_q.withGrowthExchangeOrders != nil,
+			_q.withGrowthAdminAudits != nil,
 			_q.withUserAllowedGroups != nil,
 		}
 	)
@@ -1146,6 +1368,53 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 		if err := _q.loadRbacAuditLogs(ctx, query, nodes,
 			func(n *User) { n.Edges.RbacAuditLogs = []*RBACAuditLog{} },
 			func(n *User, e *RBACAuditLog) { n.Edges.RbacAuditLogs = append(n.Edges.RbacAuditLogs, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withGrowthWallet; query != nil {
+		if err := _q.loadGrowthWallet(ctx, query, nodes, nil,
+			func(n *User, e *GrowthWallet) { n.Edges.GrowthWallet = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withGrowthUserTasks; query != nil {
+		if err := _q.loadGrowthUserTasks(ctx, query, nodes,
+			func(n *User) { n.Edges.GrowthUserTasks = []*GrowthUserTask{} },
+			func(n *User, e *GrowthUserTask) { n.Edges.GrowthUserTasks = append(n.Edges.GrowthUserTasks, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withGrowthCompletionRequests; query != nil {
+		if err := _q.loadGrowthCompletionRequests(ctx, query, nodes,
+			func(n *User) { n.Edges.GrowthCompletionRequests = []*GrowthCompletionRequest{} },
+			func(n *User, e *GrowthCompletionRequest) {
+				n.Edges.GrowthCompletionRequests = append(n.Edges.GrowthCompletionRequests, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withGrowthRewardClaims; query != nil {
+		if err := _q.loadGrowthRewardClaims(ctx, query, nodes,
+			func(n *User) { n.Edges.GrowthRewardClaims = []*GrowthRewardClaim{} },
+			func(n *User, e *GrowthRewardClaim) {
+				n.Edges.GrowthRewardClaims = append(n.Edges.GrowthRewardClaims, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withGrowthExchangeOrders; query != nil {
+		if err := _q.loadGrowthExchangeOrders(ctx, query, nodes,
+			func(n *User) { n.Edges.GrowthExchangeOrders = []*GrowthExchangeOrder{} },
+			func(n *User, e *GrowthExchangeOrder) {
+				n.Edges.GrowthExchangeOrders = append(n.Edges.GrowthExchangeOrders, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withGrowthAdminAudits; query != nil {
+		if err := _q.loadGrowthAdminAudits(ctx, query, nodes,
+			func(n *User) { n.Edges.GrowthAdminAudits = []*GrowthAdminAudit{} },
+			func(n *User, e *GrowthAdminAudit) { n.Edges.GrowthAdminAudits = append(n.Edges.GrowthAdminAudits, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -1707,6 +1976,183 @@ func (_q *UserQuery) loadRbacAuditLogs(ctx context.Context, query *RBACAuditLogQ
 		node, ok := nodeids[*fk]
 		if !ok {
 			return fmt.Errorf(`unexpected referenced foreign-key "actor_user_id" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadGrowthWallet(ctx context.Context, query *GrowthWalletQuery, nodes []*User, init func(*User), assign func(*User, *GrowthWallet)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int64]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(growthwallet.FieldUserID)
+	}
+	query.Where(predicate.GrowthWallet(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.GrowthWalletColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.UserID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadGrowthUserTasks(ctx context.Context, query *GrowthUserTaskQuery, nodes []*User, init func(*User), assign func(*User, *GrowthUserTask)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int64]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(growthusertask.FieldUserID)
+	}
+	query.Where(predicate.GrowthUserTask(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.GrowthUserTasksColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.UserID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadGrowthCompletionRequests(ctx context.Context, query *GrowthCompletionRequestQuery, nodes []*User, init func(*User), assign func(*User, *GrowthCompletionRequest)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int64]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(growthcompletionrequest.FieldUserID)
+	}
+	query.Where(predicate.GrowthCompletionRequest(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.GrowthCompletionRequestsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.UserID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadGrowthRewardClaims(ctx context.Context, query *GrowthRewardClaimQuery, nodes []*User, init func(*User), assign func(*User, *GrowthRewardClaim)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int64]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(growthrewardclaim.FieldUserID)
+	}
+	query.Where(predicate.GrowthRewardClaim(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.GrowthRewardClaimsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.UserID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadGrowthExchangeOrders(ctx context.Context, query *GrowthExchangeOrderQuery, nodes []*User, init func(*User), assign func(*User, *GrowthExchangeOrder)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int64]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(growthexchangeorder.FieldUserID)
+	}
+	query.Where(predicate.GrowthExchangeOrder(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.GrowthExchangeOrdersColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.UserID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadGrowthAdminAudits(ctx context.Context, query *GrowthAdminAuditQuery, nodes []*User, init func(*User), assign func(*User, *GrowthAdminAudit)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int64]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(growthadminaudit.FieldOperatorID)
+	}
+	query.Where(predicate.GrowthAdminAudit(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.GrowthAdminAuditsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.OperatorID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "operator_id" returned %v for node %v`, fk, n.ID)
 		}
 		assign(node, n)
 	}

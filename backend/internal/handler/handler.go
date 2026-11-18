@@ -2,6 +2,7 @@ package handler
 
 import (
 	"github.com/Wei-Shaw/sub2api/internal/handler/admin"
+	growthhandler "github.com/Wei-Shaw/sub2api/internal/handler/growth"
 )
 
 // AdminHandlers contains all admin-related HTTP handlers
@@ -50,6 +51,7 @@ type Handlers struct {
 	Usage                     *UsageHandler
 	Redeem                    *RedeemHandler
 	Subscription              *SubscriptionHandler
+	Growth                    *growthhandler.Handler
 	Announcement              *AnnouncementHandler
 	ChannelMonitor            *ChannelMonitorUserHandler
 	Admin                     *AdminHandlers

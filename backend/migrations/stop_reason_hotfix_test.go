@@ -14,8 +14,9 @@ func TestStopReasonHotfixCoversUsageAndOpsTables(t *testing.T) {
 	require.NoError(t, err)
 
 	sql := strings.ToLower(string(content))
-	require.Contains(t, sql, "table `usage_logs`")
-	require.Contains(t, sql, "table `ops_error_logs`")
-	require.Equal(t, 2, strings.Count(sql, "column `stop_reason` varchar(64) null"))
-	require.Contains(t, sql, "information_schema.columns")
+	require.Contains(t, sql, "alter table usage_logs")
+	require.Contains(t, sql, "alter table ops_error_logs")
+	require.Equal(t, 2, strings.Count(sql, "column stop_reason varchar(64) null"))
+	require.Contains(t, sql, "show columns from usage_logs")
+	require.Contains(t, sql, "show columns from ops_error_logs")
 }

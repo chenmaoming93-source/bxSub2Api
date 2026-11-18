@@ -97,6 +97,18 @@ const (
 	EdgeRbacUserVersion = "rbac_user_version"
 	// EdgeRbacAuditLogs holds the string denoting the rbac_audit_logs edge name in mutations.
 	EdgeRbacAuditLogs = "rbac_audit_logs"
+	// EdgeGrowthWallet holds the string denoting the growth_wallet edge name in mutations.
+	EdgeGrowthWallet = "growth_wallet"
+	// EdgeGrowthUserTasks holds the string denoting the growth_user_tasks edge name in mutations.
+	EdgeGrowthUserTasks = "growth_user_tasks"
+	// EdgeGrowthCompletionRequests holds the string denoting the growth_completion_requests edge name in mutations.
+	EdgeGrowthCompletionRequests = "growth_completion_requests"
+	// EdgeGrowthRewardClaims holds the string denoting the growth_reward_claims edge name in mutations.
+	EdgeGrowthRewardClaims = "growth_reward_claims"
+	// EdgeGrowthExchangeOrders holds the string denoting the growth_exchange_orders edge name in mutations.
+	EdgeGrowthExchangeOrders = "growth_exchange_orders"
+	// EdgeGrowthAdminAudits holds the string denoting the growth_admin_audits edge name in mutations.
+	EdgeGrowthAdminAudits = "growth_admin_audits"
 	// EdgeUserAllowedGroups holds the string denoting the user_allowed_groups edge name in mutations.
 	EdgeUserAllowedGroups = "user_allowed_groups"
 	// Table holds the table name of the user in the database.
@@ -218,6 +230,48 @@ const (
 	RbacAuditLogsInverseTable = "rbac_audit_logs"
 	// RbacAuditLogsColumn is the table column denoting the rbac_audit_logs relation/edge.
 	RbacAuditLogsColumn = "actor_user_id"
+	// GrowthWalletTable is the table that holds the growth_wallet relation/edge.
+	GrowthWalletTable = "growth_wallets"
+	// GrowthWalletInverseTable is the table name for the GrowthWallet entity.
+	// It exists in this package in order to avoid circular dependency with the "growthwallet" package.
+	GrowthWalletInverseTable = "growth_wallets"
+	// GrowthWalletColumn is the table column denoting the growth_wallet relation/edge.
+	GrowthWalletColumn = "user_id"
+	// GrowthUserTasksTable is the table that holds the growth_user_tasks relation/edge.
+	GrowthUserTasksTable = "growth_user_tasks"
+	// GrowthUserTasksInverseTable is the table name for the GrowthUserTask entity.
+	// It exists in this package in order to avoid circular dependency with the "growthusertask" package.
+	GrowthUserTasksInverseTable = "growth_user_tasks"
+	// GrowthUserTasksColumn is the table column denoting the growth_user_tasks relation/edge.
+	GrowthUserTasksColumn = "user_id"
+	// GrowthCompletionRequestsTable is the table that holds the growth_completion_requests relation/edge.
+	GrowthCompletionRequestsTable = "growth_completion_requests"
+	// GrowthCompletionRequestsInverseTable is the table name for the GrowthCompletionRequest entity.
+	// It exists in this package in order to avoid circular dependency with the "growthcompletionrequest" package.
+	GrowthCompletionRequestsInverseTable = "growth_completion_requests"
+	// GrowthCompletionRequestsColumn is the table column denoting the growth_completion_requests relation/edge.
+	GrowthCompletionRequestsColumn = "user_id"
+	// GrowthRewardClaimsTable is the table that holds the growth_reward_claims relation/edge.
+	GrowthRewardClaimsTable = "growth_reward_claims"
+	// GrowthRewardClaimsInverseTable is the table name for the GrowthRewardClaim entity.
+	// It exists in this package in order to avoid circular dependency with the "growthrewardclaim" package.
+	GrowthRewardClaimsInverseTable = "growth_reward_claims"
+	// GrowthRewardClaimsColumn is the table column denoting the growth_reward_claims relation/edge.
+	GrowthRewardClaimsColumn = "user_id"
+	// GrowthExchangeOrdersTable is the table that holds the growth_exchange_orders relation/edge.
+	GrowthExchangeOrdersTable = "growth_exchange_orders"
+	// GrowthExchangeOrdersInverseTable is the table name for the GrowthExchangeOrder entity.
+	// It exists in this package in order to avoid circular dependency with the "growthexchangeorder" package.
+	GrowthExchangeOrdersInverseTable = "growth_exchange_orders"
+	// GrowthExchangeOrdersColumn is the table column denoting the growth_exchange_orders relation/edge.
+	GrowthExchangeOrdersColumn = "user_id"
+	// GrowthAdminAuditsTable is the table that holds the growth_admin_audits relation/edge.
+	GrowthAdminAuditsTable = "growth_admin_audit"
+	// GrowthAdminAuditsInverseTable is the table name for the GrowthAdminAudit entity.
+	// It exists in this package in order to avoid circular dependency with the "growthadminaudit" package.
+	GrowthAdminAuditsInverseTable = "growth_admin_audit"
+	// GrowthAdminAuditsColumn is the table column denoting the growth_admin_audits relation/edge.
+	GrowthAdminAuditsColumn = "operator_id"
 	// UserAllowedGroupsTable is the table that holds the user_allowed_groups relation/edge.
 	UserAllowedGroupsTable = "user_allowed_groups"
 	// UserAllowedGroupsInverseTable is the table name for the UserAllowedGroup entity.
@@ -689,6 +743,83 @@ func ByRbacAuditLogs(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
+// ByGrowthWalletField orders the results by growth_wallet field.
+func ByGrowthWalletField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newGrowthWalletStep(), sql.OrderByField(field, opts...))
+	}
+}
+
+// ByGrowthUserTasksCount orders the results by growth_user_tasks count.
+func ByGrowthUserTasksCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newGrowthUserTasksStep(), opts...)
+	}
+}
+
+// ByGrowthUserTasks orders the results by growth_user_tasks terms.
+func ByGrowthUserTasks(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newGrowthUserTasksStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByGrowthCompletionRequestsCount orders the results by growth_completion_requests count.
+func ByGrowthCompletionRequestsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newGrowthCompletionRequestsStep(), opts...)
+	}
+}
+
+// ByGrowthCompletionRequests orders the results by growth_completion_requests terms.
+func ByGrowthCompletionRequests(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newGrowthCompletionRequestsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByGrowthRewardClaimsCount orders the results by growth_reward_claims count.
+func ByGrowthRewardClaimsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newGrowthRewardClaimsStep(), opts...)
+	}
+}
+
+// ByGrowthRewardClaims orders the results by growth_reward_claims terms.
+func ByGrowthRewardClaims(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newGrowthRewardClaimsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByGrowthExchangeOrdersCount orders the results by growth_exchange_orders count.
+func ByGrowthExchangeOrdersCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newGrowthExchangeOrdersStep(), opts...)
+	}
+}
+
+// ByGrowthExchangeOrders orders the results by growth_exchange_orders terms.
+func ByGrowthExchangeOrders(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newGrowthExchangeOrdersStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByGrowthAdminAuditsCount orders the results by growth_admin_audits count.
+func ByGrowthAdminAuditsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newGrowthAdminAuditsStep(), opts...)
+	}
+}
+
+// ByGrowthAdminAudits orders the results by growth_admin_audits terms.
+func ByGrowthAdminAudits(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newGrowthAdminAuditsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
 // ByUserAllowedGroupsCount orders the results by user_allowed_groups count.
 func ByUserAllowedGroupsCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -819,6 +950,48 @@ func newRbacAuditLogsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(RbacAuditLogsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, RbacAuditLogsTable, RbacAuditLogsColumn),
+	)
+}
+func newGrowthWalletStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(GrowthWalletInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2O, false, GrowthWalletTable, GrowthWalletColumn),
+	)
+}
+func newGrowthUserTasksStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(GrowthUserTasksInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, GrowthUserTasksTable, GrowthUserTasksColumn),
+	)
+}
+func newGrowthCompletionRequestsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(GrowthCompletionRequestsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, GrowthCompletionRequestsTable, GrowthCompletionRequestsColumn),
+	)
+}
+func newGrowthRewardClaimsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(GrowthRewardClaimsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, GrowthRewardClaimsTable, GrowthRewardClaimsColumn),
+	)
+}
+func newGrowthExchangeOrdersStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(GrowthExchangeOrdersInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, GrowthExchangeOrdersTable, GrowthExchangeOrdersColumn),
+	)
+}
+func newGrowthAdminAuditsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(GrowthAdminAuditsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, GrowthAdminAuditsTable, GrowthAdminAuditsColumn),
 	)
 }
 func newUserAllowedGroupsStep() *sqlgraph.Step {

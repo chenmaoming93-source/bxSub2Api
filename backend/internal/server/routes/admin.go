@@ -79,6 +79,7 @@ func RegisterAdminRoutes(
 
 		// 用户管理
 		registerUserManagementRoutes(admin, h, rbacRoutes)
+		registerGrowthAdminRoutes(admin, h, rbacRoutes)
 
 		// 分组管理
 		registerGroupRoutes(admin, h, rbacRoutes)
@@ -157,6 +158,46 @@ func RegisterAdminRoutes(
 		registerAffiliateRoutes(admin, h, rbacRoutes)
 
 		registerRBACManagementRoutes(admin, h, rbacRoutes)
+	}
+}
+
+func registerGrowthAdminRoutes(admin *gin.RouterGroup, h *handler.Handlers, routes *rbac.RouteRegistrar) {
+	growth := admin.Group("/growth")
+	{
+		adminGET(routes, growth, "/stats/overview", rbac.PermissionGrowthRead, h.Growth.GetOverview)
+		adminGET(routes, growth, "/budget", rbac.PermissionGrowthRead, h.Growth.GetBudget)
+		adminGET(routes, growth, "/budget/entries", rbac.PermissionGrowthRead, h.Growth.ListBudgetEntries)
+		adminPOST(routes, growth, "/budget/entries", rbac.PermissionGrowthManage, h.Growth.CreateBudgetEntry)
+		adminGET(routes, growth, "/budget/allocations", rbac.PermissionGrowthRead, h.Growth.ListAllocations)
+		adminPOST(routes, growth, "/budget/allocations", rbac.PermissionGrowthManage, h.Growth.Allocate)
+		adminPOST(routes, growth, "/tasks/:id/budget/revoke", rbac.PermissionGrowthManage, h.Growth.Revoke)
+		adminGET(routes, growth, "/tasks", rbac.PermissionGrowthRead, h.Growth.ListTasks)
+		adminPOST(routes, growth, "/tasks", rbac.PermissionGrowthManage, h.Growth.CreateTask)
+		adminGET(routes, growth, "/tasks/:id/rule-versions", rbac.PermissionGrowthRead, h.Growth.TaskRuleVersions)
+		adminGET(routes, growth, "/tasks/:id", rbac.PermissionGrowthRead, h.Growth.GetTask)
+		adminPUT(routes, growth, "/tasks/:id", rbac.PermissionGrowthManage, h.Growth.UpdateTask)
+		adminPOST(routes, growth, "/tasks/:id/publish", rbac.PermissionGrowthManage, h.Growth.PublishTask)
+		adminPOST(routes, growth, "/tasks/:id/offline", rbac.PermissionGrowthManage, h.Growth.OfflineTask)
+		adminPOST(routes, growth, "/tasks/:id/online", rbac.PermissionGrowthManage, h.Growth.OnlineTask)
+		adminGET(routes, growth, "/products", rbac.PermissionGrowthRead, h.Growth.ListProducts)
+		adminPOST(routes, growth, "/products", rbac.PermissionGrowthManage, h.Growth.CreateProduct)
+		adminGET(routes, growth, "/products/:id/versions", rbac.PermissionGrowthRead, h.Growth.ProductVersions)
+		adminGET(routes, growth, "/products/:id", rbac.PermissionGrowthRead, h.Growth.GetProduct)
+		adminPUT(routes, growth, "/products/:id", rbac.PermissionGrowthManage, h.Growth.UpdateProduct)
+		adminPOST(routes, growth, "/products/:id/publish", rbac.PermissionGrowthManage, h.Growth.PublishProduct)
+		adminPOST(routes, growth, "/products/:id/stock", rbac.PermissionGrowthManage, h.Growth.AdjustProductStock)
+		adminPOST(routes, growth, "/products/:id/offline", rbac.PermissionGrowthManage, h.Growth.OfflineProduct)
+		adminGET(routes, growth, "/exchanges", rbac.PermissionGrowthRead, h.Growth.AdminListOrders)
+		adminGET(routes, growth, "/exchanges/:id", rbac.PermissionGrowthRead, h.Growth.AdminOrderDetail)
+		adminPOST(routes, growth, "/exchanges/:id/retry", rbac.PermissionGrowthManage, h.Growth.AdminRetryOrder)
+		adminPOST(routes, growth, "/exchanges/:id/manual-complete", rbac.PermissionGrowthManage, h.Growth.AdminManualCompleteOrder)
+		adminPOST(routes, growth, "/exchanges/:id/refund", rbac.PermissionGrowthManage, h.Growth.AdminRefundOrder)
+		adminGET(routes, growth, "/users", rbac.PermissionGrowthRead, h.Growth.AdminListUserPoints)
+		adminGET(routes, growth, "/users/:id/ledger", rbac.PermissionGrowthRead, h.Growth.AdminUserLedger)
+		adminGET(routes, growth, "/users/:id/exchanges", rbac.PermissionGrowthRead, h.Growth.AdminUserExchanges)
+		adminPOST(routes, growth, "/users/:id/adjustments", rbac.PermissionGrowthAdjust, h.Growth.AdminAdjustPoints)
+		adminGET(routes, growth, "/audit-logs", rbac.PermissionGrowthRead, h.Growth.AdminAuditLogs)
+		adminGET(routes, growth, "/reconciliation", rbac.PermissionGrowthRead, h.Growth.AdminReconciliation)
 	}
 }
 

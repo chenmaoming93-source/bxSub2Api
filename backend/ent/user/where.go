@@ -1801,6 +1801,144 @@ func HasRbacAuditLogsWith(preds ...predicate.RBACAuditLog) predicate.User {
 	})
 }
 
+// HasGrowthWallet applies the HasEdge predicate on the "growth_wallet" edge.
+func HasGrowthWallet() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, GrowthWalletTable, GrowthWalletColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasGrowthWalletWith applies the HasEdge predicate on the "growth_wallet" edge with a given conditions (other predicates).
+func HasGrowthWalletWith(preds ...predicate.GrowthWallet) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newGrowthWalletStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasGrowthUserTasks applies the HasEdge predicate on the "growth_user_tasks" edge.
+func HasGrowthUserTasks() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, GrowthUserTasksTable, GrowthUserTasksColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasGrowthUserTasksWith applies the HasEdge predicate on the "growth_user_tasks" edge with a given conditions (other predicates).
+func HasGrowthUserTasksWith(preds ...predicate.GrowthUserTask) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newGrowthUserTasksStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasGrowthCompletionRequests applies the HasEdge predicate on the "growth_completion_requests" edge.
+func HasGrowthCompletionRequests() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, GrowthCompletionRequestsTable, GrowthCompletionRequestsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasGrowthCompletionRequestsWith applies the HasEdge predicate on the "growth_completion_requests" edge with a given conditions (other predicates).
+func HasGrowthCompletionRequestsWith(preds ...predicate.GrowthCompletionRequest) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newGrowthCompletionRequestsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasGrowthRewardClaims applies the HasEdge predicate on the "growth_reward_claims" edge.
+func HasGrowthRewardClaims() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, GrowthRewardClaimsTable, GrowthRewardClaimsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasGrowthRewardClaimsWith applies the HasEdge predicate on the "growth_reward_claims" edge with a given conditions (other predicates).
+func HasGrowthRewardClaimsWith(preds ...predicate.GrowthRewardClaim) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newGrowthRewardClaimsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasGrowthExchangeOrders applies the HasEdge predicate on the "growth_exchange_orders" edge.
+func HasGrowthExchangeOrders() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, GrowthExchangeOrdersTable, GrowthExchangeOrdersColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasGrowthExchangeOrdersWith applies the HasEdge predicate on the "growth_exchange_orders" edge with a given conditions (other predicates).
+func HasGrowthExchangeOrdersWith(preds ...predicate.GrowthExchangeOrder) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newGrowthExchangeOrdersStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasGrowthAdminAudits applies the HasEdge predicate on the "growth_admin_audits" edge.
+func HasGrowthAdminAudits() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, GrowthAdminAuditsTable, GrowthAdminAuditsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasGrowthAdminAuditsWith applies the HasEdge predicate on the "growth_admin_audits" edge with a given conditions (other predicates).
+func HasGrowthAdminAuditsWith(preds ...predicate.GrowthAdminAudit) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newGrowthAdminAuditsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasUserAllowedGroups applies the HasEdge predicate on the "user_allowed_groups" edge.
 func HasUserAllowedGroups() predicate.User {
 	return predicate.User(func(s *sql.Selector) {
