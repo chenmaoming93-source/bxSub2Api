@@ -85,21 +85,89 @@ func TestGrowthCompatibilityUpgradeScripts(t *testing.T) {
 				AND direction IN ('IN', 'OUT')
 			)
 		)`,
+		`CREATE TABLE growth_budget_entries (
+			id BIGINT PRIMARY KEY,
+			entry_type VARCHAR(16) NOT NULL,
+			points BIGINT NOT NULL,
+			budget_after BIGINT NOT NULL,
+			allocated_after BIGINT NOT NULL,
+			distributed_after BIGINT NOT NULL,
+			CONSTRAINT chk_growth_budget_entries_type CHECK (
+				entry_type IN ('TOPUP', 'REDUCE', 'ALLOCATE', 'REVOKE')
+			),
+			CONSTRAINT chk_growth_budget_entries_amounts CHECK (
+				points > 0 AND budget_after >= 0 AND allocated_after >= 0 AND distributed_after >= 0
+			)
+		)`,
+		`CREATE TABLE growth_wallets (
+			id BIGINT PRIMARY KEY,
+			user_id BIGINT NOT NULL,
+			available_points BIGINT NOT NULL,
+			earned_total BIGINT NOT NULL,
+			spent_total BIGINT NOT NULL,
+			version BIGINT NOT NULL,
+			CONSTRAINT chk_growth_wallets_balances CHECK (
+				available_points >= 0 AND earned_total >= 0 AND spent_total >= 0 AND version > 0
+			)
+		)`,
 		`CREATE TABLE growth_reward_claims (
 			id BIGINT PRIMARY KEY,
 			user_id BIGINT NOT NULL,
 			task_id BIGINT NOT NULL,
 			cycle_key VARCHAR(64) NOT NULL,
 			status VARCHAR(20) NOT NULL,
-			UNIQUE KEY uq_growth_reward_claims_cycle (user_id, task_id, cycle_key)
+			points BIGINT NOT NULL,
+			UNIQUE KEY uq_growth_reward_claims_cycle (user_id, task_id, cycle_key),
+			CONSTRAINT chk_growth_reward_claims_points CHECK (points > 0)
 		)`,
 		`CREATE TABLE growth_tasks (
 			id BIGINT PRIMARY KEY,
 			description VARCHAR(2048) NOT NULL,
 			status VARCHAR(20) NOT NULL,
-			CONSTRAINT chk_growth_tasks_status CHECK (status IN ('DRAFT', 'ACTIVE', 'OFFLINE'))
+			category VARCHAR(32) NOT NULL,
+			task_type VARCHAR(32) NOT NULL,
+			allocated_points BIGINT NOT NULL,
+			distributed_points BIGINT NOT NULL,
+			CONSTRAINT chk_growth_tasks_quota CHECK (
+				allocated_points >= 0 AND distributed_points >= 0 AND distributed_points <= allocated_points
+			),
+			CONSTRAINT chk_growth_tasks_status CHECK (status IN ('DRAFT', 'ACTIVE', 'OFFLINE')),
+			CONSTRAINT chk_growth_tasks_category CHECK (category IN ('CHECKIN', 'DAILY', 'ACHIEVEMENT')),
+			CONSTRAINT chk_growth_tasks_type CHECK (task_type IN ('CHECKIN', 'DAILY', 'ACHIEVEMENT'))
 		)`,
-		`CREATE TABLE growth_user_tasks (id BIGINT PRIMARY KEY, status VARCHAR(32) NOT NULL)`,
+		`CREATE TABLE growth_task_rules (
+			id BIGINT PRIMARY KEY,
+			version INT NOT NULL,
+			conditions JSON NULL,
+			target BIGINT NOT NULL,
+			reward_points BIGINT NOT NULL,
+			period_type VARCHAR(20) NOT NULL,
+			daily_limit INT NOT NULL,
+			per_user_limit INT NOT NULL,
+			CONSTRAINT chk_growth_task_rules_values CHECK (
+				version > 0 AND target > 0 AND reward_points > 0
+				AND daily_limit >= 0 AND per_user_limit >= 0
+				AND period_type IN ('DAILY', 'ONCE', 'WEEKLY')
+			)
+		)`,
+		`CREATE TABLE growth_user_tasks (
+			id BIGINT PRIMARY KEY,
+			status VARCHAR(32) NOT NULL,
+			progress BIGINT NOT NULL,
+			target BIGINT NOT NULL,
+			completed_count BIGINT NOT NULL,
+			CONSTRAINT chk_growth_user_tasks_values CHECK (
+				progress >= 0 AND target > 0 AND completed_count >= 0
+			)
+		)`,
+		`CREATE TABLE growth_completion_requests (
+			id BIGINT PRIMARY KEY,
+			result VARCHAR(32) NOT NULL,
+			awarded_points BIGINT NOT NULL,
+			CONSTRAINT chk_growth_completion_result CHECK (
+				result IN ('AWARDED', 'ALREADY_COMPLETED', 'NOT_ELIGIBLE') AND awarded_points >= 0
+			)
+		)`,
 		`CREATE TABLE growth_products (
 			id BIGINT PRIMARY KEY,
 			product_type VARCHAR(32) NOT NULL,
@@ -113,8 +181,33 @@ func TestGrowthCompatibilityUpgradeScripts(t *testing.T) {
 				AND current_version >= 0
 			)
 		)`,
-		`CREATE TABLE growth_task_rules (id BIGINT PRIMARY KEY, conditions JSON NULL)`,
-		`CREATE TABLE growth_product_versions (id BIGINT PRIMARY KEY, benefit_detail JSON NULL)`,
+		`CREATE TABLE growth_product_versions (
+			id BIGINT PRIMARY KEY,
+			version INT NOT NULL,
+			points_cost BIGINT NOT NULL,
+			benefit_detail JSON NULL,
+			token_amount BIGINT NOT NULL,
+			per_user_limit INT NOT NULL,
+			CONSTRAINT chk_growth_product_versions_values CHECK (
+				version > 0 AND points_cost > 0 AND token_amount >= 0 AND per_user_limit >= 0
+			)
+		)`,
+		`CREATE TABLE growth_product_inventory (
+			id BIGINT PRIMARY KEY,
+			stock_mode VARCHAR(20) NOT NULL,
+			available BIGINT NOT NULL,
+			reserved BIGINT NOT NULL,
+			sold BIGINT NOT NULL,
+			lock_version BIGINT NOT NULL,
+			token_quota_total BIGINT NOT NULL,
+			token_quota_distributed BIGINT NOT NULL,
+			CONSTRAINT chk_growth_product_inventory_values CHECK (
+				stock_mode IN ('LIMITED', 'UNLIMITED')
+				AND available >= 0 AND reserved >= 0 AND sold >= 0 AND lock_version > 0
+				AND token_quota_total >= 0 AND token_quota_distributed >= 0
+				AND token_quota_distributed <= token_quota_total
+			)
+		)`,
 		`CREATE TABLE growth_exchange_orders (
 			id BIGINT PRIMARY KEY,
 			product_version INT NOT NULL,
@@ -145,6 +238,17 @@ func TestGrowthCompatibilityUpgradeScripts(t *testing.T) {
 			before_json JSON NULL,
 			after_json JSON NULL
 		)`,
+		`CREATE TABLE growth_inventory_ledger (
+			id BIGINT PRIMARY KEY,
+			operation_type VARCHAR(32) NOT NULL,
+			available_after BIGINT NOT NULL,
+			reserved_after BIGINT NOT NULL,
+			sold_after BIGINT NOT NULL,
+			CONSTRAINT chk_growth_inventory_ledger_values CHECK (
+				operation_type IN ('STOCK_IN', 'RESERVE', 'SELL', 'RELEASE', 'ADJUST')
+				AND available_after >= 0 AND reserved_after >= 0 AND sold_after >= 0
+			)
+		)`,
 	}
 	for _, statement := range legacyStatements {
 		_, err := db.ExecContext(ctx, statement)
@@ -158,6 +262,7 @@ func TestGrowthCompatibilityUpgradeScripts(t *testing.T) {
 	_, sourceFile, _, ok := runtime.Caller(0)
 	require.True(t, ok)
 	for _, filename := range []string{
+		"187_growth_drop_legacy_constraints.sql",
 		"184_growth_adjustment_account.sql",
 		"185_growth_multi_reward_claims.sql",
 		"186_growth_goldendb_schema_compat.sql",
@@ -204,4 +309,11 @@ func TestGrowthCompatibilityUpgradeScripts(t *testing.T) {
 	require.NoError(t, db.QueryRowContext(ctx,
 		`SELECT product_snapshot FROM growth_exchange_orders WHERE id = 1`).Scan(&snapshot))
 	require.JSONEq(t, `{"title":"legacy"}`, snapshot)
+	var legacyChecks int
+	require.NoError(t, db.QueryRowContext(ctx, `
+		SELECT COUNT(*) FROM information_schema.table_constraints
+		WHERE constraint_schema = DATABASE()
+		  AND table_name LIKE 'growth_%'
+		  AND constraint_type = 'CHECK'`).Scan(&legacyChecks))
+	require.Zero(t, legacyChecks)
 }

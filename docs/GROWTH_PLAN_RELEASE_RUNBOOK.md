@@ -179,9 +179,27 @@ mysql -h <db-host> -P <db-port> -u <db-user> -p \
   <database-name> < backend/sqlArchiving/185_growth_multi_reward_claims.sql
 ```
 
-脚本直接补列、替换唯一键并增加检查约束，不使用动态 SQL。
+脚本直接补列并替换唯一键，不使用动态 SQL。
 
-### 3.4 GoldenDB 字段兼容升级
+### 3.4 删除旧版校验约束
+
+仅旧版带校验约束的 Growth 表执行，并且必须先于 186：
+
+```bash
+mysql -h <db-host> -P <db-port> -u <db-user> -p \
+  <database-name> < backend/sqlArchiving/187_growth_drop_legacy_constraints.sql
+```
+
+该脚本只使用 `ALTER TABLE ... DROP CONSTRAINT`。
+
+如果环境曾执行旧版 185，再执行一次：
+
+```bash
+mysql -h <db-host> -P <db-port> -u <db-user> -p \
+  <database-name> < backend/sqlArchiving/188_growth_drop_sequence_constraint.sql
+```
+
+### 3.5 GoldenDB 字段兼容升级
 
 仅旧版 Growth 表执行：
 
@@ -197,7 +215,7 @@ mysql -h <db-host> -P <db-port> -u <db-user> -p \
 - `action` 改为 `action_type`。
 - 5 个 JSON 字段改为 `LONGTEXT NULL`。
 
-### 3.5 更新 RBAC 兼容 seed
+### 3.6 更新 RBAC 兼容 seed
 
 ```bash
 mysql -h <db-host> -P <db-port> -u <db-user> -p \
@@ -206,14 +224,14 @@ mysql -h <db-host> -P <db-port> -u <db-user> -p \
 
 该脚本必须幂等，可重复执行。
 
-### 3.6 添加 Growth 权限
+### 3.7 添加 Growth 权限
 
 ```bash
 mysql -h <db-host> -P <db-port> -u <db-user> -p \
   <database-name> < backend/sqlArchiving/183_add_growth_rbac_permissions.sql
 ```
 
-### 3.7 数据库验证
+### 3.8 数据库验证
 
 ```sql
 SELECT COUNT(*) AS growth_table_count
@@ -221,15 +239,10 @@ FROM information_schema.tables
 WHERE table_schema = DATABASE()
   AND table_name LIKE 'growth_%';
 
-SELECT constraint_name, check_clause
-FROM information_schema.check_constraints
+SELECT COUNT(*) AS growth_validation_constraint_count
+FROM information_schema.table_constraints
 WHERE constraint_schema = DATABASE()
-  AND constraint_name IN (
-    'chk_growth_budgets_nonnegative',
-    'chk_growth_transfers_accounts',
-    'chk_growth_account_ledger_values',
-    'chk_growth_reward_claims_sequence'
-  );
+  AND constraint_name LIKE 'chk_growth_%';
 
 SHOW INDEX FROM growth_reward_claims
 WHERE Key_name = 'uq_growth_reward_claims_cycle';
@@ -261,7 +274,7 @@ WHERE r.code = 'user'
 - Growth 表数量：`17`
 - Growth 权限数量：`5`
 - 普通用户 Growth 权限：`2`
-- 预算、账户与奖励序号相关检查约束均存在，转账和账务账户枚举均包含 `ADJUST`
+- Growth 表数据库校验约束数量为 `0`
 - `growth_reward_claims.sequence` 存在，且唯一键包含 `user_id, task_id, cycle_key, sequence`
 - 保留字和 JSON 类型检查结果为空
 

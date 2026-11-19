@@ -75,7 +75,7 @@ func TestGrowthSchemaAndArchiveStayAligned(t *testing.T) {
 	require.Contains(t, sql, "product_snapshot LONGTEXT NULL")
 	require.Contains(t, sql, "before_json LONGTEXT NULL")
 	require.Contains(t, sql, "after_json LONGTEXT NULL")
-	require.Contains(t, sql, "CHECK")
+	require.NotContains(t, strings.ToUpper(sql), "CHECK")
 	require.NotContains(t, strings.ToUpper(sql), "ON DELETE CASCADE")
 }
 

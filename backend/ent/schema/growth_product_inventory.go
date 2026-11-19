@@ -16,10 +16,7 @@ type GrowthProductInventory struct {
 }
 
 func (GrowthProductInventory) Annotations() []schema.Annotation {
-	return []schema.Annotation{
-		entsql.Annotation{Table: "growth_product_inventory"},
-		entsql.Check("available >= 0 AND reserved >= 0 AND sold >= 0 AND token_quota_total >= 0 AND token_quota_distributed >= 0 AND token_quota_distributed <= token_quota_total"),
-	}
+	return []schema.Annotation{entsql.Annotation{Table: "growth_product_inventory"}}
 }
 
 func (GrowthProductInventory) Mixin() []ent.Mixin {

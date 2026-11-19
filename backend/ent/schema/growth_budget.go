@@ -15,10 +15,7 @@ type GrowthBudget struct {
 }
 
 func (GrowthBudget) Annotations() []schema.Annotation {
-	return []schema.Annotation{
-		entsql.Annotation{Table: "growth_budgets"},
-		entsql.Check("total_amount >= 0 AND allocated_amount >= 0 AND distributed_amount >= 0 AND allocated_amount <= total_amount AND distributed_amount <= total_amount"),
-	}
+	return []schema.Annotation{entsql.Annotation{Table: "growth_budgets"}}
 }
 
 func (GrowthBudget) Mixin() []ent.Mixin {

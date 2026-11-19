@@ -5,7 +5,7 @@
 | 变更编号 | `CHG-GROWTH-20261118-001` |
 | 变更名称 | sub2api 成长计划 MVP 及代码审查修复上线 |
 | 变更类型 | 新增业务模块、数据库增量变更、前后端发布 |
-| 申请日期 | 2026-11-18 |
+| 申请日期 | 2026-11-19 |
 | 计划窗口 | `<待填写>` |
 | 实施人 | `<待填写>` |
 | 复核人 | `<待填写>` |
@@ -22,6 +22,10 @@
 - 修复预算核减、任务额度划拨和发分事务的并发与账务一致性问题。
 - 人工调账扣减使用独立 `ADJUST` 账户，不再混入兑换消费口径。
 - 补充调账幂等、跨用户幂等冲突、零积分筛选、错误码和前端兼容处理。
+- 数据库列名和数据类型调整为 GoldenDB 兼容语法。
+- 管理端限额用户选择器改为服务端用户搜索。
+- Dashboard 聚合改用固定 UTC 偏移，不依赖 MySQL 时区表。
+- 恢复 Growth 页面的统一侧边栏和 Header 布局。
 
 ## 2. 影响范围
 
@@ -34,6 +38,7 @@
 | RBAC | 新增 5 个 Growth 权限码 |
 | 数据库 | 新增 17 张 `growth_*` 表；升级预算、调账和多次发放约束 |
 | 配置 | 新增并确认 `growth.crypto.time_window`，默认 `5m` |
+| Dashboard 聚合 | MySQL `CONVERT_TZ` 使用 `+08:00` 等固定偏移，不加载时区表 |
 | 现有业务 | 不修改现有账号、支付、订阅等主流程；不删除现有业务表 |
 
 AIWork 协同事项：
@@ -49,12 +54,14 @@ AIWork 协同事项：
 
 | 顺序 | 脚本 | 变更内容 | 风险 |
 |---|---|---|---|
-| 1 | `backend/sqlArchiving/182_create_growth_tables.sql` | 创建 17 张 Growth 表、索引、唯一键和检查约束 | 中 |
-| 2 | `backend/sqlArchiving/184_growth_adjustment_account.sql` | 旧环境增加 `ADJUST` 账户枚举，修正预算检查约束 | 中 |
+| 1 | `backend/sqlArchiving/182_create_growth_tables.sql` | 创建 17 张 Growth 表、索引和唯一键，不包含数据库校验约束 | 中 |
+| 2 | `backend/sqlArchiving/184_growth_adjustment_account.sql` | `ADJUST` 账户由应用层校验，无数据库 DDL | 低 |
 | 3 | `backend/sqlArchiving/185_growth_multi_reward_claims.sql` | 旧环境增加领取 `sequence` 和多发分唯一键 | 中 |
 | 4 | `backend/sqlArchiving/186_growth_goldendb_schema_compat.sql` | 旧环境重命名保留字列并将 JSON 改为 LONGTEXT | 中 |
-| 5 | `backend/sqlArchiving/163_seed_rbac_compatibility.sql` | 同步 RBAC 兼容 seed | 低 |
-| 6 | `backend/sqlArchiving/183_add_growth_rbac_permissions.sql` | 新增 Growth 权限和普通用户授权 | 中 |
+| 5 | `backend/sqlArchiving/187_growth_drop_legacy_constraints.sql` | 删除旧版 Growth 表遗留的校验约束 | 中 |
+| 6 | `backend/sqlArchiving/188_growth_drop_sequence_constraint.sql` | 可选：删除旧版 185 留下的领取序号约束 | 低 |
+| 7 | `backend/sqlArchiving/163_seed_rbac_compatibility.sql` | 同步 RBAC 兼容 seed | 低 |
+| 8 | `backend/sqlArchiving/183_add_growth_rbac_permissions.sql` | 新增 Growth 权限和普通用户授权 | 中 |
 
 核心结构变化：
 
@@ -84,7 +91,7 @@ JSON fields:
 - 已完成数据库全量备份，并验证备份可恢复。
 - 已获取数据库变更审批。
 - 已停止成长计划写入及兑换履约流量。
-- 已确认 MySQL 8 或 GoldenDB 兼容环境支持 `CHECK` 约束和基础 `ALTER TABLE`。
+- 已确认 MySQL 8 或 GoldenDB 兼容环境支持基础 `ALTER TABLE`。
 - 已确认现有 `growth_*` 表状态，但不手工重建已有业务表。
 
 备份示例：
@@ -114,6 +121,9 @@ mysql -h <db-host> -P <db-port> -u <db-user> -p <database-name> \
 
 ```bash
 mysql -h <db-host> -P <db-port> -u <db-user> -p <database-name> \
+  < backend/sqlArchiving/187_growth_drop_legacy_constraints.sql
+
+mysql -h <db-host> -P <db-port> -u <db-user> -p <database-name> \
   < backend/sqlArchiving/184_growth_adjustment_account.sql
 
 mysql -h <db-host> -P <db-port> -u <db-user> -p <database-name> \
@@ -123,12 +133,22 @@ mysql -h <db-host> -P <db-port> -u <db-user> -p <database-name> \
   < backend/sqlArchiving/186_growth_goldendb_schema_compat.sql
 ```
 
+如果该环境曾经执行过旧版 `185_growth_multi_reward_claims.sql`，再执行：
+
+```bash
+mysql -h <db-host> -P <db-port> -u <db-user> -p <database-name> \
+  < backend/sqlArchiving/188_growth_drop_sequence_constraint.sql
+```
+
 说明：
 
 - 最新版 182 只用于全新环境，不能在字段已经升级的环境重复执行增量字段升级。
-- 184/185/186 只用于旧版 Growth 表，不使用 `PREPARE`、`EXECUTE` 或动态 SQL。
+- 184/185/186/187 只用于旧版 Growth 表，不使用 `PREPARE`、`EXECUTE` 或动态 SQL。
+- 188 仅在旧版 185 已产生对应约束时执行。
 - 185 直接替换旧三列唯一键为包含 `sequence` 的新唯一键。
-- 186 直接重命名列并修改 LONGTEXT 类型，已有数据保持不变。
+- 187 先删除旧版校验约束，再执行列改名。
+- 186 直接重命名列，不创建任何数据库校验约束。
+- 186 将 5 个 JSON 字段修改为 `LONGTEXT NULL`，已有 JSON 文本内容保持不变。
 - 不在生产执行 Ent 重新生成命令。
 
 ## 4. 配置与权限
@@ -147,6 +167,7 @@ growth:
 - 数据库、Redis、JWT、TOTP 等沿用现有生产配置。
 - Redis 必须可用，用于 SM2 nonce 防重放。
 - 服务端与 AIWork 主机 NTP 正常，时钟偏差小于 5 分钟。
+- MySQL 连接不再要求加载 `mysql.time_zone_name`；Dashboard 聚合使用固定 `±HH:MM` 偏移。
 
 ### 4.2 RBAC 权限
 
@@ -213,15 +234,10 @@ FROM information_schema.tables
 WHERE table_schema = DATABASE()
   AND table_name LIKE 'growth_%';
 
-SELECT constraint_name, check_clause
-FROM information_schema.check_constraints
+SELECT COUNT(*) AS growth_validation_constraint_count
+FROM information_schema.table_constraints
 WHERE constraint_schema = DATABASE()
-  AND constraint_name IN (
-    'chk_growth_budgets_nonnegative',
-    'chk_growth_transfers_accounts',
-    'chk_growth_account_ledger_values',
-    'chk_growth_reward_claims_sequence'
-  );
+  AND constraint_name LIKE 'chk_growth_%';
 
 SHOW INDEX FROM growth_reward_claims
 WHERE Key_name = 'uq_growth_reward_claims_cycle';
@@ -248,7 +264,7 @@ ORDER BY code;
 - `uq_growth_reward_claims_cycle` 包含 `user_id, task_id, cycle_key, sequence`。
 - Growth 表中不存在 `status/description/action` 列，也不存在 JSON 类型列。
 - `conditions/benefit_detail/product_snapshot/before_json/after_json` 均为可空 LONGTEXT。
-- 转账、账务和奖励检查约束存在。
+- Growth 表数据库校验约束数量为 `0`。
 - Growth 权限数量为 `5`。
 - 普通用户拥有 `growth.self.read`、`growth.self.exchange`。
 
@@ -260,6 +276,7 @@ ORDER BY code;
 | 管理端 `/admin/growth` | 5 个 Tab 正常加载 |
 | Web `/growth` | 积分总览、任务、商品、流水正常 |
 | 权限不足页面 | 返回明确的 403 提示 |
+| Growth 页面布局 | 桌面端侧边栏和 Header 正常；移动端可通过菜单按钮打开抽屉 |
 | 任务每日上限配置为 3 | 当天前 3 次可返回 `AWARDED`，第 4 次返回 `NOT_ELIGIBLE` |
 | 每人累计上限达到 | 后续完成返回 `NOT_ELIGIBLE` |
 | 相同 `completion_ref` 重试 | 返回 `ALREADY_COMPLETED`，不重复发分 |
@@ -314,8 +331,13 @@ ORDER BY code;
 - Growth MySQL 集成测试通过。
 - `go vet` 通过。
 - 大额/并发发分、每日上限、累计上限、序号连续性测试通过。
-- 新库执行 182→184→185 通过。
-- 旧奖励唯一键自动升级为含 `sequence` 新唯一键的测试通过。
+- 新库只执行最新版 182，连续执行两次通过。
+- 旧库执行 `184 → 185 → 186` 升级测试通过。
+- 旧版奖励唯一键成功升级为包含 `sequence` 的新唯一键。
+- 旧版 JSON 字段成功转换为可空 LONGTEXT，数据内容保持一致。
+- Growth 管理端和用户端已恢复 `AppLayout`，实际桌面窗口验证侧边栏和 Header 正常。
+- MySQL 固定偏移聚合测试通过，Dashboard 聚合不再出现 `bucket_start cannot be null`。
+- 限额用户选择器使用服务端搜索并通过类型检查、ESLint 和测试。
 - 前端 15 个 Growth 测试、类型检查、ESLint、生产构建通过。
 - 后端生产制品构建通过。
 

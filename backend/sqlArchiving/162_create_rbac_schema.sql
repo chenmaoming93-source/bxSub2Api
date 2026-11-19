@@ -30,8 +30,6 @@ CREATE TABLE IF NOT EXISTS rbac_permissions (
     created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     deleted_at DATETIME(6) NULL,
-    CONSTRAINT chk_rbac_permissions_risk
-        CHECK (risk_level IN ('low', 'medium', 'high', 'critical')),
     KEY idx_rbac_permissions_module (module),
     KEY idx_rbac_permissions_status (status),
     KEY idx_rbac_permissions_deleted_at (deleted_at)
@@ -68,7 +66,6 @@ CREATE TABLE IF NOT EXISTS rbac_user_versions (
     user_id BIGINT NOT NULL,
     authz_version BIGINT NOT NULL DEFAULT 1,
     updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-    CONSTRAINT chk_rbac_user_versions_positive CHECK (authz_version > 0),
     CONSTRAINT uq_rbac_user_versions_user UNIQUE (user_id),
     CONSTRAINT fk_rbac_user_versions_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -76,9 +73,7 @@ CREATE TABLE IF NOT EXISTS rbac_user_versions (
 CREATE TABLE IF NOT EXISTS rbac_policy_state (
     id BIGINT PRIMARY KEY DEFAULT 1,
     policy_version BIGINT NOT NULL DEFAULT 1,
-    updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-    CONSTRAINT chk_rbac_policy_state_singleton CHECK (id = 1),
-    CONSTRAINT chk_rbac_policy_state_version_positive CHECK (policy_version > 0)
+    updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
 INSERT INTO rbac_policy_state (id, policy_version)

@@ -10,14 +10,7 @@ CREATE TABLE IF NOT EXISTS growth_budgets (
     version BIGINT NOT NULL DEFAULT 1,
     created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
-    PRIMARY KEY (id),
-    CONSTRAINT chk_growth_budgets_nonnegative CHECK (
-        total_amount >= 0
-        AND allocated_amount >= 0
-        AND distributed_amount >= 0
-        AND allocated_amount <= total_amount
-        AND distributed_amount <= total_amount
-    )
+    PRIMARY KEY (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS growth_budget_entries (
@@ -37,14 +30,7 @@ CREATE TABLE IF NOT EXISTS growth_budget_entries (
     PRIMARY KEY (id),
     KEY idx_growth_budget_entries_task (task_id),
     KEY idx_growth_budget_entries_type_time (entry_type, created_at),
-    KEY idx_growth_budget_entries_operator_time (operator_id, created_at),
-    CONSTRAINT chk_growth_budget_entries_type CHECK (entry_type IN ('TOPUP', 'REDUCE', 'ALLOCATE', 'REVOKE')),
-    CONSTRAINT chk_growth_budget_entries_amounts CHECK (
-        points > 0
-        AND budget_after >= 0
-        AND allocated_after >= 0
-        AND distributed_after >= 0
-    )
+    KEY idx_growth_budget_entries_operator_time (operator_id, created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS growth_wallets (
@@ -59,13 +45,7 @@ CREATE TABLE IF NOT EXISTS growth_wallets (
     updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
     PRIMARY KEY (id),
     UNIQUE KEY uq_growth_wallets_user (user_id),
-    CONSTRAINT fk_growth_wallets_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE RESTRICT ON UPDATE RESTRICT,
-    CONSTRAINT chk_growth_wallets_balances CHECK (
-        available_points >= 0
-        AND earned_total >= 0
-        AND spent_total >= 0
-        AND version > 0
-    )
+    CONSTRAINT fk_growth_wallets_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS growth_transfers (
@@ -90,13 +70,7 @@ CREATE TABLE IF NOT EXISTS growth_transfers (
     KEY idx_growth_transfers_to_user_time (to_user_id, created_at),
     KEY idx_growth_transfers_task (task_id),
     KEY idx_growth_transfers_order (order_id),
-    KEY idx_growth_transfers_status (transfer_status),
-    CONSTRAINT chk_growth_transfers_accounts CHECK (
-        from_account_type IN ('TASK', 'WALLET', 'REDEEMED', 'SYSTEM', 'ADJUST')
-        AND to_account_type IN ('TASK', 'WALLET', 'REDEEMED', 'SYSTEM', 'ADJUST')
-        AND points > 0
-    ),
-    CONSTRAINT chk_growth_transfers_status CHECK (transfer_status IN ('PENDING', 'SUCCEEDED', 'FAILED', 'REVERSED'))
+    KEY idx_growth_transfers_status (transfer_status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS growth_account_ledger (
@@ -115,13 +89,7 @@ CREATE TABLE IF NOT EXISTS growth_account_ledger (
     PRIMARY KEY (id),
     KEY idx_growth_account_ledger_transfer (transfer_id),
     KEY idx_growth_account_ledger_user_time (user_id, created_at, id),
-    KEY idx_growth_account_ledger_biz_time (biz_type, created_at),
-    CONSTRAINT chk_growth_account_ledger_values CHECK (
-        account_type IN ('TASK', 'WALLET', 'REDEEMED', 'SYSTEM', 'ADJUST')
-        AND direction IN ('IN', 'OUT')
-        AND points > 0
-        AND (balance_after IS NULL OR balance_after >= 0)
-    )
+    KEY idx_growth_account_ledger_biz_time (biz_type, created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS growth_tasks (
@@ -143,15 +111,7 @@ CREATE TABLE IF NOT EXISTS growth_tasks (
     PRIMARY KEY (id),
     UNIQUE KEY uq_growth_tasks_code (task_code),
     KEY idx_growth_tasks_status_sort (task_status, sort_order),
-    KEY idx_growth_tasks_category_status (category, task_status),
-    CONSTRAINT chk_growth_tasks_quota CHECK (
-        allocated_points >= 0
-        AND distributed_points >= 0
-        AND distributed_points <= allocated_points
-    ),
-    CONSTRAINT chk_growth_tasks_status CHECK (task_status IN ('DRAFT', 'ACTIVE', 'OFFLINE')),
-    CONSTRAINT chk_growth_tasks_category CHECK (category IN ('CHECKIN', 'DAILY', 'ACHIEVEMENT')),
-    CONSTRAINT chk_growth_tasks_type CHECK (task_type IN ('CHECKIN', 'DAILY', 'ACHIEVEMENT'))
+    KEY idx_growth_tasks_category_status (category, task_status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS growth_task_rules (
@@ -174,15 +134,7 @@ CREATE TABLE IF NOT EXISTS growth_task_rules (
     PRIMARY KEY (id),
     UNIQUE KEY uq_growth_task_rules_version (task_id, version),
     KEY idx_growth_task_rules_effective (task_id, effective_from, effective_to),
-    KEY idx_growth_task_rules_published (published_at),
-    CONSTRAINT chk_growth_task_rules_values CHECK (
-        version > 0
-        AND target > 0
-        AND reward_points > 0
-        AND daily_limit >= 0
-        AND per_user_limit >= 0
-        AND period_type IN ('DAILY', 'ONCE', 'WEEKLY')
-    )
+    KEY idx_growth_task_rules_published (published_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS growth_user_tasks (
@@ -203,12 +155,7 @@ CREATE TABLE IF NOT EXISTS growth_user_tasks (
     UNIQUE KEY uq_growth_user_tasks_cycle (user_id, task_id, rule_id, cycle_key),
     KEY idx_growth_user_tasks_user_time (user_id, created_at),
     KEY idx_growth_user_tasks_task_cycle (task_id, cycle_key),
-    CONSTRAINT fk_growth_user_tasks_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE RESTRICT ON UPDATE RESTRICT,
-    CONSTRAINT chk_growth_user_tasks_values CHECK (
-        progress >= 0
-        AND target > 0
-        AND completed_count >= 0
-    )
+    CONSTRAINT fk_growth_user_tasks_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS growth_completion_requests (
@@ -229,11 +176,7 @@ CREATE TABLE IF NOT EXISTS growth_completion_requests (
     KEY idx_growth_completion_user_time (user_id, created_at),
     KEY idx_growth_completion_task_cycle (task_id, cycle_key),
     KEY idx_growth_completion_transfer (transfer_id),
-    CONSTRAINT fk_growth_completion_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE RESTRICT ON UPDATE RESTRICT,
-    CONSTRAINT chk_growth_completion_result CHECK (
-        result IN ('AWARDED', 'ALREADY_COMPLETED', 'NOT_ELIGIBLE')
-        AND awarded_points >= 0
-    )
+    CONSTRAINT fk_growth_completion_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS growth_reward_claims (
@@ -255,8 +198,7 @@ CREATE TABLE IF NOT EXISTS growth_reward_claims (
     UNIQUE KEY uq_growth_reward_claims_cycle (user_id, task_id, cycle_key, sequence),
     KEY idx_growth_reward_claims_transfer (transfer_id),
     KEY idx_growth_reward_claims_user_time (user_id, claimed_at),
-    CONSTRAINT fk_growth_reward_claims_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE RESTRICT ON UPDATE RESTRICT,
-    CONSTRAINT chk_growth_reward_claims_points CHECK (points > 0 AND sequence > 0)
+    CONSTRAINT fk_growth_reward_claims_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS growth_products (
@@ -274,13 +216,7 @@ CREATE TABLE IF NOT EXISTS growth_products (
     PRIMARY KEY (id),
     UNIQUE KEY uq_growth_products_code (product_code),
     KEY idx_growth_products_status_sort (product_status, sort_order),
-    KEY idx_growth_products_type_status (product_type, product_status),
-    CONSTRAINT chk_growth_products_values CHECK (
-        product_type IN ('TOKEN_QUOTA', 'SUBSCRIPTION', 'PHYSICAL')
-        AND fulfillment_mode IN ('AUTOMATIC', 'MANUAL')
-        AND product_status IN ('DRAFT', 'ACTIVE', 'PAUSED', 'OFFLINE')
-        AND current_version >= 0
-    )
+    KEY idx_growth_products_type_status (product_type, product_status)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS growth_product_versions (
@@ -300,13 +236,7 @@ CREATE TABLE IF NOT EXISTS growth_product_versions (
     updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
     PRIMARY KEY (id),
     UNIQUE KEY uq_growth_product_versions_version (product_id, version),
-    KEY idx_growth_product_versions_published (product_id, published_at),
-    CONSTRAINT chk_growth_product_versions_values CHECK (
-        version > 0
-        AND points_cost > 0
-        AND token_amount >= 0
-        AND per_user_limit >= 0
-    )
+    KEY idx_growth_product_versions_published (product_id, published_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS growth_product_inventory (
@@ -322,17 +252,7 @@ CREATE TABLE IF NOT EXISTS growth_product_inventory (
     created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
     PRIMARY KEY (id),
-    UNIQUE KEY uq_growth_product_inventory_product (product_id),
-    CONSTRAINT chk_growth_product_inventory_values CHECK (
-        stock_mode IN ('LIMITED', 'UNLIMITED')
-        AND available >= 0
-        AND reserved >= 0
-        AND sold >= 0
-        AND lock_version > 0
-        AND token_quota_total >= 0
-        AND token_quota_distributed >= 0
-        AND token_quota_distributed <= token_quota_total
-    )
+    UNIQUE KEY uq_growth_product_inventory_product (product_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS growth_exchange_orders (
@@ -359,12 +279,7 @@ CREATE TABLE IF NOT EXISTS growth_exchange_orders (
     KEY idx_growth_exchange_orders_user_time (user_id, created_at),
     KEY idx_growth_exchange_orders_product_status (product_id, order_status),
     KEY idx_growth_exchange_orders_status_time (order_status, created_at),
-    CONSTRAINT fk_growth_exchange_orders_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE RESTRICT ON UPDATE RESTRICT,
-    CONSTRAINT chk_growth_exchange_orders_values CHECK (
-        product_version > 0
-        AND points_cost > 0
-        AND order_status IN ('CREATED', 'FULFILLING', 'SUCCEEDED', 'FAILED', 'REFUNDED')
-    )
+    CONSTRAINT fk_growth_exchange_orders_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS growth_fulfillment_jobs (
@@ -384,13 +299,7 @@ CREATE TABLE IF NOT EXISTS growth_fulfillment_jobs (
     PRIMARY KEY (id),
     UNIQUE KEY uq_growth_fulfillment_jobs_order (order_id),
     KEY idx_growth_fulfillment_jobs_due (job_status, next_retry_at),
-    KEY idx_growth_fulfillment_jobs_lock (locked_until),
-    CONSTRAINT chk_growth_fulfillment_jobs_values CHECK (
-        job_status IN ('PENDING', 'PROCESSING', 'RETRY', 'SUCCEEDED', 'FAILED', 'CANCELLED')
-        AND attempt_count >= 0
-        AND max_attempts > 0
-        AND attempt_count <= max_attempts
-    )
+    KEY idx_growth_fulfillment_jobs_lock (locked_until)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS growth_inventory_ledger (
@@ -413,13 +322,7 @@ CREATE TABLE IF NOT EXISTS growth_inventory_ledger (
     PRIMARY KEY (id),
     UNIQUE KEY uq_growth_inventory_ledger_business (business_key),
     KEY idx_growth_inventory_ledger_product_time (product_id, created_at),
-    KEY idx_growth_inventory_ledger_order (order_id),
-    CONSTRAINT chk_growth_inventory_ledger_values CHECK (
-        operation_type IN ('STOCK_IN', 'RESERVE', 'SELL', 'RELEASE', 'ADJUST')
-        AND available_after >= 0
-        AND reserved_after >= 0
-        AND sold_after >= 0
-    )
+    KEY idx_growth_inventory_ledger_order (order_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS growth_admin_audit (

@@ -20,10 +20,7 @@ type GrowthWallet struct {
 }
 
 func (GrowthWallet) Annotations() []schema.Annotation {
-	return []schema.Annotation{
-		entsql.Annotation{Table: "growth_wallets"},
-		entsql.Check("available_points >= 0 AND earned_total >= 0 AND spent_total >= 0"),
-	}
+	return []schema.Annotation{entsql.Annotation{Table: "growth_wallets"}}
 }
 
 func (GrowthWallet) Mixin() []ent.Mixin {

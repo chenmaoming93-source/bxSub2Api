@@ -9,6 +9,3 @@ ALTER TABLE growth_reward_claims
 ALTER TABLE growth_reward_claims
   ADD UNIQUE KEY uq_growth_reward_claims_cycle
     (user_id, task_id, cycle_key, sequence);
-
-ALTER TABLE growth_reward_claims
-  ADD CONSTRAINT chk_growth_reward_claims_sequence CHECK (sequence > 0);

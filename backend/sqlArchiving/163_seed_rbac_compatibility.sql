@@ -8,11 +8,13 @@ START TRANSACTION;
 
 DROP TEMPORARY TABLE IF EXISTS rbac_seed_role_guard;
 CREATE TEMPORARY TABLE rbac_seed_role_guard (
-    invalid_count BIGINT NOT NULL,
-    CONSTRAINT chk_rbac_seed_known_roles CHECK (invalid_count = 0)
+    guard_id TINYINT NOT NULL PRIMARY KEY
 );
-INSERT INTO rbac_seed_role_guard (invalid_count)
-SELECT COUNT(*) FROM users WHERE role IS NULL OR role NOT IN ('admin', 'user');
+INSERT INTO rbac_seed_role_guard (guard_id) VALUES (1);
+INSERT INTO rbac_seed_role_guard (guard_id)
+SELECT 1 FROM users
+WHERE role IS NULL OR role NOT IN ('admin', 'user')
+LIMIT 1;
 
 INSERT INTO rbac_permissions
     (code, name, module, description, risk_level, is_system, status, created_at, updated_at, deleted_at)

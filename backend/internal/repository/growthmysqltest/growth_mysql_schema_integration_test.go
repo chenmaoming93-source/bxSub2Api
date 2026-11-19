@@ -129,6 +129,13 @@ func TestGrowthMySQLArchiveAndConstraints(t *testing.T) {
 		    OR (table_name = 'growth_admin_audit' AND column_name IN ('before_json', 'after_json'))
 		  )`).Scan(&longTextFields))
 	require.Equal(t, 5, longTextFields)
+	var growthChecks int
+	require.NoError(t, db.QueryRowContext(ctx, `
+		SELECT COUNT(*) FROM information_schema.table_constraints
+		WHERE constraint_schema = DATABASE()
+		  AND table_name LIKE 'growth_%'
+		  AND constraint_type = 'CHECK'`).Scan(&growthChecks))
+	require.Zero(t, growthChecks)
 
 	_, err = db.ExecContext(ctx, `INSERT INTO growth_tasks
 		(task_code, title, category, task_type, task_status, allocated_points)
@@ -197,10 +204,6 @@ func TestGrowthMySQLArchiveAndConstraints(t *testing.T) {
 
 	_, err = db.ExecContext(ctx, `INSERT INTO growth_wallets (user_id) VALUES (1)`)
 	require.NoError(t, err)
-	_, err = db.ExecContext(ctx, `UPDATE growth_wallets SET available_points = -1 WHERE user_id = 1`)
-	requireMySQLError(t, err, 3819)
-	_, err = db.ExecContext(ctx, `UPDATE growth_tasks SET distributed_points = -1 WHERE id = 1`)
-	requireMySQLError(t, err, 3819)
 }
 
 func growthSQLStatements(raw string) []string {

@@ -20,9 +20,5 @@ CREATE TABLE IF NOT EXISTS group_model_route_account_concurrency_schedules (
     CONSTRAINT fk_route_account_schedule_group
         FOREIGN KEY (group_id) REFERENCES `groups` (id),
     CONSTRAINT fk_route_account_schedule_account
-        FOREIGN KEY (account_id) REFERENCES accounts (id),
-    CONSTRAINT chk_route_account_schedule_window
-        CHECK (start_minute < end_minute AND end_minute <= 1440),
-    CONSTRAINT chk_route_account_schedule_concurrency
-        CHECK (max_concurrency IS NULL OR max_concurrency > 0)
+        FOREIGN KEY (account_id) REFERENCES accounts (id)
 );

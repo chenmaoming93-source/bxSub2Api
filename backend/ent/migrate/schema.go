@@ -3263,7 +3263,6 @@ func init() {
 	}
 	GrowthAccountLedgerTable.Annotation = &entsql.Annotation{
 		Table: "growth_account_ledger",
-		Check: "points > 0 AND (balance_after IS NULL OR balance_after >= 0)",
 	}
 	GrowthAdminAuditTable.ForeignKeys[0].RefTable = UsersTable
 	GrowthAdminAuditTable.Annotation = &entsql.Annotation{
@@ -3271,7 +3270,6 @@ func init() {
 	}
 	GrowthBudgetsTable.Annotation = &entsql.Annotation{
 		Table: "growth_budgets",
-		Check: "total_amount >= 0 AND allocated_amount >= 0 AND distributed_amount >= 0 AND allocated_amount <= total_amount AND distributed_amount <= total_amount",
 	}
 	GrowthBudgetEntriesTable.Annotation = &entsql.Annotation{
 		Table: "growth_budget_entries",
@@ -3295,7 +3293,6 @@ func init() {
 	}
 	GrowthProductInventoryTable.Annotation = &entsql.Annotation{
 		Table: "growth_product_inventory",
-		Check: "available >= 0 AND reserved >= 0 AND sold >= 0 AND token_quota_total >= 0 AND token_quota_distributed >= 0 AND token_quota_distributed <= token_quota_total",
 	}
 	GrowthProductVersionsTable.Annotation = &entsql.Annotation{
 		Table: "growth_product_versions",
@@ -3306,7 +3303,6 @@ func init() {
 	}
 	GrowthTasksTable.Annotation = &entsql.Annotation{
 		Table: "growth_tasks",
-		Check: "allocated_points >= 0 AND distributed_points >= 0 AND distributed_points <= allocated_points",
 	}
 	GrowthTaskRulesTable.Annotation = &entsql.Annotation{
 		Table: "growth_task_rules",
@@ -3321,7 +3317,6 @@ func init() {
 	GrowthWalletsTable.ForeignKeys[0].RefTable = UsersTable
 	GrowthWalletsTable.Annotation = &entsql.Annotation{
 		Table: "growth_wallets",
-		Check: "available_points >= 0 AND earned_total >= 0 AND spent_total >= 0",
 	}
 	IdempotencyRecordsTable.Annotation = &entsql.Annotation{
 		Table: "idempotency_records",

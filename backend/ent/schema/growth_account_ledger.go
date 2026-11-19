@@ -16,10 +16,7 @@ type GrowthAccountLedger struct {
 }
 
 func (GrowthAccountLedger) Annotations() []schema.Annotation {
-	return []schema.Annotation{
-		entsql.Annotation{Table: "growth_account_ledger"},
-		entsql.Check("points > 0 AND (balance_after IS NULL OR balance_after >= 0)"),
-	}
+	return []schema.Annotation{entsql.Annotation{Table: "growth_account_ledger"}}
 }
 
 func (GrowthAccountLedger) Mixin() []ent.Mixin {

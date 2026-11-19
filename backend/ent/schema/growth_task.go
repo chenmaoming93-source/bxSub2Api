@@ -17,10 +17,7 @@ type GrowthTask struct {
 }
 
 func (GrowthTask) Annotations() []schema.Annotation {
-	return []schema.Annotation{
-		entsql.Annotation{Table: "growth_tasks"},
-		entsql.Check("allocated_points >= 0 AND distributed_points >= 0 AND distributed_points <= allocated_points"),
-	}
+	return []schema.Annotation{entsql.Annotation{Table: "growth_tasks"}}
 }
 
 func (GrowthTask) Mixin() []ent.Mixin {
