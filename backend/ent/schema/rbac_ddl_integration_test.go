@@ -81,7 +81,7 @@ func TestRBACDDLOnEmptyDatabase(t *testing.T) {
 			t.Fatalf("execute compatibility seed pass %d: %v", pass, err)
 		}
 	}
-	assertCount(t, db, "SELECT COUNT(*) FROM rbac_permissions", 101)
+	assertCount(t, db, "SELECT COUNT(*) FROM rbac_permissions", 106)
 	assertCount(t, db, "SELECT COUNT(*) FROM rbac_roles", 2)
 	assertCount(t, db, "SELECT COUNT(*) FROM rbac_user_roles", 2)
 	assertCount(t, db, "SELECT COUNT(*) FROM rbac_user_versions", 2)

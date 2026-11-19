@@ -14,7 +14,7 @@ import (
 	"github.com/dgraph-io/ristretto"
 )
 
-const apiKeyAuthSnapshotVersion = 13 // v13: include user department
+const apiKeyAuthSnapshotVersion = 14 // v14: include effective super-admin exemption
 
 type apiKeyAuthCacheConfig struct {
 	l1Size        int
@@ -224,6 +224,7 @@ func (s *APIKeyService) snapshotFromAPIKey(ctx context.Context, apiKey *APIKey) 
 			ID:                         apiKey.User.ID,
 			Status:                     apiKey.User.Status,
 			Role:                       apiKey.User.Role,
+			SuperAdmin:                 s.resolveSuperAdmin(ctx, apiKey.User),
 			Balance:                    apiKey.User.Balance,
 			Concurrency:                apiKey.User.Concurrency,
 			AllowedGroups:              apiKey.User.AllowedGroups,
@@ -305,6 +306,7 @@ func (s *APIKeyService) snapshotToAPIKey(key string, snapshot *APIKeyAuthSnapsho
 			ID:                         snapshot.User.ID,
 			Status:                     snapshot.User.Status,
 			Role:                       snapshot.User.Role,
+			SuperAdmin:                 snapshot.User.SuperAdmin,
 			Balance:                    snapshot.User.Balance,
 			Concurrency:                snapshot.User.Concurrency,
 			AllowedGroups:              snapshot.User.AllowedGroups,
@@ -355,4 +357,18 @@ func (s *APIKeyService) snapshotToAPIKey(key string, snapshot *APIKeyAuthSnapsho
 	}
 	s.compileAPIKeyIPRules(apiKey)
 	return apiKey
+}
+
+func (s *APIKeyService) resolveSuperAdmin(ctx context.Context, user *User) bool {
+	if user == nil {
+		return false
+	}
+	if user.Role == RoleAdmin {
+		return true
+	}
+	if s.permissionProvider == nil {
+		return false
+	}
+	effective, err := s.permissionProvider.GetEffectivePermissions(ctx, user.ID)
+	return err == nil && effective.IsSuperAdmin
 }

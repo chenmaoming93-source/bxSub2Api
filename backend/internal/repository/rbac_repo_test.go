@@ -45,3 +45,17 @@ func TestRBACRepositoryReadsVersions(t *testing.T) {
 	require.EqualValues(t, 9, policyVersion)
 	require.NoError(t, mock.ExpectationsWereMet())
 }
+
+func TestRBACRepositoryListsSuperAdminUserIDs(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = db.Close() })
+	mock.ExpectQuery("SELECT DISTINCT scoped.user_id").
+		WithArgs(int64(7), int64(8)).
+		WillReturnRows(sqlmock.NewRows([]string{"user_id"}).AddRow(7))
+
+	ids, err := NewRBACRepository(db).ListSuperAdminUserIDs(context.Background(), []int64{7, 8})
+	require.NoError(t, err)
+	require.Equal(t, []int64{7}, ids)
+	require.NoError(t, mock.ExpectationsWereMet())
+}

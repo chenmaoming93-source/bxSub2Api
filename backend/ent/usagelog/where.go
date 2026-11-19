@@ -90,6 +90,11 @@ func UpstreamModel(v string) predicate.UsageLog {
 	return predicate.UsageLog(sql.FieldEQ(FieldUpstreamModel, v))
 }
 
+// RouteAlias applies equality check predicate on the "route_alias" field. It's identical to RouteAliasEQ.
+func RouteAlias(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldRouteAlias, v))
+}
+
 // ChannelID applies equality check predicate on the "channel_id" field. It's identical to ChannelIDEQ.
 func ChannelID(v int64) predicate.UsageLog {
 	return predicate.UsageLog(sql.FieldEQ(FieldChannelID, v))
@@ -593,6 +598,81 @@ func UpstreamModelEqualFold(v string) predicate.UsageLog {
 // UpstreamModelContainsFold applies the ContainsFold predicate on the "upstream_model" field.
 func UpstreamModelContainsFold(v string) predicate.UsageLog {
 	return predicate.UsageLog(sql.FieldContainsFold(FieldUpstreamModel, v))
+}
+
+// RouteAliasEQ applies the EQ predicate on the "route_alias" field.
+func RouteAliasEQ(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldRouteAlias, v))
+}
+
+// RouteAliasNEQ applies the NEQ predicate on the "route_alias" field.
+func RouteAliasNEQ(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNEQ(FieldRouteAlias, v))
+}
+
+// RouteAliasIn applies the In predicate on the "route_alias" field.
+func RouteAliasIn(vs ...string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIn(FieldRouteAlias, vs...))
+}
+
+// RouteAliasNotIn applies the NotIn predicate on the "route_alias" field.
+func RouteAliasNotIn(vs ...string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotIn(FieldRouteAlias, vs...))
+}
+
+// RouteAliasGT applies the GT predicate on the "route_alias" field.
+func RouteAliasGT(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGT(FieldRouteAlias, v))
+}
+
+// RouteAliasGTE applies the GTE predicate on the "route_alias" field.
+func RouteAliasGTE(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGTE(FieldRouteAlias, v))
+}
+
+// RouteAliasLT applies the LT predicate on the "route_alias" field.
+func RouteAliasLT(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLT(FieldRouteAlias, v))
+}
+
+// RouteAliasLTE applies the LTE predicate on the "route_alias" field.
+func RouteAliasLTE(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLTE(FieldRouteAlias, v))
+}
+
+// RouteAliasContains applies the Contains predicate on the "route_alias" field.
+func RouteAliasContains(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldContains(FieldRouteAlias, v))
+}
+
+// RouteAliasHasPrefix applies the HasPrefix predicate on the "route_alias" field.
+func RouteAliasHasPrefix(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldHasPrefix(FieldRouteAlias, v))
+}
+
+// RouteAliasHasSuffix applies the HasSuffix predicate on the "route_alias" field.
+func RouteAliasHasSuffix(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldHasSuffix(FieldRouteAlias, v))
+}
+
+// RouteAliasIsNil applies the IsNil predicate on the "route_alias" field.
+func RouteAliasIsNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIsNull(FieldRouteAlias))
+}
+
+// RouteAliasNotNil applies the NotNil predicate on the "route_alias" field.
+func RouteAliasNotNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotNull(FieldRouteAlias))
+}
+
+// RouteAliasEqualFold applies the EqualFold predicate on the "route_alias" field.
+func RouteAliasEqualFold(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEqualFold(FieldRouteAlias, v))
+}
+
+// RouteAliasContainsFold applies the ContainsFold predicate on the "route_alias" field.
+func RouteAliasContainsFold(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldContainsFold(FieldRouteAlias, v))
 }
 
 // ChannelIDEQ applies the EQ predicate on the "channel_id" field.

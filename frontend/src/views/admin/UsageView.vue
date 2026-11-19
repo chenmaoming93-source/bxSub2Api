@@ -92,57 +92,6 @@
            <p class="text-xs text-gray-500 dark:text-gray-400">{{ t('admin.usage.departmentUsage.meta', { syncedAt: departmentStats.last_synced_at || '-', consistency: departmentStats.consistency }) }}</p>
          </div>
        </section>
-       <section class="card space-y-4 p-4" data-test="scene-token-usage">
-         <div class="flex flex-wrap items-center justify-between gap-3">
-           <div>
-             <h2 class="text-base font-semibold text-gray-900 dark:text-white">{{ t('admin.usage.sceneUsage.title') }}</h2>
-             <p class="text-xs text-gray-500 dark:text-gray-400">{{ t('admin.usage.sceneUsage.description') }}</p>
-           </div>
-           <div class="flex flex-wrap items-center gap-2">
-             <input v-model="startDate" type="date" class="input w-auto" :aria-label="t('admin.usage.sceneUsage.startDate')" />
-             <span class="text-gray-400">—</span>
-             <input v-model="endDate" type="date" class="input w-auto" :aria-label="t('admin.usage.sceneUsage.endDate')" />
-             <select v-model="sceneUsageGroupName" class="input w-auto" :aria-label="t('admin.usage.sceneUsage.groupName')">
-               <option value="">{{ t('admin.usage.sceneUsage.allGroups') }}</option>
-               <option v-for="group in sceneGroupOptions" :key="group.id" :value="group.name">
-                 {{ group.scene_name ? `${group.scene_name} (${group.name})` : group.name }}
-               </option>
-             </select>
-             <button class="btn btn-secondary" :disabled="sceneUsageLoading" @click="loadSceneUsage">
-               {{ sceneUsageLoading ? t('admin.usage.sceneUsage.loading') : t('admin.usage.sceneUsage.query') }}
-             </button>
-           </div>
-         </div>
-         <div v-if="sceneUsageError" class="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
-           {{ sceneUsageError }}
-         </div>
-         <div v-else-if="sceneUsageLoading" class="py-6 text-center text-sm text-gray-500">{{ t('admin.usage.sceneUsage.loading') }}</div>
-         <div v-else-if="sceneUsage && sceneUsage.days.length === 0" class="py-6 text-center text-sm text-gray-500">{{ t('admin.usage.sceneUsage.noData') }}</div>
-         <div v-else-if="sceneUsage" class="space-y-4">
-           <div v-if="!sceneUsage.complete" class="rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-200">
-             {{ t('admin.usage.sceneUsage.syncing', { syncedAt: sceneUsage.last_synced_at || '-' }) }}
-           </div>
-           <div v-for="day in sceneUsage.days" :key="day.date" class="space-y-2">
-             <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">{{ day.date }}</h3>
-             <div v-for="scene in day.scenes" :key="`${day.date}-${scene.group_id}`" class="rounded-md border border-gray-200 p-3 dark:border-dark-600">
-               <div class="flex flex-wrap items-center justify-between gap-2">
-                 <div>
-                   <span class="font-medium text-gray-900 dark:text-white">{{ scene.scene_name || t('admin.usage.sceneUsage.unsetScene') }}</span>
-                   <span class="ml-2 text-xs text-gray-500 dark:text-gray-400">{{ scene.group_name }}</span>
-                 </div>
-                 <span class="font-semibold text-primary-600 dark:text-primary-400">{{ scene.total_tokens.toLocaleString() }} {{ t('admin.usage.sceneUsage.tokens') }}</span>
-               </div>
-               <div class="mt-2 overflow-x-auto">
-                 <table class="min-w-full text-left text-xs">
-                   <thead class="text-gray-500 dark:text-gray-400"><tr><th class="py-1 pr-4">{{ t('admin.usage.sceneUsage.account') }}</th><th class="py-1 pr-4">{{ t('admin.usage.sceneUsage.model') }}</th><th class="py-1 text-right">{{ t('admin.usage.sceneUsage.tokens') }}</th></tr></thead>
-                   <tbody><tr v-for="account in scene.accounts" :key="`${scene.group_id}-${account.account_id}-${account.upstream_model}`" class="border-t border-gray-100 dark:border-dark-700"><td class="py-1 pr-4">{{ account.account_name }}</td><td class="py-1 pr-4">{{ account.upstream_model }}</td><td class="py-1 text-right">{{ account.total_tokens.toLocaleString() }}</td></tr></tbody>
-                 </table>
-               </div>
-             </div>
-           </div>
-           <p class="text-xs text-gray-500 dark:text-gray-400">{{ t('admin.usage.sceneUsage.meta', { timezone: sceneUsage.timezone, syncedAt: sceneUsage.last_synced_at || '-' }) }}</p>
-         </div>
-       </section>
        <UsageFilters v-model="filters" :start-date="startDate" :end-date="endDate" :exporting="exporting" :model-options="modelNameOptions" @change="applyFilters" @refresh="refreshData" @reset="resetFilters" @cleanup="openCleanupDialog" @export="exportToExcel">
         <template #after-reset>
           <div class="relative" ref="columnDropdownRef">
@@ -210,6 +159,70 @@
           @update:pageSize="onErrPageSize" />
         <OpsErrorDetailModal v-model:show="showErrorModal" :error-id="selectedErrorId" :error-type="'request'" />
       </div>
+      <section class="card space-y-4 p-4" data-test="scene-token-usage">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 class="text-base font-semibold text-gray-900 dark:text-white">{{ t('admin.usage.sceneUsage.title') }}</h2>
+            <p class="text-xs text-gray-500 dark:text-gray-400">{{ t('admin.usage.sceneUsage.description') }}</p>
+          </div>
+          <button
+            type="button"
+            class="btn btn-secondary"
+            data-test="scene-usage-toggle"
+            :aria-expanded="sceneUsageExpanded"
+            aria-controls="scene-usage-content"
+            @click="toggleSceneUsage"
+          >
+            <Icon :name="sceneUsageExpanded ? 'chevronUp' : 'chevronDown'" size="sm" />
+            {{ sceneUsageExpanded ? t('common.collapse') : t('common.expand') }}
+          </button>
+        </div>
+        <div v-if="sceneUsageExpanded" id="scene-usage-content" class="space-y-4">
+          <div class="flex flex-wrap items-center gap-2">
+            <input v-model="sceneUsageStartDate" type="date" class="input w-auto" :aria-label="t('admin.usage.sceneUsage.startDate')" />
+            <span class="text-gray-400">—</span>
+            <input v-model="sceneUsageEndDate" type="date" class="input w-auto" :aria-label="t('admin.usage.sceneUsage.endDate')" />
+            <select v-model="sceneUsageGroupName" class="input w-auto" :aria-label="t('admin.usage.sceneUsage.groupName')">
+              <option value="">{{ t('admin.usage.sceneUsage.allGroups') }}</option>
+              <option v-for="group in sceneGroupOptions" :key="group.id" :value="group.name">
+                {{ group.scene_name ? `${group.scene_name} (${group.name})` : group.name }}
+              </option>
+            </select>
+            <button type="button" class="btn btn-secondary" data-test="scene-usage-query" :disabled="sceneUsageLoading" @click="loadSceneUsage">
+              {{ sceneUsageLoading ? t('admin.usage.sceneUsage.loading') : t('admin.usage.sceneUsage.query') }}
+            </button>
+          </div>
+          <div v-if="sceneUsageError" class="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-200">
+            {{ sceneUsageError }}
+          </div>
+          <div v-else-if="sceneUsageLoading" class="py-6 text-center text-sm text-gray-500">{{ t('admin.usage.sceneUsage.loading') }}</div>
+          <div v-else-if="sceneUsage && sceneUsage.days.length === 0" class="py-6 text-center text-sm text-gray-500">{{ t('admin.usage.sceneUsage.noData') }}</div>
+          <div v-else-if="sceneUsage" class="space-y-4">
+            <div v-if="!sceneUsage.complete" class="rounded-md border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800 dark:border-blue-800 dark:bg-blue-900/20 dark:text-blue-200">
+              {{ t('admin.usage.sceneUsage.syncing', { syncedAt: sceneUsage.last_synced_at || '-' }) }}
+            </div>
+            <div v-for="day in sceneUsage.days" :key="day.date" class="space-y-2">
+              <h3 class="text-sm font-semibold text-gray-700 dark:text-gray-300">{{ day.date }}</h3>
+              <div v-for="scene in day.scenes" :key="`${day.date}-${scene.group_id}`" class="rounded-md border border-gray-200 p-3 dark:border-dark-600">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                  <div>
+                    <span class="font-medium text-gray-900 dark:text-white">{{ scene.scene_name || t('admin.usage.sceneUsage.unsetScene') }}</span>
+                    <span class="ml-2 text-xs text-gray-500 dark:text-gray-400">{{ scene.group_name }}</span>
+                  </div>
+                  <span class="font-semibold text-primary-600 dark:text-primary-400">{{ scene.total_tokens.toLocaleString() }} {{ t('admin.usage.sceneUsage.tokens') }}</span>
+                </div>
+                <div class="mt-2 overflow-x-auto">
+                  <table class="min-w-full text-left text-xs">
+                    <thead class="text-gray-500 dark:text-gray-400"><tr><th class="py-1 pr-4">{{ t('admin.usage.sceneUsage.account') }}</th><th class="py-1 pr-4">{{ t('admin.usage.sceneUsage.model') }}</th><th class="py-1 text-right">{{ t('admin.usage.sceneUsage.tokens') }}</th></tr></thead>
+                    <tbody><tr v-for="account in scene.accounts" :key="`${scene.group_id}-${account.account_id}-${account.upstream_model}`" class="border-t border-gray-100 dark:border-dark-700"><td class="py-1 pr-4">{{ account.account_name }}</td><td class="py-1 pr-4">{{ account.upstream_model }}</td><td class="py-1 text-right">{{ account.total_tokens.toLocaleString() }}</td></tr></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+            <p class="text-xs text-gray-500 dark:text-gray-400">{{ t('admin.usage.sceneUsage.meta', { timezone: sceneUsage.timezone, syncedAt: sceneUsage.last_synced_at || '-' }) }}</p>
+          </div>
+        </div>
+      </section>
     <BaseDialog
     :show="Boolean(selectedDepartment)"
     :title="`${selectedDepartment} · ${t('admin.usage.departmentUsage.userDetails')}`"
@@ -365,6 +378,9 @@ const startDate = ref(defaultRange.start); const endDate = ref(defaultRange.end)
 const filters = ref<AdminUsageQueryParams>({ user_id: undefined, model: undefined, group_id: undefined, request_type: undefined, billing_type: null, start_date: startDate.value, end_date: endDate.value })
 const sceneUsage = ref<SceneAccountDailyUsageResponse | null>(null)
 const sceneUsageLoading = ref(false)
+const sceneUsageExpanded = ref(false)
+const sceneUsageStartDate = ref(defaultRange.start)
+const sceneUsageEndDate = ref(defaultRange.end)
 const departmentStartDate = ref(defaultRange.start)
 const departmentEndDate = ref(defaultRange.end)
 const departmentStats = ref<DepartmentUsageResponse | null>(null)
@@ -379,6 +395,7 @@ let departmentUsersReqSeq = 0
 const sceneUsageError = ref('')
 const sceneUsageGroupName = ref('')
 const sceneGroupOptions = ref<AdminGroup[]>([])
+let sceneGroupOptionsLoaded = false
 let sceneUsageReqSeq = 0
 const pagination = reactive({ page: 1, page_size: getPersistedPageSize(), total: 0 })
 const sortState = reactive({
@@ -575,10 +592,12 @@ const loadChartData = async () => {
   } catch (error) { console.error('Failed to load chart data:', error) } finally { if (seq === chartReqSeq) chartsLoading.value = false }
 }
 const loadSceneGroupOptions = async () => {
+  if (sceneGroupOptionsLoaded) return
   const groups = (adminAPI as any).groups
   if (!groups || typeof groups.getAllIncludingInactive !== 'function') return
   try {
     sceneGroupOptions.value = await groups.getAllIncludingInactive()
+    sceneGroupOptionsLoaded = true
   } catch (error) {
     console.error('Failed to load scene usage groups:', error)
   }
@@ -665,8 +684,8 @@ const loadSceneUsage = async () => {
   sceneUsageError.value = ''
   try {
     const result = await adminUsageAPI.querySceneAccountDaily({
-      start_date: startDate.value,
-      end_date: endDate.value,
+      start_date: sceneUsageStartDate.value,
+      end_date: sceneUsageEndDate.value,
       ...(sceneUsageGroupName.value ? { group_name: sceneUsageGroupName.value } : {})
     })
     if (seq === sceneUsageReqSeq) sceneUsage.value = result
@@ -679,8 +698,14 @@ const loadSceneUsage = async () => {
   }
 }
 
+const toggleSceneUsage = async () => {
+  sceneUsageExpanded.value = !sceneUsageExpanded.value
+  if (!sceneUsageExpanded.value) return
+  await loadSceneGroupOptions()
+  if (!sceneUsage.value) await loadSceneUsage()
+}
+
 const applyFilters = () => {
-  loadSceneUsage()
   pagination.page = 1
   invalidateModelStatsCache()
   loadLogs()
@@ -696,7 +721,7 @@ const applyFilters = () => {
 }
 const refreshData = () => {
   loadDepartmentStats()
-  loadSceneUsage()
+  if (sceneUsageExpanded.value) loadSceneUsage()
   invalidateModelStatsCache()
   loadLogs()
   loadStats(true)
@@ -912,9 +937,7 @@ const handleColumnClickOutside = (event: MouseEvent) => {
 
 onMounted(() => {
   applyRouteQueryFilters()
-  loadSceneGroupOptions()
   loadDepartmentStats()
-  loadSceneUsage()
   loadLogs()
   loadStats()
   loadModelStats(modelDistributionSource.value, true)

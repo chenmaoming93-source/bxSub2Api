@@ -16,6 +16,25 @@ func ProvideAuthHandler(cfg *config.Config, authService *service.AuthService, us
 	return h
 }
 
+func ProvideAdminUserHandler(
+	adminService service.AdminService,
+	concurrencyService *service.ConcurrencyService,
+	userPlatformQuotaRepo service.UserPlatformQuotaRepository,
+	billingCache service.BillingCache,
+	ldapUserSync *service.LDAPUserSyncService,
+	permissionService *rbac.PermissionService,
+) *admin.UserHandler {
+	h := admin.NewUserHandlerWithLDAPSync(
+		adminService,
+		concurrencyService,
+		userPlatformQuotaRepo,
+		billingCache,
+		ldapUserSync,
+	)
+	h.SetSuperAdminUserProvider(permissionService)
+	return h
+}
+
 // ProvideAdminHandlers creates the AdminHandlers struct
 func ProvideAdminHandlers(
 	dashboardHandler *admin.DashboardHandler,
@@ -201,7 +220,7 @@ var ProviderSet = wire.NewSet(
 
 	// Admin handlers
 	admin.NewDashboardHandler,
-	admin.NewUserHandlerWithLDAPSync,
+	ProvideAdminUserHandler,
 	ProvideAdminGroupHandler,
 	admin.NewAccountHandler,
 	admin.NewAnnouncementHandler,
@@ -215,7 +234,7 @@ var ProviderSet = wire.NewSet(
 	admin.NewRedeemHandler,
 	admin.NewPromoHandler,
 	ProvideAdminSettingHandler,
-	admin.NewOpsHandler,
+	admin.ProvideOpsHandler,
 	ProvideSystemHandler,
 	admin.NewSubscriptionHandler,
 	admin.NewUsageHandlerWithTokenStats,

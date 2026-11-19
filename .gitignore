@@ -81,15 +81,25 @@ Desktop.ini
 # ===================
 # 本地测试辅助工具（不纳入项目）
 .local/
+.tmp/
 tmp/
 temp/
 *.tmp
 *.temp
 *.log
 *.bak
+*.pid
+*.prof
 .cache/
 .dev/
 .serena/
+
+# 本地服务运行日志和进程辅助文件
+backend/.runtime/
+backend/.local-run/
+frontend/.runtime/
+.runtime/
+.local-run/
 
 # ===================
 # 构建产物
@@ -109,10 +119,20 @@ backend/internal/web/dist/*
 # 后端运行时缓存数据
 backend/data/
 
+# 测试和覆盖率产物
+coverage/
+frontend/coverage/
+test-results/
+playwright-report/
+.vitest/
+
 # ===================
 # 本地配置文件（包含敏感信息）
 # ===================
 backend/config.yaml
+backend/config/config.yaml
+backend/config/config.*.yaml
+backend/config/*.backup
 deploy/config.yaml
 backend/.installed
 

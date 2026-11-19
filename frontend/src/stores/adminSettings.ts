@@ -48,6 +48,7 @@ export const useAdminSettingsStore = defineStore('adminSettings', () => {
   const opsMonitoringEnabled = ref(readCachedBool('ops_monitoring_enabled_cached', true))
   const opsRealtimeMonitoringEnabled = ref(readCachedBool('ops_realtime_monitoring_enabled_cached', true))
   const opsQueryModeDefault = ref(readCachedString('ops_query_mode_default_cached', 'auto'))
+  const observabilityEnabled = ref(readCachedBool('observability_enabled_cached', false))
   const paymentEnabled = ref(readCachedBool('payment_enabled_cached', false))
   const customMenuItems = ref<CustomMenuItem[]>([])
 
@@ -69,6 +70,8 @@ export const useAdminSettingsStore = defineStore('adminSettings', () => {
 
       opsQueryModeDefault.value = settings.ops_query_mode_default || 'auto'
       writeCachedString('ops_query_mode_default_cached', opsQueryModeDefault.value)
+      observabilityEnabled.value = settings.observability_enabled === true
+      writeCachedBool('observability_enabled_cached', observabilityEnabled.value)
 
       customMenuItems.value = Array.isArray(settings.custom_menu_items) ? settings.custom_menu_items : []
 
@@ -89,6 +92,11 @@ export const useAdminSettingsStore = defineStore('adminSettings', () => {
     opsMonitoringEnabled.value = value
     writeCachedBool('ops_monitoring_enabled_cached', value)
     loaded.value = true
+  }
+
+  function setObservabilityEnabledLocal(value: boolean) {
+    observabilityEnabled.value = value
+    writeCachedBool('observability_enabled_cached', value)
   }
 
   function setOpsRealtimeMonitoringEnabledLocal(value: boolean) {
@@ -139,10 +147,12 @@ export const useAdminSettingsStore = defineStore('adminSettings', () => {
     opsMonitoringEnabled,
     opsRealtimeMonitoringEnabled,
     opsQueryModeDefault,
+    observabilityEnabled,
     paymentEnabled,
     customMenuItems,
     fetch,
     setOpsMonitoringEnabledLocal,
+    setObservabilityEnabledLocal,
     setOpsRealtimeMonitoringEnabledLocal,
     setPaymentEnabledLocal,
     setOpsQueryModeDefaultLocal

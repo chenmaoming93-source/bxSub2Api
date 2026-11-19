@@ -316,7 +316,10 @@ const handleSearchUsers = () => {
   }
   searchTimeout = setTimeout(async () => {
     try {
-      const res = await adminAPI.users.list(1, 10, { search: searchQuery.value.trim() })
+      const res = await adminAPI.users.list(1, 10, {
+        search: searchQuery.value.trim(),
+        exclude_super_admins: true,
+      })
       searchResults.value = res.items
       showDropdown.value = true
     } catch {

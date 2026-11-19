@@ -687,6 +687,11 @@ export type MetricType =
   | 'account_error_ratio'
   | 'account_temp_unscheduled_count'
   | 'overload_account_count'
+  | 'observability_client_failure_rate'
+  | 'observability_business_limited_rate'
+  | 'observability_sla_error_rate'
+  | 'observability_ttft_p95_ms'
+  | 'observability_concurrency_saturation'
 export type Operator = '>' | '>=' | '<' | '<=' | '==' | '!='
 
 export interface AlertRule {

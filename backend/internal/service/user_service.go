@@ -78,6 +78,9 @@ type UserListFilters struct {
 	// For large datasets this can be expensive; admin list pages should enable it on demand.
 	// nil means not specified (default: load subscriptions for backward compatibility).
 	IncludeSubscriptions *bool
+	// ExcludeSuperAdmins hides users whose effective grants contain the wildcard
+	// permission, plus legacy system role=admin users. Intended for quota selectors.
+	ExcludeSuperAdmins bool
 	// IncludeDeleted 为 true 时绕过软删除过滤，返回含已删除（deleted_at 非空）的用户。
 	// 仅供 /admin/usage 的 SearchUsers 端点使用，其他列表调用方不要设置。
 	IncludeDeleted bool

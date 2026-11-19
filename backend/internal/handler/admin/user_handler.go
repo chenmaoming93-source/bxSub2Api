@@ -30,6 +30,9 @@ type UserHandler struct {
 	userPlatformQuotaRepo service.UserPlatformQuotaRepository // T13 admin quota view
 	billingCache          service.BillingCache                // T17/T18 缓存失效（PUT/POST 路径）
 	ldapUserSync          *service.LDAPUserSyncService
+	superAdminUsers       interface {
+		SuperAdminUserIDs(context.Context, []int64) ([]int64, error)
+	}
 }
 
 // NewUserHandler creates a new admin user handler
@@ -58,6 +61,12 @@ func NewUserHandlerWithLDAPSync(
 	h := NewUserHandler(adminService, concurrencyService, userPlatformQuotaRepo, billingCache)
 	h.ldapUserSync = ldapUserSync
 	return h
+}
+
+func (h *UserHandler) SetSuperAdminUserProvider(provider interface {
+	SuperAdminUserIDs(context.Context, []int64) ([]int64, error)
+}) {
+	h.superAdminUsers = provider
 }
 
 // CreateUserRequest represents admin create user request
@@ -150,6 +159,7 @@ func (h *UserHandler) List(c *gin.Context) {
 		includeSubscriptions := parseBoolQueryWithDefault(raw, true)
 		filters.IncludeSubscriptions = &includeSubscriptions
 	}
+	filters.ExcludeSuperAdmins = parseBoolQueryWithDefault(c.Query("exclude_super_admins"), false)
 
 	users, total, err := h.adminService.ListUsers(c.Request.Context(), page, pageSize, filters, sortBy, sortOrder)
 	if err != nil {
@@ -170,12 +180,25 @@ func (h *UserHandler) List(c *gin.Context) {
 		loadInfo, _ = h.concurrencyService.GetUsersLoadBatch(c.Request.Context(), usersConcurrency)
 	}
 
-	// Build response with concurrency info
+	// Build response with concurrency and effective super-admin markers.
+	superAdminIDs := make(map[int64]struct{})
+	if h.superAdminUsers != nil && len(users) > 0 {
+		ids := make([]int64, len(users))
+		for i := range users {
+			ids[i] = users[i].ID
+		}
+		if resolved, resolveErr := h.superAdminUsers.SuperAdminUserIDs(c.Request.Context(), ids); resolveErr == nil {
+			for _, id := range resolved {
+				superAdminIDs[id] = struct{}{}
+			}
+		}
+	}
 	out := make([]UserWithConcurrency, len(users))
 	for i := range users {
 		out[i] = UserWithConcurrency{
 			AdminUser: *dto.UserFromServiceAdmin(&users[i]),
 		}
+		_, out[i].IsSuperAdmin = superAdminIDs[users[i].ID]
 		if info := loadInfo[users[i].ID]; info != nil {
 			out[i].CurrentConcurrency = info.CurrentConcurrency
 		}

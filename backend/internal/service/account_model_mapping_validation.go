@@ -6,10 +6,11 @@ import (
 	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
 )
 
-// validateAccountModelMapping enforces the write-time invariant that a
-// non-OAuth account can expose at most one upstream model name.
+// validateAccountModelMapping enforces the write-time invariant that every
+// account exposes at most one upstream model name. Account type is irrelevant:
+// one model account must represent exactly one billable/upstream model.
 func validateAccountModelMapping(accountType string, credentials map[string]any) error {
-	if accountType == AccountTypeOAuth || credentials == nil {
+	if credentials == nil {
 		return nil
 	}
 

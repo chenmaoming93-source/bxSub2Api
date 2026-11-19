@@ -118,6 +118,7 @@ func RegisterAdminRoutes(
 
 		// 运维监控（Ops）
 		registerOpsRoutes(admin, h, rbacRoutes)
+		registerObservabilityRoutes(admin, h, rbacRoutes)
 
 		// 系统管理
 		registerSystemRoutes(admin, h, rbacRoutes)
@@ -157,6 +158,17 @@ func RegisterAdminRoutes(
 
 		registerRBACManagementRoutes(admin, h, rbacRoutes)
 	}
+}
+
+func registerObservabilityRoutes(admin *gin.RouterGroup, h *handler.Handlers, routes *rbac.RouteRegistrar) {
+	observability := admin.Group("/observability")
+	adminGET(routes, observability, "/capabilities", rbac.PermissionObservabilityRead, h.Admin.Ops.GetObservabilityCapabilities)
+	adminGET(routes, observability, "/snapshot", rbac.PermissionObservabilityRead, h.Admin.Ops.GetObservabilitySnapshot)
+	adminGET(routes, observability, "/timeseries", rbac.PermissionObservabilityRead, h.Admin.Ops.GetObservabilityTimeseries)
+	adminGET(routes, observability, "/latency-timeseries", rbac.PermissionObservabilityRead, h.Admin.Ops.GetObservabilityLatencyTimeseries)
+	adminGET(routes, observability, "/heatmap", rbac.PermissionObservabilityRead, h.Admin.Ops.GetObservabilityHeatmap)
+	adminGET(routes, observability, "/paths", rbac.PermissionObservabilityRead, h.Admin.Ops.GetObservabilityPaths)
+	adminGET(routes, observability, "/relations", rbac.PermissionObservabilityRead, h.Admin.Ops.GetObservabilityRelations)
 }
 
 func registerDynamicTokenStatisticsRoutes(admin *gin.RouterGroup, h *handler.Handlers, routes *rbac.RouteRegistrar) {

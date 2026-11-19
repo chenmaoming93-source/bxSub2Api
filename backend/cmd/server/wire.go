@@ -176,6 +176,8 @@ func provideCleanup(
 	proxyExpiry *service.ProxyExpiryService,
 	subscriptionExpiry *service.SubscriptionExpiryService,
 	usageCleanup *service.UsageCleanupService,
+	observabilityRequestRollup *service.ObservabilityRequestRollupService,
+	concurrencyHistory *service.ConcurrencyHistoryService,
 	idempotencyCleanup *service.IdempotencyCleanupService,
 	pricing *service.PricingService,
 	emailQueue *service.EmailQueueService,
@@ -250,6 +252,18 @@ func provideCleanup(
 			{"UsageCleanupService", func() error {
 				if usageCleanup != nil {
 					usageCleanup.Stop()
+				}
+				return nil
+			}},
+			{"ObservabilityRequestRollupService", func() error {
+				if observabilityRequestRollup != nil {
+					observabilityRequestRollup.Stop()
+				}
+				return nil
+			}},
+			{"ConcurrencyHistoryService", func() error {
+				if concurrencyHistory != nil {
+					concurrencyHistory.Stop()
 				}
 				return nil
 			}},

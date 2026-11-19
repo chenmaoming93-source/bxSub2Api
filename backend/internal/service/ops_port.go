@@ -91,6 +91,8 @@ type OpsInsertErrorLogInput struct {
 	RequestedModel string
 	// UpstreamModel is the actual model sent to upstream after mapping. Empty means no mapping.
 	UpstreamModel string
+	// RouteAlias is the client-requested model that matched the group routing entry.
+	RouteAlias string
 	// RequestType is the granular request type: 0=unknown, 1=sync, 2=stream, 3=ws_v2.
 	// Matches service.RequestType enum semantics from usage_log.go.
 	RequestType *int16

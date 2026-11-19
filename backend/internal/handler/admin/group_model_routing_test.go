@@ -11,7 +11,7 @@ import (
 func TestGroupRequestsAcceptLegacyAndCandidateModelRouting(t *testing.T) {
 	tests := []string{
 		`{"name":"legacy","model_routing":{"claude-opus-*":[9,3,7]}}`,
-		`{"name":"new","model_routing":{"fast-code":[{"model":"gpt-5","account_ids":[4,5],"priority":2,"daily_token_limit":600}]}}`,
+		`{"name":"new","model_routing":{"fast-code":[{"model":"gpt-5","account_ids":[4],"priority":2,"daily_token_limit":600}]}}`,
 	}
 	for _, body := range tests {
 		var req CreateGroupRequest
@@ -21,6 +21,19 @@ func TestGroupRequestsAcceptLegacyAndCandidateModelRouting(t *testing.T) {
 		if err := validateModelRoutingJSON(req.ModelRouting); err != nil {
 			t.Fatalf("validateModelRoutingJSON(%s) error = %v", body, err)
 		}
+	}
+}
+
+func TestGroupRequestRejectsMultipleAccountsInOneCandidate(t *testing.T) {
+	var req CreateGroupRequest
+	if err := json.Unmarshal(
+		[]byte(`{"model_routing":{"fast-code":[{"model":"gpt-5","account_ids":[4,5],"priority":2}]}}`),
+		&req,
+	); err != nil {
+		t.Fatalf("json.Unmarshal() error = %v", err)
+	}
+	if err := validateModelRoutingJSON(req.ModelRouting); err == nil {
+		t.Fatal("validateModelRoutingJSON() error = nil, want one-account candidate validation error")
 	}
 }
 

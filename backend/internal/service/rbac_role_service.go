@@ -35,6 +35,7 @@ type RBACRoleRepository interface {
 	ReplaceRolePermissions(context.Context, rbac.AuditActor, int64, []string) error
 	GetUserRoles(context.Context, int64) ([]string, error)
 	ReplaceUserRoles(context.Context, rbac.AuditActor, int64, []string) error
+	ListUserIDsByRoleID(context.Context, int64) ([]int64, error)
 	ListPermissions(context.Context) ([]RBACPermission, error)
 	CreatePermission(context.Context, rbac.AuditActor, string, string, string, string, rbac.RiskLevel) (*RBACPermission, error)
 	UpdatePermission(context.Context, rbac.AuditActor, int64, string, string, string, rbac.RiskLevel, string) (*RBACPermission, error)
@@ -43,12 +44,21 @@ type RBACRoleRepository interface {
 }
 
 type RBACRoleService struct {
-	repo        RBACRoleRepository
-	permissions *rbac.PermissionService
+	repo                 RBACRoleRepository
+	permissions          *rbac.PermissionService
+	authCacheInvalidator APIKeyAuthCacheInvalidator
 }
 
-func NewRBACRoleService(repo RBACRoleRepository, permissions *rbac.PermissionService) *RBACRoleService {
-	return &RBACRoleService{repo: repo, permissions: permissions}
+func NewRBACRoleService(
+	repo RBACRoleRepository,
+	permissions *rbac.PermissionService,
+	authCacheInvalidator APIKeyAuthCacheInvalidator,
+) *RBACRoleService {
+	return &RBACRoleService{
+		repo:                 repo,
+		permissions:          permissions,
+		authCacheInvalidator: authCacheInvalidator,
+	}
 }
 
 func (s *RBACRoleService) List(ctx context.Context, page, pageSize int, status, search string) ([]RBACRole, int64, error) {
@@ -65,10 +75,18 @@ func (s *RBACRoleService) Update(ctx context.Context, actor rbac.AuditActor, id 
 	if status != "" && status != "active" && status != "disabled" {
 		return nil, errors.New("invalid role status")
 	}
-	return s.repo.UpdateRole(ctx, actor, id, strings.TrimSpace(name), strings.TrimSpace(description), status)
+	role, err := s.repo.UpdateRole(ctx, actor, id, strings.TrimSpace(name), strings.TrimSpace(description), status)
+	if err == nil {
+		s.invalidateRoleUsers(ctx, id)
+	}
+	return role, err
 }
 func (s *RBACRoleService) Delete(ctx context.Context, actor rbac.AuditActor, id int64) error {
-	return s.repo.DeleteRole(ctx, actor, id)
+	err := s.repo.DeleteRole(ctx, actor, id)
+	if err == nil {
+		s.invalidateRoleUsers(ctx, id)
+	}
+	return err
 }
 func (s *RBACRoleService) Permissions(ctx context.Context, roleID int64) ([]string, error) {
 	return s.repo.GetRolePermissions(ctx, roleID)
@@ -81,7 +99,11 @@ func (s *RBACRoleService) ReplacePermissions(ctx context.Context, actor rbac.Aud
 	if !exists {
 		return errors.New("one or more permissions are unknown or disabled")
 	}
-	return s.repo.ReplaceRolePermissions(ctx, actor, roleID, codes)
+	if err := s.repo.ReplaceRolePermissions(ctx, actor, roleID, codes); err != nil {
+		return err
+	}
+	s.invalidateRoleUsers(ctx, roleID)
+	return nil
 }
 func (s *RBACRoleService) PermissionCatalog(ctx context.Context) ([]RBACPermission, error) {
 	return s.repo.ListPermissions(ctx)
@@ -131,7 +153,25 @@ func (s *RBACRoleService) ReplaceUserRoles(ctx context.Context, actor rbac.Audit
 	if s.permissions != nil {
 		s.permissions.DeleteUserCache(ctx, userID)
 	}
+	if s.authCacheInvalidator != nil {
+		s.authCacheInvalidator.InvalidateAuthCacheByUserID(ctx, userID)
+	}
 	return nil
+}
+
+func (s *RBACRoleService) invalidateRoleUsers(ctx context.Context, roleID int64) {
+	userIDs, err := s.repo.ListUserIDsByRoleID(ctx, roleID)
+	if err != nil {
+		return
+	}
+	for _, userID := range userIDs {
+		if s.permissions != nil {
+			s.permissions.DeleteUserCache(ctx, userID)
+		}
+		if s.authCacheInvalidator != nil {
+			s.authCacheInvalidator.InvalidateAuthCacheByUserID(ctx, userID)
+		}
+	}
 }
 func containsRBACCode(values []string, target string) bool {
 	for _, value := range values {

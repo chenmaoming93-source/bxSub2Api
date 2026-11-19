@@ -29,6 +29,9 @@ func (s *cacheRepositoryStub) LoadActiveGrants(context.Context, int64) ([]Grant,
 	time.Sleep(5 * time.Millisecond)
 	return s.grants, nil
 }
+func (s *cacheRepositoryStub) ListSuperAdminUserIDs(context.Context, []int64) ([]int64, error) {
+	return []int64{}, nil
+}
 func (s *cacheRepositoryStub) GetUserVersion(context.Context, int64) (int64, error) {
 	return s.userVersion.Load(), nil
 }

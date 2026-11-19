@@ -142,7 +142,7 @@ func TestComputeRuleMetric_AccountTempUnscheduledCount(t *testing.T) {
 
 	rule := &OpsAlertRule{MetricType: "account_temp_unscheduled_count"}
 	val, ok := svc.computeRuleMetric(context.Background(), rule, nil,
-		now.Add(-5*time.Minute), now, "", nil)
+		now.Add(-5*time.Minute), now, OpsAlertRuleScope{})
 
 	require.True(t, ok)
 	require.InDelta(t, 2.0, val, 0.0001, "only 2 accounts have an active temp-unsched window")
@@ -243,7 +243,10 @@ func TestComputeRuleMetricNewIndicators(t *testing.T) {
 			rule := &OpsAlertRule{
 				MetricType: tt.metricType,
 			}
-			gotValue, gotOK := svc.computeRuleMetric(ctx, rule, nil, start, end, platform, tt.groupID)
+			gotValue, gotOK := svc.computeRuleMetric(ctx, rule, nil, start, end, OpsAlertRuleScope{
+				Platform: platform,
+				GroupID:  tt.groupID,
+			})
 			require.Equal(t, tt.wantOK, gotOK)
 			if !tt.wantOK {
 				return
@@ -251,4 +254,30 @@ func TestComputeRuleMetricNewIndicators(t *testing.T) {
 			require.InDelta(t, tt.wantValue, gotValue, 0.0001)
 		})
 	}
+}
+
+func TestParseOpsAlertRuleScopeSupportsModelObjects(t *testing.T) {
+	scope := parseOpsAlertRuleScope(map[string]any{
+		"platform":    "openai",
+		"group_id":    float64(7),
+		"route_alias": "gpt-5",
+		"account_id":  float64(101),
+	})
+	require.Equal(t, "openai", scope.Platform)
+	require.NotNil(t, scope.GroupID)
+	require.Equal(t, int64(7), *scope.GroupID)
+	require.Equal(t, "gpt-5", scope.RouteAlias)
+	require.NotNil(t, scope.AccountID)
+	require.Equal(t, int64(101), *scope.AccountID)
+
+	dims := buildOpsAlertDimensions(scope)
+	require.Equal(t, int64(7), dims["group_id"])
+	require.Equal(t, "gpt-5", dims["route_alias"])
+	require.Equal(t, int64(101), dims["account_id"])
+}
+
+func TestObservabilityAlertRequiresThreeConsecutiveWindows(t *testing.T) {
+	require.Equal(t, 3, max(requiredSustainedBreaches(0, time.Minute), 3))
+	require.Equal(t, 3, max(requiredSustainedBreaches(1, time.Minute), 3))
+	require.Equal(t, 5, max(requiredSustainedBreaches(5, time.Minute), 3))
 }

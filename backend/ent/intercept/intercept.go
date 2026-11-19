@@ -23,6 +23,8 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/group"
 	"github.com/Wei-Shaw/sub2api/ent/idempotencyrecord"
 	"github.com/Wei-Shaw/sub2api/ent/identityadoptiondecision"
+	"github.com/Wei-Shaw/sub2api/ent/observabilityconcurrencybucket"
+	"github.com/Wei-Shaw/sub2api/ent/observabilityrequestbucket"
 	"github.com/Wei-Shaw/sub2api/ent/paymentauditlog"
 	"github.com/Wei-Shaw/sub2api/ent/paymentorder"
 	"github.com/Wei-Shaw/sub2api/ent/paymentproviderinstance"
@@ -518,6 +520,60 @@ func (f TraverseIdentityAdoptionDecision) Traverse(ctx context.Context, q ent.Qu
 		return f(ctx, q)
 	}
 	return fmt.Errorf("unexpected query type %T. expect *ent.IdentityAdoptionDecisionQuery", q)
+}
+
+// The ObservabilityConcurrencyBucketFunc type is an adapter to allow the use of ordinary function as a Querier.
+type ObservabilityConcurrencyBucketFunc func(context.Context, *ent.ObservabilityConcurrencyBucketQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f ObservabilityConcurrencyBucketFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.ObservabilityConcurrencyBucketQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.ObservabilityConcurrencyBucketQuery", q)
+}
+
+// The TraverseObservabilityConcurrencyBucket type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseObservabilityConcurrencyBucket func(context.Context, *ent.ObservabilityConcurrencyBucketQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseObservabilityConcurrencyBucket) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseObservabilityConcurrencyBucket) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.ObservabilityConcurrencyBucketQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.ObservabilityConcurrencyBucketQuery", q)
+}
+
+// The ObservabilityRequestBucketFunc type is an adapter to allow the use of ordinary function as a Querier.
+type ObservabilityRequestBucketFunc func(context.Context, *ent.ObservabilityRequestBucketQuery) (ent.Value, error)
+
+// Query calls f(ctx, q).
+func (f ObservabilityRequestBucketFunc) Query(ctx context.Context, q ent.Query) (ent.Value, error) {
+	if q, ok := q.(*ent.ObservabilityRequestBucketQuery); ok {
+		return f(ctx, q)
+	}
+	return nil, fmt.Errorf("unexpected query type %T. expect *ent.ObservabilityRequestBucketQuery", q)
+}
+
+// The TraverseObservabilityRequestBucket type is an adapter to allow the use of ordinary function as Traverser.
+type TraverseObservabilityRequestBucket func(context.Context, *ent.ObservabilityRequestBucketQuery) error
+
+// Intercept is a dummy implementation of Intercept that returns the next Querier in the pipeline.
+func (f TraverseObservabilityRequestBucket) Intercept(next ent.Querier) ent.Querier {
+	return next
+}
+
+// Traverse calls f(ctx, q).
+func (f TraverseObservabilityRequestBucket) Traverse(ctx context.Context, q ent.Query) error {
+	if q, ok := q.(*ent.ObservabilityRequestBucketQuery); ok {
+		return f(ctx, q)
+	}
+	return fmt.Errorf("unexpected query type %T. expect *ent.ObservabilityRequestBucketQuery", q)
 }
 
 // The PaymentAuditLogFunc type is an adapter to allow the use of ordinary function as a Querier.
@@ -1444,6 +1500,10 @@ func NewQuery(q ent.Query) (Query, error) {
 		return &query[*ent.IdempotencyRecordQuery, predicate.IdempotencyRecord, idempotencyrecord.OrderOption]{typ: ent.TypeIdempotencyRecord, tq: q}, nil
 	case *ent.IdentityAdoptionDecisionQuery:
 		return &query[*ent.IdentityAdoptionDecisionQuery, predicate.IdentityAdoptionDecision, identityadoptiondecision.OrderOption]{typ: ent.TypeIdentityAdoptionDecision, tq: q}, nil
+	case *ent.ObservabilityConcurrencyBucketQuery:
+		return &query[*ent.ObservabilityConcurrencyBucketQuery, predicate.ObservabilityConcurrencyBucket, observabilityconcurrencybucket.OrderOption]{typ: ent.TypeObservabilityConcurrencyBucket, tq: q}, nil
+	case *ent.ObservabilityRequestBucketQuery:
+		return &query[*ent.ObservabilityRequestBucketQuery, predicate.ObservabilityRequestBucket, observabilityrequestbucket.OrderOption]{typ: ent.TypeObservabilityRequestBucket, tq: q}, nil
 	case *ent.PaymentAuditLogQuery:
 		return &query[*ent.PaymentAuditLogQuery, predicate.PaymentAuditLog, paymentauditlog.OrderOption]{typ: ent.TypePaymentAuditLog, tq: q}, nil
 	case *ent.PaymentOrderQuery:

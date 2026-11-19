@@ -44,6 +44,9 @@ type AdminUser struct {
 	Department string     `json:"department"`
 	Notes      string     `json:"notes"`
 	LastUsedAt *time.Time `json:"last_used_at"`
+	// IsSuperAdmin reflects either the system admin role or an active wildcard
+	// RBAC permission. The admin user list sets it in a single batch.
+	IsSuperAdmin bool `json:"is_super_admin"`
 	// GroupRates 用户专属分组倍率配置
 	// map[groupID]rateMultiplier
 	GroupRates map[int64]float64 `json:"group_rates,omitempty"`
@@ -165,6 +168,12 @@ type Account struct {
 	Notes    *string `json:"notes"`
 	Platform string  `json:"platform"`
 	Type     string  `json:"type"`
+	// BoundModel is derived from the account's single model_mapping entry.
+	// It is intentionally not a database column and never accepts an override.
+	BoundModel string `json:"bound_model,omitempty"`
+	// BoundModelLegacyInferred marks historical multi-model accounts. The
+	// response remains deterministic, but operators must remediate the account.
+	BoundModelLegacyInferred bool `json:"bound_model_legacy_inferred,omitempty"`
 	// Credentials 经 RedactCredentials 处理后只含非敏感子键；敏感 token / api_key / 私钥
 	// 的存在性通过 CredentialsStatus（has_<key>）暴露，原始值不返回前端。
 	Credentials       map[string]any  `json:"credentials"`
@@ -489,6 +498,13 @@ type UsageLog struct {
 
 	// User-Agent
 	UserAgent *string `json:"user_agent"`
+
+	// RouteAlias is the matched groups.model_routing alias. Empty means the
+	// request did not use a route alias.
+	RouteAlias string `json:"route_alias,omitempty"`
+	// LegacyInferred is true only when a historical row lacked route_alias and
+	// the API had to infer it from requested_model.
+	LegacyInferred bool `json:"legacy_inferred,omitempty"`
 
 	// Cache TTL Override 标记
 	CacheTTLOverridden bool `json:"cache_ttl_overridden"`

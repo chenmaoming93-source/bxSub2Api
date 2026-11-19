@@ -126,6 +126,10 @@ func apiKeyAuthWithSubscription(apiKeyService *service.APIKeyService, subscripti
 		if abortIfAPIKeyGroupNotAllowed(c, apiKey) {
 			return
 		}
+		c.Request = c.Request.WithContext(service.WithSuperAdminExemption(
+			c.Request.Context(),
+			apiKey.User.IsSuperAdmin(),
+		))
 
 		// ── 4. SimpleMode → early return ─────────────────────────────
 
@@ -134,6 +138,7 @@ func apiKeyAuthWithSubscription(apiKeyService *service.APIKeyService, subscripti
 			c.Set(string(ContextKeyUser), AuthSubject{
 				UserID:      apiKey.User.ID,
 				Concurrency: apiKey.User.Concurrency,
+				SuperAdmin:  apiKey.User.IsSuperAdmin(),
 			})
 			c.Set(string(ContextKeyUserRole), apiKey.User.Role)
 			setGroupContext(c, apiKey.Group)
@@ -230,6 +235,7 @@ func apiKeyAuthWithSubscription(apiKeyService *service.APIKeyService, subscripti
 		c.Set(string(ContextKeyUser), AuthSubject{
 			UserID:      apiKey.User.ID,
 			Concurrency: apiKey.User.Concurrency,
+			SuperAdmin:  apiKey.User.IsSuperAdmin(),
 		})
 		c.Set(string(ContextKeyUserRole), apiKey.User.Role)
 		setGroupContext(c, apiKey.Group)

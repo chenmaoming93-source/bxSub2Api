@@ -482,9 +482,93 @@ describe('admin UsageView errors tab filter forwarding', () => {
     vi.advanceTimersByTime(120)
     await flushPromises()
 
+    expect(querySceneAccountDaily).not.toHaveBeenCalled()
+    await wrapper.find('[data-test="scene-usage-toggle"]').trigger('click')
+    await flushPromises()
+    expect(querySceneAccountDaily).toHaveBeenCalledTimes(1)
     expect(wrapper.find('[data-test="scene-token-usage"]').text()).toContain('technical-a')
     expect(wrapper.find('[data-test="scene-token-usage"]').text()).toContain('account-a')
     expect(wrapper.find('[data-test="scene-token-usage"]').text()).toContain('model-a')
+  })
+
+  it('keeps scene usage at the bottom and does not reload it with main filters', async () => {
+    const wrapper = mount(UsageView, {
+      global: {
+        stubs: {
+          AppLayout: AppLayoutStub,
+          UsageStatsCards: true,
+          UsageFilters: UsageFiltersStub,
+          UsageTable: true,
+          UsageExportProgress: true,
+          UsageCleanupDialog: true,
+          UserBalanceHistoryModal: true,
+          Pagination: true,
+          Select: true,
+          DateRangePicker: true,
+          Icon: true,
+          TokenUsageTrend: true,
+          ModelDistributionChart: true,
+          GroupDistributionChart: true,
+          EndpointDistributionChart: true,
+          OpsErrorLogTable: true,
+          OpsErrorDetailModal: true,
+        },
+      },
+    })
+    vi.advanceTimersByTime(120)
+    await flushPromises()
+
+    const scene = wrapper.find('[data-test="scene-token-usage"]').element
+    const errorsTab = wrapper.findAll('button.tab')[1].element
+    expect(errorsTab.compareDocumentPosition(scene) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+    querySceneAccountDaily.mockClear()
+
+    ;(wrapper.vm as any).applyFilters()
+    await flushPromises()
+    expect(querySceneAccountDaily).not.toHaveBeenCalled()
+  })
+
+  it('preserves scene usage empty and error states after explicit loading', async () => {
+    querySceneAccountDaily.mockResolvedValueOnce({
+      timezone: 'Asia/Shanghai',
+      start_date: '2026-08-01',
+      end_date: '2026-08-01',
+      complete: true,
+      consistency: 'mysql_eventual',
+      projection_id: 7,
+      days: [],
+    })
+    const wrapper = mount(UsageView, {
+      global: {
+        stubs: {
+          AppLayout: AppLayoutStub,
+          UsageStatsCards: true,
+          UsageFilters: UsageFiltersStub,
+          UsageTable: true,
+          UsageExportProgress: true,
+          UsageCleanupDialog: true,
+          UserBalanceHistoryModal: true,
+          Pagination: true,
+          Select: true,
+          DateRangePicker: true,
+          Icon: true,
+          TokenUsageTrend: true,
+          ModelDistributionChart: true,
+          GroupDistributionChart: true,
+          EndpointDistributionChart: true,
+          OpsErrorLogTable: true,
+          OpsErrorDetailModal: true,
+        },
+      },
+    })
+    await wrapper.find('[data-test="scene-usage-toggle"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-test="scene-token-usage"]').text()).toContain('admin.usage.sceneUsage.noData')
+
+    querySceneAccountDaily.mockRejectedValueOnce(new Error('scene unavailable'))
+    await wrapper.find('[data-test="scene-usage-query"]').trigger('click')
+    await flushPromises()
+    expect(wrapper.find('[data-test="scene-token-usage"]').text()).toContain('scene unavailable')
   })
 
   it('queries department usage with its independent date range', async () => {

@@ -17,6 +17,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/internal/pkg/ip"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/timezone"
+	"github.com/Wei-Shaw/sub2api/internal/rbac"
 	"github.com/dgraph-io/ristretto"
 	"golang.org/x/sync/singleflight"
 )
@@ -221,9 +222,14 @@ type APIKeyService struct {
 	authGroup             singleflight.Group
 	lastUsedTouchL1       sync.Map // keyID -> nextAllowedAt(time.Time)
 	lastUsedTouchSF       singleflight.Group
+	permissionProvider    EffectivePermissionProvider
 	defaultGroupResolver  interface {
 		ResolveDefaultGroup(ctx context.Context) (DefaultGroupResult, error)
 	}
+}
+
+type EffectivePermissionProvider interface {
+	GetEffectivePermissions(ctx context.Context, userID int64) (rbac.EffectivePermissions, error)
 }
 
 // NewAPIKeyService 创建API Key服务实例
@@ -253,6 +259,10 @@ func NewAPIKeyService(
 // Called after construction (e.g. in wire) to avoid circular dependencies.
 func (s *APIKeyService) SetRateLimitCacheInvalidator(inv RateLimitCacheInvalidator) {
 	s.rateLimitCacheInvalid = inv
+}
+
+func (s *APIKeyService) SetEffectivePermissionProvider(provider EffectivePermissionProvider) {
+	s.permissionProvider = provider
 }
 
 // SetDefaultGroupResolver configures the internal default-group lookup used by

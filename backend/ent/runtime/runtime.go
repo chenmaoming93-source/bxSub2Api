@@ -20,6 +20,8 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/group"
 	"github.com/Wei-Shaw/sub2api/ent/idempotencyrecord"
 	"github.com/Wei-Shaw/sub2api/ent/identityadoptiondecision"
+	"github.com/Wei-Shaw/sub2api/ent/observabilityconcurrencybucket"
+	"github.com/Wei-Shaw/sub2api/ent/observabilityrequestbucket"
 	"github.com/Wei-Shaw/sub2api/ent/paymentauditlog"
 	"github.com/Wei-Shaw/sub2api/ent/paymentorder"
 	"github.com/Wei-Shaw/sub2api/ent/paymentproviderinstance"
@@ -977,6 +979,242 @@ func init() {
 	identityadoptiondecisionDescDecidedAt := identityadoptiondecisionFields[4].Descriptor()
 	// identityadoptiondecision.DefaultDecidedAt holds the default value on creation for the decided_at field.
 	identityadoptiondecision.DefaultDecidedAt = identityadoptiondecisionDescDecidedAt.Default.(func() time.Time)
+	observabilityconcurrencybucketFields := schema.ObservabilityConcurrencyBucket{}.Fields()
+	_ = observabilityconcurrencybucketFields
+	// observabilityconcurrencybucketDescSampleKind is the schema descriptor for sample_kind field.
+	observabilityconcurrencybucketDescSampleKind := observabilityconcurrencybucketFields[2].Descriptor()
+	// observabilityconcurrencybucket.SampleKindValidator is a validator for the "sample_kind" field. It is called by the builders before save.
+	observabilityconcurrencybucket.SampleKindValidator = observabilityconcurrencybucketDescSampleKind.Validators[0].(func(string) error)
+	// observabilityconcurrencybucketDescDimensionHash is the schema descriptor for dimension_hash field.
+	observabilityconcurrencybucketDescDimensionHash := observabilityconcurrencybucketFields[3].Descriptor()
+	// observabilityconcurrencybucket.DimensionHashValidator is a validator for the "dimension_hash" field. It is called by the builders before save.
+	observabilityconcurrencybucket.DimensionHashValidator = observabilityconcurrencybucketDescDimensionHash.Validators[0].(func(string) error)
+	// observabilityconcurrencybucketDescGroupID is the schema descriptor for group_id field.
+	observabilityconcurrencybucketDescGroupID := observabilityconcurrencybucketFields[5].Descriptor()
+	// observabilityconcurrencybucket.DefaultGroupID holds the default value on creation for the group_id field.
+	observabilityconcurrencybucket.DefaultGroupID = observabilityconcurrencybucketDescGroupID.Default.(int64)
+	// observabilityconcurrencybucketDescRouteAlias is the schema descriptor for route_alias field.
+	observabilityconcurrencybucketDescRouteAlias := observabilityconcurrencybucketFields[6].Descriptor()
+	// observabilityconcurrencybucket.RouteAliasValidator is a validator for the "route_alias" field. It is called by the builders before save.
+	observabilityconcurrencybucket.RouteAliasValidator = observabilityconcurrencybucketDescRouteAlias.Validators[0].(func(string) error)
+	// observabilityconcurrencybucketDescCurrentPeak is the schema descriptor for current_peak field.
+	observabilityconcurrencybucketDescCurrentPeak := observabilityconcurrencybucketFields[7].Descriptor()
+	// observabilityconcurrencybucket.DefaultCurrentPeak holds the default value on creation for the current_peak field.
+	observabilityconcurrencybucket.DefaultCurrentPeak = observabilityconcurrencybucketDescCurrentPeak.Default.(int)
+	// observabilityconcurrencybucketDescCurrentSum is the schema descriptor for current_sum field.
+	observabilityconcurrencybucketDescCurrentSum := observabilityconcurrencybucketFields[8].Descriptor()
+	// observabilityconcurrencybucket.DefaultCurrentSum holds the default value on creation for the current_sum field.
+	observabilityconcurrencybucket.DefaultCurrentSum = observabilityconcurrencybucketDescCurrentSum.Default.(int64)
+	// observabilityconcurrencybucketDescSampleCount is the schema descriptor for sample_count field.
+	observabilityconcurrencybucketDescSampleCount := observabilityconcurrencybucketFields[9].Descriptor()
+	// observabilityconcurrencybucket.DefaultSampleCount holds the default value on creation for the sample_count field.
+	observabilityconcurrencybucket.DefaultSampleCount = observabilityconcurrencybucketDescSampleCount.Default.(int64)
+	// observabilityconcurrencybucketDescEffectiveLimit is the schema descriptor for effective_limit field.
+	observabilityconcurrencybucketDescEffectiveLimit := observabilityconcurrencybucketFields[10].Descriptor()
+	// observabilityconcurrencybucket.DefaultEffectiveLimit holds the default value on creation for the effective_limit field.
+	observabilityconcurrencybucket.DefaultEffectiveLimit = observabilityconcurrencybucketDescEffectiveLimit.Default.(int)
+	// observabilityconcurrencybucketDescWaitingPeak is the schema descriptor for waiting_peak field.
+	observabilityconcurrencybucketDescWaitingPeak := observabilityconcurrencybucketFields[11].Descriptor()
+	// observabilityconcurrencybucket.DefaultWaitingPeak holds the default value on creation for the waiting_peak field.
+	observabilityconcurrencybucket.DefaultWaitingPeak = observabilityconcurrencybucketDescWaitingPeak.Default.(int)
+	// observabilityconcurrencybucketDescPeakRatioActual is the schema descriptor for peak_ratio_actual field.
+	observabilityconcurrencybucketDescPeakRatioActual := observabilityconcurrencybucketFields[12].Descriptor()
+	// observabilityconcurrencybucket.DefaultPeakRatioActual holds the default value on creation for the peak_ratio_actual field.
+	observabilityconcurrencybucket.DefaultPeakRatioActual = observabilityconcurrencybucketDescPeakRatioActual.Default.(int)
+	// observabilityconcurrencybucketDescPeakRatioLimit is the schema descriptor for peak_ratio_limit field.
+	observabilityconcurrencybucketDescPeakRatioLimit := observabilityconcurrencybucketFields[13].Descriptor()
+	// observabilityconcurrencybucket.DefaultPeakRatioLimit holds the default value on creation for the peak_ratio_limit field.
+	observabilityconcurrencybucket.DefaultPeakRatioLimit = observabilityconcurrencybucketDescPeakRatioLimit.Default.(int)
+	// observabilityconcurrencybucketDescWaitSumMs is the schema descriptor for wait_sum_ms field.
+	observabilityconcurrencybucketDescWaitSumMs := observabilityconcurrencybucketFields[15].Descriptor()
+	// observabilityconcurrencybucket.DefaultWaitSumMs holds the default value on creation for the wait_sum_ms field.
+	observabilityconcurrencybucket.DefaultWaitSumMs = observabilityconcurrencybucketDescWaitSumMs.Default.(int64)
+	// observabilityconcurrencybucketDescWaitSampleCount is the schema descriptor for wait_sample_count field.
+	observabilityconcurrencybucketDescWaitSampleCount := observabilityconcurrencybucketFields[16].Descriptor()
+	// observabilityconcurrencybucket.DefaultWaitSampleCount holds the default value on creation for the wait_sample_count field.
+	observabilityconcurrencybucket.DefaultWaitSampleCount = observabilityconcurrencybucketDescWaitSampleCount.Default.(int64)
+	// observabilityconcurrencybucketDescUpdatedAt is the schema descriptor for updated_at field.
+	observabilityconcurrencybucketDescUpdatedAt := observabilityconcurrencybucketFields[19].Descriptor()
+	// observabilityconcurrencybucket.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	observabilityconcurrencybucket.DefaultUpdatedAt = observabilityconcurrencybucketDescUpdatedAt.Default.(func() time.Time)
+	// observabilityconcurrencybucket.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	observabilityconcurrencybucket.UpdateDefaultUpdatedAt = observabilityconcurrencybucketDescUpdatedAt.UpdateDefault.(func() time.Time)
+	observabilityrequestbucketFields := schema.ObservabilityRequestBucket{}.Fields()
+	_ = observabilityrequestbucketFields
+	// observabilityrequestbucketDescDimensionHash is the schema descriptor for dimension_hash field.
+	observabilityrequestbucketDescDimensionHash := observabilityrequestbucketFields[2].Descriptor()
+	// observabilityrequestbucket.DimensionHashValidator is a validator for the "dimension_hash" field. It is called by the builders before save.
+	observabilityrequestbucket.DimensionHashValidator = observabilityrequestbucketDescDimensionHash.Validators[0].(func(string) error)
+	// observabilityrequestbucketDescUserID is the schema descriptor for user_id field.
+	observabilityrequestbucketDescUserID := observabilityrequestbucketFields[3].Descriptor()
+	// observabilityrequestbucket.DefaultUserID holds the default value on creation for the user_id field.
+	observabilityrequestbucket.DefaultUserID = observabilityrequestbucketDescUserID.Default.(int64)
+	// observabilityrequestbucketDescAPIKeyID is the schema descriptor for api_key_id field.
+	observabilityrequestbucketDescAPIKeyID := observabilityrequestbucketFields[4].Descriptor()
+	// observabilityrequestbucket.DefaultAPIKeyID holds the default value on creation for the api_key_id field.
+	observabilityrequestbucket.DefaultAPIKeyID = observabilityrequestbucketDescAPIKeyID.Default.(int64)
+	// observabilityrequestbucketDescGroupID is the schema descriptor for group_id field.
+	observabilityrequestbucketDescGroupID := observabilityrequestbucketFields[5].Descriptor()
+	// observabilityrequestbucket.DefaultGroupID holds the default value on creation for the group_id field.
+	observabilityrequestbucket.DefaultGroupID = observabilityrequestbucketDescGroupID.Default.(int64)
+	// observabilityrequestbucketDescRouteAlias is the schema descriptor for route_alias field.
+	observabilityrequestbucketDescRouteAlias := observabilityrequestbucketFields[6].Descriptor()
+	// observabilityrequestbucket.RouteAliasValidator is a validator for the "route_alias" field. It is called by the builders before save.
+	observabilityrequestbucket.RouteAliasValidator = observabilityrequestbucketDescRouteAlias.Validators[0].(func(string) error)
+	// observabilityrequestbucketDescAccountID is the schema descriptor for account_id field.
+	observabilityrequestbucketDescAccountID := observabilityrequestbucketFields[7].Descriptor()
+	// observabilityrequestbucket.DefaultAccountID holds the default value on creation for the account_id field.
+	observabilityrequestbucket.DefaultAccountID = observabilityrequestbucketDescAccountID.Default.(int64)
+	// observabilityrequestbucketDescRequestCount is the schema descriptor for request_count field.
+	observabilityrequestbucketDescRequestCount := observabilityrequestbucketFields[8].Descriptor()
+	// observabilityrequestbucket.DefaultRequestCount holds the default value on creation for the request_count field.
+	observabilityrequestbucket.DefaultRequestCount = observabilityrequestbucketDescRequestCount.Default.(int64)
+	// observabilityrequestbucketDescSuccessCount is the schema descriptor for success_count field.
+	observabilityrequestbucketDescSuccessCount := observabilityrequestbucketFields[9].Descriptor()
+	// observabilityrequestbucket.DefaultSuccessCount holds the default value on creation for the success_count field.
+	observabilityrequestbucket.DefaultSuccessCount = observabilityrequestbucketDescSuccessCount.Default.(int64)
+	// observabilityrequestbucketDescErrorCount is the schema descriptor for error_count field.
+	observabilityrequestbucketDescErrorCount := observabilityrequestbucketFields[10].Descriptor()
+	// observabilityrequestbucket.DefaultErrorCount holds the default value on creation for the error_count field.
+	observabilityrequestbucket.DefaultErrorCount = observabilityrequestbucketDescErrorCount.Default.(int64)
+	// observabilityrequestbucketDescSLAErrorCount is the schema descriptor for sla_error_count field.
+	observabilityrequestbucketDescSLAErrorCount := observabilityrequestbucketFields[11].Descriptor()
+	// observabilityrequestbucket.DefaultSLAErrorCount holds the default value on creation for the sla_error_count field.
+	observabilityrequestbucket.DefaultSLAErrorCount = observabilityrequestbucketDescSLAErrorCount.Default.(int64)
+	// observabilityrequestbucketDescBusinessLimitedCount is the schema descriptor for business_limited_count field.
+	observabilityrequestbucketDescBusinessLimitedCount := observabilityrequestbucketFields[12].Descriptor()
+	// observabilityrequestbucket.DefaultBusinessLimitedCount holds the default value on creation for the business_limited_count field.
+	observabilityrequestbucket.DefaultBusinessLimitedCount = observabilityrequestbucketDescBusinessLimitedCount.Default.(int64)
+	// observabilityrequestbucketDescRateLimitedCount is the schema descriptor for rate_limited_count field.
+	observabilityrequestbucketDescRateLimitedCount := observabilityrequestbucketFields[13].Descriptor()
+	// observabilityrequestbucket.DefaultRateLimitedCount holds the default value on creation for the rate_limited_count field.
+	observabilityrequestbucket.DefaultRateLimitedCount = observabilityrequestbucketDescRateLimitedCount.Default.(int64)
+	// observabilityrequestbucketDescLegacyInferredCount is the schema descriptor for legacy_inferred_count field.
+	observabilityrequestbucketDescLegacyInferredCount := observabilityrequestbucketFields[14].Descriptor()
+	// observabilityrequestbucket.DefaultLegacyInferredCount holds the default value on creation for the legacy_inferred_count field.
+	observabilityrequestbucket.DefaultLegacyInferredCount = observabilityrequestbucketDescLegacyInferredCount.Default.(int64)
+	// observabilityrequestbucketDescInputTokens is the schema descriptor for input_tokens field.
+	observabilityrequestbucketDescInputTokens := observabilityrequestbucketFields[15].Descriptor()
+	// observabilityrequestbucket.DefaultInputTokens holds the default value on creation for the input_tokens field.
+	observabilityrequestbucket.DefaultInputTokens = observabilityrequestbucketDescInputTokens.Default.(int64)
+	// observabilityrequestbucketDescOutputTokens is the schema descriptor for output_tokens field.
+	observabilityrequestbucketDescOutputTokens := observabilityrequestbucketFields[16].Descriptor()
+	// observabilityrequestbucket.DefaultOutputTokens holds the default value on creation for the output_tokens field.
+	observabilityrequestbucket.DefaultOutputTokens = observabilityrequestbucketDescOutputTokens.Default.(int64)
+	// observabilityrequestbucketDescCacheCreationTokens is the schema descriptor for cache_creation_tokens field.
+	observabilityrequestbucketDescCacheCreationTokens := observabilityrequestbucketFields[17].Descriptor()
+	// observabilityrequestbucket.DefaultCacheCreationTokens holds the default value on creation for the cache_creation_tokens field.
+	observabilityrequestbucket.DefaultCacheCreationTokens = observabilityrequestbucketDescCacheCreationTokens.Default.(int64)
+	// observabilityrequestbucketDescCacheReadTokens is the schema descriptor for cache_read_tokens field.
+	observabilityrequestbucketDescCacheReadTokens := observabilityrequestbucketFields[18].Descriptor()
+	// observabilityrequestbucket.DefaultCacheReadTokens holds the default value on creation for the cache_read_tokens field.
+	observabilityrequestbucket.DefaultCacheReadTokens = observabilityrequestbucketDescCacheReadTokens.Default.(int64)
+	// observabilityrequestbucketDescTotalTokens is the schema descriptor for total_tokens field.
+	observabilityrequestbucketDescTotalTokens := observabilityrequestbucketFields[19].Descriptor()
+	// observabilityrequestbucket.DefaultTotalTokens holds the default value on creation for the total_tokens field.
+	observabilityrequestbucket.DefaultTotalTokens = observabilityrequestbucketDescTotalTokens.Default.(int64)
+	// observabilityrequestbucketDescDurationSampleCount is the schema descriptor for duration_sample_count field.
+	observabilityrequestbucketDescDurationSampleCount := observabilityrequestbucketFields[20].Descriptor()
+	// observabilityrequestbucket.DefaultDurationSampleCount holds the default value on creation for the duration_sample_count field.
+	observabilityrequestbucket.DefaultDurationSampleCount = observabilityrequestbucketDescDurationSampleCount.Default.(int64)
+	// observabilityrequestbucketDescSumDurationMs is the schema descriptor for sum_duration_ms field.
+	observabilityrequestbucketDescSumDurationMs := observabilityrequestbucketFields[21].Descriptor()
+	// observabilityrequestbucket.DefaultSumDurationMs holds the default value on creation for the sum_duration_ms field.
+	observabilityrequestbucket.DefaultSumDurationMs = observabilityrequestbucketDescSumDurationMs.Default.(int64)
+	// observabilityrequestbucketDescMinDurationMs is the schema descriptor for min_duration_ms field.
+	observabilityrequestbucketDescMinDurationMs := observabilityrequestbucketFields[22].Descriptor()
+	// observabilityrequestbucket.DefaultMinDurationMs holds the default value on creation for the min_duration_ms field.
+	observabilityrequestbucket.DefaultMinDurationMs = observabilityrequestbucketDescMinDurationMs.Default.(int64)
+	// observabilityrequestbucketDescMaxDurationMs is the schema descriptor for max_duration_ms field.
+	observabilityrequestbucketDescMaxDurationMs := observabilityrequestbucketFields[23].Descriptor()
+	// observabilityrequestbucket.DefaultMaxDurationMs holds the default value on creation for the max_duration_ms field.
+	observabilityrequestbucket.DefaultMaxDurationMs = observabilityrequestbucketDescMaxDurationMs.Default.(int64)
+	// observabilityrequestbucketDescDurationLe100 is the schema descriptor for duration_le_100 field.
+	observabilityrequestbucketDescDurationLe100 := observabilityrequestbucketFields[24].Descriptor()
+	// observabilityrequestbucket.DefaultDurationLe100 holds the default value on creation for the duration_le_100 field.
+	observabilityrequestbucket.DefaultDurationLe100 = observabilityrequestbucketDescDurationLe100.Default.(int64)
+	// observabilityrequestbucketDescDurationLe250 is the schema descriptor for duration_le_250 field.
+	observabilityrequestbucketDescDurationLe250 := observabilityrequestbucketFields[25].Descriptor()
+	// observabilityrequestbucket.DefaultDurationLe250 holds the default value on creation for the duration_le_250 field.
+	observabilityrequestbucket.DefaultDurationLe250 = observabilityrequestbucketDescDurationLe250.Default.(int64)
+	// observabilityrequestbucketDescDurationLe500 is the schema descriptor for duration_le_500 field.
+	observabilityrequestbucketDescDurationLe500 := observabilityrequestbucketFields[26].Descriptor()
+	// observabilityrequestbucket.DefaultDurationLe500 holds the default value on creation for the duration_le_500 field.
+	observabilityrequestbucket.DefaultDurationLe500 = observabilityrequestbucketDescDurationLe500.Default.(int64)
+	// observabilityrequestbucketDescDurationLe1000 is the schema descriptor for duration_le_1000 field.
+	observabilityrequestbucketDescDurationLe1000 := observabilityrequestbucketFields[27].Descriptor()
+	// observabilityrequestbucket.DefaultDurationLe1000 holds the default value on creation for the duration_le_1000 field.
+	observabilityrequestbucket.DefaultDurationLe1000 = observabilityrequestbucketDescDurationLe1000.Default.(int64)
+	// observabilityrequestbucketDescDurationLe2000 is the schema descriptor for duration_le_2000 field.
+	observabilityrequestbucketDescDurationLe2000 := observabilityrequestbucketFields[28].Descriptor()
+	// observabilityrequestbucket.DefaultDurationLe2000 holds the default value on creation for the duration_le_2000 field.
+	observabilityrequestbucket.DefaultDurationLe2000 = observabilityrequestbucketDescDurationLe2000.Default.(int64)
+	// observabilityrequestbucketDescDurationLe5000 is the schema descriptor for duration_le_5000 field.
+	observabilityrequestbucketDescDurationLe5000 := observabilityrequestbucketFields[29].Descriptor()
+	// observabilityrequestbucket.DefaultDurationLe5000 holds the default value on creation for the duration_le_5000 field.
+	observabilityrequestbucket.DefaultDurationLe5000 = observabilityrequestbucketDescDurationLe5000.Default.(int64)
+	// observabilityrequestbucketDescDurationLe10000 is the schema descriptor for duration_le_10000 field.
+	observabilityrequestbucketDescDurationLe10000 := observabilityrequestbucketFields[30].Descriptor()
+	// observabilityrequestbucket.DefaultDurationLe10000 holds the default value on creation for the duration_le_10000 field.
+	observabilityrequestbucket.DefaultDurationLe10000 = observabilityrequestbucketDescDurationLe10000.Default.(int64)
+	// observabilityrequestbucketDescDurationGt10000 is the schema descriptor for duration_gt_10000 field.
+	observabilityrequestbucketDescDurationGt10000 := observabilityrequestbucketFields[31].Descriptor()
+	// observabilityrequestbucket.DefaultDurationGt10000 holds the default value on creation for the duration_gt_10000 field.
+	observabilityrequestbucket.DefaultDurationGt10000 = observabilityrequestbucketDescDurationGt10000.Default.(int64)
+	// observabilityrequestbucketDescTtftSampleCount is the schema descriptor for ttft_sample_count field.
+	observabilityrequestbucketDescTtftSampleCount := observabilityrequestbucketFields[32].Descriptor()
+	// observabilityrequestbucket.DefaultTtftSampleCount holds the default value on creation for the ttft_sample_count field.
+	observabilityrequestbucket.DefaultTtftSampleCount = observabilityrequestbucketDescTtftSampleCount.Default.(int64)
+	// observabilityrequestbucketDescSumTtftMs is the schema descriptor for sum_ttft_ms field.
+	observabilityrequestbucketDescSumTtftMs := observabilityrequestbucketFields[33].Descriptor()
+	// observabilityrequestbucket.DefaultSumTtftMs holds the default value on creation for the sum_ttft_ms field.
+	observabilityrequestbucket.DefaultSumTtftMs = observabilityrequestbucketDescSumTtftMs.Default.(int64)
+	// observabilityrequestbucketDescMinTtftMs is the schema descriptor for min_ttft_ms field.
+	observabilityrequestbucketDescMinTtftMs := observabilityrequestbucketFields[34].Descriptor()
+	// observabilityrequestbucket.DefaultMinTtftMs holds the default value on creation for the min_ttft_ms field.
+	observabilityrequestbucket.DefaultMinTtftMs = observabilityrequestbucketDescMinTtftMs.Default.(int64)
+	// observabilityrequestbucketDescMaxTtftMs is the schema descriptor for max_ttft_ms field.
+	observabilityrequestbucketDescMaxTtftMs := observabilityrequestbucketFields[35].Descriptor()
+	// observabilityrequestbucket.DefaultMaxTtftMs holds the default value on creation for the max_ttft_ms field.
+	observabilityrequestbucket.DefaultMaxTtftMs = observabilityrequestbucketDescMaxTtftMs.Default.(int64)
+	// observabilityrequestbucketDescTtftLe100 is the schema descriptor for ttft_le_100 field.
+	observabilityrequestbucketDescTtftLe100 := observabilityrequestbucketFields[36].Descriptor()
+	// observabilityrequestbucket.DefaultTtftLe100 holds the default value on creation for the ttft_le_100 field.
+	observabilityrequestbucket.DefaultTtftLe100 = observabilityrequestbucketDescTtftLe100.Default.(int64)
+	// observabilityrequestbucketDescTtftLe250 is the schema descriptor for ttft_le_250 field.
+	observabilityrequestbucketDescTtftLe250 := observabilityrequestbucketFields[37].Descriptor()
+	// observabilityrequestbucket.DefaultTtftLe250 holds the default value on creation for the ttft_le_250 field.
+	observabilityrequestbucket.DefaultTtftLe250 = observabilityrequestbucketDescTtftLe250.Default.(int64)
+	// observabilityrequestbucketDescTtftLe500 is the schema descriptor for ttft_le_500 field.
+	observabilityrequestbucketDescTtftLe500 := observabilityrequestbucketFields[38].Descriptor()
+	// observabilityrequestbucket.DefaultTtftLe500 holds the default value on creation for the ttft_le_500 field.
+	observabilityrequestbucket.DefaultTtftLe500 = observabilityrequestbucketDescTtftLe500.Default.(int64)
+	// observabilityrequestbucketDescTtftLe1000 is the schema descriptor for ttft_le_1000 field.
+	observabilityrequestbucketDescTtftLe1000 := observabilityrequestbucketFields[39].Descriptor()
+	// observabilityrequestbucket.DefaultTtftLe1000 holds the default value on creation for the ttft_le_1000 field.
+	observabilityrequestbucket.DefaultTtftLe1000 = observabilityrequestbucketDescTtftLe1000.Default.(int64)
+	// observabilityrequestbucketDescTtftLe2000 is the schema descriptor for ttft_le_2000 field.
+	observabilityrequestbucketDescTtftLe2000 := observabilityrequestbucketFields[40].Descriptor()
+	// observabilityrequestbucket.DefaultTtftLe2000 holds the default value on creation for the ttft_le_2000 field.
+	observabilityrequestbucket.DefaultTtftLe2000 = observabilityrequestbucketDescTtftLe2000.Default.(int64)
+	// observabilityrequestbucketDescTtftLe5000 is the schema descriptor for ttft_le_5000 field.
+	observabilityrequestbucketDescTtftLe5000 := observabilityrequestbucketFields[41].Descriptor()
+	// observabilityrequestbucket.DefaultTtftLe5000 holds the default value on creation for the ttft_le_5000 field.
+	observabilityrequestbucket.DefaultTtftLe5000 = observabilityrequestbucketDescTtftLe5000.Default.(int64)
+	// observabilityrequestbucketDescTtftLe10000 is the schema descriptor for ttft_le_10000 field.
+	observabilityrequestbucketDescTtftLe10000 := observabilityrequestbucketFields[42].Descriptor()
+	// observabilityrequestbucket.DefaultTtftLe10000 holds the default value on creation for the ttft_le_10000 field.
+	observabilityrequestbucket.DefaultTtftLe10000 = observabilityrequestbucketDescTtftLe10000.Default.(int64)
+	// observabilityrequestbucketDescTtftGt10000 is the schema descriptor for ttft_gt_10000 field.
+	observabilityrequestbucketDescTtftGt10000 := observabilityrequestbucketFields[43].Descriptor()
+	// observabilityrequestbucket.DefaultTtftGt10000 holds the default value on creation for the ttft_gt_10000 field.
+	observabilityrequestbucket.DefaultTtftGt10000 = observabilityrequestbucketDescTtftGt10000.Default.(int64)
+	// observabilityrequestbucketDescUpdatedAt is the schema descriptor for updated_at field.
+	observabilityrequestbucketDescUpdatedAt := observabilityrequestbucketFields[45].Descriptor()
+	// observabilityrequestbucket.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	observabilityrequestbucket.DefaultUpdatedAt = observabilityrequestbucketDescUpdatedAt.Default.(func() time.Time)
+	// observabilityrequestbucket.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	observabilityrequestbucket.UpdateDefaultUpdatedAt = observabilityrequestbucketDescUpdatedAt.UpdateDefault.(func() time.Time)
 	paymentauditlogFields := schema.PaymentAuditLog{}.Fields()
 	_ = paymentauditlogFields
 	// paymentauditlogDescOrderID is the schema descriptor for order_id field.
@@ -2479,112 +2717,116 @@ func init() {
 	usagelogDescUpstreamModel := usagelogFields[6].Descriptor()
 	// usagelog.UpstreamModelValidator is a validator for the "upstream_model" field. It is called by the builders before save.
 	usagelog.UpstreamModelValidator = usagelogDescUpstreamModel.Validators[0].(func(string) error)
+	// usagelogDescRouteAlias is the schema descriptor for route_alias field.
+	usagelogDescRouteAlias := usagelogFields[7].Descriptor()
+	// usagelog.RouteAliasValidator is a validator for the "route_alias" field. It is called by the builders before save.
+	usagelog.RouteAliasValidator = usagelogDescRouteAlias.Validators[0].(func(string) error)
 	// usagelogDescModelMappingChain is the schema descriptor for model_mapping_chain field.
-	usagelogDescModelMappingChain := usagelogFields[8].Descriptor()
+	usagelogDescModelMappingChain := usagelogFields[9].Descriptor()
 	// usagelog.ModelMappingChainValidator is a validator for the "model_mapping_chain" field. It is called by the builders before save.
 	usagelog.ModelMappingChainValidator = usagelogDescModelMappingChain.Validators[0].(func(string) error)
 	// usagelogDescBillingTier is the schema descriptor for billing_tier field.
-	usagelogDescBillingTier := usagelogFields[9].Descriptor()
+	usagelogDescBillingTier := usagelogFields[10].Descriptor()
 	// usagelog.BillingTierValidator is a validator for the "billing_tier" field. It is called by the builders before save.
 	usagelog.BillingTierValidator = usagelogDescBillingTier.Validators[0].(func(string) error)
 	// usagelogDescBillingMode is the schema descriptor for billing_mode field.
-	usagelogDescBillingMode := usagelogFields[10].Descriptor()
+	usagelogDescBillingMode := usagelogFields[11].Descriptor()
 	// usagelog.BillingModeValidator is a validator for the "billing_mode" field. It is called by the builders before save.
 	usagelog.BillingModeValidator = usagelogDescBillingMode.Validators[0].(func(string) error)
 	// usagelogDescInputTokens is the schema descriptor for input_tokens field.
-	usagelogDescInputTokens := usagelogFields[13].Descriptor()
+	usagelogDescInputTokens := usagelogFields[14].Descriptor()
 	// usagelog.DefaultInputTokens holds the default value on creation for the input_tokens field.
 	usagelog.DefaultInputTokens = usagelogDescInputTokens.Default.(int)
 	// usagelogDescOutputTokens is the schema descriptor for output_tokens field.
-	usagelogDescOutputTokens := usagelogFields[14].Descriptor()
+	usagelogDescOutputTokens := usagelogFields[15].Descriptor()
 	// usagelog.DefaultOutputTokens holds the default value on creation for the output_tokens field.
 	usagelog.DefaultOutputTokens = usagelogDescOutputTokens.Default.(int)
 	// usagelogDescCacheCreationTokens is the schema descriptor for cache_creation_tokens field.
-	usagelogDescCacheCreationTokens := usagelogFields[15].Descriptor()
+	usagelogDescCacheCreationTokens := usagelogFields[16].Descriptor()
 	// usagelog.DefaultCacheCreationTokens holds the default value on creation for the cache_creation_tokens field.
 	usagelog.DefaultCacheCreationTokens = usagelogDescCacheCreationTokens.Default.(int)
 	// usagelogDescCacheReadTokens is the schema descriptor for cache_read_tokens field.
-	usagelogDescCacheReadTokens := usagelogFields[16].Descriptor()
+	usagelogDescCacheReadTokens := usagelogFields[17].Descriptor()
 	// usagelog.DefaultCacheReadTokens holds the default value on creation for the cache_read_tokens field.
 	usagelog.DefaultCacheReadTokens = usagelogDescCacheReadTokens.Default.(int)
 	// usagelogDescCacheCreation5mTokens is the schema descriptor for cache_creation_5m_tokens field.
-	usagelogDescCacheCreation5mTokens := usagelogFields[17].Descriptor()
+	usagelogDescCacheCreation5mTokens := usagelogFields[18].Descriptor()
 	// usagelog.DefaultCacheCreation5mTokens holds the default value on creation for the cache_creation_5m_tokens field.
 	usagelog.DefaultCacheCreation5mTokens = usagelogDescCacheCreation5mTokens.Default.(int)
 	// usagelogDescCacheCreation1hTokens is the schema descriptor for cache_creation_1h_tokens field.
-	usagelogDescCacheCreation1hTokens := usagelogFields[18].Descriptor()
+	usagelogDescCacheCreation1hTokens := usagelogFields[19].Descriptor()
 	// usagelog.DefaultCacheCreation1hTokens holds the default value on creation for the cache_creation_1h_tokens field.
 	usagelog.DefaultCacheCreation1hTokens = usagelogDescCacheCreation1hTokens.Default.(int)
 	// usagelogDescInputCost is the schema descriptor for input_cost field.
-	usagelogDescInputCost := usagelogFields[19].Descriptor()
+	usagelogDescInputCost := usagelogFields[20].Descriptor()
 	// usagelog.DefaultInputCost holds the default value on creation for the input_cost field.
 	usagelog.DefaultInputCost = usagelogDescInputCost.Default.(float64)
 	// usagelogDescOutputCost is the schema descriptor for output_cost field.
-	usagelogDescOutputCost := usagelogFields[20].Descriptor()
+	usagelogDescOutputCost := usagelogFields[21].Descriptor()
 	// usagelog.DefaultOutputCost holds the default value on creation for the output_cost field.
 	usagelog.DefaultOutputCost = usagelogDescOutputCost.Default.(float64)
 	// usagelogDescCacheCreationCost is the schema descriptor for cache_creation_cost field.
-	usagelogDescCacheCreationCost := usagelogFields[21].Descriptor()
+	usagelogDescCacheCreationCost := usagelogFields[22].Descriptor()
 	// usagelog.DefaultCacheCreationCost holds the default value on creation for the cache_creation_cost field.
 	usagelog.DefaultCacheCreationCost = usagelogDescCacheCreationCost.Default.(float64)
 	// usagelogDescCacheReadCost is the schema descriptor for cache_read_cost field.
-	usagelogDescCacheReadCost := usagelogFields[22].Descriptor()
+	usagelogDescCacheReadCost := usagelogFields[23].Descriptor()
 	// usagelog.DefaultCacheReadCost holds the default value on creation for the cache_read_cost field.
 	usagelog.DefaultCacheReadCost = usagelogDescCacheReadCost.Default.(float64)
 	// usagelogDescTotalCost is the schema descriptor for total_cost field.
-	usagelogDescTotalCost := usagelogFields[23].Descriptor()
+	usagelogDescTotalCost := usagelogFields[24].Descriptor()
 	// usagelog.DefaultTotalCost holds the default value on creation for the total_cost field.
 	usagelog.DefaultTotalCost = usagelogDescTotalCost.Default.(float64)
 	// usagelogDescActualCost is the schema descriptor for actual_cost field.
-	usagelogDescActualCost := usagelogFields[24].Descriptor()
+	usagelogDescActualCost := usagelogFields[25].Descriptor()
 	// usagelog.DefaultActualCost holds the default value on creation for the actual_cost field.
 	usagelog.DefaultActualCost = usagelogDescActualCost.Default.(float64)
 	// usagelogDescRateMultiplier is the schema descriptor for rate_multiplier field.
-	usagelogDescRateMultiplier := usagelogFields[25].Descriptor()
+	usagelogDescRateMultiplier := usagelogFields[26].Descriptor()
 	// usagelog.DefaultRateMultiplier holds the default value on creation for the rate_multiplier field.
 	usagelog.DefaultRateMultiplier = usagelogDescRateMultiplier.Default.(float64)
 	// usagelogDescBillingType is the schema descriptor for billing_type field.
-	usagelogDescBillingType := usagelogFields[27].Descriptor()
+	usagelogDescBillingType := usagelogFields[28].Descriptor()
 	// usagelog.DefaultBillingType holds the default value on creation for the billing_type field.
 	usagelog.DefaultBillingType = usagelogDescBillingType.Default.(int8)
 	// usagelogDescStream is the schema descriptor for stream field.
-	usagelogDescStream := usagelogFields[28].Descriptor()
+	usagelogDescStream := usagelogFields[29].Descriptor()
 	// usagelog.DefaultStream holds the default value on creation for the stream field.
 	usagelog.DefaultStream = usagelogDescStream.Default.(bool)
 	// usagelogDescUserAgent is the schema descriptor for user_agent field.
-	usagelogDescUserAgent := usagelogFields[31].Descriptor()
+	usagelogDescUserAgent := usagelogFields[32].Descriptor()
 	// usagelog.UserAgentValidator is a validator for the "user_agent" field. It is called by the builders before save.
 	usagelog.UserAgentValidator = usagelogDescUserAgent.Validators[0].(func(string) error)
 	// usagelogDescIPAddress is the schema descriptor for ip_address field.
-	usagelogDescIPAddress := usagelogFields[32].Descriptor()
+	usagelogDescIPAddress := usagelogFields[33].Descriptor()
 	// usagelog.IPAddressValidator is a validator for the "ip_address" field. It is called by the builders before save.
 	usagelog.IPAddressValidator = usagelogDescIPAddress.Validators[0].(func(string) error)
 	// usagelogDescImageCount is the schema descriptor for image_count field.
-	usagelogDescImageCount := usagelogFields[33].Descriptor()
+	usagelogDescImageCount := usagelogFields[34].Descriptor()
 	// usagelog.DefaultImageCount holds the default value on creation for the image_count field.
 	usagelog.DefaultImageCount = usagelogDescImageCount.Default.(int)
 	// usagelogDescImageSize is the schema descriptor for image_size field.
-	usagelogDescImageSize := usagelogFields[34].Descriptor()
+	usagelogDescImageSize := usagelogFields[35].Descriptor()
 	// usagelog.ImageSizeValidator is a validator for the "image_size" field. It is called by the builders before save.
 	usagelog.ImageSizeValidator = usagelogDescImageSize.Validators[0].(func(string) error)
 	// usagelogDescImageInputSize is the schema descriptor for image_input_size field.
-	usagelogDescImageInputSize := usagelogFields[35].Descriptor()
+	usagelogDescImageInputSize := usagelogFields[36].Descriptor()
 	// usagelog.ImageInputSizeValidator is a validator for the "image_input_size" field. It is called by the builders before save.
 	usagelog.ImageInputSizeValidator = usagelogDescImageInputSize.Validators[0].(func(string) error)
 	// usagelogDescImageOutputSize is the schema descriptor for image_output_size field.
-	usagelogDescImageOutputSize := usagelogFields[36].Descriptor()
+	usagelogDescImageOutputSize := usagelogFields[37].Descriptor()
 	// usagelog.ImageOutputSizeValidator is a validator for the "image_output_size" field. It is called by the builders before save.
 	usagelog.ImageOutputSizeValidator = usagelogDescImageOutputSize.Validators[0].(func(string) error)
 	// usagelogDescImageSizeSource is the schema descriptor for image_size_source field.
-	usagelogDescImageSizeSource := usagelogFields[37].Descriptor()
+	usagelogDescImageSizeSource := usagelogFields[38].Descriptor()
 	// usagelog.ImageSizeSourceValidator is a validator for the "image_size_source" field. It is called by the builders before save.
 	usagelog.ImageSizeSourceValidator = usagelogDescImageSizeSource.Validators[0].(func(string) error)
 	// usagelogDescCacheTTLOverridden is the schema descriptor for cache_ttl_overridden field.
-	usagelogDescCacheTTLOverridden := usagelogFields[39].Descriptor()
+	usagelogDescCacheTTLOverridden := usagelogFields[40].Descriptor()
 	// usagelog.DefaultCacheTTLOverridden holds the default value on creation for the cache_ttl_overridden field.
 	usagelog.DefaultCacheTTLOverridden = usagelogDescCacheTTLOverridden.Default.(bool)
 	// usagelogDescCreatedAt is the schema descriptor for created_at field.
-	usagelogDescCreatedAt := usagelogFields[40].Descriptor()
+	usagelogDescCreatedAt := usagelogFields[41].Descriptor()
 	// usagelog.DefaultCreatedAt holds the default value on creation for the created_at field.
 	usagelog.DefaultCreatedAt = usagelogDescCreatedAt.Default.(func() time.Time)
 	userMixin := schema.User{}.Mixin()

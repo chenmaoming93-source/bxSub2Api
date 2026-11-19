@@ -30,6 +30,9 @@ func (s *OpsService) CreateAlertRule(ctx context.Context, rule *OpsAlertRule) (*
 	if rule == nil {
 		return nil, infraerrors.BadRequest("INVALID_RULE", "invalid rule")
 	}
+	if err := validateObservabilityAlertScope(rule); err != nil {
+		return nil, err
+	}
 
 	created, err := s.opsRepo.CreateAlertRule(ctx, rule)
 	if err != nil {
@@ -48,6 +51,9 @@ func (s *OpsService) UpdateAlertRule(ctx context.Context, rule *OpsAlertRule) (*
 	if rule == nil || rule.ID <= 0 {
 		return nil, infraerrors.BadRequest("INVALID_RULE", "invalid rule")
 	}
+	if err := validateObservabilityAlertScope(rule); err != nil {
+		return nil, err
+	}
 
 	updated, err := s.opsRepo.UpdateAlertRule(ctx, rule)
 	if err != nil {
@@ -57,6 +63,20 @@ func (s *OpsService) UpdateAlertRule(ctx context.Context, rule *OpsAlertRule) (*
 		return nil, err
 	}
 	return updated, nil
+}
+
+func validateObservabilityAlertScope(rule *OpsAlertRule) error {
+	if rule == nil || !isObservabilityAlertMetric(rule.MetricType) {
+		return nil
+	}
+	scope := parseOpsAlertRuleScope(rule.Filters)
+	if scope.GroupID == nil || scope.AccountID == nil || strings.TrimSpace(scope.RouteAlias) == "" {
+		return infraerrors.BadRequest(
+			"OBSERVABILITY_ALERT_SCOPE_REQUIRED",
+			"observability alert rules require group_id, route_alias and account_id",
+		)
+	}
+	return nil
 }
 
 func (s *OpsService) DeleteAlertRule(ctx context.Context, id int64) error {

@@ -17,6 +17,7 @@ import (
 
 	dbent "github.com/Wei-Shaw/sub2api/ent"
 	_ "github.com/Wei-Shaw/sub2api/ent/runtime"
+	"github.com/Wei-Shaw/sub2api/internal/config"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/timezone"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -31,8 +32,8 @@ import (
 )
 
 const (
-	redisImageTag    = "redis:8.4-alpine"
-	mysqlImageTag    = "mysql:8.4"
+	redisImageTag = "redis:8.4-alpine"
+	mysqlImageTag = "mysql:8.4"
 )
 
 var (
@@ -49,6 +50,14 @@ func TestMain(m *testing.M) {
 	if err := timezone.Init("UTC"); err != nil {
 		log.Printf("failed to init timezone: %v", err)
 		os.Exit(1)
+	}
+
+	if os.Getenv("OBSERVABILITY_PERF_SHADOW_TABLES") == "1" {
+		os.Exit(runShadowTablePerformanceEnvironment(m))
+	}
+
+	if os.Getenv("OBSERVABILITY_PERF_EXTERNAL") == "1" {
+		os.Exit(runExternalPerformanceEnvironment(m))
 	}
 
 	if !dockerIsAvailable(ctx) {
@@ -145,6 +154,213 @@ func TestMain(m *testing.M) {
 	_ = integrationDB.Close()
 
 	os.Exit(code)
+}
+
+// runShadowTablePerformanceEnvironment gives the performance gate a
+// connection-local set of temporary tables over the configured database. It is
+// used when the MySQL account can write its application schema but cannot
+// create a separate database. All fixture writes stay on one connection and
+// disappear when m.Run returns.
+func runShadowTablePerformanceEnvironment(m *testing.M) int {
+	ctx := context.Background()
+	cfg, err := config.Load()
+	if err != nil {
+		log.Printf("load performance config: %v", err)
+		return 1
+	}
+	integrationDB, err = openSQLWithRetry(ctx, cfg.Database.DSN(), 30*time.Second)
+	if err != nil {
+		log.Printf("connect performance database: %v", err)
+		return 1
+	}
+	integrationDB.SetMaxOpenConns(1)
+	integrationDB.SetMaxIdleConns(1)
+	integrationDB.SetConnMaxIdleTime(0)
+	integrationDB.SetConnMaxLifetime(0)
+
+	tables := []string{
+		"users",
+		"groups",
+		"accounts",
+		"proxies",
+		"api_keys",
+		"account_groups",
+		"user_allowed_groups",
+		"group_model_route_accounts",
+		"observability_request_bucket",
+		"observability_concurrency_bucket",
+		"ops_error_logs",
+	}
+	for _, table := range tables {
+		quoted := "`" + table + "`"
+		source := "`" + cfg.Database.DBName + "`." + quoted
+		if _, err := integrationDB.ExecContext(ctx, "CREATE TEMPORARY TABLE "+quoted+" AS SELECT * FROM "+source+" WHERE 1=0"); err != nil {
+			log.Printf("create performance shadow table %s: %v", table, err)
+			_ = integrationDB.Close()
+			return 1
+		}
+		if err := copyPerformanceIndexes(ctx, integrationDB, cfg.Database.DBName, table); err != nil {
+			log.Printf("copy performance indexes for %s: %v", table, err)
+			_ = integrationDB.Close()
+			return 1
+		}
+	}
+
+	drv := entsql.OpenDB(dialect.MySQL, integrationDB)
+	integrationEntClient = dbent.NewClient(dbent.Driver(drv))
+	integrationRedis = redisclient.NewClient(&redisclient.Options{
+		Addr:     cfg.Redis.Address(),
+		Password: cfg.Redis.Password,
+		DB:       cfg.Redis.DB,
+	})
+	if err := integrationRedis.Ping(ctx).Err(); err != nil {
+		log.Printf("ping performance Redis: %v", err)
+		_ = integrationEntClient.Close()
+		_ = integrationRedis.Close()
+		_ = integrationDB.Close()
+		return 1
+	}
+
+	code := m.Run()
+	_ = integrationEntClient.Close()
+	_ = integrationRedis.Close()
+	_ = integrationDB.Close()
+	return code
+}
+
+func copyPerformanceIndexes(ctx context.Context, db *sql.DB, sourceDatabase, table string) error {
+	rows, err := db.QueryContext(ctx, "SHOW INDEX FROM `"+sourceDatabase+"`.`"+table+"`")
+	if err != nil {
+		return err
+	}
+	type indexDef struct {
+		name    string
+		unique  bool
+		columns []string
+	}
+	byName := make(map[string]*indexDef)
+	order := make([]string, 0)
+	for rows.Next() {
+		var tableName, nonUnique, keyName, collation, indexType, comment, indexComment string
+		var seq, cardinality sql.NullInt64
+		var columnName, subPart, packed sql.NullString
+		var nullable string
+		var visible sql.NullString
+		var expression sql.NullString
+		if err := rows.Scan(
+			&tableName, &nonUnique, &keyName, &seq, &columnName, &collation,
+			&cardinality, &subPart, &packed, &nullable, &indexType, &comment, &indexComment,
+			&visible, &expression,
+		); err != nil {
+			_ = rows.Close()
+			return err
+		}
+		item := byName[keyName]
+		if item == nil {
+			item = &indexDef{name: keyName, unique: nonUnique == "0"}
+			byName[keyName] = item
+			order = append(order, keyName)
+		}
+		if columnName.Valid && columnName.String != "" {
+			item.columns = append(item.columns, "`"+columnName.String+"`")
+		}
+	}
+	if err := rows.Close(); err != nil {
+		return err
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	for _, keyName := range order {
+		item := byName[keyName]
+		if len(item.columns) == 0 {
+			continue
+		}
+		statement := "CREATE INDEX `" + item.name + "` ON `" + table + "` (" + strings.Join(item.columns, ",") + ")"
+		if item.name == "PRIMARY" {
+			statement = "ALTER TABLE `" + table + "` ADD PRIMARY KEY (" + strings.Join(item.columns, ",") + ")"
+		} else if item.unique {
+			statement = "CREATE UNIQUE INDEX `" + item.name + "` ON `" + table + "` (" + strings.Join(item.columns, ",") + ")"
+		}
+		if _, err := db.ExecContext(ctx, statement); err != nil {
+			return fmt.Errorf("create index %s: %w", item.name, err)
+		}
+	}
+	return nil
+}
+
+// runExternalPerformanceEnvironment uses the configured MySQL/Redis servers
+// but creates a dedicated database and Redis namespace for the duration of the
+// test process. It exists so performance release gates can run on hosts where
+// Docker/Testcontainers is unavailable.
+func runExternalPerformanceEnvironment(m *testing.M) int {
+	ctx := context.Background()
+	cfg, err := config.Load()
+	if err != nil {
+		log.Printf("load performance config: %v", err)
+		return 1
+	}
+
+	dbName := fmt.Sprintf("sub2api_obs_perf_%d", time.Now().UnixNano())
+	adminConfig := cfg.Database
+	adminConfig.DBName = ""
+	adminDB, err := openSQLWithRetry(ctx, adminConfig.DSN(), 30*time.Second)
+	if err != nil {
+		log.Printf("connect performance MySQL admin database: %v", err)
+		return 1
+	}
+	defer func() { _ = adminDB.Close() }()
+
+	if _, err := adminDB.ExecContext(ctx,
+		"CREATE DATABASE `"+dbName+"` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci",
+	); err != nil {
+		log.Printf("create performance database: %v", err)
+		return 1
+	}
+	dropDatabase := func() {
+		if _, err := adminDB.ExecContext(context.Background(), "DROP DATABASE IF EXISTS `"+dbName+"`"); err != nil {
+			log.Printf("drop performance database: %v", err)
+		}
+	}
+
+	testConfig := cfg.Database
+	testConfig.DBName = dbName
+	integrationDB, err = openSQLWithRetry(ctx, testConfig.DSN(), 30*time.Second)
+	if err != nil {
+		log.Printf("connect performance database: %v", err)
+		dropDatabase()
+		return 1
+	}
+	if err := ApplyMigrations(ctx, integrationDB); err != nil {
+		log.Printf("migrate performance database: %v", err)
+		_ = integrationDB.Close()
+		dropDatabase()
+		return 1
+	}
+	drv := entsql.OpenDB(dialect.MySQL, integrationDB)
+	integrationEntClient = dbent.NewClient(dbent.Driver(drv))
+
+	integrationRedis = redisclient.NewClient(&redisclient.Options{
+		Addr:     cfg.Redis.Address(),
+		Password: cfg.Redis.Password,
+		DB:       cfg.Redis.DB,
+	})
+	if err := integrationRedis.Ping(ctx).Err(); err != nil {
+		log.Printf("ping performance Redis: %v", err)
+		_ = integrationEntClient.Close()
+		_ = integrationRedis.Close()
+		_ = integrationDB.Close()
+		dropDatabase()
+		return 1
+	}
+
+	code := m.Run()
+
+	_ = integrationEntClient.Close()
+	_ = integrationRedis.Close()
+	_ = integrationDB.Close()
+	dropDatabase()
+	return code
 }
 
 func dockerIsAvailable(ctx context.Context) bool {

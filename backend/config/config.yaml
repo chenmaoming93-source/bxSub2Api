@@ -10,10 +10,15 @@ cors:
     - "http://localhost:3000"
   allow_credentials: true
 
-
+# SingGuard 请求安全检查服务。
+# 留空时安全检查不会调用外部服务，现有模型请求流程保持兼容。
+# 本地测试可设置为 http://127.0.0.1:8099，并启动 .local/singguard-mock.ps1。
+singguard:
+  # SingGuard 服务根地址；客户端会自动请求 POST /classify。
+  base_url: "http://127.0.0.1:8099"
 
 database:
-  host: "8.154.40.173"
+  host: "59.110.33.10"
   port: 4306
   user: "root"
   password: "123456"
@@ -21,13 +26,13 @@ database:
   sslmode: "disable"
   # 是否允许应用在正常启动时创建 schema_migrations 和 atlas_schema_revisions。
   # 默认关闭；数据库运行账号只有 SELECT、INSERT、UPDATE、DELETE 权限时必须保持 false。
-  create_migration_tables: false
+  create_migration_tables: true
   # 是否在正常启动时扫描、校验并执行 backend/migrations 中的 SQL。
   # 默认关闭；为 false 时不会读取迁移文件，也不会校验 migration checksum。
-  run_migrations: false
+  run_migrations: true
 
 redis:
-  host: "8.154.40.173"
+  host: "59.110.33.10"
   port: 3976
   password: "fdsfdsaf6h3h434232h3i"
   db: 0
@@ -50,7 +55,7 @@ totp:
 # LDAP / Active Directory login. Disabled by default, so existing login behavior is unchanged.
 ldap:
   enabled: true
-  server_url: "ldap://8.154.40.173:489"
+  server_url: "ldap://59.110.33.10:489"
 
   base_dn: "DC=qa,DC=bx"
   # Set user_dn for direct bind, otherwise bind_dn/bind_password are used to search the user first.
@@ -61,7 +66,6 @@ ldap:
   username_attribute: "cn"
   email_attribute: "mail"
   display_name_attribute: "displayName"
-  department_attribute: "department"
   # Set domain to use AD NTLM bind; leave empty for simple bind.
   domain: ""
   start_tls: false
@@ -87,20 +91,15 @@ run_mode: "standard"
 timezone: "Asia/Shanghai"
 
 gateway:
-
   # 候选分时段最大并发配置的全量刷新锁。默认 5 分钟租约，每 30 秒续租。
   model_route_schedule:
-    refresh_lock_ttl_seconds: 300
+    refresh_lock_ttl_seconds: 120
     refresh_lock_renew_interval_seconds: 30
 
   # 可配置多维 Token 统计与限额。关闭时不启动实时统计、限额检查和后台同步。
-  # 场景 Token 每日查询复用本配置，不新增独立的 scene_usage 配置项。
-  # 使用场景查询前需将 enabled 设为 true，并在 /admin/token-statistics 创建并启用：
-  #   维度：group_id + account_id + upstream_model；指标：total_tokens；周期：D；状态：ACTIVE。
-  # 查询接口的 group_name 过滤始终使用技术分组 name，而不是 scene_name。
   dynamic_token_statistics:
-    # 是否启用整套可配置统计与限额流水线；false 时场景查询会明确返回配置未启用错误。
-    enabled: false
+    # 是否启用整套可配置统计与限额流水线。
+    enabled: true
     # 自然日、自然周和自然月的周期边界时区，必须是有效的 IANA 时区。
     timezone: Asia/Shanghai
     # 模型请求完成后投递 Token 使用事件的内存有界队列容量。
@@ -117,12 +116,12 @@ gateway:
     # 一次请求命中多条限额规则时，所有规则计数读取（串行）合计允许的最长耗时；
     # 超过该值后，尚未完成的规则读取按 fail-open（放行）处理。
     # 建议不小于 single_quota_check_timeout；0 或缺失时使用默认值 300。
-    total_quota_check_timeout: 300
+    total_quota_check_timeout: 3000
     # 单条限额规则检查的超时，单位：毫秒。
     # 每条规则各自读取 Redis 计数允许的最长耗时；单条规则超过该值按 fail-open（放行）处理。
     # 注意：单条超时同时受 total_quota_check_timeout 总预算约束（实际取两者剩余值中的较小者）。
     # 0 或缺失时使用默认值 50。
-    single_quota_check_timeout: 50
+    single_quota_check_timeout: 500
     # Redis 统计写入失败后的重试次数；0 表示不重试。
     redis_retry_count: 2
     # Redis 计数器分片数；上线后修改会改变 Key 分布，应谨慎调整。

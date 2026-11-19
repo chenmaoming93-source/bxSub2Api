@@ -19,6 +19,7 @@ type User struct {
 	AvatarSHA256   string
 	PasswordHash   string
 	Role           string
+	SuperAdmin     bool // effective wildcard RBAC grant; role=admin is also treated as super admin
 	Balance        float64
 	Concurrency    int
 	Status         string
@@ -66,6 +67,10 @@ type User struct {
 
 func (u *User) IsAdmin() bool {
 	return u.Role == RoleAdmin
+}
+
+func (u *User) IsSuperAdmin() bool {
+	return u != nil && (u.Role == RoleAdmin || u.SuperAdmin)
 }
 
 func (u *User) IsActive() bool {

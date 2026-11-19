@@ -145,6 +145,7 @@ type SystemSettings struct {
 	DefaultConcurrency           int
 	DefaultBalance               float64
 	RiskControlEnabled           bool
+	ObservabilityEnabled         bool
 	CyberSessionBlockEnabled     bool
 	CyberSessionBlockTTLSeconds  int
 	AffiliateEnabled             bool
@@ -300,7 +301,8 @@ type PublicSettings struct {
 	AffiliateEnabled bool `json:"affiliate_enabled"`
 
 	// 风控中心功能开关
-	RiskControlEnabled bool `json:"risk_control_enabled"`
+	RiskControlEnabled   bool `json:"risk_control_enabled"`
+	ObservabilityEnabled bool `json:"observability_enabled"`
 
 	// 允许终端用户在用量页查看自己的失败请求
 	AllowUserViewErrorRequests bool `json:"allow_user_view_error_requests"`

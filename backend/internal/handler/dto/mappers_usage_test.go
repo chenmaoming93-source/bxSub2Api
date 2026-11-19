@@ -207,6 +207,26 @@ func TestUsageLogFromService_PreservesHistoricalMissingImageSize(t *testing.T) {
 	require.NotContains(t, string(body), `"image_size":"2K"`)
 }
 
+func TestUsageLogFromService_ExposesRouteAliasAndLegacyInference(t *testing.T) {
+	t.Parallel()
+
+	log := &service.UsageLog{
+		RequestID:                "req-route-alias",
+		Model:                    "claude-sonnet-4",
+		RequestedModel:           "coding-fast",
+		RouteAlias:               "coding-fast",
+		RouteAliasLegacyInferred: true,
+	}
+
+	userDTO := UsageLogFromService(log)
+	adminDTO := UsageLogFromServiceAdmin(log)
+
+	require.Equal(t, "coding-fast", userDTO.RouteAlias)
+	require.True(t, userDTO.LegacyInferred)
+	require.Equal(t, "coding-fast", adminDTO.RouteAlias)
+	require.True(t, adminDTO.LegacyInferred)
+}
+
 func f64Ptr(value float64) *float64 {
 	return &value
 }

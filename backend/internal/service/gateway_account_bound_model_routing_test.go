@@ -106,6 +106,18 @@ func TestAccountFirstModelMappingValueResolvesUpstreamModel(t *testing.T) {
 	require.Empty(t, nilAccount.FirstModelMappingValue())
 }
 
+func TestAccountBoundModelIsStableAndFlagsHistoricalMultiModel(t *testing.T) {
+	account := modelRoutingAccount(1, "zeta-model", "alpha-model", "middle-model")
+	for i := 0; i < 20; i++ {
+		require.Equal(t, "alpha-model", account.BoundModel())
+	}
+	require.True(t, account.ModelBindingLegacyMulti())
+
+	single := modelRoutingAccount(2, "only-model")
+	require.Equal(t, "only-model", single.BoundModel())
+	require.False(t, single.ModelBindingLegacyMulti())
+}
+
 func TestRouteCandidateCarriesSelectedAccountsOwnUpstreamModel(t *testing.T) {
 	first := modelRoutingAccount(1, "model-a")
 	first.Priority = 1

@@ -17,6 +17,14 @@ describe('pagePermissionMatrix', () => {
     ).toBe(true)
   })
 
+  it('guards the model observability page with the read-only permission', () => {
+    expect(pagePermissionMatrix).toContainEqual({
+      path: '/admin/observability',
+      permission: 'observability.read',
+      classification: 'rbac',
+    })
+  })
+
   it('keeps public pages permission-free', () => {
     expect(
       pagePermissionMatrix

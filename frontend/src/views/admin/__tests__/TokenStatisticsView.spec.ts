@@ -66,6 +66,10 @@ describe('configurable token statistics admin view', () => {
     expect(source).toContain('Object.keys(group.model_routing || {})')
   })
 
+  it('excludes super administrators from user quota and statistics selectors', () => {
+    expect(source).toContain('usersAPI.list(1, 1000, { exclude_super_admins: true })')
+  })
+
   it('provides the same linked dimension selectors when creating quotas', () => {
     expect(source).toContain('onQuotaDimensionToggle(dimension.code)')
     expect(source).toContain('usesEnhancedSelector(dimension.code, quotaValues)')

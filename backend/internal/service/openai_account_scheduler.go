@@ -1271,9 +1271,12 @@ func (s *OpenAIGatewayService) selectAccountWithScheduler(
 	requiredCapability OpenAIEndpointCapability,
 	requiredImageCapability OpenAIImagesCapability,
 	requireCompact bool,
-) (*AccountSelectionResult, OpenAIAccountScheduleDecision, error) {
+) (selectionResult *AccountSelectionResult, scheduleDecision OpenAIAccountScheduleDecision, err error) {
 	ctx = s.withOpenAIQuotaAutoPauseContext(ctx)
 	decision := OpenAIAccountScheduleDecision{}
+	defer func() {
+		selectionResult = withRouteSelectionAttribution(ctx, groupID, requestedModel, selectionResult)
+	}()
 	// Explicit groups.model_routing candidates must use the route-aware selector
 	// regardless of whether the optional advanced OpenAI scheduler is enabled.
 	// The latter only understands account-wide concurrency and would otherwise
@@ -1364,6 +1367,24 @@ func (s *OpenAIGatewayService) selectAccountWithScheduler(
 		RequireCompact:          requireCompact,
 		ExcludedIDs:             excludedIDs,
 	})
+}
+
+// withRouteSelectionAttribution freezes the matched route alias on the
+// selection so both usage and error facts use the same final attribution.
+func withRouteSelectionAttribution(ctx context.Context, groupID *int64, requestedModel string, selection *AccountSelectionResult) *AccountSelectionResult {
+	if selection == nil || selection.Account == nil {
+		return selection
+	}
+	group, _ := ctx.Value(ctxkey.Group).(*Group)
+	if group == nil || groupID == nil || group.ID != *groupID || len(group.GetRoutingCandidates(requestedModel)) == 0 {
+		return selection
+	}
+	selection.RequestedModel = requestedModel
+	selection.RouteAlias = requestedModel
+	if selection.UpstreamModel == "" {
+		selection.UpstreamModel = selection.Account.BoundModel()
+	}
+	return selection
 }
 
 func accountSupportsOpenAICapabilities(account *Account, requiredCapability OpenAIEndpointCapability, requiredImageCapability OpenAIImagesCapability) bool {

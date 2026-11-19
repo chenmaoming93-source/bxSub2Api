@@ -15,11 +15,20 @@ import (
 type listUsersFilterStub struct {
 	service.AdminService
 	captured service.UserListFilters
+	users    []service.User
 }
 
 func (s *listUsersFilterStub) ListUsers(_ context.Context, _, _ int, filters service.UserListFilters, _, _ string) ([]service.User, int64, error) {
 	s.captured = filters
-	return []service.User{}, 0, nil
+	return s.users, int64(len(s.users)), nil
+}
+
+type superAdminUserProviderStub struct {
+	ids []int64
+}
+
+func (s superAdminUserProviderStub) SuperAdminUserIDs(context.Context, []int64) ([]int64, error) {
+	return s.ids, nil
 }
 
 func TestAdminUserList_ParsesAPIKeyGroupID(t *testing.T) {
@@ -50,4 +59,42 @@ func TestAdminUserList_ParsesAPIKeyGroupID(t *testing.T) {
 			require.Equal(t, tc.want, stub.captured.APIKeyGroupID)
 		})
 	}
+}
+
+func TestAdminUserList_ParsesExcludeSuperAdmins(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	stub := &listUsersFilterStub{AdminService: newStubAdminService()}
+	r := gin.New()
+	h := NewUserHandler(stub, nil, nil, nil)
+	r.GET("/admin/users", h.List)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodGet, "/admin/users?exclude_super_admins=true", nil)
+	r.ServeHTTP(w, req)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	require.True(t, stub.captured.ExcludeSuperAdmins)
+}
+
+func TestAdminUserList_MarksSuperAdministrators(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	stub := &listUsersFilterStub{
+		AdminService: newStubAdminService(),
+		users: []service.User{
+			{ID: 1, Role: service.RoleAdmin, Email: "admin@example.com"},
+			{ID: 2, Role: service.RoleUser, Email: "user@example.com"},
+		},
+	}
+	r := gin.New()
+	h := NewUserHandler(stub, nil, nil, nil)
+	h.SetSuperAdminUserProvider(superAdminUserProviderStub{ids: []int64{1}})
+	r.GET("/admin/users", h.List)
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodGet, "/admin/users", nil)
+	r.ServeHTTP(w, req)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	require.Contains(t, w.Body.String(), `"is_super_admin":true`)
+	require.Contains(t, w.Body.String(), `"is_super_admin":false`)
 }

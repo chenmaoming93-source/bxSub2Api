@@ -161,6 +161,7 @@ func validateAdminAPIKey(
 	c.Set(string(ContextKeyUser), AuthSubject{
 		UserID:      admin.ID,
 		Concurrency: admin.Concurrency,
+		SuperAdmin:  admin.IsSuperAdmin(),
 	})
 	c.Set(string(ContextKeyUserRole), admin.Role)
 	c.Set("auth_method", "admin_api_key")
@@ -223,6 +224,7 @@ func validateJWTForAdminRole(
 	c.Set(string(ContextKeyUser), AuthSubject{
 		UserID:      user.ID,
 		Concurrency: user.Concurrency,
+		SuperAdmin:  user.IsSuperAdmin(),
 	})
 	c.Set(string(ContextKeyUserRole), user.Role)
 	c.Set("auth_method", "jwt")

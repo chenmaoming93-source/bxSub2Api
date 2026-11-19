@@ -1,12 +1,13 @@
 package migrations
 
 import (
+	"os"
 	"strings"
 	"testing"
 )
 
 func TestGroupSecurityCheckMigrationAddsSafeDefaultsAndIndexes(t *testing.T) {
-	sql, err := FS.ReadFile("159_group_security_check.sql")
+	sql, err := os.ReadFile("../sqlArchiving/171_group_security_check.sql")
 	if err != nil {
 		t.Fatalf("read migration: %v", err)
 	}

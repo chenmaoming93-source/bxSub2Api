@@ -82,6 +82,15 @@ func initLocked(options InitOptions) error {
 	sugar.Store(zl.Sugar())
 	atomicLevel = al
 	initOptions = normalized
+	if err := configureRequestFailureLogger(normalized); err != nil {
+		_, _ = fmt.Fprintf(
+			os.Stderr,
+			"time=%s level=WARN msg=\"request failure file logger initialization failed\" path=%s err=%v\n",
+			time.Now().Format(time.RFC3339Nano),
+			requestFailureLogPath(normalized.Output.FilePath),
+			err,
+		)
+	}
 
 	bridgeSlogLocked()
 	bridgeStdLogLocked()

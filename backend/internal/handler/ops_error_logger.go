@@ -30,6 +30,7 @@ const (
 
 	opsUpstreamModelKey = "ops_upstream_model"
 	opsRequestTypeKey   = "ops_request_type"
+	opsRouteAliasKey    = "ops_route_alias"
 
 	// 错误过滤匹配常量 — shouldSkipOpsErrorLog 和错误分类共用
 	opsErrContextCanceled            = "context canceled"
@@ -395,6 +396,9 @@ func setOpsRequestContext(c *gin.Context, model string, stream bool) {
 	if c.Request != nil && model != "" {
 		ctx := context.WithValue(c.Request.Context(), ctxkey.Model, model)
 		c.Request = c.Request.WithContext(ctx)
+		if group, ok := c.Request.Context().Value(ctxkey.Group).(*service.Group); ok && len(group.GetRoutingCandidates(model)) > 0 {
+			c.Set(opsRouteAliasKey, model)
+		}
 	}
 }
 
@@ -425,6 +429,25 @@ func setOpsSelectedAccount(c *gin.Context, accountID int64, platform ...string) 
 		}
 		c.Request = c.Request.WithContext(ctx)
 	}
+}
+
+func setOpsRouteAlias(c *gin.Context, routeAlias string) {
+	if c == nil {
+		return
+	}
+	c.Set(opsRouteAliasKey, strings.TrimSpace(routeAlias))
+}
+
+func getOpsRouteAlias(c *gin.Context) string {
+	if c == nil {
+		return ""
+	}
+	value, ok := c.Get(opsRouteAliasKey)
+	if !ok {
+		return ""
+	}
+	routeAlias, _ := value.(string)
+	return strings.TrimSpace(routeAlias)
 }
 
 func markOpsRoutingCapacityLimited(c *gin.Context) {
@@ -529,6 +552,7 @@ func (w *opsCaptureWriter) WriteString(s string) (int, error) {
 // - Streaming errors after the response has started (SSE) may still need explicit logging.
 func OpsErrorLoggerMiddleware(ops *service.OpsService) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		requestBodyCapture := wrapGatewayRequestBody(c)
 		originalWriter := c.Writer
 		w := acquireOpsCaptureWriter(originalWriter)
 		defer func() {
@@ -541,6 +565,7 @@ func OpsErrorLoggerMiddleware(ops *service.OpsService) gin.HandlerFunc {
 		}()
 		c.Writer = w
 		c.Next()
+		safeLogGatewayFailureRequest(c, requestBodyCapture)
 
 		if ops == nil {
 			return
@@ -729,6 +754,7 @@ func OpsErrorLoggerMiddleware(ops *service.OpsService) gin.HandlerFunc {
 					}
 					return ""
 				}(),
+				RouteAlias: getOpsRouteAlias(c),
 				RequestType: func() *int16 {
 					if v, ok := c.Get(opsRequestTypeKey); ok {
 						switch t := v.(type) {
@@ -871,6 +897,7 @@ func OpsErrorLoggerMiddleware(ops *service.OpsService) gin.HandlerFunc {
 				}
 				return ""
 			}(),
+			RouteAlias: getOpsRouteAlias(c),
 			RequestType: func() *int16 {
 				if v, ok := c.Get(opsRequestTypeKey); ok {
 					switch t := v.(type) {

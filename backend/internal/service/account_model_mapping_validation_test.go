@@ -20,7 +20,8 @@ func TestValidateAccountModelMapping(t *testing.T) {
 		{name: "single model", accountType: AccountTypeAPIKey, credentials: map[string]any{"model_mapping": map[string]any{"claude-3": "alias"}}},
 		{name: "multiple models", accountType: AccountTypeAPIKey, credentials: map[string]any{"model_mapping": map[string]any{"claude-3": "a", "claude-4": "b"}}, wantCode: "ACCOUNT_MULTIPLE_UPSTREAM_MODELS"},
 		{name: "invalid mapping type", accountType: AccountTypeAPIKey, credentials: map[string]any{"model_mapping": "claude-3"}, wantCode: "ACCOUNT_INVALID_MODEL_MAPPING"},
-		{name: "oauth bypasses multiple models", accountType: AccountTypeOAuth, credentials: map[string]any{"model_mapping": map[string]any{"claude-3": "a", "claude-4": "b"}}},
+		{name: "oauth multiple models rejected", accountType: AccountTypeOAuth, credentials: map[string]any{"model_mapping": map[string]any{"claude-3": "a", "claude-4": "b"}}, wantCode: "ACCOUNT_MULTIPLE_UPSTREAM_MODELS"},
+		{name: "nil credentials", accountType: AccountTypeOAuth, credentials: nil},
 	}
 
 	for _, tt := range tests {

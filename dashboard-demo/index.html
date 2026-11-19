@@ -1,0 +1,1906 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>模型使用观测台 · Sub2API</title>
+<style>
+:root{
+  --bg:#f1f5f9; --surface:#ffffff; --surface2:#f8fafc; --surface3:#f1f5f9;
+  --border:#e2e8f0; --border2:#cbd5e1;
+  --text:#0f172a; --text2:#475569; --text3:#94a3b8;
+  --primary:#0d9488; --primary5:#14b8a6; --primary50:#f0fdfa; --primary100:#ccfbf1; --primary700:#0f766e;
+  --blue:#3b82f6; --green:#10b981; --amber:#f59e0b; --red:#ef4444; --purple:#8b5cf6; --cyan:#06b6d4; --pink:#ec4899;
+  --shadow:0 1px 3px rgba(0,0,0,.04),0 1px 2px rgba(0,0,0,.06);
+  --shadowlg:0 10px 40px rgba(0,0,0,.10);
+}
+body.dark{
+  --bg:#0f172a; --surface:#1e293b; --surface2:#172033; --surface3:#253349;
+  --border:#334155; --border2:#475569;
+  --text:#f1f5f9; --text2:#cbd5e1; --text3:#94a3b8;
+  --primary:#2dd4bf; --primary5:#14b8a6; --primary50:#134e4a; --primary100:#115e59; --primary700:#5eead4;
+  --shadow:0 1px 3px rgba(0,0,0,.3); --shadowlg:0 10px 40px rgba(0,0,0,.45);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--text);font-size:13px;line-height:1.55;-webkit-font-smoothing:antialiased}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+.app{display:grid;grid-template-columns:220px minmax(0,1fr);min-height:100vh}
+.side{background:var(--surface);border-right:1px solid var(--border);padding:20px 14px;display:flex;flex-direction:column;gap:6px;position:sticky;top:0;height:100vh;overflow:auto}
+.brand{display:flex;align-items:center;gap:10px;padding:4px 8px 20px;font-weight:600;font-size:15px;letter-spacing:.2px}
+.brand .logo{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,#14b8a6,#0d9488);display:grid;place-items:center;color:#fff;font-size:14px;font-weight:700;flex:none}
+.brand small{display:block;font-size:10px;font-weight:400;color:var(--text3);letter-spacing:.6px}
+.navgroup{font-size:10px;color:var(--text3);letter-spacing:1px;padding:14px 10px 6px;text-transform:uppercase}
+.nav{display:flex;align-items:center;gap:10px;padding:9px 11px;border-radius:9px;color:var(--text2);font-size:13px;border:1px solid transparent;background:none;width:100%;text-align:left}
+.nav:hover{background:var(--surface3);color:var(--text)}
+.nav.active{background:var(--primary50);color:var(--primary700);font-weight:500;border-color:var(--primary100)}
+.nav .ico{width:16px;height:16px;flex:none;opacity:.9}
+.sidefoot{margin-top:auto;padding:12px 10px 2px;border-top:1px solid var(--border);font-size:11px;color:var(--text3);line-height:1.7}
+.main{min-width:0;padding:0 26px 40px}
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:18px 2px 14px;flex-wrap:wrap}
+.crumb{font-size:12px;color:var(--text3)}
+.crumb b{color:var(--text2);font-weight:500}
+.topright{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.select,.btn{border:1px solid var(--border2);background:var(--surface);border-radius:9px;padding:7px 11px;font-size:12px;color:var(--text2);transition:.15s}
+.select:hover,.btn:hover{border-color:var(--primary5);color:var(--primary)}
+.btn-primary{background:var(--primary);border-color:var(--primary);color:#fff;font-weight:500}
+.btn-primary:hover{background:var(--primary700);color:#fff}
+.btn-danger{background:var(--red);border-color:var(--red);color:#fff;font-weight:500}
+.btn-danger:hover{color:#fff;opacity:.88}
+.btn-sm{padding:5px 9px;font-size:11px}
+.seg{display:flex;background:var(--surface3);border:1px solid var(--border);border-radius:9px;padding:2px}
+.seg button{border:0;background:none;padding:6px 11px;border-radius:7px;font-size:12px;color:var(--text2);white-space:nowrap}
+.seg button.active{background:var(--surface);color:var(--primary700);font-weight:500;box-shadow:var(--shadow)}
+.hero{border-radius:16px;border:1px solid var(--primary100);background:linear-gradient(115deg,var(--primary50) 0%,var(--surface) 52%,#eef2ff 100%);padding:20px 22px;display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap;box-shadow:var(--shadow)}
+body.dark .hero{background:linear-gradient(115deg,#134e4a 0%,var(--surface) 55%,#1e293b 100%);border-color:#115e59}
+.eyebrow{display:flex;align-items:center;gap:7px;color:var(--primary);font-size:12px;font-weight:500;margin-bottom:6px}
+.hero h1{font-size:23px;font-weight:600;letter-spacing:-.3px}
+.hero p{color:var(--text2);font-size:12.5px;margin-top:7px;max-width:640px}
+.herostats{display:flex;gap:10px;flex-wrap:wrap}
+.tile{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:10px 14px;min-width:104px;box-shadow:var(--shadow)}
+.tile span{display:block;font-size:11px;color:var(--text3)}
+.tile strong{display:block;font-size:19px;font-weight:600;margin-top:2px;font-variant-numeric:tabular-nums}
+.notice{margin-top:14px;border-radius:12px;padding:11px 15px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:12.5px;border:1px solid var(--border);background:var(--surface)}
+.notice.warn{border-color:#fcd34d;background:#fffbeb;color:#92400e}
+body.dark .notice.warn{background:#451a03;border-color:#92400e;color:#fcd34d}
+.pill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:3px 9px;font-size:11px;font-weight:500;white-space:nowrap}
+.pill.ok{background:#ecfdf5;color:#047857} .pill.info{background:#eff6ff;color:#1d4ed8}
+.pill.warn{background:#fffbeb;color:#b45309} .pill.bad{background:#fef2f2;color:#b91c1c}
+body.dark .pill.ok{background:#064e3b;color:#6ee7b7} body.dark .pill.info{background:#1e3a8a;color:#bfdbfe}
+body.dark .pill.warn{background:#78350f;color:#fde68a} body.dark .pill.bad{background:#7f1d1d;color:#fecaca}
+.dot{width:7px;height:7px;border-radius:50%;display:inline-block;flex:none}
+.dot.ok{background:var(--green)} .dot.info{background:var(--blue)} .dot.warn{background:var(--amber)} .dot.bad{background:var(--red)}
+.kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;margin-top:14px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:var(--shadow)}
+.kpi{padding:14px 15px;position:relative;overflow:hidden}
+.kpi .k-label{font-size:11.5px;color:var(--text3);display:flex;align-items:center;gap:6px}
+.kpi .k-val{font-size:25px;font-weight:600;letter-spacing:-.6px;margin-top:8px;font-variant-numeric:tabular-nums;line-height:1.1}
+.kpi .k-unit{font-size:12px;font-weight:400;color:var(--text3);margin-left:3px}
+.kpi .k-sub{font-size:11px;color:var(--text3);margin-top:6px;display:flex;gap:6px;align-items:center}
+.kpi .k-spark{position:absolute;right:10px;bottom:10px;opacity:.85}
+.up{color:var(--red)} .down{color:var(--green)}
+.grid2{display:grid;grid-template-columns:minmax(0,1.85fr) minmax(0,1fr);gap:12px;margin-top:12px}
+.grid2e{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:12px}
+/* 两张趋势图共用左列，x 轴逐点对齐；右列放排行与明细 */
+.trend-grid{display:grid;grid-template-columns:minmax(0,1.85fr) minmax(0,1fr);gap:12px;margin-top:12px;align-items:start}
+.trend-col{display:flex;flex-direction:column;gap:12px;min-width:0}
+.card-h{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 16px 0;flex-wrap:wrap}
+.card-h h2{font-size:14px;font-weight:600}
+.card-h .desc{font-size:11px;color:var(--text3);margin-top:2px}
+.card-b{padding:12px 16px 16px}
+.chart-wrap{position:relative;width:100%}
+.chart-wrap svg{display:block;width:100%;height:auto;overflow:visible}
+.legend{display:flex;gap:14px;flex-wrap:wrap;padding:2px 16px 12px;font-size:11.5px;color:var(--text2)}
+.legend button{display:flex;align-items:center;gap:6px;border:0;background:none;color:inherit;font-size:11.5px;padding:2px}
+.legend button.off{opacity:.35;text-decoration:line-through}
+.legend i{width:9px;height:9px;border-radius:3px;display:block}
+.lat-table th,.lat-table td{padding:7px 9px;font-size:11.5px}
+.lat-table tr.focus{background:var(--primary50)}
+.lat-table tr.focus td{color:var(--primary700)}
+.tip{position:absolute;pointer-events:none;z-index:20;background:var(--surface);border:1px solid var(--border2);border-radius:9px;padding:9px 11px;box-shadow:var(--shadowlg);font-size:11.5px;min-width:150px;display:none;white-space:nowrap}
+.tip b{display:block;margin-bottom:5px;font-size:12px}
+.tip .row{display:flex;justify-content:space-between;gap:16px;color:var(--text2)}
+.tip .row i{width:8px;height:8px;border-radius:2px;display:inline-block;margin-right:5px}
+.rank{display:flex;flex-direction:column;gap:11px}
+.rank-item{cursor:pointer;border-radius:9px;padding:5px 6px;transition:.15s}
+.rank-item:hover{background:var(--surface3)}
+.rank-top{display:flex;justify-content:space-between;gap:8px;font-size:12px;margin-bottom:5px}
+.rank-top .nm{font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar{height:7px;border-radius:99px;background:var(--surface3);overflow:hidden}
+.bar > span{display:block;height:100%;border-radius:99px;transition:width .5s ease}
+.heat{display:grid;gap:3px;font-size:10.5px}
+.heat-row{display:grid;grid-template-columns:112px repeat(12,minmax(0,1fr));gap:3px;align-items:center}
+.heat-lab{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text2);font-size:11px}
+.heat-cell{height:20px;border-radius:4px;cursor:pointer;border:1px solid transparent;transition:transform .12s}
+.heat-cell:hover{transform:scale(1.16);border-color:var(--text)}
+.heat-axis{display:grid;grid-template-columns:112px repeat(12,minmax(0,1fr));gap:3px;color:var(--text3);font-size:9.5px;margin-top:5px;text-align:center}
+.heat-axis span:first-child{text-align:left}
+.heat-scale{display:flex;align-items:center;gap:6px;justify-content:flex-end;margin-top:10px;font-size:10.5px;color:var(--text3)}
+.heat-scale i{width:16px;height:9px;border-radius:2px;display:block}
+.water{display:flex;flex-direction:column;gap:15px}
+.water-item .wt{display:flex;justify-content:space-between;font-size:12px;margin-bottom:6px}
+.water-item .wt small{color:var(--text3)}
+.water-item .bar{height:9px}
+.mini-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px}
+.mini{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:9px 11px}
+.mini span{display:block;color:var(--text3);font-size:10.5px}
+.mini strong{font-size:17px;font-weight:600;font-variant-numeric:tabular-nums}
+.tabs{display:flex;gap:3px;overflow:auto;padding:5px;border-radius:10px;background:var(--surface3);border:1px solid var(--border);width:fit-content;max-width:100%}
+.tabs button{border:0;background:none;padding:6px 13px;border-radius:7px;font-size:12px;color:var(--text2);white-space:nowrap}
+.tabs button.active{background:var(--surface);color:var(--primary700);font-weight:500;box-shadow:var(--shadow)}
+.mode-tabs{width:auto}
+.mode-tabs button{display:flex;align-items:center;gap:5px}
+.chain-shell{padding:12px 16px 16px}
+.chain-path{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--primary50);border:1px solid var(--primary100);border-radius:10px;padding:10px 12px;font-size:12px;color:var(--primary700)}
+.chain-path b{font-weight:500}
+.chain-path .sep{color:var(--text3)}
+.chain-path .tail{margin-left:auto;color:var(--text3);font-size:11px}
+.chain{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:12px}
+.chain-col{min-width:0;background:var(--surface2);border:1px solid var(--border);border-radius:11px;padding:10px}
+.chain-col-h{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;min-height:34px;margin-bottom:8px}
+.chain-col-h b{font-size:12px;font-weight:500}
+.chain-col-h small{display:block;color:var(--text3);font-size:10.5px;margin-top:2px}
+.chain-col-h .arrow{color:var(--primary);font-size:13px}
+.chain-list{display:flex;flex-direction:column;gap:6px}
+.chain-node{width:100%;border:1px solid var(--border);background:var(--surface);border-radius:9px;padding:9px 10px;text-align:left;transition:.15s;color:var(--text)}
+.chain-node:hover{border-color:var(--primary5);background:var(--surface3);transform:translateY(-1px)}
+.chain-node.selected{border-color:var(--primary5);background:var(--primary50);box-shadow:0 0 0 1px var(--primary100)}
+.chain-node .cn-top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.chain-node .cn-name{font-size:11.5px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chain-node .cn-sub{font-size:10.5px;color:var(--text3);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chain-node .cn-metrics{display:flex;justify-content:space-between;gap:8px;margin-top:6px;color:var(--text2);font-size:10.5px;font-variant-numeric:tabular-nums}
+.model-tag{display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis;vertical-align:middle;white-space:nowrap;border-radius:5px;background:color-mix(in srgb,var(--primary5) 12%,transparent);color:var(--primary700);padding:1px 6px;font-size:10.5px;font-family:ui-monospace,SFMono-Regular,Consolas,monospace}
+.chain-actions{display:flex;gap:8px;align-items:center;justify-content:flex-end;margin-top:12px;flex-wrap:wrap}
+.chain-note{color:var(--text3);font-size:11px;margin-right:auto}
+.matrix-table{min-width:1120px}
+.matrix-table td{white-space:nowrap}
+.matrix-table .path-user{font-weight:500}
+.matrix-table .path-cell{border-left:1px solid var(--border)}
+.matrix-table .path-cell::before{content:"↳";color:var(--text3);margin-right:5px}
+.matrix-table .path-group::before{content:"";margin:0}
+.toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:13px 16px 0}
+.toolbar input[type=text]{border:1px solid var(--border2);background:var(--surface2);border-radius:9px;padding:7px 10px;font-size:12px;width:200px;outline:none}
+.toolbar input[type=text]:focus{border-color:var(--primary5)}
+.chip{display:inline-flex;gap:6px;align-items:center;background:var(--primary50);color:var(--primary700);border:1px solid var(--primary100);border-radius:999px;padding:4px 9px;font-size:11px}
+.chip button{border:0;background:none;color:inherit;font-size:13px;line-height:1}
+.tbl-wrap{overflow:auto;margin-top:12px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{text-align:left;color:var(--text3);font-weight:500;font-size:11px;padding:9px 12px;border-bottom:1px solid var(--border);white-space:nowrap;cursor:pointer;user-select:none}
+th:hover{color:var(--primary)}
+th .arw{opacity:.4;font-size:9px}
+td{padding:10px 12px;border-bottom:1px solid var(--border);white-space:nowrap;vertical-align:middle}
+tbody tr{cursor:pointer;transition:.12s}
+tbody tr:hover{background:var(--surface2)}
+tbody tr:last-child td{border-bottom:0}
+.nm-cell{font-weight:500;color:var(--text)}
+.nm-cell small{display:block;color:var(--text3);font-weight:400;font-size:10.5px;margin-top:1px}
+.num{font-variant-numeric:tabular-nums;text-align:right}
+.pctbar{display:flex;align-items:center;gap:7px;min-width:96px}
+.pctbar .bar{flex:1;min-width:44px}
+.spark{width:74px;height:22px;display:block}
+.ops{display:flex;gap:5px}
+.tag{font-size:10.5px;padding:2px 7px;border-radius:6px;background:var(--surface3);color:var(--text2)}
+.foot{padding:11px 16px;color:var(--text3);font-size:11px;border-top:1px solid var(--border);display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.alert{display:flex;gap:10px;padding:10px 4px;border-bottom:1px solid var(--border)}
+.alert:last-child{border-bottom:0}
+.alert .body{flex:1;min-width:0}
+.alert .body b{font-size:12px;font-weight:500}
+.alert .body p{font-size:11.5px;color:var(--text2);margin-top:2px}
+.alert .body small{color:var(--text3);font-size:10.5px}
+.alert.done{opacity:.5}
+.field{margin-bottom:11px}
+.field label{display:block;font-size:11px;color:var(--text3);margin-bottom:5px}
+.field select,.field input[type=range]{width:100%}
+.field select{border:1px solid var(--border2);background:var(--surface);border-radius:8px;padding:7px 9px;font-size:12px}
+.design{padding:6px 0 20px}
+.design h2{font-size:17px;font-weight:600;margin:22px 0 8px}
+.design h3{font-size:13.5px;font-weight:600;margin:16px 0 6px}
+.design p,.design li{font-size:12.5px;color:var(--text2);line-height:1.8}
+.design ul,.design ol{padding-left:20px}
+.design a{color:var(--primary);text-decoration:none}.design a:hover{text-decoration:underline}
+.design .dcard{padding:16px 18px;margin-top:12px}
+.dtable{width:100%;border-collapse:collapse;font-size:12px;margin-top:10px}
+.dtable th,.dtable td{border:1px solid var(--border);padding:8px 10px;text-align:left;vertical-align:top;white-space:normal}
+.dtable th{background:var(--surface2);color:var(--text2);font-weight:500}
+.dtable td{color:var(--text2)}
+.flow{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:10px}
+.flow span{background:var(--primary50);border:1px solid var(--primary100);color:var(--primary700);padding:6px 11px;border-radius:8px;font-size:11.5px}
+.flow i{color:var(--text3);font-style:normal}
+.drawer-mask{position:fixed;inset:0;background:rgba(15,23,42,.35);z-index:40;display:none}
+.drawer-mask.show{display:block}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:390px;max-width:94vw;background:var(--surface);border-left:1px solid var(--border);box-shadow:var(--shadowlg);z-index:41;transform:translateX(100%);transition:transform .22s ease;overflow:auto;padding:20px}
+.drawer.show{transform:translateX(0)}
+.drawer h3{font-size:16px;font-weight:600;margin-bottom:3px}
+.drawer .close{float:right;border:0;background:var(--surface3);border-radius:8px;width:26px;height:26px;color:var(--text2)}
+.dsec{margin-top:18px}
+.dsec h4{font-size:12px;color:var(--text3);font-weight:500;margin-bottom:8px}
+.kv{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);font-size:12px}
+.kv span{color:var(--text3)} .kv b{font-weight:500;font-variant-numeric:tabular-nums}
+.toast{position:fixed;bottom:24px;left:50%;transform:translate(-50%,20px);background:#0f172a;color:#fff;padding:11px 18px;border-radius:10px;font-size:12.5px;box-shadow:var(--shadowlg);z-index:60;opacity:0;transition:.25s;pointer-events:none}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.seg.mini button{padding:4px 8px;font-size:11px}
+#heatmap{max-height:330px;overflow:auto}
+#heatmap .heat-axis{position:sticky;top:0;background:var(--surface);z-index:1}
+.selector{margin-top:12px}
+.sel-dims{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.sel-dim{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border2);background:var(--surface2);border-radius:9px;padding:6px 11px;font-size:12px;color:var(--text2)}
+.sel-dim:hover{border-color:var(--primary5)}
+.sel-dim.active{background:var(--primary50);border-color:var(--primary100);color:var(--primary700);font-weight:500}
+.sel-dim b{background:var(--primary);color:#fff;border-radius:999px;padding:0 6px;font-size:10px;font-weight:500}
+.sel-dim:not(.active) b{background:var(--surface3);color:var(--text2)}
+.sel-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:9px}
+.sel-tools input{border:1px solid var(--border2);background:var(--surface2);border-radius:9px;padding:6px 10px;font-size:12px;width:220px;outline:none}
+.sel-tools input:focus{border-color:var(--primary5)}
+.sel-hint{font-size:11px;color:var(--text3);margin-left:auto}
+.sel-items{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:6px;max-height:176px;overflow:auto;padding:2px}
+.sel-item{display:flex;align-items:center;gap:8px;border:1px solid var(--border);background:var(--surface2);border-radius:9px;padding:7px 10px;font-size:12px;cursor:pointer}
+.sel-item:hover{border-color:var(--primary5)}
+.sel-item.on{background:var(--primary50);border-color:var(--primary100);color:var(--primary700)}
+.sel-item input{accent-color:var(--primary);width:14px;height:14px;flex:none}
+.sel-item .sub{margin-left:auto;font-size:10px;color:var(--text3)}
+.sel-empty{grid-column:1/-1;padding:14px;color:var(--text3);font-size:12px;text-align:center}
+.sel-chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;min-height:24px;align-items:center}
+.sel-metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(146px,1fr));gap:8px;margin-top:10px}
+.sel-metric{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:9px 11px}
+.sel-metric span{display:block;font-size:10.5px;color:var(--text3)}
+.sel-metric strong{font-size:16px;font-weight:600;font-variant-numeric:tabular-nums}
+.sel-metric small{font-size:10px;color:var(--text3);font-weight:400;margin-left:4px}
+.hide{display:none!important}
+@media(max-width:1280px){.kpis{grid-template-columns:repeat(3,1fr)}.grid2,.trend-grid{grid-template-columns:1fr}}
+@media(max-width:1100px){.chain{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:900px){.app{grid-template-columns:1fr}.side{position:static;height:auto;flex-direction:row;flex-wrap:wrap;align-items:center;border-right:0;border-bottom:1px solid var(--border)}.side .navgroup,.sidefoot{display:none}.brand{padding:4px 8px}.main{padding:0 14px 30px}.grid2e{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}.hero{padding:16px}.heat-row,.heat-axis{--labw:86px}.chain{grid-template-columns:1fr}.chain-path .tail{width:100%;margin-left:0}}
+</style>
+</head>
+<body>
+<div role="note" style="position:relative;z-index:9999;padding:10px 16px;background:#fef3c7;color:#78350f;border-bottom:1px solid #f59e0b;font:600 13px system-ui,sans-serif">
+  DEPRECATED · 这是 v1 历史设计基线。当前确认稿为 revision-v2/design-spec.md 与 revision-v2/prototype.html；本页的环境选择器和旧导航仅供追溯，不作为生产实现依据。
+</div>
+<div class="app">
+  <aside class="side">
+    <div class="brand"><div class="logo">S</div><div>Sub2API<small>AI GATEWAY CONSOLE</small></div></div>
+    <div class="navgroup">观测</div>
+    <button class="nav active" data-view="overview"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>模型使用观测台</button>
+    <button class="nav" data-view="overview" data-jump="dimsection"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3v18h18"/><path d="M7 15l4-5 3 3 5-7"/></svg>链路与多维下钻</button>
+    <button class="nav" data-view="overview" data-jump="alertsection"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 3l9 16H3z"/><path d="M12 9v5M12 17h.01"/></svg>告警与建议</button>
+    <div class="navgroup">管理</div>
+    <button class="nav" data-view="design"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 4h16v16H4z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>设计方案</button>
+    <button class="nav" id="themeBtn"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 12.8A9 9 0 1111.2 3a7 7 0 009.8 9.8z"/></svg><span id="themeLabel">切换深色</span></button>
+    <div class="sidefoot">只读演示数据 · 非真实生产数据<br>刷新周期 5s · 时区 Asia/Shanghai<br>版本 demo-1.8 / 2026-11-11</div>
+  </aside>
+
+  <main class="main">
+    <div class="topbar">
+      <div class="crumb">管理后台 / 运维观测 / <b>模型使用观测台</b></div>
+      <div class="topright">
+        <select class="select" id="envSel"><option>生产环境 · prod-gz</option><option>预发环境 · staging</option></select>
+        <div class="seg" id="rangeSeg">
+          <button data-range="1h">近 1 小时</button><button data-range="6h">近 6 小时</button><button class="active" data-range="24h">近 24 小时</button><button data-range="7d">近 7 天</button>
+        </div>
+        <button class="btn" id="autoBtn" title="每 5 秒模拟一次数据刷新">● 自动刷新 5s</button>
+        <button class="btn" id="refreshBtn">↻ 刷新</button>
+        <span id="clock" style="font-size:11px;color:var(--text3);min-width:132px"></span>
+      </div>
+    </div>
+
+    <div id="view-overview">
+      <section class="hero">
+        <div>
+          <div class="eyebrow"><span class="dot ok"></span> Model Observability · 实时</div>
+          <h1>模型使用观测台</h1>
+          <p>一个分组下可有多个路由别名，一个别名可挂多个候选模型账号，每个模型账号严格 1:1 绑定一个具体模型。看板沿「用户 → 分组 → 路由别名 → 模型账号」四维观测 Token 用量与并发水位，快速定位压力来源并形成只读排查结论。</p>
+        </div>
+        <div class="herostats">
+          <div class="tile"><span>整体负载</span><strong id="hLoad" style="color:var(--amber)">偏高</strong></div>
+          <div class="tile"><span>活跃模型账号</span><strong id="hModels">14 / 18</strong></div>
+          <div class="tile"><span>待关注告警</span><strong id="hAlerts" style="color:var(--red)">4</strong></div>
+          <div class="tile"><span>数据延迟</span><strong>2.4<span style="font-size:11px;color:var(--text3)"> s</span></strong></div>
+        </div>
+      </section>
+
+      <section class="card selector" id="selector">
+        <div class="card-h">
+          <div><h2>自定义观测对象</h2><div class="desc" id="selDesc">未选择 = 全部对象 · 选择后所有图表的 Token / 并发 / 流量按同一范围重算</div></div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <span class="tag" id="selCount">全部路径</span>
+            <button class="btn btn-sm" id="selPressure">仅看高压对象</button>
+            <button class="btn btn-sm" id="selClear">清除全部</button>
+          </div>
+        </div>
+        <div class="card-b">
+          <div class="sel-dims" id="selDims"></div>
+          <div class="sel-tools">
+            <input type="text" id="selSearch" placeholder="搜索当前维度成员…">
+            <button class="btn btn-sm" id="selAll">全选该维度</button>
+            <button class="btn btn-sm" id="selNone">清空该维度</button>
+            <span class="sel-hint" id="selHint"></span>
+          </div>
+          <div class="sel-items" id="selItems"></div>
+          <div class="sel-chips" id="selChips"></div>
+          <div class="sel-metrics" id="selMetrics"></div>
+        </div>
+      </section>
+
+      <div class="notice" id="globalNotice">
+        <span class="pill warn"><span class="dot warn"></span> 容量关注</span>
+        <span style="flex:1"><b>14:00–16:00 为日高峰</b>：编码助手-公共场景并发饱和度已达 88%，claude-pro-01 模型账号并发接近上限，建议提前规划容量并人工核查。</span>
+      </div>
+
+      <section class="kpis" id="kpis"></section>
+
+      <div class="trend-grid">
+        <div class="trend-col">
+          <section class="card" id="tokenTrendCard">
+            <div class="card-h">
+              <div><h2>Token 用量与并发趋势</h2><div class="desc" id="trendDesc">按模型账号堆叠 · 左轴 Token / 右轴并发槽</div></div>
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                <select class="select" id="stackSel" title="切换堆叠维度">
+                  <option value="user">按用户</option><option value="scene">按分组场景</option>
+                  <option value="route">按路由别名</option><option value="account" selected>按模型账号</option>
+                </select>
+                <div class="seg" id="metricSeg"><button class="active" data-metric="total">总 Token</button><button data-metric="input">输入</button><button data-metric="output">输出</button><button data-metric="cache">缓存</button></div>
+              </div>
+            </div>
+            <div class="card-b">
+              <div class="chart-wrap" id="trendWrap"><div id="trendChart"></div><div class="tip" id="trendTip"></div></div>
+              <div class="legend" id="trendLegend"></div>
+            </div>
+          </section>
+
+          <section class="card" id="latTrendCard">
+            <div class="card-h">
+              <div><h2>请求耗时与失败率趋势</h2><div class="desc" id="latDesc">按时间桶聚合 · 左轴耗时(s) / 右轴失败率(%)</div></div>
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                <select class="select" id="latDimSel" title="选择单项指标后可切换拆分维度；全部指标模式为汇总对照，不可拆分">
+                  <option value="all">全部对象（不拆分）</option>
+                  <option value="account">按模型账号</option>
+                  <option value="group">按分组场景</option>
+                  <option value="alias">按路由别名</option>
+                  <option value="user">按用户</option>
+                </select>
+                <div class="seg mini" id="latMetricSeg">
+                  <button class="active" data-lat-metric="all">全部指标</button>
+                  <button data-lat-metric="req">请求耗时</button>
+                  <button data-lat-metric="ttft">首 Token</button>
+                  <button data-lat-metric="fail">失败率</button>
+                </div>
+              </div>
+            </div>
+            <div class="card-b">
+              <div class="chart-wrap" id="latWrap"><div id="latChart"></div><div class="tip" id="latTip"></div></div>
+              <div class="legend" id="latLegend"></div>
+            </div>
+          </section>
+        </div>
+
+        <div class="trend-col">
+          <section class="card">
+            <div class="card-h"><div><h2>模型压力排行</h2><div class="desc">并发饱和度 = 当前并发 / 配置上限</div></div><span class="tag">TOP 6</span></div>
+            <div class="card-b"><div class="rank" id="rankList"></div></div>
+          </section>
+
+          <section class="card">
+            <div class="card-h">
+              <div><h2 id="latTableTitle">分时段明细</h2><div class="desc" id="latTableDesc">汇总口径 · 按失败请求率降序 · 点击行定位到趋势图</div></div>
+              <span class="tag" id="latRangeTag">近 24h</span>
+            </div>
+            <div class="card-b"><div class="tbl-wrap" style="margin-top:0"><table class="lat-table" id="latTable"></table></div></div>
+          </section>
+        </div>
+      </div>
+
+      <div class="grid2e">
+        <section class="card">
+          <div class="card-h">
+            <div><h2 id="heatTitle">分组场景 × 时段 压力热力图</h2><div class="desc">颜色越深代表并发饱和度越高 · 点击格子沿完整调用链路下钻</div></div>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+              <div class="seg mini" id="heatDimSeg">
+                <button class="active" data-heat="group">分组</button><button data-heat="route">别名</button>
+                <button data-heat="account">模型账号</button><button data-heat="user">用户</button>
+              </div>
+              <span class="tag" id="heatRangeTag">近 24h</span>
+            </div>
+          </div>
+          <div class="card-b"><div class="heat" id="heatmap"></div><div class="heat-scale">低 <i style="background:#ccfbf1"></i><i style="background:#5eead4"></i><i style="background:#fde68a"></i><i style="background:#fbbf24"></i><i style="background:#fb923c"></i><i style="background:#ef4444"></i> 高</div></div>
+        </section>
+        <section class="card">
+          <div class="card-h"><div><h2>并发水位与容量</h2><div class="desc">Redis 并发槽实时占用 · 超限进入等待队列</div></div><span class="pill info"><span class="dot info"></span> 实时</span></div>
+          <div class="card-b">
+            <div class="water" id="waterList"></div>
+            <div class="mini-stats">
+              <div class="mini"><span>当前排队请求</span><strong id="mQueue">37</strong></div>
+              <div class="mini"><span>平均等待</span><strong id="mWait">420<span style="font-size:11px;color:var(--text3)"> ms</span></strong></div>
+              <div class="mini"><span>今日限流次数</span><strong id="mReject">126</strong></div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <section class="card" id="dimsection" style="margin-top:12px">
+        <div class="card-h">
+          <div><h2>调用链路与多维用量</h2><div class="desc">用户 → 分组场景 → 路由别名 → 模型账号（1:1 绑定具体模型）· 关系与用量同步下钻</div></div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <div class="tabs mode-tabs" id="obsModeTabs">
+              <button class="active" data-mode="chain">调用链路</button>
+              <button data-mode="matrix">交叉明细</button>
+              <button data-mode="summary">单维排行</button>
+            </div>
+            <button class="btn btn-sm" id="exportBtn">导出 CSV</button>
+          </div>
+        </div>
+        <div class="toolbar" id="filterToolbar">
+          <div class="tabs" id="dimTabs"></div>
+          <input type="text" id="searchInput" placeholder="搜索用户 / 分组 / 别名 / 模型账号…">
+          <select class="select" id="statusSel"><option value="">全部状态</option><option value="ok">健康</option><option value="info">关注</option><option value="warn">预警</option><option value="bad">过载</option></select>
+          <span id="filterChip"></span>
+          <span style="margin-left:auto;font-size:11px;color:var(--text3)" id="rowCount"></span>
+        </div>
+        <div class="chain-shell" id="chainView">
+          <div class="chain-path" id="chainPath"></div>
+          <div class="chain" id="chainBoard"></div>
+          <div class="chain-actions">
+            <span class="chain-note">链路关系来自 groups.model_routing；模型账号严格 1:1 绑定上游模型，用量按最终命中的 account_id 归属。</span>
+            <button class="btn btn-sm" id="chainMatrixBtn">查看链路明细</button>
+          </div>
+        </div>
+        <div class="tbl-wrap hide" id="matrixView"><table class="matrix-table" id="matrixTable"><thead></thead><tbody></tbody></table></div>
+        <div class="hide" id="summaryView"><div class="tbl-wrap"><table id="dimTable"><thead></thead><tbody></tbody></table></div></div>
+        <div class="foot"><span>关系口径：分组 1:N 路由别名，路由别名 1:N 候选模型账号，模型账号 1:1 绑定具体模型；用量按最终命中的 account_id 统计，模型名仅作账号属性</span><span>来源：model_routing + account.model_mapping + UsageLog/tokenstat</span></div>
+      </section>
+
+      <section class="card" id="alertsection" style="margin-top:12px">
+        <div class="card-h"><div><h2>实时告警与排查建议</h2><div class="desc">只读视图 · 按影响面排序 · 线上配置请到对应账号或分组管理页人工处理</div></div><span class="pill bad" id="alertCount"><span class="dot bad"></span> 4 条待关注</span></div>
+        <div class="card-b" id="alertList"></div>
+      </section>
+      <p style="text-align:center;color:var(--text3);font-size:11px;margin-top:22px">Demo 数据为模拟生成 · 页面结构与配色对齐 Sub2API 现有管理端（Tailwind primary teal / dark class）</p>
+    </div>
+
+    <section id="view-design" class="design hide"></section>
+  </main>
+</div>
+
+<div class="drawer-mask" id="drawerMask"></div>
+<aside class="drawer" id="drawer"></aside>
+<div class="toast" id="toast"></div>
+
+<script>
+(function(){
+'use strict';
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt = n => n >= 1e9 ? (n/1e9).toFixed(2)+'B' : n >= 1e6 ? (n/1e6).toFixed(2)+'M' : n >= 1e3 ? (n/1e3).toFixed(1)+'K' : String(Math.round(n));
+function rndGen(seed){ return function(){ seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const colors = ['#14b8a6','#3b82f6','#8b5cf6','#f59e0b','#06b6d4','#ec4899','#10b981','#6366f1'];
+const series = [
+  {name:'claude-sonnet-4-5', color:'#14b8a6'},
+  {name:'gpt-5.3-codex', color:'#3b82f6'},
+  {name:'gemini-3-pro', color:'#8b5cf6'},
+  {name:'claude-opus-4-6', color:'#f59e0b'}
+];
+const ranges = {
+  '1h': {n:12, step:5*60e3, label:'5m', tick:'HH:mm'},
+  '6h': {n:24, step:15*60e3, label:'15m', tick:'HH:mm'},
+  '24h':{n:24, step:60*60e3, label:'1h', tick:'HH:mm'},
+  '7d': {n:28, step:6*60*60e3, label:'6h', tick:'MM/DD'}
+};
+const scenes = ['编码助手-公共','代码审查-研发','客服问答-线上','数据分析-中台','研发测试-沙箱','文档生成-运营','智能体编排','批处理-离线'];
+const state = {
+  range:'24h', metric:'total', dim:'account', search:'', status:'',
+  sort:'tokens', desc:true, filter:'', hidden:{}, auto:true, tick:0,
+  dark:false, obsMode:'chain', chainSort:'tokens',
+  stack:'account', heat:'group', latHidden:{}, latFocus:-1,
+  latMetric:'all', latDim:'all', latMemberHidden:{},
+  sel:{user:[], group:[], alias:[], account:[]},
+  selDim:'group', selQuery:'', onlyPressure:false,
+  chainDesc:true, chainUser:'zhang.wei', chainGroup:'编码助手-公共',
+  chainAlias:'coding-fast', chainAccount:'claude-pro-01'
+};
+
+/* ---------- 数据生成 ---------- */
+/* 模型账号与具体模型 1:1 对应，模型名只是账号属性；观测维度收敛为
+   用户 / 分组 / 别名 / 模型账号 四维，成员统一取自同一份分组主数据。 */
+const stackDims = {user:'用户',scene:'分组场景',route:'路由别名',account:'模型账号'};
+const heatDimLabels = {user:'用户',group:'分组场景',route:'路由别名',account:'模型账号'};
+const heatWeights = {
+  group:[1,.78,.62,.7,.48,.42,.66,.3],
+  route:[1,.94,.88,.82,.76,.70,.64,.58,.52,.46,.40,.34,.28,.22,.18],
+  account:[1,.9,.82,.74,.66,.58,.5,.42],
+  user:[1,.8,.7,.6,.5,.44,.36,.3]
+};
+function trendSeries(){
+  const totals=seriesTotals();
+  const top=Array.from(totals.entries()).sort((a,b)=>b[1]-a[1]).slice(0,4)
+    .map(([name],i)=>({name,color:colors[i]}));
+  return top.length?top:[{name:'无匹配对象',color:colors[0]}];
+}
+function heatRows(){
+  let names;
+  if(state.heat==='user') names=relationGraph.map(u=>u.name);
+  else if(state.heat==='route') names=ROUTING.flatMap(g=>g.aliases.map(a=>a.name));
+  else if(state.heat==='account') names=ROUTING_ACCOUNTS.map(a=>a.name);
+  else names=ROUTING.map(g=>g.name);
+  const present=new Set(scopedMembers(HEAT_TO_SCOPE[state.heat]));
+  return {dim:state.heat, names:names.filter(n=>present.has(n))};
+}
+function baseTime(){ const d = new Date(); d.setSeconds(0,0); return d.getTime(); }
+function labelAt(ts, key){
+  const d = new Date(ts), p = n => String(n).padStart(2,'0');
+  return key === 'MM/DD' ? p(d.getMonth()+1)+'/'+p(d.getDate()) : p(d.getHours())+':'+p(d.getMinutes());
+}
+function buildTrend(){
+  const cfg = ranges[state.range], end = baseTime(), r = rndGen(20261105 + state.tick*13);
+  const labels = []; for(let i=cfg.n-1;i>=0;i--) labels.push(labelAt(end - i*cfg.step, cfg.tick));
+  const ss = trendSeries(), totals = seriesTotals(), st = selectionStats();
+  const scale = st.tokenSum / ALL_TOKENS;
+  const rangeFactor = state.range==='7d'?5.6:state.range==='24h'?1.3:state.range==='6h'?0.42:0.12;
+  const data = ss.map((s,si) => {
+    const share = st.tokenSum ? (totals.get(s.name)||0)/st.tokenSum : 0;
+    const base = 108 * rangeFactor * scale * share;
+    return Array.from({length:cfg.n},(_,i)=>{
+      const hour = new Date(end-(cfg.n-1-i)*cfg.step).getHours();
+      const peak = 1 + 0.55*Math.exp(-Math.pow((hour-15)/3.0,2));
+      const wave = 0.82 + 0.20*Math.sin(i/2.4+si) + 0.16*r();
+      return Math.max(0.01, base*peak*wave + state.tick*0.4*scale*r());
+    });
+  });
+  const conc = data[0].map((_,i)=>{
+    const wave = 0.78 + 0.22*Math.sin(i/2.8+1) + 0.12*r();
+    return Math.round(Math.min(200, Math.max(0, st.concSum*wave)));
+  });
+  return {labels, data, conc};
+}
+
+/* ---------- 分时耗时与失败率：与 Token 趋势同一刷新周期、同一筛选范围 ---------- */
+const LAT_SLO_TTFT = 2.0, LAT_SLO_FAIL = 2.0;
+const LAT_METRICS = [
+  {k:'req',  label:'平均请求耗时', color:'#14b8a6', unit:'s'},
+  {k:'ttft', label:'平均首 Token', color:'#3b82f6', unit:'s'},
+  {k:'fail', label:'失败请求率',   color:'#ef4444', unit:'%'}
+];
+const LAT_DIMS = {
+  all:     {label:'全部对象', field:null},
+  account: {label:'按模型账号', field:'account'},
+  group:   {label:'按分组场景', field:'group'},
+  alias:   {label:'按路由别名', field:'alias'},
+  user:    {label:'按用户', field:'user'}
+};
+const LAT_TOPN = 4;
+let latCache = null;
+function hash32(s){ let h=2166136261; for(let i=0;i<s.length;i++){ h^=s.charCodeAt(i); h=Math.imul(h,16777619); } return h>>>0; }
+/* 基线在「调用路径」级生成；分组只是路径的划分，组内按流量权重线性聚合。
+   因此任何维度覆盖同一批路径，汇总线不随维度切换而漂移。 */
+function latPathSeries(seedBase, cfg, end){
+  return selectedPaths().map(p=>{
+    const load=p.cap?Math.min(1,p.conc/p.cap):0;
+    const ttftBase=p.p95/1000*0.50*(0.75+0.55*load);
+    const reqBase=ttftBase*2.8+0.42;
+    const r=rndGen((seedBase+hash32(p.user+'|'+p.group+'|'+p.alias+'|'+p.account))>>>0);
+    const req=[],ttft=[],fail=[];
+    for(let i=0;i<cfg.n;i++){
+      const hour=new Date(end-(cfg.n-1-i)*cfg.step).getHours();
+      const peak=1+0.55*Math.exp(-Math.pow((hour-15)/3.0,2));   /* 与 Token 趋势共享日高峰 */
+      const stress=Math.max(0,Math.min(1,(peak-1.15)/0.40));
+      const wave=0.86+0.14*Math.sin(i/2.4)+0.10*r();
+      req.push(Math.max(0,reqBase*(0.74+0.26*peak+0.30*stress)*wave*(0.97+0.06*r())));
+      ttft.push(Math.max(0,ttftBase*(0.70+0.30*peak+0.35*stress)*(0.88+0.12*Math.sin(i/2.4+1))*(0.96+0.08*r())));
+      fail.push(Math.max(0,p.err*(0.52+0.48*peak)*(0.84+0.32*r())+stress*(0.9+0.7*r())));
+    }
+    return {p, weight:p.tokens, req, ttft, fail};
+  });
+}
+function latAggregate(rows){
+  const w=rows.reduce((a,x)=>a+x.weight,0)||1, n=rows.length?rows[0].req.length:0;
+  const mix=k=>Array.from({length:n},(_,i)=>rows.reduce((a,x)=>a+x[k][i]*x.weight,0)/w);
+  return {req:mix('req'), ttft:mix('ttft'), fail:mix('fail')};
+}
+function latGroups(field, rows){
+  const buckets=new Map();
+  rows.forEach(x=>{
+    const key=field?x.p[field]:'全部对象';
+    if(!buckets.has(key)) buckets.set(key,[]);
+    buckets.get(key).push(x);
+  });
+  let list=Array.from(buckets.entries()).map(([name,items])=>({
+    name, rows:items, weight:items.reduce((a,x)=>a+x.weight,0)
+  })).sort((a,b)=>b.weight-a.weight);
+  if(list.length>LAT_TOPN+1){
+    const rest=list.slice(LAT_TOPN);
+    list=list.slice(0,LAT_TOPN).concat([{
+      name:`其他 ${rest.length} 个`, rows:rest.flatMap(e=>e.rows),
+      weight:rest.reduce((a,e)=>a+e.weight,0)
+    }]);
+  }
+  return list.map((g,gi)=>({name:g.name, weight:g.weight, color:colors[gi%colors.length], ...latAggregate(g.rows)}));
+}
+function buildLatencyTrend(){
+  const cfg=ranges[state.range], end=baseTime();
+  const labels=[]; for(let i=cfg.n-1;i>=0;i--) labels.push(labelAt(end-i*cfg.step,cfg.tick));
+  const rows=latPathSeries(20261109+state.tick*17,cfg,end), has=rows.length>0;
+  const byDim={};
+  Object.keys(LAT_DIMS).forEach(k=>{ byDim[k]=latGroups(LAT_DIMS[k].field,rows); });
+  /* 比值型指标不能把各维度均值再平均：汇总由全量路径按流量权重一次聚合 */
+  const sum=latAggregate(rows);
+  const points=labels.map((_,i)=>({
+    req:+(has?sum.req[i]:0).toFixed(3),
+    ttft:+(has?sum.ttft[i]:0).toFixed(3),
+    fail:+(has?sum.fail[i]:0).toFixed(2)
+  }));
+  const avg=k=>sum[k].reduce((a,v)=>a+v,0)/(sum[k].length||1);
+  return {labels, points, has, byDim,
+    req:sum.req, ttft:sum.ttft, fail:sum.fail,
+    avgReq:avg('req'), avgTtft:avg('ttft'), avgFail:avg('fail'),
+    breaches:sum.fail.filter(v=>v>=LAT_SLO_FAIL).length,
+    worstIdx:sum.fail.indexOf(Math.max(...sum.fail,0))};
+}
+function latData(){ return latCache || (latCache = buildLatencyTrend()); }
+function latActiveDim(){ return state.latMetric==='all' ? 'all' : (state.latDim==='all'?'account':state.latDim); }
+function latSeries(){ return latData().byDim[latActiveDim()] || []; }
+function latMetricDef(k){ return LAT_METRICS.find(m=>m.k===k); }
+function latFmt(k,v){ return k==='fail'?v.toFixed(2)+'%':v.toFixed(2)+'s'; }
+function latStatus(p){
+  if(p.fail>=LAT_SLO_FAIL || p.ttft>=LAT_SLO_TTFT) return 'bad';
+  if(p.fail>=LAT_SLO_FAIL*0.7 || p.ttft>=LAT_SLO_TTFT*0.8) return 'warn';
+  return 'ok';
+}
+const latPill = s => `<span class="pill ${s}"><span class="dot ${s}"></span>${s==='bad'?'超 SLO':s==='warn'?'接近':'达标'}</span>`;
+
+function heatValue(name,r,c){
+  const key = HEAT_TO_SCOPE[state.heat];
+  const accs = uniqueAccounts(selectedPaths().filter(p=>p[key]===name));
+  const base = accs.length ? Math.max(...accs.map(a=>Math.max(a.conc/a.cap*100,a.quota))) : 0;
+  const rr = rndGen(7700 + r*97 + c*31 + state.tick*3);
+  const colCount = state.range==='7d'?7:12;
+  const peak = Math.exp(-Math.pow((c-colCount*0.68)/2.6,2));
+  return Math.min(99, Math.max(0, Math.round(base*(0.60+0.40*peak) + rr()*10 - 5 + state.tick*0.15)));
+}
+function buildRows(dim){
+  /* 四个维度的成员全部由分组主数据派生，保证单维排行与调用链路同源；
+     模型账号与具体模型 1:1 对应，模型名只作为账号属性出现在归属列。 */
+  const defs = {
+    user: {label:'用户', sub:'部门 / 授权关系', names:relationGraph.map(user=>[
+      user.name,
+      `${user.dept} · 可访问 ${user.groups.length} 个分组 / ${user.groups.reduce((n,g)=>n+g.aliases.length,0)} 条别名`
+    ])},
+    scene: {label:'分组场景', sub:'分组 / 路由别名数', names:ROUTING.map(group=>[
+      group.name,
+      `${group.aliases.length} 个路由别名 · ${new Set(group.aliases.flatMap(a=>a.accounts.map(x=>x.name))).size} 个候选模型账号`
+    ])},
+    route: {label:'路由别名', sub:'所属分组 / 候选账号', names:ROUTING.flatMap(group=>group.aliases.map(alias=>[
+      alias.name,
+      `${group.name} · ${alias.accounts.length} 个候选模型账号（各绑定 1 个具体模型）`
+    ]))},
+    account: {label:'模型账号', sub:'平台 / 绑定模型 / 复用别名', names:ROUTING_ACCOUNTS.map(acc=>[
+      acc.name,
+      `${acc.platform} · 绑定 ${acc.model} · 被 ${acc.aliases.size} 条别名复用`
+    ])}
+  };
+  const def = defs[dim], seed = Array.from(dim).reduce((a,c)=>a+c.charCodeAt(0),0)*31 + 9000, r = rndGen(seed);
+  const incident = {
+    account: {
+      'claude-pro-01': {tokens:8.42, delta:12.4, conc:38, cap:40, quota:91, p95:1420, err:1.82},
+      'codex-team-a': {tokens:6.71, delta:-0.4, conc:38, cap:48, quota:91, p95:1100, err:1.29},
+      'bedrock-east-01': {tokens:2.38, delta:-14.2, conc:16, cap:20, quota:52, p95:1010, err:2.94}
+    },
+    scene: {
+      '编码助手-公共': {tokens:6.40, delta:34, conc:88, cap:100, quota:93, p95:1420, err:1.82}
+    },
+    route: {
+      'coding-fast': {tokens:4.18, delta:28.6, conc:22, cap:28, quota:86, p95:1480, err:1.44}
+    },
+    user: {
+      'ops-bot': {tokens:3.20, delta:41.2, conc:25, cap:30, quota:89, p95:1800, err:2.34}
+    }
+  };
+  return def.names.map((n,i)=>{
+    const tokens = +(1.4 + r()*8.6).toFixed(2);
+    const cap = [40,32,48,24,36,28,30,20,26,34][i%10];
+    const conc = Math.round(cap*(.38+r()*.62));
+    const quota = Math.round(28+r()*72);
+    const row = {name:n[0], sub:n[1], tokens, delta:+((r()-.42)*46).toFixed(1), conc, cap, quota,
+      p95:Math.round(420+r()*1900), err:+(r()*3.2).toFixed(2),
+      spark:Array.from({length:12},()=>r())};
+    Object.assign(row, incident[dim]?.[n[0]] || {});
+    const pressure = Math.max(row.conc/row.cap*100, row.quota);
+    row.status = pressure>=95?'bad':pressure>=80?'warn':pressure>=60?'info':'ok';
+    return row;
+  });
+}
+const rowCache = {};
+function rows(dim){ if(!rowCache[dim]) rowCache[dim] = buildRows(dim); return rowCache[dim]; }
+
+/* 分组 → 路由别名 → 候选模型账号 的演示关系图；每个账号 1:1 绑定一个具体模型。 */
+const relationGraph = [
+  {name:'zhang.wei', dept:'研发一部', groups:[
+    {name:'编码助手-公共', aliases:[
+      {name:'coding-fast', accounts:[
+        {name:'claude-pro-01', platform:'Anthropic · OAuth', model:'claude-sonnet-4-5', tokens:8.42, conc:38, cap:40, quota:91, p95:1420, err:1.82},
+        {name:'codex-team-a', platform:'OpenAI · OAuth', model:'gpt-5.3-codex', tokens:4.12, conc:32, cap:48, quota:68, p95:1180, err:0.74}
+      ]},
+      {name:'coding-quality', accounts:[
+        {name:'claude-pro-02', platform:'Anthropic · OAuth', model:'claude-opus-4-6', tokens:5.31, conc:16, cap:32, quota:55, p95:1640, err:0.28},
+        {name:'codex-team-b', platform:'OpenAI · OAuth', model:'gpt-5.3-codex-spark', tokens:2.14, conc:20, cap:24, quota:62, p95:990, err:0.54}
+      ]},
+      {name:'coding-batch', accounts:[
+        {name:'bedrock-east-01', platform:'AWS · Bedrock', model:'claude-sonnet-4-5-bedrock', tokens:1.72, conc:16, cap:20, quota:52, p95:1320, err:2.94}
+      ]}
+    ]},
+    {name:'代码审查-研发', aliases:[
+      {name:'review-fast', accounts:[
+        {name:'codex-team-a', platform:'OpenAI · OAuth', model:'gpt-5.3-codex', tokens:2.21, conc:24, cap:48, quota:54, p95:980, err:0.61}
+      ]},
+      {name:'review-deep', accounts:[
+        {name:'claude-pro-02', platform:'Anthropic · OAuth', model:'claude-opus-4-6', tokens:2.03, conc:22, cap:32, quota:66, p95:1520, err:0.33}
+      ]}
+    ]}
+  ]},
+  {name:'li.na', dept:'研发一部', groups:[
+    {name:'编码助手-公共', aliases:[
+      {name:'coding-fast', accounts:[
+        {name:'claude-pro-01', platform:'Anthropic · OAuth', model:'claude-sonnet-4-5', tokens:2.01, conc:38, cap:40, quota:91, p95:1420, err:1.82},
+        {name:'gemini-cli-01', platform:'Google · Service Account', model:'gemini-3-pro', tokens:1.31, conc:22, cap:36, quota:58, p95:1020, err:0.49}
+      ]},
+      {name:'coding-quality', accounts:[
+        {name:'gemini-cli-01', platform:'Google · Service Account', model:'gemini-3-pro', tokens:1.51, conc:22, cap:36, quota:58, p95:1020, err:0.49}
+      ]}
+    ]},
+    {name:'文档生成-运营', aliases:[
+      {name:'doc-gen', accounts:[
+        {name:'gemini-cli-02', platform:'Google · OAuth', model:'gemini-3-flash', tokens:2.11, conc:12, cap:28, quota:35, p95:680, err:0.16}
+      ]},
+      {name:'doc-review', accounts:[
+        {name:'claude-pro-02', platform:'Anthropic · OAuth', model:'claude-opus-4-6', tokens:.90, conc:16, cap:32, quota:44, p95:1640, err:0.28}
+      ]}
+    ]}
+  ]},
+  {name:'wang.lei', dept:'平台架构', groups:[
+    {name:'智能体编排', aliases:[
+      {name:'agent-fast', accounts:[
+        {name:'codex-team-b', platform:'OpenAI · OAuth', model:'gpt-5.3-codex-spark', tokens:2.66, conc:20, cap:24, quota:75, p95:1250, err:0.88}
+      ]},
+      {name:'agent-orchestrator', accounts:[
+        {name:'antigravity-01', platform:'Antigravity · OAuth', model:'gemini-3-pro-antigravity', tokens:2.06, conc:23, cap:30, quota:67, p95:1420, err:0.42}
+      ]}
+    ]},
+    {name:'编码助手-公共', aliases:[
+      {name:'coding-fast', accounts:[
+        {name:'codex-team-a', platform:'OpenAI · OAuth', model:'gpt-5.3-codex', tokens:2.18, conc:38, cap:48, quota:91, p95:1180, err:0.74}
+      ]}
+    ]},
+    {name:'数据分析-中台', aliases:[
+      {name:'analysis-heavy', accounts:[
+        {name:'gemini-cli-01', platform:'Google · Service Account', model:'gemini-3-pro', tokens:.87, conc:18, cap:36, quota:49, p95:1080, err:0.31},
+        {name:'claude-pro-02', platform:'Anthropic · OAuth', model:'claude-opus-4-6', tokens:1.11, conc:14, cap:32, quota:38, p95:1580, err:0.22}
+      ]}
+    ]}
+  ]},
+  {name:'zhao.yu', dept:'客服中心', groups:[
+    {name:'客服问答-线上', aliases:[
+      {name:'chat-default', accounts:[
+        {name:'gemini-cli-02', platform:'Google · OAuth', model:'gemini-3-flash', tokens:3.30, conc:22, cap:28, quota:48, p95:720, err:0.18}
+      ]},
+      {name:'chat-long', accounts:[
+        {name:'claude-pro-02', platform:'Anthropic · OAuth', model:'claude-opus-4-6', tokens:1.80, conc:18, cap:32, quota:53, p95:1660, err:0.37}
+      ]}
+    ]},
+    {name:'文档生成-运营', aliases:[
+      {name:'doc-gen', accounts:[
+        {name:'gemini-cli-02', platform:'Google · OAuth', model:'gemini-3-flash', tokens:.80, conc:12, cap:28, quota:35, p95:680, err:0.16}
+      ]}
+    ]}
+  ]},
+  {name:'ops-bot', dept:'自动化', groups:[
+    {name:'批处理-离线', aliases:[
+      {name:'batch-lowcost', accounts:[
+        {name:'bedrock-east-01', platform:'AWS · Bedrock', model:'claude-sonnet-4-5-bedrock', tokens:2.60, conc:16, cap:20, quota:52, p95:1320, err:2.94}
+      ]},
+      {name:'batch-backfill', accounts:[
+        {name:'codex-team-b', platform:'OpenAI · OAuth', model:'gpt-5.3-codex-spark', tokens:1.20, conc:14, cap:24, quota:61, p95:1100, err:0.84}
+      ]}
+    ]},
+    {name:'智能体编排', aliases:[
+      {name:'agent-orchestrator', accounts:[
+        {name:'antigravity-01', platform:'Antigravity · OAuth', model:'gemini-3-pro-antigravity', tokens:1.40, conc:23, cap:30, quota:67, p95:1420, err:0.42}
+      ]}
+    ]}
+  ]},
+  {name:'guest-trial', dept:'外部试用', groups:[
+    {name:'客服问答-线上', aliases:[
+      {name:'chat-default', accounts:[
+        {name:'gemini-cli-02', platform:'Google · OAuth', model:'gemini-3-flash', tokens:1.41, conc:22, cap:28, quota:48, p95:720, err:0.18}
+      ]}
+    ]},
+    {name:'编码助手-公共', aliases:[
+      {name:'coding-fast', accounts:[
+        {name:'claude-pro-01', platform:'Anthropic · OAuth', model:'claude-sonnet-4-5', tokens:.80, conc:38, cap:40, quota:91, p95:1420, err:1.82}
+      ]}
+    ]}
+  ]}
+];
+
+/* ---------- 分组主数据规范化 ----------
+   真实结构：groups.model_routing 是分组自身的配置（Group 1:N Alias 1:N Account），
+   对所有被授权访问该分组的用户完全一致；用户只通过 API Key / user_allowed_group
+   获得访问权，用量按 user × 路径分别归属，不能把分组配置按用户复制出不同结构。 */
+const ROUTING = (()=>{
+  const index = new Map();
+  relationGraph.forEach(user=>user.groups.forEach(group=>{
+    if(!index.has(group.name)) index.set(group.name,{name:group.name,aliases:new Map()});
+    const target = index.get(group.name);
+    group.aliases.forEach(alias=>{
+      if(!target.aliases.has(alias.name)) target.aliases.set(alias.name,{name:alias.name,accounts:new Map()});
+      const aliasTarget = target.aliases.get(alias.name);
+      alias.accounts.forEach(acc=>{
+        if(!aliasTarget.accounts.has(acc.name)) aliasTarget.accounts.set(acc.name,{...acc});
+      });
+    });
+  }));
+  return Array.from(index.values()).map(group=>({
+    name:group.name,
+    aliases:Array.from(group.aliases.values()).map(alias=>({
+      name:alias.name, accounts:Array.from(alias.accounts.values())
+    }))
+  }));
+})();
+const USER_ACCESS = relationGraph.map(user=>({name:user.name, dept:user.dept, groups:user.groups.map(group=>group.name)}));
+function userFactor(user, group, alias, account){
+  const key = `${user}|${group}|${alias}|${account}`;
+  let h = 0; for(let i=0;i<key.length;i++) h = (Math.imul(h,31)+key.charCodeAt(i))|0;
+  return +(0.42+Math.abs(h%1000)/1000*0.92).toFixed(3);
+}
+/* 所有用户引用同一份分组结构；仅 Token 用量保留用户级差异，
+   并发 / 配额 / 延迟是账号级共享状态，不随用户变化。 */
+relationGraph.forEach(user=>{
+  user.groups = user.groups.map(group=>{
+    const master = ROUTING.find(item=>item.name===group.name);
+    return {name:group.name, aliases:master.aliases.map(alias=>({
+      name:alias.name,
+      accounts:alias.accounts.map(acc=>{
+        const ownGroup = group.aliases.find(item=>item.name===alias.name);
+        const own = ownGroup ? ownGroup.accounts.find(item=>item.name===acc.name) : null;
+        return {...acc, tokens:+(own ? own.tokens : acc.tokens*userFactor(user.name,group.name,alias.name,acc.name)).toFixed(2)};
+      })
+    }))};
+  });
+});
+const ROUTING_ACCOUNTS = (()=>{
+  const index = new Map();
+  ROUTING.forEach(group=>group.aliases.forEach(alias=>alias.accounts.forEach(acc=>{
+    if(!index.has(acc.name)) index.set(acc.name,{...acc, groups:new Set(), aliases:new Set()});
+    const item = index.get(acc.name);
+    item.groups.add(group.name); item.aliases.add(alias.name);
+  })));
+  return Array.from(index.values());
+})();
+/* 模型账号与具体模型一一对应：model 只是账号属性，不构成独立观测维度。
+   项目侧由 backend/internal/service/account_model_mapping_validation.go 的
+   ACCOUNT_MULTIPLE_UPSTREAM_MODELS 写入校验保证；demo 主数据在此自检。 */
+const ACCOUNT_MODEL = Object.fromEntries(ROUTING_ACCOUNTS.map(acc=>[acc.name,acc.model]));
+if(new Set(Object.values(ACCOUNT_MODEL)).size !== ROUTING_ACCOUNTS.length)
+  throw new Error('主数据违反约束：模型账号与具体模型必须一一对应');
+const severity = {ok:0, info:1, warn:2, bad:3};
+const chainStatusText = {ok:'健康', info:'关注', warn:'预警', bad:'过载'};
+function statusFor(conc, cap, quota){
+  const pressure = Math.max(cap ? conc / cap * 100 : 0, quota || 0);
+  return pressure >= 95 ? 'bad' : pressure >= 80 ? 'warn' : pressure >= 60 ? 'info' : 'ok';
+}
+function statusForNode(conc, cap, quota){ return statusFor(conc, cap, quota); }
+function worstStatus(statuses){
+  return statuses.reduce((worst,current)=>severity[current]>severity[worst]?current:worst,'ok');
+}
+function relationPaths(userName){
+  const user = relationGraph.find(item=>item.name===userName);
+  if(!user) return [];
+  return user.groups.flatMap(group=>group.aliases.flatMap(alias=>alias.accounts.map(account=>{
+    const status = statusFor(account.conc, account.cap, account.quota);
+    return {
+      ...account,
+      account:account.name,
+      user:user.name,
+      dept:user.dept,
+      group:group.name,
+      alias:alias.name,
+      status
+    };
+  })));
+}
+function allRelationPaths(){ return relationGraph.flatMap(user=>relationPaths(user.name)); }
+
+/* ---------- 自定义观测对象：全局筛选上下文 ----------
+   所有视图共用 selectedPaths()，Token / 并发 / 流量三个口径从同一份过滤结果聚合。 */
+const ALL_PATHS = allRelationPaths();
+const ALL_TOKENS = ALL_PATHS.reduce((sum,p)=>sum+p.tokens,0) || 1;
+const SCOPE_DIMS = [
+  {k:'user', label:'用户', members:()=>relationGraph.map(u=>u.name)},
+  {k:'group', label:'分组场景', members:()=>ROUTING.map(g=>g.name)},
+  {k:'alias', label:'路由别名', members:()=>ROUTING.flatMap(g=>g.aliases.map(a=>a.name))},
+  {k:'account', label:'模型账号', members:()=>ROUTING_ACCOUNTS.map(a=>a.name)}
+];
+const ROWS_TO_SCOPE = {user:'user',scene:'group',route:'alias',account:'account'};
+const HEAT_TO_SCOPE = {user:'user',group:'group',route:'alias',account:'account'};
+function uniqueAccounts(paths){
+  const map=new Map(); paths.forEach(p=>{ if(!map.has(p.account)) map.set(p.account,p); });
+  return Array.from(map.values());
+}
+function selectionActive(){
+  return SCOPE_DIMS.some(d=>state.sel[d.k].length>0) || state.onlyPressure;
+}
+function selectedPaths(){
+  const s=state.sel;
+  return ALL_PATHS.filter(p=>
+    SCOPE_DIMS.every(d=>!s[d.k].length || s[d.k].includes(p[d.k])) &&
+    (!state.onlyPressure || p.status==='warn' || p.status==='bad'));
+}
+function scopedMembers(scope){ return Array.from(new Set(selectedPaths().map(p=>p[scope]))); }
+function selectionStats(){
+  const paths=selectedPaths(), accounts=uniqueAccounts(paths);
+  return {
+    paths, accounts,
+    tokenSum:paths.reduce((sum,p)=>sum+p.tokens,0),
+    concSum:accounts.reduce((sum,p)=>sum+p.conc,0),
+    capSum:accounts.reduce((sum,p)=>sum+p.cap,0),
+    peakConc:accounts.length?Math.max(...accounts.map(p=>p.conc)):0,
+    quota:paths.length?Math.max(...paths.map(p=>p.quota)):0,
+    p95:paths.length?Math.max(...paths.map(p=>p.p95)):0,
+    err:paths.length?paths.reduce((sum,p)=>sum+p.err,0)/paths.length:0,
+    groups:new Set(paths.map(p=>p.group)).size,
+    aliases:new Set(paths.map(p=>p.alias)).size,
+    users:new Set(paths.map(p=>p.user)).size
+  };
+}
+function scopedRows(dim){
+  const base=rows(dim);
+  if(!selectionActive()) return base;
+  const scope=ROWS_TO_SCOPE[dim], grouped=new Map();
+  selectedPaths().forEach(p=>{
+    if(!grouped.has(p[scope])) grouped.set(p[scope],[]);
+    grouped.get(p[scope]).push(p);
+  });
+  return base.filter(r=>grouped.has(r.name)).map(r=>{
+    const ps=grouped.get(r.name), accs=uniqueAccounts(ps);
+    const conc=accs.reduce((a,p)=>a+p.conc,0), cap=accs.reduce((a,p)=>a+p.cap,0);
+    const quota=Math.max(...ps.map(p=>p.quota));
+    return {...r,
+      tokens:+ps.reduce((a,p)=>a+p.tokens,0).toFixed(2),
+      conc, cap, quota,
+      p95:Math.max(...ps.map(p=>p.p95)),
+      err:+(ps.reduce((a,p)=>a+p.err,0)/ps.length).toFixed(2),
+      status:statusFor(conc,cap,quota)};
+  });
+}
+function seriesTotals(){
+  const scope=ROWS_TO_SCOPE[state.stack], totals=new Map();
+  selectedPaths().forEach(p=>totals.set(p[scope],(totals.get(p[scope])||0)+p.tokens));
+  return totals;
+}
+function scopeLabel(k){ return (SCOPE_DIMS.find(d=>d.k===k)||{}).label || k; }
+const modelTag = value => `<span class="model-tag" title="${esc(value)}">${esc(value)}</span>`;
+
+const alerts = [
+  {level:'bad', title:'claude-pro-01 并发饱和', text:'并发 38/40，持续 6 分钟；等待队列 21 个请求，存在超时风险', since:'14:02', advice:'人工核查账号容量并提前规划扩容', handled:false},
+  {level:'warn', title:'编码助手-公共 场景压力偏高', text:'饱和度 88%，近 15 分钟 Token 环比 +34%，峰值集中在 14:00–15:00', since:'13:48', advice:'检查 coding-fast 路由下各账号的容量与时段分布', handled:false},
+  {level:'warn', title:'codex-team-a 配额使用 91%', text:'当前自然日累计 9.1M / 10M，按当前速率预计 16:20 触顶', since:'13:20', advice:'提前扩容账号或启用周期重置策略', handled:false},
+  {level:'info', title:'P95 首 Token 延迟上升', text:'gemini-cli-01 由 780ms 升至 1.42s，疑似上游抖动', since:'13:05', advice:'观察 10 分钟并核查该账号的上游状态', handled:false}
+];
+
+/* ---------- 公共渲染 ---------- */
+function sparkPath(arr,w,h){
+  const min=Math.min(...arr), max=Math.max(...arr), span=(max-min)||1;
+  return arr.map((v,i)=>`${(i/(arr.length-1)*w).toFixed(1)},${(h-2-(v-min)/span*(h-5)).toFixed(1)}`).join(' ');
+}
+function statusPill(s){ const m={ok:'健康',info:'关注',warn:'预警',bad:'过载'}; return `<span class="pill ${s}"><span class="dot ${s}"></span>${m[s]}</span>`; }
+function pcolor(v){ return v>=95?'var(--red)':v>=80?'var(--amber)':v>=60?'var(--blue)':'var(--primary5)'; }
+function heatColor(v){
+  if(v<50) return `rgba(20,184,166,${(.14+v/50*.46).toFixed(2)})`;
+  if(v<70) return `rgba(94,234,212,${(.52+(v-50)/20*.35).toFixed(2)})`;
+  if(v<82) return `rgba(245,158,11,${(.35+(v-70)/12*.45).toFixed(2)})`;
+  if(v<95) return `rgba(249,115,22,${(.62+(v-82)/13*.32).toFixed(2)})`;
+  return `rgba(239,68,68,${(.78+(v-95)/5*.22).toFixed(2)})`;
+}
+function toast(msg){ const el=$('#toast'); el.textContent=msg; el.classList.add('show'); clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove('show'),2600); }
+
+/* ---------- KPI ---------- */
+function renderKpis(){
+  const t = buildTrend(), st = selectionStats(), k = state.tick*0.35;
+  const scale = st.tokenSum/ALL_TOKENS;
+  const spark = arr => arr && arr.length>1 ? arr.slice(-12) : [0,0];
+  const peak = Math.max(...t.conc,0), avg = Math.round(t.conc.reduce((a,b)=>a+b,0)/(t.conc.length||1));
+  const scope = selectionActive() ? `当前范围 ${st.paths.length} 条路径` : '全部对象';
+  const s2 = spark(t.conc);
+  const items = [
+    {l:'当前 Token 速率', v:(st.tokenSum*1.6+k*scale).toFixed(1), u:'K/min', s:`${scope} · 累计 <b class="up">${st.tokenSum.toFixed(2)}M</b>`, arr:spark(t.data[0])},
+    {l:'峰值并发 / 上限', v:peak, u:`/ ${st.capSum||200}`, s:`平均 ${avg} · 水位 ${st.capSum?Math.round(peak/st.capSum*100):0}%`, arr:s2},
+    {l:'活跃模型账号', v:st.accounts.length, u:`/ ${ROUTING_ACCOUNTS.length}`, s:`${st.groups} 个分组 · ${st.aliases} 条别名`, arr:spark(t.data[1])},
+    {l:'最高场景压力', v:Math.round(st.quota), u:'%', s:`${scope} · 配额峰值`, arr:spark(t.data[2])},
+    {l:'限流 / 失败请求', v:Math.round(126*scale+k), u:'次', s:`错误率 ${st.err.toFixed(2)}% · 近 ${state.range}`, arr:spark(t.data[3])},
+    {l:'P95 首 Token 延迟', v:(st.p95/1000).toFixed(2), u:'s', s:`SLO 2.0s · ${st.accounts.length} 个模型账号`, arr:s2.map(x=>x/100)}
+  ];
+  $('#kpis').innerHTML = items.map((it,i)=>`<div class="card kpi">
+    <div class="k-label"><span class="dot" style="background:${colors[i]}"></span>${esc(it.l)}</div>
+    <div class="k-val">${it.v}<span class="k-unit">${esc(it.u)}</span></div>
+    <div class="k-sub">${it.s}</div>
+    <svg class="k-spark" width="66" height="24" viewBox="0 0 66 24"><polyline points="${sparkPath(it.arr,66,24)}" fill="none" stroke="${colors[i]}" stroke-width="1.6" stroke-linejoin="round" stroke-linecap="round" opacity=".75"/></svg>
+  </div>`).join('');
+  $('#hLoad').textContent = peak>180?'过高':peak>120?'偏高':'正常';
+  $('#hModels').textContent = `${st.accounts.length} / ${ROUTING_ACCOUNTS.length}`;
+  $('#hAlerts').textContent = alerts.filter(a=>!a.handled).length;
+  $('#mQueue').textContent = 37+Math.round(k*2);
+  $('#mWait').innerHTML = (420+Math.round(k*30))+'<span style="font-size:11px;color:var(--text3)"> ms</span>';
+  $('#mReject').textContent = 126+Math.round(k);
+}
+
+/* ---------- 趋势图 ---------- */
+let trendCache = null;
+function renderTrend(){
+  const t = buildTrend(); trendCache = t;
+  const ss = trendSeries();
+  const W=780,H=252,L=48,R=48,T=14,B=28, iw=W-L-R, ih=H-T-B;
+  const factor = state.metric==='input'?.62:state.metric==='output'?.38:state.metric==='cache'?.22:1;
+  const visible = ss.map((s,i)=>!state.hidden[i]);
+  const d = t.data.map(arr=>arr.map(v=>v*factor));
+  const stacks = t.labels.map((_,i)=>d.reduce((a,arr,si)=>a+(visible[si]?arr[i]:0),0));
+  const maxY = Math.max(...stacks,1)*1.18;
+  const maxC = 220;
+  const X = i => L + (t.labels.length===1?0:i/(t.labels.length-1)*iw);
+  const Y = v => T + ih - v/maxY*ih;
+  const YC = v => T + ih - v/maxC*ih;
+  let g='';
+  for(let i=0;i<=4;i++){
+    const y=T+ih-i*ih/4, val=maxY*i/4;
+    g+=`<line x1="${L}" y1="${y}" x2="${W-R}" y2="${y}" stroke="var(--border)" stroke-width="1" stroke-dasharray="${i?'3 4':'0'}"/>`;
+    g+=`<text x="${L-8}" y="${y+3.5}" text-anchor="end" font-size="10" fill="var(--text3)">${fmt(val)}K</text>`;
+    g+=`<text x="${W-R+8}" y="${y+3.5}" font-size="10" fill="var(--text3)">${Math.round(maxC*i/4)}</text>`;
+  }
+  const labelEvery = Math.max(1,Math.ceil(t.labels.length/7));
+  t.labels.forEach((lb,i)=>{ if(i%labelEvery===0||i===t.labels.length-1) g+=`<text x="${X(i)}" y="${H-8}" text-anchor="middle" font-size="10" fill="var(--text3)">${esc(lb)}</text>`; });
+  let acc = new Array(t.labels.length).fill(0);
+  ss.forEach((s,si)=>{
+    if(state.hidden[si]) return;
+    const lower = acc.slice(), upper = acc.map((v,i)=>v+d[si][i]);
+    const up = upper.map((v,i)=>`${i?'L':'M'}${X(i).toFixed(1)},${Y(v).toFixed(1)}`).join(' ');
+    const down = lower.map((v,i)=>`L${X(t.labels.length-1-i).toFixed(1)},${Y(lower[t.labels.length-1-i]).toFixed(1)}`).join(' ');
+    g+=`<path d="${up} ${down} Z" fill="${s.color}" fill-opacity=".20" stroke="${s.color}" stroke-width="1.6" stroke-linejoin="round"/>`;
+    acc = upper;
+  });
+  const cpath = t.conc.map((v,i)=>`${i?'L':'M'}${X(i).toFixed(1)},${YC(v).toFixed(1)}`).join(' ');
+  g+=`<path d="${cpath}" fill="none" stroke="var(--red)" stroke-width="1.5" stroke-dasharray="5 4" opacity=".8"/>`;
+  g+=`<line id="crossLine" x1="0" y1="${T}" x2="0" y2="${T+ih}" stroke="var(--text3)" stroke-width="1" stroke-dasharray="3 3" opacity="0"/>`;
+  g+=`<rect id="hoverArea" x="${L}" y="${T}" width="${iw}" height="${ih}" fill="transparent"/>`;
+  $('#trendChart').innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Token 用量与并发趋势图">${g}</svg>`;
+  $('#trendLegend').innerHTML = ss.map((s,i)=>`<button data-si="${i}" class="${state.hidden[i]?'off':''}"><i style="background:${s.color}"></i>${esc(s.name)}</button>`).join('') + `<button style="cursor:default;color:var(--text3)"><i style="background:var(--red);height:2px;border-radius:0"></i>并发（右轴）</button>`;
+  const scope = selectionActive() ? ` · 已筛选 ${selectionStats().paths.length} 条路径` : ' · 全部对象';
+  $('#trendDesc').textContent = `按${stackDims[state.stack]}堆叠 · ${state.range==='7d'?'每 6 小时':state.range==='24h'?'每 1 小时':state.range==='6h'?'每 15 分钟':'每 5 分钟'}${scope} · 左轴 Token(K) / 右轴并发槽`;
+  const area = $('#hoverArea');
+  area.addEventListener('mousemove', ev=>{
+    const svg = area.ownerSVGElement, rect = svg.getBoundingClientRect();
+    const vx = (ev.clientX-rect.left)/rect.width*W;
+    const idx = Math.max(0,Math.min(t.labels.length-1,Math.round((vx-L)/iw*(t.labels.length-1))));
+    const line = $('#crossLine'); line.setAttribute('x1',X(idx)); line.setAttribute('x2',X(idx)); line.setAttribute('opacity','1');
+    const tip = $('#trendTip');
+    tip.innerHTML = `<b>${esc(t.labels[idx])}</b>` + ss.filter((_,i)=>!state.hidden[i]).map(s=>`<div class="row"><span><i style="background:${s.color}"></i>${esc(s.name)}</span><b>${(t.data[ss.indexOf(s)][idx]*factor).toFixed(1)}K</b></div>`).join('') + `<div class="row"><span><i style="background:var(--red)"></i>并发</span><b>${t.conc[idx]}</b></div>`;
+    tip.style.display='block';
+    const px = X(idx)/W*rect.width;
+    tip.style.left = Math.min(rect.width-170,Math.max(0,px+14))+'px';
+    tip.style.top = '8px';
+  });
+  area.addEventListener('mouseleave',()=>{ $('#trendTip').style.display='none'; const l=$('#crossLine'); if(l) l.setAttribute('opacity','0'); });
+  $$('#trendLegend button[data-si]').forEach(b=>b.onclick=()=>{ const i=+b.dataset.si; state.hidden[i]=!state.hidden[i]; renderTrend(); });
+}
+
+/* ---------- 请求耗时与失败率趋势：沿用 Token 趋势的画布 / 图例 / hover 样式 ---------- */
+function renderLatencyTrend(){
+  const t=latData(), split=state.latMetric!=='all';
+  const key=split?state.latMetric:null, def=split?latMetricDef(key):null;
+  const dim=latActiveDim(), groups=split?latSeries():[];
+  const hidden=name=>!!state.latMemberHidden[dim+':'+name];
+  const W=780,H=252,L=48,R=48,T=14,B=28, iw=W-L-R, ih=H-T-B;
+  const vis=k=>!state.latHidden[k];
+  const slo=split?(key==='ttft'?LAT_SLO_TTFT:key==='fail'?LAT_SLO_FAIL:0):0;
+  let maxY,maxF;
+  if(!split){
+    maxY=Math.max(LAT_SLO_TTFT,...t.req,...t.ttft,0.5)*1.22;
+    maxF=Math.max(LAT_SLO_FAIL,...t.fail,0.5)*1.30;
+  }else{
+    maxY=Math.max(slo,...t[key],...groups.flatMap(g=>g[key]),0.5)*1.22;
+    maxF=maxY;
+  }
+  const X=i=>L+(t.labels.length===1?0:i/(t.labels.length-1)*iw);
+  const Y=v=>T+ih-v/maxY*ih;
+  const YF=v=>T+ih-v/maxF*ih;
+  const axis=v=>(split&&key==='fail'?v.toFixed(1)+'%':v.toFixed(1)+'s');
+  const line=(arr,yf)=>arr.map((v,i)=>`${i?'L':'M'}${X(i).toFixed(1)},${yf(v).toFixed(1)}`).join(' ');
+  let g='';
+  for(let i=0;i<=4;i++){
+    const y=T+ih-i*ih/4;
+    g+=`<line x1="${L}" y1="${y}" x2="${W-R}" y2="${y}" stroke="var(--border)" stroke-width="1" stroke-dasharray="${i?'3 4':'0'}"/>`;
+    g+=`<text x="${L-8}" y="${y+3.5}" text-anchor="end" font-size="10" fill="var(--text3)">${axis(maxY*i/4)}</text>`;
+    if(!split) g+=`<text x="${W-R+8}" y="${y+3.5}" font-size="10" fill="var(--text3)">${(maxF*i/4).toFixed(1)}%</text>`;
+  }
+  if(!split){
+    g+=`<line x1="${L}" y1="${Y(LAT_SLO_TTFT).toFixed(1)}" x2="${W-R}" y2="${Y(LAT_SLO_TTFT).toFixed(1)}" stroke="var(--amber)" stroke-width="1" stroke-dasharray="2 5" opacity=".65"/>`;
+    g+=`<line x1="${L}" y1="${YF(LAT_SLO_FAIL).toFixed(1)}" x2="${W-R}" y2="${YF(LAT_SLO_FAIL).toFixed(1)}" stroke="var(--red)" stroke-width="1" stroke-dasharray="2 5" opacity=".55"/>`;
+  }else if(slo){
+    g+=`<line x1="${L}" y1="${Y(slo).toFixed(1)}" x2="${W-R}" y2="${Y(slo).toFixed(1)}" stroke="${key==='fail'?'var(--red)':'var(--amber)'}" stroke-width="1" stroke-dasharray="2 5" opacity=".65"/>`;
+  }
+  const labelEvery=Math.max(1,Math.ceil(t.labels.length/7));
+  t.labels.forEach((lb,i)=>{ if(i%labelEvery===0||i===t.labels.length-1) g+=`<text x="${X(i)}" y="${H-8}" text-anchor="middle" font-size="10" fill="var(--text3)">${esc(lb)}</text>`; });
+  if(!split){
+    if(vis('req')){
+      g+=`<path d="${line(t.req,Y)} L${X(t.labels.length-1).toFixed(1)},${T+ih} L${L},${T+ih} Z" fill="#14b8a6" fill-opacity=".10"/>`;
+      g+=`<path d="${line(t.req,Y)}" fill="none" stroke="#14b8a6" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    }
+    if(vis('ttft')) g+=`<path d="${line(t.ttft,Y)}" fill="none" stroke="#3b82f6" stroke-width="1.9" stroke-linejoin="round" stroke-linecap="round"/>`;
+    if(vis('fail')){
+      g+=`<path d="${line(t.fail,YF)}" fill="none" stroke="var(--red)" stroke-width="1.7" stroke-dasharray="6 3" stroke-linejoin="round"/>`;
+      t.fail.forEach((v,i)=>{ if(v>=LAT_SLO_FAIL) g+=`<circle cx="${X(i).toFixed(1)}" cy="${YF(v).toFixed(1)}" r="2.7" fill="var(--red)"/>`; });
+    }
+  }else{
+    groups.forEach(gr=>{
+      if(hidden(gr.name)) return;
+      g+=`<path d="${line(gr[key],Y)}" fill="none" stroke="${gr.color}" stroke-width="1.9" stroke-linejoin="round" stroke-linecap="round"/>`;
+      if(slo) gr[key].forEach((v,i)=>{ if(v>=slo) g+=`<circle cx="${X(i).toFixed(1)}" cy="${Y(v).toFixed(1)}" r="2.4" fill="${gr.color}"/>`; });
+    });
+    /* 汇总线始终是同一份加权结果，用于对照各成员偏离程度 */
+    g+=`<path d="${line(t[key],Y)}" fill="none" stroke="var(--text2)" stroke-width="1.6" stroke-dasharray="2 4" opacity=".9"/>`;
+  }
+  if(!t.has) g+=`<text x="${W/2}" y="${T+ih/2}" text-anchor="middle" font-size="12" fill="var(--text3)">当前筛选无匹配对象</text>`;
+  const focus=state.latFocus>=0&&state.latFocus<t.labels.length?state.latFocus:-1;
+  g+=`<line id="latCrossLine" x1="0" y1="${T}" x2="0" y2="${T+ih}" stroke="var(--text3)" stroke-width="1" stroke-dasharray="3 3" opacity="0"/>`;
+  if(focus>=0){
+    g+=`<line x1="${X(focus).toFixed(1)}" y1="${T}" x2="${X(focus).toFixed(1)}" y2="${T+ih}" stroke="var(--primary5)" stroke-width="1.2" stroke-dasharray="3 3" opacity=".85"/>`;
+    if(!split){
+      if(vis('req'))  g+=`<circle cx="${X(focus).toFixed(1)}" cy="${Y(t.req[focus]).toFixed(1)}" r="3.2" fill="#14b8a6" stroke="var(--surface)" stroke-width="1.5"/>`;
+      if(vis('ttft')) g+=`<circle cx="${X(focus).toFixed(1)}" cy="${Y(t.ttft[focus]).toFixed(1)}" r="3.2" fill="#3b82f6" stroke="var(--surface)" stroke-width="1.5"/>`;
+      if(vis('fail')) g+=`<circle cx="${X(focus).toFixed(1)}" cy="${YF(t.fail[focus]).toFixed(1)}" r="3.2" fill="var(--red)" stroke="var(--surface)" stroke-width="1.5"/>`;
+    }else{
+      g+=`<circle cx="${X(focus).toFixed(1)}" cy="${Y(t[key][focus]).toFixed(1)}" r="3.2" fill="var(--text2)" stroke="var(--surface)" stroke-width="1.5"/>`;
+      groups.forEach(gr=>{ if(!hidden(gr.name)) g+=`<circle cx="${X(focus).toFixed(1)}" cy="${Y(gr[key][focus]).toFixed(1)}" r="2.8" fill="${gr.color}" stroke="var(--surface)" stroke-width="1.2"/>`; });
+    }
+  }
+  g+=`<rect id="latHoverArea" x="${L}" y="${T}" width="${iw}" height="${ih}" fill="transparent"/>`;
+  $('#latChart').innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="请求耗时与失败率分时趋势图">${g}</svg>`;
+  if(!split){
+    $('#latLegend').innerHTML=LAT_METRICS.map(m=>`<button data-lat-k="${m.k}" class="${state.latHidden[m.k]?'off':''}"><i style="background:${m.color}${m.k==='fail'?';height:2px;border-radius:0':''}"></i>${esc(m.label)}</button>`).join('')
+      +`<button style="cursor:default;color:var(--text3)"><i style="background:var(--amber);height:2px;border-radius:0"></i>首 Token SLO 2.0s</button>`
+      +`<button style="cursor:default;color:var(--text3)"><i style="background:var(--red);height:2px;border-radius:0"></i>失败率 SLO 2%</button>`;
+    $$('#latLegend button[data-lat-k]').forEach(b=>b.onclick=()=>{ const k=b.dataset.latK; state.latHidden[k]=!state.latHidden[k]; renderLatencyTrend(); });
+  }else{
+    $('#latLegend').innerHTML=`<button style="cursor:default"><i style="background:var(--text2);height:2px;border-radius:0"></i>汇总（流量加权）</button>`
+      +groups.map(gr=>`<button data-lat-member="${esc(gr.name)}" class="${hidden(gr.name)?'off':''}"><i style="background:${gr.color}"></i>${esc(gr.name)}</button>`).join('')
+      +(slo?`<button style="cursor:default;color:var(--text3)"><i style="background:${key==='fail'?'var(--red)':'var(--amber)'};height:2px;border-radius:0"></i>${key==='fail'?'失败率':'首 Token'} SLO ${slo.toFixed(1)}${key==='fail'?'%':'s'}</button>`:'');
+    $$('#latLegend button[data-lat-member]').forEach(b=>{
+      const name=b.dataset.latMember;
+      b.onclick=()=>{ const k=dim+':'+name; state.latMemberHidden[k]=!state.latMemberHidden[k]; renderLatencyTrend(); };
+    });
+  }
+  const scope=selectionActive()?` · 已筛选 ${selectedPaths().length} 条路径`:' · 全部对象';
+  const bucket=state.range==='7d'?'每 6 小时':state.range==='24h'?'每 1 小时':state.range==='6h'?'每 15 分钟':'每 5 分钟';
+  const avgKey={req:'avgReq',ttft:'avgTtft',fail:'avgFail'}[key];
+  $('#latDesc').textContent=!split
+    ? `${bucket}${scope} · 左轴耗时(s) / 右轴失败率(%) · 窗口均值 请求 ${t.avgReq.toFixed(2)}s / 首 Token ${t.avgTtft.toFixed(2)}s / 失败率 ${t.avgFail.toFixed(2)}% · SLO 首 Token 2.0s / 失败率 2%`
+    : `${LAT_DIMS[dim].label} · ${def.label} · ${bucket}${scope} · 左轴 ${def.unit} · 窗口均值 ${latFmt(key,t[avgKey])} · ${groups.length} 条成员序列（虚线为汇总）`;
+  $('#latRangeTag').textContent={'1h':'近 1h','6h':'近 6h','24h':'近 24h','7d':'近 7d'}[state.range];
+  const sel=$('#latDimSel'); sel.disabled=!split; sel.value=state.latDim;
+  $$('#latMetricSeg button').forEach(b=>b.classList.toggle('active',b.dataset.latMetric===state.latMetric));
+  const tip=$('#latTip');
+  const showTip=(idx,rect)=>{
+    if(!split){
+      const p=t.points[idx], s=latStatus(p);
+      tip.innerHTML=`<b>${esc(t.labels[idx])} · ${s==='bad'?'超 SLO':s==='warn'?'接近 SLO':'达标'}</b>`
+        +`<div class="row"><span><i style="background:#14b8a6"></i>平均请求耗时</span><b>${p.req.toFixed(2)}s</b></div>`
+        +`<div class="row"><span><i style="background:#3b82f6"></i>平均首 Token</span><b>${p.ttft.toFixed(2)}s</b></div>`
+        +`<div class="row"><span><i style="background:var(--red)"></i>失败请求率</span><b>${p.fail.toFixed(2)}%</b></div>`;
+    }else{
+      const rows=groups.filter(gr=>!hidden(gr.name)).map(gr=>({name:gr.name,color:gr.color,v:gr[key][idx]})).sort((a,b)=>b.v-a.v);
+      tip.innerHTML=`<b>${esc(t.labels[idx])} · ${esc(def.label)}</b>`
+        +`<div class="row"><span><i style="background:var(--text2)"></i>汇总（加权）</span><b>${latFmt(key,t[key][idx])}</b></div>`
+        +rows.map(r=>`<div class="row"><span><i style="background:${r.color}"></i>${esc(r.name)}</span><b style="${slo&&r.v>=slo?'color:var(--red)':''}">${latFmt(key,r.v)}</b></div>`).join('');
+    }
+    tip.style.display='block';
+    tip.style.left=Math.min(rect.width-175,Math.max(0,X(idx)/W*rect.width+14))+'px';
+    tip.style.top='8px';
+  };
+  const svgRect=()=>$('#latChart').querySelector('svg').getBoundingClientRect();
+  const area=$('#latHoverArea');
+  area.addEventListener('mousemove',ev=>{
+    const rect=area.ownerSVGElement.getBoundingClientRect();
+    const vx=(ev.clientX-rect.left)/rect.width*W;
+    const idx=Math.max(0,Math.min(t.labels.length-1,Math.round((vx-L)/iw*(t.labels.length-1))));
+    const ln=$('#latCrossLine'); ln.setAttribute('x1',X(idx)); ln.setAttribute('x2',X(idx)); ln.setAttribute('opacity','1');
+    showTip(idx,rect);
+  });
+  area.addEventListener('mouseleave',()=>{
+    if(focus>=0) showTip(focus,svgRect());
+    else { tip.style.display='none'; const l=$('#latCrossLine'); if(l) l.setAttribute('opacity','0'); }
+  });
+  if(focus>=0){
+    showTip(focus,svgRect());
+    const ln=$('#latCrossLine'); ln.setAttribute('x1',X(focus)); ln.setAttribute('x2',X(focus)); ln.setAttribute('opacity','.6');
+  }
+}
+function renderLatencyTable(){
+  const t = latData(), split = state.latMetric!=='all';
+  const key = split ? state.latMetric : 'fail', def = split ? latMetricDef(key) : null;
+  const dim = latActiveDim();
+  const groups = split ? latSeries().filter(g=>!state.latMemberHidden[dim+':'+g.name]) : [];
+  const idxs = t.labels.map((_,i)=>i).sort((a,b)=>t[key][b]-t[key][a]).slice(0,8);
+  const worstCell = i => {
+    if(!split || !groups.length) return '';
+    const g = groups.reduce((best,x)=>x[key][i]>best[key][i]?x:best, groups[0]);
+    return `<td><span style="display:inline-flex;align-items:center;gap:6px"><i style="width:8px;height:8px;border-radius:2px;display:inline-block;background:${g.color}"></i>${esc(g.name)} <b style="font-weight:500;color:var(--text3)">${latFmt(key,g[key][i])}</b></span></td>`;
+  };
+  const head = `<thead><tr><th>时段</th><th class="num">平均请求耗时</th><th class="num">平均首 Token</th><th class="num">失败率</th>${split?'<th>最差成员</th>':''}<th>状态</th></tr></thead>`;
+  const body = t.has ? idxs.map(i=>{
+    const p=t.points[i];
+    return `<tr data-lat-i="${i}" class="${state.latFocus===i?'focus':''}"><td class="nm-cell">${esc(t.labels[i])}</td><td class="num">${p.req.toFixed(2)}s</td><td class="num">${p.ttft.toFixed(2)}s</td><td class="num">${p.fail.toFixed(2)}%</td>${worstCell(i)}<td>${latPill(latStatus(p))}</td></tr>`;
+  }).join('') : '';
+  $('#latTableTitle').textContent = split ? '分维度 · 分时段明细' : '分时段明细';
+  $('#latTableDesc').textContent = split
+    ? `${LAT_DIMS[dim].label} · 按${def.label}降序 · 最差成员取该时段最高值 · 点击行定位到趋势图`
+    : '汇总口径 · 按失败请求率降序 · 点击行定位到趋势图';
+  $('#latTable').innerHTML = head + `<tbody>${body || `<tr><td colspan="${split?6:5}" style="text-align:center;color:var(--text3)">当前筛选无匹配对象</td></tr>`}</tbody>`;
+  $$('#latTable tbody tr[data-lat-i]').forEach(tr=>tr.onclick=()=>{
+    const i=+tr.dataset.latI;
+    state.latFocus = state.latFocus===i ? -1 : i;
+    renderLatencyTrend(); renderLatencyTable();
+    toast(state.latFocus<0?'已取消时段定位':`已定位到 ${t.labels[i]} 时段`);
+  });
+}
+
+/* ---------- 压力排行 / 水位 / 热力图 ---------- */
+function renderRank(){
+  const list = scopedRows('account').slice().sort((a,b)=>b.conc/b.cap-a.conc/a.cap).slice(0,6);
+  if(!list.length){ $('#rankList').innerHTML = '<div class="sel-empty">当前筛选范围内没有模型账号</div>'; return; }
+  $('#rankList').innerHTML = list.map(r=>{
+    const p = Math.min(100,Math.round(r.conc/r.cap*100));
+    return `<div class="rank-item" data-name="${esc(r.name)}"><div class="rank-top"><span class="nm">${esc(r.name)}</span><span style="color:${pcolor(p)};font-weight:600">${p}%</span></div>
+      <div class="bar"><span style="width:${p}%;background:${pcolor(p)}"></span></div>
+      <div style="font-size:10.5px;color:var(--text3);margin-top:4px;display:flex;justify-content:space-between"><span>并发 ${r.conc} / ${r.cap}</span><span>${statusPill(r.status)}</span></div></div>`;
+  }).join('');
+  $$('.rank-item').forEach(el=>el.onclick=()=>{
+    const account=el.dataset.name;
+    const path=allRelationPaths().find(item=>item.account===account);
+    if(path){
+      state.chainUser=path.user; state.chainGroup=path.group; state.chainAlias=path.alias; state.chainAccount=path.account;
+      state.obsMode='chain'; renderObsMode();
+    }
+    toast(`已定位 ${account} 的完整调用链路`);
+    $('#dimsection').scrollIntoView({behavior:'smooth',block:'start'});
+  });
+}
+function renderWater(){
+  const currentConc = buildTrend().conc.at(-1) || 0;
+  const empty = {name:'无匹配对象', conc:0, cap:1};
+  const sceneRows = scopedRows('scene'), accountRows = scopedRows('account'), routeRows = scopedRows('route');
+  const sceneRow = sceneRows.find(r=>r.name==='编码助手-公共') || sceneRows[0] || empty;
+  const accountRow = accountRows.find(r=>r.name==='claude-pro-01') || accountRows[0] || empty;
+  const routeRow = routeRows.find(r=>r.name==='coding-fast') || routeRows[0] || empty;
+  const items = [
+    {n:'全局并发槽', v:currentConc, cap:200, s:'gateway.concurrency.global'},
+    {n:`${sceneRow.name} · 用户级`, v:sceneRow.conc, cap:sceneRow.cap, s:'group:public / user slot'},
+    {n:`${accountRow.name} · 账号级`, v:accountRow.conc, cap:accountRow.cap, s:'account concurrency'},
+    {n:`${routeRow.name} · 候选级`, v:routeRow.conc, cap:routeRow.cap, s:'model_route_schedule'}
+  ];
+  $('#waterList').innerHTML = items.map(it=>{
+    const p = Math.round(it.v/it.cap*100);
+    return `<div class="water-item"><div class="wt"><span><b>${esc(it.n)}</b> <small>${esc(it.s)}</small></span><span style="color:${pcolor(p)};font-weight:600">${it.v} / ${it.cap} · ${p}%</span></div>
+      <div class="bar"><span style="width:${p}%;background:${pcolor(p)}"></span></div></div>`;
+  }).join('');
+}
+function renderHeat(){
+  const cols = state.range==='7d'?7:12, end = baseTime();
+  const stepMs = state.range==='1h'?5*60e3:state.range==='6h'?30*60e3:state.range==='24h'?2*60*60e3:24*60*60e3;
+  const labels = state.range==='7d' ? ['周一','周二','周三','周四','周五','周六','周日']
+    : Array.from({length:cols},(_,i)=>labelAt(end-(cols-1-i)*stepMs,'HH:mm'));
+  const gtc = `var(--labw,112px) repeat(${cols},minmax(0,1fr))`;
+  const config = heatRows(), names = config.names;
+  let h = `<div class="heat-axis" style="grid-template-columns:${gtc}"><span>${heatDimLabels[state.heat]} / 时段</span>${Array.from({length:cols},(_,i)=>`<span>${esc(labels[i]||'')}</span>`).join('')}</div>`;
+  if(!names.length) h += `<div class="sel-empty">当前筛选组合下没有可展示的${esc(heatDimLabels[state.heat])}</div>`;
+  names.forEach((name,r)=>{
+    h += `<div class="heat-row" style="margin-top:3px;grid-template-columns:${gtc}"><div class="heat-lab" title="${esc(name)}">${esc(name)}</div>`;
+    for(let c=0;c<cols;c++){
+      const v = heatValue(name,r,c);
+      h += `<div class="heat-cell" style="background:${heatColor(v)}" data-heatname="${esc(name)}" data-heatdim="${config.dim}" data-slot="${esc(labels[c]||'')}" data-v="${v}" title="${esc(name)} · ${esc(labels[c]||'')} · 饱和度 ${v}%"></div>`;
+    }
+    h += '</div>';
+  });
+  $('#heatmap').innerHTML = h;
+  $('#heatTitle').textContent = `${heatDimLabels[state.heat]} × 时段 压力热力图`;
+  $('#heatRangeTag').textContent = `${names.length} 行 · ${{'1h':'近 1h','6h':'近 6h','24h':'近 24h','7d':'近 7d'}[state.range]}`;
+  $$('.heat-cell').forEach(el=>el.onclick=()=>{
+    const name=el.dataset.heatname, keyMap={user:'user',group:'group',route:'alias',account:'account'};
+    const path=allRelationPaths().find(item=>item[keyMap[el.dataset.heatdim]]===name);
+    if(path){
+      state.chainUser=path.user; state.chainGroup=path.group; state.chainAlias=path.alias; state.chainAccount=path.account;
+      state.obsMode='chain'; renderObsMode();
+    }
+    toast(`已下钻：${heatDimLabels[state.heat]} ${name} · ${el.dataset.slot} 饱和度 ${el.dataset.v}%`);
+    $('#dimsection').scrollIntoView({behavior:'smooth',block:'start'});
+  });
+}
+function setFilter(name,label){ state.filter=name; $('#filterChip').innerHTML = `<span class="chip">${esc(label)}：${esc(name)} <button id="clearChip">×</button></span>`; $('#clearChip').onclick=()=>{ state.filter=''; state.search=''; $('#searchInput').value=''; $('#filterChip').innerHTML=''; renderTable(); }; }
+
+/* ---------- 调用链路 / 交叉明细 ---------- */
+function aggregatePaths(paths){
+  const tokens = paths.reduce((sum,item)=>sum+item.tokens,0);
+  const maxConc = paths.reduce((max,item)=>item.conc/item.cap>max.conc/max.cap?item:max,
+    paths[0] || {conc:0,cap:1,quota:0});
+  return {
+    tokens,
+    status: worstStatus(paths.map(item=>item.status)),
+    conc: maxConc.conc,
+    cap: maxConc.cap,
+    pressure: Math.max(...paths.map(item=>Math.max(item.conc/item.cap*100,item.quota)),0)
+  };
+}
+function chainNodeHtml(node,kind,selected){
+  return `<button class="chain-node ${selected?'selected':''}" data-chain-kind="${kind}" data-chain-name="${esc(node.name)}" aria-pressed="${selected}">
+    <div class="cn-top"><span class="cn-name">${esc(node.name)}</span>${statusPill(node.status)}</div>
+    <div class="cn-sub">${esc(node.sub)}</div>
+    ${node.model?`<div style="margin-top:5px">绑定 ${modelTag(node.model)}</div>`:''}
+    <div class="cn-metrics"><span>${node.tokens.toFixed(2)}M Token</span><span>${esc(node.metric)}</span></div>
+  </button>`;
+}
+function renderChain(){
+  const scoped = selectedPaths();
+  if(!scoped.length){
+    $('#chainPath').innerHTML = '<span class="tag">无匹配路径</span> 当前筛选组合下不存在调用路径，请放宽条件或清除筛选';
+    $('#chainBoard').innerHTML = '';
+    return;
+  }
+  let user = relationGraph.find(item=>item.name===state.chainUser) || relationGraph[0];
+  let group = user.groups.find(item=>item.name===state.chainGroup) || user.groups[0];
+  let alias = group.aliases.find(item=>item.name===state.chainAlias) || group.aliases[0];
+  let account = alias.accounts.find(item=>item.name===state.chainAccount) || alias.accounts[0];
+  if(!scoped.some(p=>p.user===user.name&&p.group===group.name&&p.alias===alias.name&&p.account===account.name)){
+    const p=scoped[0];
+    user=relationGraph.find(item=>item.name===p.user)||relationGraph[0];
+    group=user.groups.find(item=>item.name===p.group)||user.groups[0];
+    alias=group.aliases.find(item=>item.name===p.alias)||group.aliases[0];
+    account=alias.accounts.find(item=>item.name===p.account)||alias.accounts[0];
+  }
+  state.chainUser=user.name; state.chainGroup=group.name; state.chainAlias=alias.name; state.chainAccount=account.name;
+
+  const userPaths = scoped.filter(p=>p.user===user.name);
+  const scopeAggregate = aggregatePaths(scoped);
+  const maxPressure = Math.max(...scoped.map(item=>Math.max(item.conc/item.cap*100,item.quota)),0);
+
+  $('#chainPath').innerHTML = `
+    <span class="tag">用户</span><b>${esc(user.name)}</b><span class="sep">→</span>
+    <span class="tag">分组</span><b>${esc(group.name)}</b><span class="sep">→</span>
+    <span class="tag">路由别名</span><b>${esc(alias.name)}</b><span class="sep">→</span>
+    <span class="tag">模型账号</span><b>${esc(account.name)}</b><span class="tag">绑定 ${esc(account.model)}</span>
+    <span class="tail">筛选范围 ${scoped.length} 条路径 · ${scopeAggregate.tokens.toFixed(2)}M Token · 最高水位 ${Math.round(maxPressure)}%</span>`;
+
+  const users = relationGraph.filter(item=>scoped.some(p=>p.user===item.name)).map(item=>{
+    const paths = scoped.filter(p=>p.user===item.name), agg = aggregatePaths(paths);
+    return {name:item.name, sub:`${item.dept} · ${item.groups.length} 个分组`, tokens:agg.tokens,
+      status:agg.status, metric:`${new Set(paths.map(p=>p.group)).size} 分组`};
+  });
+  const groups = user.groups.filter(item=>scoped.some(p=>p.user===user.name&&p.group===item.name)).map(item=>{
+    const paths = scoped.filter(p=>p.user===user.name&&p.group===item.name);
+    const agg = aggregatePaths(paths);
+    return {name:item.name, sub:`${item.aliases.length} 个路由别名 · ${paths.length} 条模型账号关系`,
+      tokens:agg.tokens, status:agg.status, metric:`${new Set(paths.map(p=>p.alias)).size} 别名`};
+  });
+  const aliases = group.aliases.filter(item=>scoped.some(p=>p.user===user.name&&p.group===group.name&&p.alias===item.name)).map(item=>{
+    const paths = scoped.filter(p=>p.user===user.name&&p.group===group.name&&p.alias===item.name);
+    const agg = aggregatePaths(paths);
+    return {name:item.name,sub:`${paths.length} 个候选模型账号（各绑定 1 个具体模型）`,
+      tokens:agg.tokens,status:agg.status,metric:`${paths.length} 模型账号`};
+  });
+  const accounts = alias.accounts.filter(item=>scoped.some(p=>p.user===user.name&&p.group===group.name&&p.alias===alias.name&&p.account===item.name)).map(item=>{
+    const status = statusFor(item.conc,item.cap,item.quota);
+    return {name:item.name,sub:item.platform,model:item.model,tokens:item.tokens,status,
+      metric:`并发 ${item.conc}/${item.cap}`};
+  });
+  const columns = [
+    {title:'用户 / 部门',sub:'选择请求发起人',kind:'user',nodes:users,arrow:true},
+    {title:'分组场景',sub:'一个分组可有多个别名',kind:'group',nodes:groups,arrow:true},
+    {title:'路由别名',sub:'一个别名可挂多个模型账号',kind:'alias',nodes:aliases,arrow:true},
+    {title:'模型账号',sub:'每个账号绑定 1 个具体模型',kind:'account',nodes:accounts,arrow:false}
+  ];
+  $('#chainBoard').innerHTML = columns.map(col=>`<section class="chain-col">
+    <div class="chain-col-h"><div><b>${col.title}</b><small>${col.sub}</small></div>${col.arrow?'<span class="arrow">→</span>':''}</div>
+    <div class="chain-list">${col.nodes.map(node=>chainNodeHtml(node,col.kind,
+      col.kind==='user'?node.name===user.name:col.kind==='group'?node.name===group.name:col.kind==='alias'?node.name===alias.name:node.name===account.name
+    )).join('')}</div>
+  </section>`).join('');
+
+  $$('#chainBoard .chain-node').forEach(button=>button.onclick=()=>{
+    const kind=button.dataset.chainKind, name=button.dataset.chainName;
+    const target=scoped.find(p=>
+      kind==='user' ? p.user===name :
+      kind==='group' ? p.user===user.name&&p.group===name :
+      kind==='alias' ? p.user===user.name&&p.group===group.name&&p.alias===name :
+      p.user===user.name&&p.group===group.name&&p.alias===alias.name&&p.account===name);
+    if(!target) return;
+    state.chainUser=target.user; state.chainGroup=target.group;
+    state.chainAlias=target.alias; state.chainAccount=target.account;
+    renderChain();
+  });
+}
+
+const matrixCols = [
+  {k:'user',t:'用户 / 部门'},{k:'group',t:'分组场景'},{k:'alias',t:'路由别名'},
+  {k:'account',t:'模型账号'},{k:'tokens',t:'Token 用量',num:true},
+  {k:'share',t:'占比'},{k:'conc',t:'峰值并发',num:true},{k:'quota',t:'配额',num:true},
+  {k:'p95',t:'P95',num:true},{k:'status',t:'状态'},{k:'ops',t:'操作'}
+];
+let matrixRowsCache = [];
+function renderMatrix(){
+  const query = state.search.trim().toLowerCase();
+  const scoped = selectedPaths();
+  const total = scoped.reduce((sum,item)=>sum+item.tokens,0) || 1;
+  let list = scoped.filter(item=>{
+    const haystack = `${item.user} ${item.dept} ${item.group} ${item.alias} ${item.account} ${item.platform} ${item.model}`.toLowerCase();
+    return (!query || haystack.includes(query)) && (!state.status || item.status===state.status);
+  });
+  const key = state.chainSort;
+  list = list.slice().sort((left,right)=>{
+    const leftValue = key==='status'?severity[left.status]:left[key];
+    const rightValue = key==='status'?severity[right.status]:right[key];
+    if(typeof leftValue==='string') return state.chainDesc?String(rightValue).localeCompare(String(leftValue)):String(leftValue).localeCompare(String(rightValue));
+    return state.chainDesc?rightValue-leftValue:leftValue-rightValue;
+  });
+  matrixRowsCache = list;
+  $('#matrixTable thead').innerHTML = '<tr>'+matrixCols.map(col=>`<th data-chain-k="${col.k}" class="${col.num?'num':''}">${col.t}${state.chainSort===col.k?'<span class="arw">'+(state.chainDesc?'▼':'▲')+'</span>':''}</th>`).join('')+'</tr>';
+  $('#matrixTable tbody').innerHTML = list.length ? list.map((item,index)=>{
+    const share = total?item.tokens/total*100:0;
+    return `<tr data-chain-i="${index}">
+      <td class="path-user path-group">${esc(item.user)}<small>${esc(item.dept)}</small></td>
+      <td class="path-cell path-group">${esc(item.group)}</td>
+      <td class="path-cell">${esc(item.alias)}</td>
+      <td class="path-cell">${esc(item.account)}<small>${esc(item.platform)} · 绑定 ${modelTag(item.model)}</small></td>
+      <td class="num"><b>${item.tokens.toFixed(2)}M</b></td>
+      <td><div class="pctbar"><div class="bar"><span style="width:${Math.min(100,share).toFixed(0)}%;background:var(--primary5)"></span></div><span style="font-size:11px">${share.toFixed(1)}%</span></div></td>
+      <td class="num">${item.conc} / ${item.cap}</td>
+      <td class="num">${item.quota}%</td>
+      <td class="num">${(item.p95/1000).toFixed(2)}s</td>
+      <td>${statusPill(item.status)}</td>
+      <td><div class="ops"><button class="btn btn-sm" data-chain-act="detail">详情</button></div></td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="${matrixCols.length}" style="text-align:center;padding:28px;color:var(--text3)">没有符合当前条件的调用路径</td></tr>`;
+  if(state.obsMode==='matrix') $('#rowCount').textContent = `共 ${list.length} 条调用路径 / ${ALL_PATHS.length} 条全量 · 已按观测范围筛选`;
+  $$('#matrixTable thead th').forEach(th=>th.onclick=()=>{
+    const key=th.dataset.chainK; if(key==='ops') return;
+    if(state.chainSort===key) state.chainDesc=!state.chainDesc; else {state.chainSort=key;state.chainDesc=true;}
+    renderMatrix();
+  });
+  $$('#matrixTable tbody tr[data-chain-i]').forEach(tr=>tr.onclick=e=>{
+    const item=matrixRowsCache[+tr.dataset.chainI];
+    showPathDetail(item);
+  });
+}
+
+function showPathDetail(item){
+  const pressure = Math.max(item.conc/item.cap*100,item.quota);
+  const advice = item.status==='bad'||item.status==='warn'
+    ? `当前路径压力为 ${Math.round(pressure)}%：优先检查 ${item.account} 的容量与其唯一绑定模型的上游状态，并到账号管理页人工核查。`
+    : item.status==='info'
+      ? '当前路径处于关注区间：建议观察该用户、分组和别名的叠加增长，提前预留容量。'
+      : '当前路径处于健康区间：保持现有候选顺序，并继续观察高峰水位。';
+  $('#drawer').innerHTML = `<button class="close" id="drawerClose">×</button><h3>${esc(item.account)}</h3><div style="color:var(--text3);font-size:12px">${esc(item.platform)} · 模型账号 · 绑定 ${modelTag(item.model)}</div>
+    <div style="margin-top:12px">${statusPill(item.status)} <span class="tag">近 ${state.range}</span></div>
+    <div class="dsec"><h4>完整调用链路</h4>
+      ${[['用户',`${item.user} · ${item.dept}`],['分组场景',item.group],['路由别名',item.alias],['模型账号',item.account]].map(kv=>`<div class="kv"><span>${kv[0]}</span><b>${esc(kv[1])}</b></div>`).join('')}
+    </div>
+    <div class="dsec"><h4>路径指标</h4>
+      ${[['Token 用量',item.tokens.toFixed(2)+'M'],['路径占比',(item.tokens/(selectedPaths().reduce((sum,row)=>sum+row.tokens,0)||1)*100).toFixed(1)+'%'],['峰值并发',item.conc+' / '+item.cap],['并发饱和度',Math.round(item.conc/item.cap*100)+'%'],['配额使用率',item.quota+'%'],['P95 首 Token',(item.p95/1000).toFixed(2)+'s'],['错误率',item.err+'%']].map(kv=>`<div class="kv"><span>${kv[0]}</span><b>${kv[1]}</b></div>`).join('')}
+    </div>
+    <div class="dsec"><h4>排查建议</h4><p style="font-size:12px;color:var(--text2);line-height:1.8">${esc(advice)}</p>
+      <button class="btn" id="drawerFocus" style="margin-top:10px;width:100%">聚焦链路</button>
+    </div>`;
+  $('#drawer').classList.add('show'); $('#drawerMask').classList.add('show');
+  $('#drawerClose').onclick=closeDrawer;
+  $('#drawerFocus').onclick=()=>{
+    closeDrawer();
+    state.chainUser=item.user; state.chainGroup=item.group; state.chainAlias=item.alias; state.chainAccount=item.account;
+    state.obsMode='chain'; renderObsMode(); $('#dimsection').scrollIntoView({behavior:'smooth',block:'start'});
+  };
+}
+
+function renderObsMode(){
+  const mode = state.obsMode;
+  $$('#obsModeTabs button').forEach(button=>{
+    const active = button.dataset.mode===mode;
+    button.classList.toggle('active',active);
+    button.setAttribute('aria-pressed',String(active));
+  });
+  $('#dimTabs').classList.toggle('hide',mode!=='summary');
+  $('#filterToolbar').classList.toggle('hide',mode==='chain');
+  $('#chainView').classList.toggle('hide',mode!=='chain');
+  $('#matrixView').classList.toggle('hide',mode!=='matrix');
+  $('#summaryView').classList.toggle('hide',mode!=='summary');
+  $('#exportBtn').textContent = mode==='summary' ? '导出单维 CSV' : '导出链路 CSV';
+  if(mode==='chain'){
+    const scoped = selectedPaths();
+    $('#rowCount').textContent = `关系图：${new Set(scoped.map(item=>item.user)).size} 个用户 · ${new Set(scoped.map(item=>item.group)).size} 个分组 · ${new Set(scoped.map(item=>item.alias)).size} 个路由别名 · ${new Set(scoped.map(item=>item.account)).size} 个模型账号`;
+  } else if(mode==='matrix') renderMatrix();
+  else renderTable();
+}
+
+/* ---------- 多维表格 ---------- */
+const dimLabels = {user:'用户',scene:'分组场景',route:'路由别名',account:'模型账号'};
+const cols = [
+  {k:'name',t:'名称 / 归属',num:false},{k:'tokens',t:'Token 用量',num:true},{k:'share',t:'占比',num:false},
+  {k:'delta',t:'环比',num:true},{k:'conc',t:'峰值并发',num:true},{k:'quota',t:'配额使用',num:false},
+  {k:'p95',t:'P95',num:true},{k:'err',t:'错误率',num:true},{k:'spark',t:'近 24h',num:false},
+  {k:'status',t:'状态',num:false},{k:'ops',t:'操作',num:false}
+];
+function renderDimTabs(){
+  $('#dimTabs').innerHTML = Object.keys(dimLabels).map(k=>`<button data-dim="${k}" class="${state.dim===k?'active':''}">${dimLabels[k]}</button>`).join('');
+  $$('#dimTabs button').forEach(b=>b.onclick=()=>{ state.dim=b.dataset.dim; state.sort='tokens'; renderDimTabs(); renderTable(); });
+}
+function renderTable(){
+  const all = scopedRows(state.dim), total = all.reduce((a,b)=>a+b.tokens,0);
+  let list = all.filter(r=>(!state.status||r.status===state.status) && (!state.search||(r.name+r.sub).toLowerCase().includes(state.search.toLowerCase())) && (!state.filter||r.name===state.filter||r.sub.includes(state.filter)));
+  const key = state.sort;
+  list = list.slice().sort((a,b)=>{
+    const av = key==='share'?a.tokens/total:key==='status'?{ok:0,info:1,warn:2,bad:3}[a.status]:a[key];
+    const bv = key==='share'?b.tokens/total:key==='status'?{ok:0,info:1,warn:2,bad:3}[b.status]:b[key];
+    if(typeof av==='string') return state.desc?String(bv).localeCompare(av):String(av).localeCompare(bv);
+    return state.desc?bv-av:av-bv;
+  });
+  $('#dimTable thead').innerHTML = '<tr>'+cols.map(c=>{
+    const title = c.k==='spark' ? `近 ${{'1h':'1h','6h':'6h','24h':'24h','7d':'7d'}[state.range]}` : c.t;
+    return `<th data-k="${c.k}" class="${c.num?'num':''}">${title}${state.sort===c.k?'<span class="arw">'+(state.desc?'▼':'▲')+'</span>':''}</th>`;
+  }).join('')+'</tr>';
+  $('#dimTable tbody').innerHTML = list.length ? list.map((r,i)=>{
+    const share = total?r.tokens/total*100:0, q = r.quota, col = r.spark.length?colors[i%colors.length]:'var(--primary)';
+    return `<tr data-i="${all.indexOf(r)}">
+      <td class="nm-cell">${esc(r.name)}<small>${esc(r.sub)}</small></td>
+      <td class="num"><b>${r.tokens.toFixed(2)}M</b></td>
+      <td><div class="pctbar"><div class="bar"><span style="width:${share.toFixed(0)}%;background:var(--primary5)"></span></div><span style="font-size:11px">${share.toFixed(1)}%</span></div></td>
+      <td class="num ${r.delta>=0?'up':'down'}">${r.delta>=0?'+':''}${r.delta}%</td>
+      <td class="num">${r.conc} / ${r.cap}</td>
+      <td><div class="pctbar"><div class="bar"><span style="width:${q}%;background:${pcolor(q)}"></span></div><span style="font-size:11px">${q}%</span></div></td>
+      <td class="num">${(r.p95/1000).toFixed(2)}s</td><td class="num">${r.err}%</td>
+      <td><svg class="spark" viewBox="0 0 74 22"><polyline points="${sparkPath(r.spark,74,22)}" fill="none" stroke="${col}" stroke-width="1.6" stroke-linejoin="round"/></svg></td>
+      <td>${statusPill(r.status)}</td>
+      <td><div class="ops"><button class="btn btn-sm" data-act="detail">详情</button></div></td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="${cols.length}" style="text-align:center;padding:28px;color:var(--text3)">没有符合条件的数据</td></tr>`;
+  $('#rowCount').textContent = `共 ${list.length} 条 / ${all.length} 条 · 维度：${dimLabels[state.dim]}`;
+  $$('#dimTable thead th').forEach(th=>th.onclick=()=>{ const k=th.dataset.k; if(k==='spark'||k==='ops')return; if(state.sort===k)state.desc=!state.desc; else {state.sort=k;state.desc=true;} renderTable(); });
+  $$('#dimTable tbody tr[data-i]').forEach(tr=>{
+    tr.onclick = ()=>showDetail(all[+tr.dataset.i]);
+  });
+}
+function showDetail(r){
+  const advice = r.status==='bad'||r.status==='warn'
+    ? '当前压力偏高：建议核查对应账号的容量、排队和上游耗时，并到账号或分组管理页人工处理。'
+    : r.status==='info'
+      ? '当前已进入关注区间：建议检查时段性突增与配额消耗速度，提前预留容量。'
+      : '当前处于健康区间，保持默认调度策略即可；建议在日高峰前预留 20% 容量缓冲。';
+  const related = selectedPaths().filter(p=>p[ROWS_TO_SCOPE[state.dim]]===r.name);
+  const uniq = key => Array.from(new Set(related.map(p=>p[key]))).slice(0,3).join(' / ')||'—';
+  $('#drawer').innerHTML = `<button class="close" id="drawerClose">×</button><h3>${esc(r.name)}</h3><div style="color:var(--text3);font-size:12px">${esc(r.sub)} · ${dimLabels[state.dim]}</div>
+    <div style="margin-top:12px">${statusPill(r.status)} <span class="tag">近 ${state.range}</span></div>
+    <div class="dsec"><h4>核心指标</h4>
+      ${[['Token 用量',r.tokens.toFixed(2)+'M'],['环比',(r.delta>=0?'+':'')+r.delta+'%'],['峰值并发',r.conc+' / '+r.cap],['并发饱和度',Math.round(r.conc/r.cap*100)+'%'],['配额使用率',r.quota+'%'],['P95 首 Token',(r.p95/1000).toFixed(2)+'s'],['错误率',r.err+'%']].map(kv=>`<div class="kv"><span>${kv[0]}</span><b>${kv[1]}</b></div>`).join('')}
+    </div>
+    <div class="dsec"><h4>关联维度 TOP 3（当前观测范围）</h4>
+      ${[['模型账号',uniq('account')],['分组场景',uniq('group')],['路由别名',uniq('alias')]].map(kv=>`<div class="kv"><span>${kv[0]}</span><b>${esc(kv[1])}</b></div>`).join('')}
+    </div>
+    <div class="dsec"><h4>排查建议</h4><p style="font-size:12px;color:var(--text2);line-height:1.8">${esc(advice)}</p></div>`;
+  $('#drawer').classList.add('show'); $('#drawerMask').classList.add('show');
+  $('#drawerClose').onclick=closeDrawer;
+}
+function closeDrawer(){ $('#drawer').classList.remove('show'); $('#drawerMask').classList.remove('show'); }
+$('#drawerMask').onclick=closeDrawer;
+
+/* ---------- 告警 / 只读建议 ---------- */
+function renderAlerts(){
+  const scoped = selectedPaths();
+  const names = new Set(scoped.flatMap(p=>[p.user,p.group,p.alias,p.account]));
+  const visible = selectionActive()
+    ? alerts.filter(a=>[...names].some(n=>a.title.includes(n)||a.text.includes(n)||a.advice.includes(n)))
+    : alerts;
+  const left = visible.length;
+  $('#alertList').innerHTML = visible.length ? visible.map(a=>`<div class="alert"><span class="dot ${a.level}" style="margin-top:5px"></span>
+    <div class="body"><div style="display:flex;justify-content:space-between;gap:8px"><b>${esc(a.title)}</b><span class="pill ${a.level}">${a.level==='bad'?'严重':a.level==='warn'?'预警':'提示'}</span></div>
+      <p>${esc(a.text)}</p><small>${esc(a.since)} 起 · 建议：${esc(a.advice)}</small></div></div>`).join('')
+    : '<div class="sel-empty">当前观测范围内没有相关告警</div>';
+  $('#alertCount').innerHTML = `<span class="dot ${left?'bad':'ok'}"></span> ${left} 条待关注`;
+  $('#alertCount').className = 'pill '+(left?'bad':'ok');
+}
+
+/* ---------- 设计说明 ---------- */
+function renderDesign(){
+  $('#view-design').innerHTML = `
+  <section class="hero" style="margin-top:4px"><div><div class="eyebrow">Design Spec · v1.8</div><h1>模型使用观测台 · 完整设计</h1>
+  <p>面向运维 / 平台管理员的实时只读观测看板。一个模型账号严格对应一个上游模型；设计参考 Grafana 的容量/SLO 组织方式、LiteLLM 运营看板的 Token 与流式延迟拆解、agent-otel-gateway 的统一标签；视觉沿用本项目 Tailwind primary 青绿色阶与深色模式。</p></div></section>
+
+  <h2>0. GitHub 案例观察</h2>
+  <div class="card dcard"><table class="dtable"><thead><tr><th>案例</th><th>可借鉴</th><th>本方案取舍</th></tr></thead><tbody>
+    <tr><td><a href="https://github.com/damokuye-ethanhuang/litellm-operation-dashboard" target="_blank" rel="noopener">litellm-operation-dashboard</a></td><td>从 SpendLogs 拆分 token、请求、流式延迟，按模型与用户观察</td><td>保留 Token + 延迟 + 错误同屏，数据源换成本项目 tokenstat，不引入额外 Grafana 入口</td></tr>
+    <tr><td><a href="https://github.com/lhchingit/agent-otel-gateway" target="_blank" rel="noopener">agent-otel-gateway</a></td><td>统一 Claude Code、Codex、Gemini CLI 等 Agent 标签并下钻</td><td>采用 Agent / 用户 / 模型统一标签思路；本期不新增 OTLP 采集链路</td></tr>
+    <tr><td><a href="https://github.com/alebgl77/grafana-llmops-forge" target="_blank" rel="noopener">grafana-llmops-forge</a></td><td>FinOps、Agent、质量与治理拆分，配合查询和部署检查</td><td>保留跨信号联动，信息架构按本项目分组 / 路由模型重排</td></tr>
+  </tbody></table><p style="margin-top:10px">共同点是统一标签、指标可下钻、阈值可解释、异常能定位到对象；因此 Demo 将趋势、压力排行、热力图、维度明细和排查建议串成同一条只读分析路径。</p></div>
+
+  <h2>1. 目标与决策场景</h2>
+  <div class="card dcard"><ul>
+    <li><b>看压力</b>：哪个模型账号 / 分组场景 / 路由别名接近并发与配额上限，是否需要扩容或摘除候选。</li>
+    <li><b>看时段</b>：日高峰出现在何时、持续多久，峰值 token 速率与并发水位是多少，用于容量规划与分时并发配置。</li>
+    <li><b>给建议</b>：定位到具体维度后，说明压力来源、时间窗口和关联账号；线上配置变更由现有管理页面人工完成。</li>
+    <li><b>看人群</b>：定位异常 token 消耗来自哪个用户 / 部门，支撑配额重置与部门维度核算。</li>
+  </ul></div>
+
+  <h2>2. 指标体系与口径</h2>
+  <div class="card dcard" style="overflow:auto"><table class="dtable"><thead><tr><th>指标</th><th>定义 / 口径</th><th>数据来源（本项目）</th><th>刷新</th></tr></thead><tbody>
+    <tr><td>Token 用量</td><td>input + output + cache_read + cache_write；按窗口聚合，按最终命中的模型账号归属</td><td>usage_log；tokenstat 预聚合表 token_stat_aggregate</td><td>5s / 1min 桶</td></tr>
+    <tr><td>Token 速率</td><td>窗口内 token 增量 / 分钟，用于识别突发流量</td><td>Redis 分片计数（async pipeline）</td><td>5s</td></tr>
+    <tr><td>并发 / 饱和度</td><td>Redis 并发槽瞬时占用；饱和度 = 占用 / 配置上限；用户级、账号级、候选级三层</td><td>concurrency_service.go（AcquireUserSlot / AcquireAccountSlot / AcquireRouteSlot）</td><td>5s</td></tr>
+    <tr><td>配额使用率</td><td>当前自然周期累计 token / 统计规则限额；支持日 / 周 / 月</td><td>token_stat_quota_rule + token_stat_period_state</td><td>10s</td></tr>
+    <tr><td>等待队列</td><td>未取到槽位的排队请求数与平均等待时长</td><td>Redis 等待队列计数</td><td>5s</td></tr>
+    <tr><td>P95 首 Token 延迟</td><td>流式请求 first_token_ms 的分位值（按实际样本数加权），SLO 2.0s</td><td>usage_log.first_token_ms / ops TTFT 采样计数</td><td>1min</td></tr>
+    <tr><td>平均请求耗时</td><td>窗口内 duration_ms 算术均值（含流式生成），单位 s</td><td>usage_log.duration_ms / ops 请求明细</td><td>1min</td></tr>
+    <tr><td>平均首 Token 耗时</td><td>窗口内 first_token_ms 算术均值（TTFT）；与请求耗时是包含关系，不可相加</td><td>usage_log.first_token_ms</td><td>1min</td></tr>
+    <tr><td>失败请求率</td><td>非 2xx（含 429 / 5xx / 超时）请求数 / 总请求数 × 100%</td><td>ops 请求明细 + gateway 错误写入</td><td>1min</td></tr>
+    <tr><td>错误率 / 限流</td><td>非 2xx 与 429 占比，按模型账号、平台下钻</td><td>ops 请求明细 + gateway 错误写入</td><td>1min</td></tr>
+  </tbody></table></div>
+
+  <h2>3. 调用关系模型与下钻路径</h2>
+  <div class="card dcard"><p>以一次请求产生的 <b>UsageLog</b> 为事实表。用户、分组、路由别名、模型账号不是并列标签，而是具有层级和复用关系；<b>模型账号与具体模型 1:1 对应</b>，模型名只是账号属性，不再单列一个观测维度：</p>
+  <div class="flow"><span>用户 / API Key</span><i>→</i><span>分组场景</span><i>→</i><span>路由别名</span><i>→</i><span>模型账号（1:1 绑定具体模型）</span></div>
+  <table class="dtable"><thead><tr><th>关系</th><th>基数 / 字段来源</th><th>看板含义</th></tr></thead><tbody>
+    <tr><td>用户 → API Key → 分组</td><td>api_key.user_id / group_id；按实际授权关系展开</td><td>同一用户可通过多个 Key 访问多个分组</td></tr>
+    <tr><td>分组 → 路由别名</td><td>groups.model_routing 的对象键；Group 1:N Alias</td><td>一个分组下同时存在 coding-fast、coding-quality、coding-batch 等多个入口</td></tr>
+    <tr><td>路由别名 → 候选账号</td><td>model_routing[alias] 的 candidates / priority；Alias 1:N Account</td><td>同一别名按优先级尝试多个账号；任意候选账号压力都可能影响该别名</td></tr>
+    <tr><td>模型账号 → 绑定模型</td><td>account.credentials.model_mapping（单键）；UsageLog.account_id + upstream_model；service/account_model_mapping_validation.go 的 ACCOUNT_MULTIPLE_UPSTREAM_MODELS 校验</td><td>一个模型账号只对应一个具体模型，模型名作为账号属性展示；Token 归属最终命中的账号，无需再按模型分组</td></tr>
+    <tr><td>用户 / 部门</td><td>user.id / department（LDAP 同步）</td><td>支撑部门核算、异常消耗来源和配额治理</td></tr>
+  </tbody></table>
+  <p style="margin-top:10px"><b>口径约束：</b>同一账号可能被多个分组/别名复用，但 Token 不能重复累计；并发水位是账号级共享压力，可以随路径重复展示。交叉聚合必须保留完整关系键，不能把各维度独立聚合后直接拼表。</p></div>
+
+  <h2>3.1 三层观测视图</h2>
+  <div class="card dcard"><table class="dtable"><thead><tr><th>视图</th><th>回答的问题</th><th>交互</th></tr></thead><tbody>
+    <tr><td>调用链路</td><td>当前用户经哪个分组、别名，最终命中哪个模型账号？</td><td>四列逐级联动，路径始终保持可见</td></tr>
+    <tr><td>交叉明细</td><td>同一账号是否被多个用户、分组、别名复用，各路径消耗多少？</td><td>完整关系一行一条；搜索、状态筛、排序、详情、导出</td></tr>
+    <tr><td>单维排行</td><td>某个维度内谁的压力最高？</td><td>用户、分组、别名、模型账号的横向排行</td></tr>
+  </tbody></table></div>
+
+  <h2>3.2 主数据与事实路径分离</h2>
+  <div class="card dcard"><p>分组配置在系统中只有一份，不随用户复制。代码依据：</p>
+  <ul>
+    <li><code>internal/domain/model_routing.go</code> 的 <code>ModelRoutingConfig map[string][]ModelRouteCandidate</code>：分组的 model_routing 以路由别名为键，每个别名对应有序候选列表。</li>
+    <li><code>ModelRouteCandidate.AccountIDs / Priority</code>：同一别名挂多个模型账号并按优先级调度；<code>group_handler.go</code> 校验「每个候选只能选择一个模型账号」。</li>
+    <li><code>ent/schema/token_stat_aggregate.go</code> 已内置 <code>user_id / api_key_id / group_id / route_alias / account_id / upstream_model / department</code> 维度列；其中 <code>upstream_model</code> 因账号 1:1 绑定模型，只作为账号属性，不单独做 GROUP BY。</li>
+    <li><code>ent/schema/usage_log.go</code> 的 <code>model / requested_model / upstream_model / model_mapping_chain</code>：区分客户端请求的别名与账号绑定的具体模型；一个账号在窗口内只命中同一个模型。</li>
+  </ul>
+  <p style="margin-top:8px">因此 demo 中「用户」只持有可访问分组（对应 <code>user_allowed_group</code>），分组、别名、候选模型账号由同一份主数据派生；Token 按 <code>user × 路径</code> 分别归属，并发 / 配额 / 延迟是账号级共享状态，不随用户重复计算。</p></div>
+
+  <h2>3.3 全链路多维切换</h2>
+  <div class="card dcard"><ul>
+    <li><b>Token 趋势</b>：可按用户 / 分组 / 路由别名 / 模型账号堆叠 Top4 序列，切换时重置图例状态。</li>
+    <li><b>耗时趋势</b>：紧接 Token 趋势下方，沿用同款卡片与画布；指标分段选单项后可按同样四个维度拆分多序列，附流量加权汇总线，Top4 之外合并为「其他 N 个」。</li>
+    <li><b>热力图</b>：同一时段压力可在这四个维度间切换行，点击格子沿完整调用链路定位到具体用户、分组、别名与模型账号。</li>
+    <li><b>单维排行</b>：四个维度的成员全部由分组主数据派生，归属列写明上一层与下一层的基数，避免别名与账号对不上。</li>
+    <li><b>账号详情</b>：模型账号只展示一个唯一上游模型，不提供独立模型维度、流量切换或并发阈值修改。</li>
+  </ul></div>
+
+  <h2>3.4 自定义观测对象（全局筛选）</h2>
+  <div class="card dcard"><ul>
+    <li><b>选择方式</b>：用户 / 分组场景 / 路由别名 / 模型账号四个维度各自多选，支持搜索、全选、清空、已选 chips 单个删除与一键清除；「仅看高压对象」按压力等级快速收窄。</li>
+    <li><b>唯一事实来源</b>：所有筛选落到同一份 <code>selectedPaths()</code>（完整调用路径集合）。KPI、趋势、热力图、压力排行、并发水位、链路图、交叉明细、单维排行、告警与 CSV 导出全部从它聚合，各视图不各自过滤。</li>
+    <li><b>三个口径一致</b>：Token 用量按路径求和；并发按命中账号去重后再求和；Token 速率使用真实短窗口增量。配额按规则读取，P95/错误率按原始样本或直方图合并。</li>
+    <li><b>空组合保护</b>：筛选无交集时链路图显示空态、表格显示无数据、趋势给出「无匹配对象」序列，不产生 NaN 或除零；链路选中项自动落到范围内第一条路径。</li>
+    <li><b>落地口径</b>：真实接口把四维 ID 数组下推到 <code>token_stat_aggregate</code> 的 WHERE 条件，只返回范围内聚合行，前端不做二次拼接。</li>
+  </ul></div>
+
+  <h2>3.5 分时耗时与失败率视图</h2>
+  <div class="card dcard"><p>「Token 用量与并发趋势」看量，「请求耗时与失败率趋势」看质。后者紧随前者下方，沿用相同的卡片头（维度下拉 + 指标分段）、SVG 画布、图例开关与 hover tooltip；两者共用时间桶与全局筛选上下文，x 轴逐点对齐，窄屏下也保持相邻。</p>
+  <table class="dtable"><thead><tr><th>项</th><th>规则</th></tr></thead><tbody>
+    <tr><td>全部指标</td><td>左轴平均请求耗时、平均首 Token 耗时（s）两条独立折线；右轴失败请求率（%）红色虚线；首 Token 已包含在请求耗时内，均值不可堆叠相加</td></tr>
+    <tr><td>维度拆分</td><td>选中单项指标后，按模型账号 / 分组 / 路由别名 / 用户画多序列（Top4 + 「其他 N 个」），并叠加一条流量加权汇总虚线；图例可隐藏单个成员</td></tr>
+    <tr><td>SLO</td><td>首 Token ≤ 2.0s / 失败率 ≤ 2%，阈值虚线；逐桶判定达标 · 接近 · 超 SLO，超阈成员在该桶标点</td></tr>
+    <tr><td>口径</td><td>后端按桶计算 <code>SUM(duration_ms)/COUNT(*)</code>、<code>SUM(first_token_ms)/COUNT(*)</code>、失败数 / 总请求数，分子分母同受筛选 WHERE 约束；切换维度只改 GROUP BY，汇总不漂移，禁止把各维度均值再平均</td></tr>
+    <tr><td>交互</td><td>hover 在拆分模式按当前指标降序列出各成员与汇总值；右侧明细表按当前指标降序 TOP8、拆分时增加「最差成员」列、点击行在趋势图定位并常驻 tooltip</td></tr>
+  </tbody></table>
+  <p style="margin-top:10px"><b>筛选联动</b>：成功请求来自 <code>usage_logs</code>，最终失败请求来自 <code>ops_error_logs</code>；两类事实使用相同时间桶与筛选条件。分位数从原始样本或固定直方图合并，不对维度均值再次平均；无匹配对象显示空态，不生成伪序列。</p></div>
+
+  <h2>4. 压力分级与自动建议</h2>
+  <div class="card dcard"><table class="dtable"><thead><tr><th>等级</th><th>并发饱和度</th><th>颜色</th><th>自动建议</th></tr></thead><tbody>
+    <tr><td>健康</td><td>&lt; 60%</td><td>primary teal</td><td>保持默认调度</td></tr>
+    <tr><td>关注</td><td>60% – 80%</td><td>blue</td><td>日高峰前预留 20% 缓冲</td></tr>
+    <tr><td>预警</td><td>80% – 95%</td><td>amber</td><td>排查高峰流量和上游耗时，提前规划扩容</td></tr>
+    <tr><td>过载</td><td>≥ 95%</td><td>red</td><td>触发告警，并到账号或分组管理页人工处理</td></tr>
+  </tbody></table><p style="margin-top:10px">同时满足「配额使用率 ≥ 90%」或「错误率 ≥ 2%」时等级上调一级；连续 3 个窗口越限才触发告警，避免抖动误报。</p></div>
+
+  <h2>5. 数据链路与接口</h2>
+  <div class="card dcard"><div class="flow"><span>成功 / 失败请求事实</span><i>→</i><span>分钟观测聚合</span><i>→</i><span>只读观测 API</span><i>→</i><span>看板分层轮询</span></div>
+  <ul style="margin-top:12px">
+    <li>Token 当前累计与配额复用 <b>service/tokenstat</b>；请求数、耗时、TTFT 和失败率来自请求事实；并发当前值复用 <b>concurrency_service</b>，历史值来自周期采样。</li>
+    <li>新增只读聚合接口 <code>/api/v1/admin/observability/{timeseries,dimensions,paths,relations,pressure,heatmap}</code>；<code>/paths</code> 返回用户、分组、路由别名、模型账号组成的完整路径行（账号附带绑定模型属性），<code>/relations</code> 返回链路节点和边。</li>
+    <li>7 天趋势只走分钟聚合，短窗口允许有界查询原始事实；用户、分组、别名、模型账号过滤全部下推到 SQL WHERE / 索引字段，返回结果必须携带每个节点的 ID。</li>
+    <li>高基数字段（user_id、api_key_id）采用 TopN + 「其他」归并，单接口返回行数设上限，避免拖垮前端。</li>
+    <li>看板所有接口均为 GET，只要求 <code>observability.read</code>；不提供切流、候选容量写入、阈值应用、审计或回滚。</li>
+  </ul></div>
+
+  <h2>6. 只读诊断 SOP</h2>
+  <div class="card dcard"><div class="flow"><span>① 告警触发</span><i>→</i><span>② 热力图定位时段/场景</span><i>→</i><span>③ 维度下钻定位对象</span><i>→</i><span>④ 核对账号唯一模型</span><i>→</i><span>⑤ 形成人工处理建议</span><i>→</i><span>⑥ 返回观测复核</span></div>
+  <ul style="margin-top:12px"><li>模型账号与上游模型严格 1:1，账号详情同时展示唯一绑定模型。</li><li>页面只读，所有线上配置变更由管理员到现有账号、分组或并发管理页完成。</li><li>不提供应急模式、切换比例、阈值应用、审计日志或回滚入口。</li></ul></div>
+
+  <h2>7. 视觉规范</h2>
+  <div class="card dcard"><ul>
+    <li>主色沿用 <code>tailwind.config.js</code> 的 primary 50–950（#14b8a6 / #0d9488），页面背景 #f1f5f9、卡片白底 + 1px #e2e8f0 边框 + 14px 圆角 + card 轻阴影。</li>
+    <li>标题区沿用 <code>TokenStatisticsView.vue</code> 的 primary-50 → white → indigo-50 渐变；指标卡沿用 <code>DashboardView.vue</code> 的图标 + 大数字 + 环比结构。</li>
+    <li>图表沿用 <code>components/charts</code> 的 10 色板；状态色 teal / blue / amber / red 四级；深色模式由 <code>body.dark</code> 切换全部 CSS 变量。</li>
+  </ul></div>
+
+  <h2>8. 落地路线与 demo 边界</h2>
+  <div class="card dcard"><ol>
+    <li><b>一期（数据）</b>：强制账号单模型，补齐 route_alias 持久化、请求分钟聚合与并发采样。</li>
+    <li><b>二期（看板）</b>：接入真实数据替换 demo 数据源，补齐告警规则、数据质量与部门维度。</li>
+    <li><b>三期（验证）</b>：完成只读权限、性能、可访问性和灰度发布验证。</li>
+  </ol><p style="margin-top:10px"><b>当前 demo 边界</b>：全部数据为确定性模拟生成，无后端调用；调用链路与交叉明细共享同一组模拟关系；页面不包含任何线上配置写操作；导出 CSV 会保留完整用户-分组-路由-模型账号关系（含账号唯一绑定模型）。</p></div>`;
+}
+
+/* ---------- 自定义观测对象选择器 ---------- */
+function selectorMembers(k){
+  const dim=SCOPE_DIMS.find(d=>d.k===k), all=dim?dim.members():[];
+  const q=state.selQuery.trim().toLowerCase();
+  return q?all.filter(n=>n.toLowerCase().includes(q)):all;
+}
+function renderSelDims(){
+  $('#selDims').innerHTML=SCOPE_DIMS.map(d=>
+    `<button class="sel-dim ${state.selDim===d.k?'active':''}" data-scope="${d.k}">${esc(d.label)} <b>${state.sel[d.k].length||'—'}</b></button>`).join('');
+  $$('#selDims .sel-dim').forEach(b=>b.onclick=()=>{
+    state.selDim=b.dataset.scope; state.selQuery=''; $('#selSearch').value='';
+    renderSelDims(); renderSelItems();
+  });
+}
+function renderSelItems(){
+  const dim=SCOPE_DIMS.find(d=>d.k===state.selDim);
+  const members=selectorMembers(state.selDim), chosen=state.sel[state.selDim];
+  const available=new Set(scopedMembers(state.selDim));
+  $('#selHint').textContent=`${dim.label} · ${members.length}/${dim.members().length} 项 · 无交集表示当前组合下不存在调用路径`;
+  $('#selItems').innerHTML=members.length?members.map(name=>{
+    const on=chosen.includes(name), has=available.has(name);
+    return `<label class="sel-item ${on?'on':''}" style="${has?'':'opacity:.55'}" title="${esc(name)}">
+      <input type="checkbox" data-scope="${state.selDim}" value="${esc(name)}" ${on?'checked':''}>
+      <span>${esc(name)}</span><span class="sub">${has?'范围内':'无交集'}</span></label>`;
+  }).join(''):'<div class="sel-empty">没有匹配的成员</div>';
+  $$('#selItems input[data-scope]').forEach(input=>input.onchange=()=>{
+    const k=input.dataset.scope, list=state.sel[k], v=input.value;
+    if(input.checked){ if(!list.includes(v)) list.push(v); }
+    else state.sel[k]=list.filter(x=>x!==v);
+    applySelection();
+  });
+}
+function renderSelSummary(){
+  const st=selectionStats(), active=selectionActive(), chips=[];
+  SCOPE_DIMS.forEach(d=>state.sel[d.k].forEach(v=>chips.push({k:d.k,label:d.label,v})));
+  if(state.onlyPressure) chips.push({k:'__pressure',label:'快捷',v:'仅高压对象'});
+  $('#selChips').innerHTML=chips.length
+    ? chips.map(c=>`<span class="chip">${esc(c.label)}：${esc(c.v)} <button data-scope="${c.k}" data-value="${esc(c.v)}">×</button></span>`).join('')
+    : '<span style="font-size:11px;color:var(--text3)">未选择任何对象 → 展示全部调用路径</span>';
+  $$('#selChips button[data-scope]').forEach(b=>b.onclick=()=>{
+    if(b.dataset.scope==='__pressure') state.onlyPressure=false;
+    else state.sel[b.dataset.scope]=state.sel[b.dataset.scope].filter(x=>x!==b.dataset.value);
+    applySelection();
+  });
+  $('#selCount').textContent=`${st.paths.length} / ${ALL_PATHS.length} 条路径`;
+  $('#selDesc').textContent=active
+    ? `已筛选 ${st.users} 用户 · ${st.groups} 分组 · ${st.aliases} 别名 · ${st.accounts.length} 个模型账号（各绑定 1 个具体模型）；所有视图按同一范围重算`
+    : '未选择 = 全部对象 · 选择后所有图表的 Token / 并发 / 流量按同一范围重算';
+  const metrics=[
+    ['Token 用量',st.tokenSum.toFixed(2),'M'],
+    ['Token 流量速率',(st.tokenSum*1.6).toFixed(1),'K/min'],
+    ['当前并发 / 上限',`${st.concSum} / ${st.capSum}`,''],
+    ['并发饱和度',st.capSum?Math.round(st.concSum/st.capSum*100):0,'%'],
+    ['峰值单账号并发',st.peakConc,''],
+    ['P95 首 Token',(st.p95/1000).toFixed(2),'s'],
+    ['平均错误率',st.err.toFixed(2),'%']
+  ];
+  $('#selMetrics').innerHTML=metrics.map(m=>
+    `<div class="sel-metric"><span>${m[0]}</span><strong>${esc(String(m[1]))}<small>${esc(m[2])}</small></strong></div>`).join('');
+  $('#selPressure').textContent=state.onlyPressure?'✓ 仅高压对象':'仅看高压对象';
+}
+function renderSelector(){ renderSelDims(); renderSelItems(); renderSelSummary(); }
+function applySelection(){
+  state.hidden={}; state.latMemberHidden={};
+  const paths=selectedPaths();
+  if(paths.length && !paths.some(p=>p.user===state.chainUser&&p.group===state.chainGroup&&p.alias===state.chainAlias&&p.account===state.chainAccount)){
+    const p=paths[0];
+    state.chainUser=p.user; state.chainGroup=p.group; state.chainAlias=p.alias; state.chainAccount=p.account;
+  }
+  renderSelector(); renderAll();
+  toast(`观测范围已更新：${paths.length} 条调用路径`);
+}
+
+/* ---------- 交互绑定 ---------- */
+function renderAll(){ latCache=buildLatencyTrend(); renderKpis(); renderTrend(); renderLatencyTrend(); renderLatencyTable(); renderRank(); renderHeat(); renderWater(); renderChain(); renderObsMode(); renderAlerts(); renderSelSummary(); }
+function bind(){
+  $('#selSearch').oninput=e=>{ state.selQuery=e.target.value; renderSelItems(); };
+  $('#selAll').onclick=()=>{ const d=SCOPE_DIMS.find(x=>x.k===state.selDim); state.sel[state.selDim]=d.members().slice(); applySelection(); };
+  $('#selNone').onclick=()=>{ state.sel[state.selDim]=[]; applySelection(); };
+  $('#selClear').onclick=()=>{ SCOPE_DIMS.forEach(d=>state.sel[d.k]=[]); state.onlyPressure=false; applySelection(); };
+  $('#selPressure').onclick=()=>{ state.onlyPressure=!state.onlyPressure; applySelection(); };
+  $$('#rangeSeg button').forEach(b=>b.onclick=()=>{ state.range=b.dataset.range; $$('#rangeSeg button').forEach(x=>x.classList.toggle('active',x===b)); renderAll(); });
+  $$('#metricSeg button').forEach(b=>b.onclick=()=>{ state.metric=b.dataset.metric; $$('#metricSeg button').forEach(x=>x.classList.toggle('active',x===b)); renderTrend(); });
+  $('#stackSel').onchange = e=>{ state.stack=e.target.value; state.hidden={}; renderTrend(); toast(`趋势已改为按${stackDims[state.stack]}堆叠`); };
+  $$('#latMetricSeg button').forEach(b=>b.onclick=()=>{
+    state.latMetric=b.dataset.latMetric;
+    if(state.latMetric!=='all' && state.latDim==='all') state.latDim='account';
+    state.latMemberHidden={}; state.latFocus=-1;
+    renderLatencyTrend(); renderLatencyTable();
+    toast(state.latMetric==='all'?'耗时趋势已切换为三指标对照':`耗时趋势已按${LAT_DIMS[state.latDim].label}查看${latMetricDef(state.latMetric).label}`);
+  });
+  $('#latDimSel').onchange = e=>{
+    state.latDim=e.target.value; state.latMemberHidden={}; state.latFocus=-1;
+    renderLatencyTrend(); renderLatencyTable();
+    toast(`耗时趋势已改为${LAT_DIMS[state.latDim].label}拆分`);
+  };
+  $$('#heatDimSeg button').forEach(b=>b.onclick=()=>{
+    state.heat=b.dataset.heat;
+    $$('#heatDimSeg button').forEach(x=>x.classList.toggle('active',x===b));
+    renderHeat(); toast(`热力图已切换为${heatDimLabels[state.heat]}维度`);
+  });
+  $$('#obsModeTabs button').forEach(button=>button.onclick=()=>{
+    state.obsMode=button.dataset.mode;
+    renderObsMode();
+  });
+  $('#searchInput').oninput = e=>{
+    state.search=e.target.value;
+    if(state.obsMode==='matrix') renderMatrix();
+    if(state.obsMode==='summary') renderTable();
+  };
+  $('#statusSel').onchange = e=>{
+    state.status=e.target.value;
+    if(state.obsMode==='matrix') renderMatrix();
+    if(state.obsMode==='summary') renderTable();
+  };
+  $('#chainMatrixBtn').onclick=()=>{
+    state.obsMode='matrix';
+    state.search=state.chainAccount;
+    $('#searchInput').value=state.search;
+    renderObsMode();
+    toast(`已按账号 ${state.chainAccount} 展开全部调用路径`);
+  };
+  $('#refreshBtn').onclick = ()=>{ state.tick++; renderAll(); toast('数据已刷新'); };
+  $('#autoBtn').onclick = ()=>{ state.auto=!state.auto; $('#autoBtn').textContent = state.auto?'● 自动刷新 5s':'○ 自动刷新已暂停'; $('#autoBtn').style.opacity=state.auto?'1':'.6'; toast(state.auto?'自动刷新已开启':'自动刷新已暂停'); };
+  $('#themeBtn').onclick = ()=>{ state.dark=!state.dark; document.body.classList.toggle('dark',state.dark); $('#themeLabel').textContent=state.dark?'切换浅色':'切换深色'; renderTrend(); renderLatencyTrend(); };
+  $('#exportBtn').onclick = ()=>{
+    const q=v=>`"${String(v).replace(/"/g,'""')}"`;
+    let head, data, filename, logText;
+    if(state.obsMode==='summary'){
+      const all=scopedRows(state.dim), total=all.reduce((a,b)=>a+b.tokens,0)||1;
+      head=['名称','归属','Token(M)','占比(%)','环比(%)','峰值并发','并发上限','配额(%)','P95(ms)','错误率(%)','状态'];
+      data=all.map(r=>[r.name,r.sub,r.tokens,(r.tokens/total*100).toFixed(1),r.delta,r.conc,r.cap,r.quota,r.p95,r.err,r.status]);
+      filename=`model-observability-${state.dim}-${state.range}.csv`;
+      logText=`导出 ${dimLabels[state.dim]} 维度 CSV（${all.length} 行）`;
+    } else {
+      data=state.obsMode==='matrix'?matrixRowsCache:selectedPaths();
+      const total=data.reduce((sum,item)=>sum+item.tokens,0)||1;
+      head=['用户','部门','分组场景','路由别名','模型账号（含绑定模型）','账号平台','Token(M)','路径占比(%)','峰值并发','并发上限','配额(%)','P95(ms)','错误率(%)','状态'];
+      data=data.map(item=>[item.user,item.dept,item.group,item.alias,`${item.account} (${item.model})`,item.platform,item.tokens.toFixed(2),(item.tokens/total*100).toFixed(1),item.conc,item.cap,item.quota,item.p95,item.err,item.status]);
+      filename=`model-observability-path-${state.range}.csv`;
+      logText=`导出用户-分组-路由-模型账号链路 CSV（${data.length} 行）`;
+    }
+    const lines=[head.map(q).join(',')].concat(data.map(row=>row.map(q).join(',')));
+    const blob=new Blob(['\ufeff'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=filename; a.click(); URL.revokeObjectURL(a.href);
+    toast('CSV 已导出');
+  };
+  $$('.nav[data-view]').forEach(b=>b.onclick=()=>{
+    const v=b.dataset.view;
+    $$('.nav').forEach(x=>x.classList.toggle('active',x===b));
+    $('#view-overview').classList.toggle('hide',v!=='overview');
+    $('#view-design').classList.toggle('hide',v!=='design');
+    if(b.dataset.jump){
+      state.obsMode='chain'; renderObsMode();
+      setTimeout(()=>$('#'+b.dataset.jump).scrollIntoView({behavior:'smooth',block:'start'}),40);
+    }
+    if(v==='design') window.scrollTo({top:0,behavior:'smooth'});
+  });
+  document.addEventListener('keydown',e=>{ if(e.key==='Escape') closeDrawer(); });
+}
+function clock(){ const d=new Date(),p=n=>String(n).padStart(2,'0'); $('#clock').textContent=`更新于 ${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`; }
+
+renderDimTabs(); renderDesign(); bind(); renderSelector(); renderAll(); clock();
+setInterval(clock,1000);
+setInterval(()=>{ if(!state.auto) return; state.tick++; renderAll(); clock(); },5000);
+})();
+</script>
+</body>
+</html>

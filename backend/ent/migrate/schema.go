@@ -803,6 +803,146 @@ var (
 			},
 		},
 	}
+	// ObservabilityConcurrencyBucketColumns holds the columns for the "observability_concurrency_bucket" table.
+	ObservabilityConcurrencyBucketColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "window_seconds", Type: field.TypeInt},
+		{Name: "bucket_start", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "sample_kind", Type: field.TypeString, Size: 16},
+		{Name: "dimension_hash", Type: field.TypeString, Size: 64},
+		{Name: "account_id", Type: field.TypeInt64},
+		{Name: "group_id", Type: field.TypeInt64, Default: 0},
+		{Name: "route_alias", Type: field.TypeString, Nullable: true, Size: 255},
+		{Name: "current_peak", Type: field.TypeInt, Default: 0},
+		{Name: "current_sum", Type: field.TypeInt64, Default: 0},
+		{Name: "sample_count", Type: field.TypeInt64, Default: 0},
+		{Name: "effective_limit", Type: field.TypeInt, Default: 0},
+		{Name: "waiting_peak", Type: field.TypeInt, Default: 0},
+		{Name: "peak_ratio_actual", Type: field.TypeInt, Default: 0},
+		{Name: "peak_ratio_limit", Type: field.TypeInt, Default: 0},
+		{Name: "peak_ratio_sample_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "wait_sum_ms", Type: field.TypeInt64, Default: 0},
+		{Name: "wait_sample_count", Type: field.TypeInt64, Default: 0},
+		{Name: "first_sampled_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "last_sampled_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+	}
+	// ObservabilityConcurrencyBucketTable holds the schema information for the "observability_concurrency_bucket" table.
+	ObservabilityConcurrencyBucketTable = &schema.Table{
+		Name:       "observability_concurrency_bucket",
+		Columns:    ObservabilityConcurrencyBucketColumns,
+		PrimaryKey: []*schema.Column{ObservabilityConcurrencyBucketColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "observabilityconcurrencybucket_window_seconds_bucket_start_dimension_hash",
+				Unique:  true,
+				Columns: []*schema.Column{ObservabilityConcurrencyBucketColumns[1], ObservabilityConcurrencyBucketColumns[2], ObservabilityConcurrencyBucketColumns[4]},
+			},
+			{
+				Name:    "observabilityconcurrencybucket_window_seconds_bucket_start",
+				Unique:  false,
+				Columns: []*schema.Column{ObservabilityConcurrencyBucketColumns[1], ObservabilityConcurrencyBucketColumns[2]},
+			},
+			{
+				Name:    "observabilityconcurrencybucket_group_id_window_seconds_route_alias_bucket_start",
+				Unique:  false,
+				Columns: []*schema.Column{ObservabilityConcurrencyBucketColumns[6], ObservabilityConcurrencyBucketColumns[1], ObservabilityConcurrencyBucketColumns[7], ObservabilityConcurrencyBucketColumns[2]},
+			},
+			{
+				Name:    "observabilityconcurrencybucket_account_id_window_seconds_bucket_start",
+				Unique:  false,
+				Columns: []*schema.Column{ObservabilityConcurrencyBucketColumns[5], ObservabilityConcurrencyBucketColumns[1], ObservabilityConcurrencyBucketColumns[2]},
+			},
+		},
+	}
+	// ObservabilityRequestBucketColumns holds the columns for the "observability_request_bucket" table.
+	ObservabilityRequestBucketColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "window_seconds", Type: field.TypeInt},
+		{Name: "bucket_start", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "dimension_hash", Type: field.TypeString, Size: 64},
+		{Name: "user_id", Type: field.TypeInt64, Default: 0},
+		{Name: "api_key_id", Type: field.TypeInt64, Default: 0},
+		{Name: "group_id", Type: field.TypeInt64, Default: 0},
+		{Name: "route_alias", Type: field.TypeString, Nullable: true, Size: 255},
+		{Name: "account_id", Type: field.TypeInt64, Default: 0},
+		{Name: "request_count", Type: field.TypeInt64, Default: 0},
+		{Name: "success_count", Type: field.TypeInt64, Default: 0},
+		{Name: "error_count", Type: field.TypeInt64, Default: 0},
+		{Name: "sla_error_count", Type: field.TypeInt64, Default: 0},
+		{Name: "business_limited_count", Type: field.TypeInt64, Default: 0},
+		{Name: "rate_limited_count", Type: field.TypeInt64, Default: 0},
+		{Name: "legacy_inferred_count", Type: field.TypeInt64, Default: 0},
+		{Name: "input_tokens", Type: field.TypeInt64, Default: 0},
+		{Name: "output_tokens", Type: field.TypeInt64, Default: 0},
+		{Name: "cache_creation_tokens", Type: field.TypeInt64, Default: 0},
+		{Name: "cache_read_tokens", Type: field.TypeInt64, Default: 0},
+		{Name: "total_tokens", Type: field.TypeInt64, Default: 0},
+		{Name: "duration_sample_count", Type: field.TypeInt64, Default: 0},
+		{Name: "sum_duration_ms", Type: field.TypeInt64, Default: 0},
+		{Name: "min_duration_ms", Type: field.TypeInt64, Default: 0},
+		{Name: "max_duration_ms", Type: field.TypeInt64, Default: 0},
+		{Name: "duration_le_100", Type: field.TypeInt64, Default: 0},
+		{Name: "duration_le_250", Type: field.TypeInt64, Default: 0},
+		{Name: "duration_le_500", Type: field.TypeInt64, Default: 0},
+		{Name: "duration_le_1000", Type: field.TypeInt64, Default: 0},
+		{Name: "duration_le_2000", Type: field.TypeInt64, Default: 0},
+		{Name: "duration_le_5000", Type: field.TypeInt64, Default: 0},
+		{Name: "duration_le_10000", Type: field.TypeInt64, Default: 0},
+		{Name: "duration_gt_10000", Type: field.TypeInt64, Default: 0},
+		{Name: "ttft_sample_count", Type: field.TypeInt64, Default: 0},
+		{Name: "sum_ttft_ms", Type: field.TypeInt64, Default: 0},
+		{Name: "min_ttft_ms", Type: field.TypeInt64, Default: 0},
+		{Name: "max_ttft_ms", Type: field.TypeInt64, Default: 0},
+		{Name: "ttft_le_100", Type: field.TypeInt64, Default: 0},
+		{Name: "ttft_le_250", Type: field.TypeInt64, Default: 0},
+		{Name: "ttft_le_500", Type: field.TypeInt64, Default: 0},
+		{Name: "ttft_le_1000", Type: field.TypeInt64, Default: 0},
+		{Name: "ttft_le_2000", Type: field.TypeInt64, Default: 0},
+		{Name: "ttft_le_5000", Type: field.TypeInt64, Default: 0},
+		{Name: "ttft_le_10000", Type: field.TypeInt64, Default: 0},
+		{Name: "ttft_gt_10000", Type: field.TypeInt64, Default: 0},
+		{Name: "last_fact_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+	}
+	// ObservabilityRequestBucketTable holds the schema information for the "observability_request_bucket" table.
+	ObservabilityRequestBucketTable = &schema.Table{
+		Name:       "observability_request_bucket",
+		Columns:    ObservabilityRequestBucketColumns,
+		PrimaryKey: []*schema.Column{ObservabilityRequestBucketColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "observabilityrequestbucket_window_seconds_bucket_start_dimension_hash",
+				Unique:  true,
+				Columns: []*schema.Column{ObservabilityRequestBucketColumns[1], ObservabilityRequestBucketColumns[2], ObservabilityRequestBucketColumns[3]},
+			},
+			{
+				Name:    "observabilityrequestbucket_window_seconds_bucket_start",
+				Unique:  false,
+				Columns: []*schema.Column{ObservabilityRequestBucketColumns[1], ObservabilityRequestBucketColumns[2]},
+			},
+			{
+				Name:    "observabilityrequestbucket_group_id_window_seconds_route_alias_bucket_start",
+				Unique:  false,
+				Columns: []*schema.Column{ObservabilityRequestBucketColumns[6], ObservabilityRequestBucketColumns[1], ObservabilityRequestBucketColumns[7], ObservabilityRequestBucketColumns[2]},
+			},
+			{
+				Name:    "observabilityrequestbucket_user_id_window_seconds_bucket_start",
+				Unique:  false,
+				Columns: []*schema.Column{ObservabilityRequestBucketColumns[4], ObservabilityRequestBucketColumns[1], ObservabilityRequestBucketColumns[2]},
+			},
+			{
+				Name:    "observabilityrequestbucket_api_key_id_window_seconds_bucket_start",
+				Unique:  false,
+				Columns: []*schema.Column{ObservabilityRequestBucketColumns[5], ObservabilityRequestBucketColumns[1], ObservabilityRequestBucketColumns[2]},
+			},
+			{
+				Name:    "observabilityrequestbucket_account_id_window_seconds_bucket_start",
+				Unique:  false,
+				Columns: []*schema.Column{ObservabilityRequestBucketColumns[8], ObservabilityRequestBucketColumns[1], ObservabilityRequestBucketColumns[2]},
+			},
+		},
+	}
 	// PaymentAuditLogsColumns holds the columns for the "payment_audit_logs" table.
 	PaymentAuditLogsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt64, Increment: true},
@@ -1846,6 +1986,7 @@ var (
 		{Name: "model", Type: field.TypeString, Size: 100},
 		{Name: "requested_model", Type: field.TypeString, Nullable: true, Size: 100},
 		{Name: "upstream_model", Type: field.TypeString, Nullable: true, Size: 100},
+		{Name: "route_alias", Type: field.TypeString, Nullable: true, Size: 255},
 		{Name: "channel_id", Type: field.TypeInt64, Nullable: true},
 		{Name: "model_mapping_chain", Type: field.TypeString, Nullable: true, Size: 500},
 		{Name: "billing_tier", Type: field.TypeString, Nullable: true, Size: 50},
@@ -1892,31 +2033,31 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "usage_logs_api_keys_usage_logs",
-				Columns:    []*schema.Column{UsageLogsColumns[37]},
+				Columns:    []*schema.Column{UsageLogsColumns[38]},
 				RefColumns: []*schema.Column{APIKeysColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "usage_logs_accounts_usage_logs",
-				Columns:    []*schema.Column{UsageLogsColumns[38]},
+				Columns:    []*schema.Column{UsageLogsColumns[39]},
 				RefColumns: []*schema.Column{AccountsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "usage_logs_groups_usage_logs",
-				Columns:    []*schema.Column{UsageLogsColumns[39]},
+				Columns:    []*schema.Column{UsageLogsColumns[40]},
 				RefColumns: []*schema.Column{GroupsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "usage_logs_users_usage_logs",
-				Columns:    []*schema.Column{UsageLogsColumns[40]},
+				Columns:    []*schema.Column{UsageLogsColumns[41]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "usage_logs_user_subscriptions_usage_logs",
-				Columns:    []*schema.Column{UsageLogsColumns[41]},
+				Columns:    []*schema.Column{UsageLogsColumns[42]},
 				RefColumns: []*schema.Column{UserSubscriptionsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -1925,32 +2066,32 @@ var (
 			{
 				Name:    "usagelog_user_id",
 				Unique:  false,
-				Columns: []*schema.Column{UsageLogsColumns[40]},
+				Columns: []*schema.Column{UsageLogsColumns[41]},
 			},
 			{
 				Name:    "usagelog_api_key_id",
 				Unique:  false,
-				Columns: []*schema.Column{UsageLogsColumns[37]},
+				Columns: []*schema.Column{UsageLogsColumns[38]},
 			},
 			{
 				Name:    "usagelog_account_id",
 				Unique:  false,
-				Columns: []*schema.Column{UsageLogsColumns[38]},
+				Columns: []*schema.Column{UsageLogsColumns[39]},
 			},
 			{
 				Name:    "usagelog_group_id",
 				Unique:  false,
-				Columns: []*schema.Column{UsageLogsColumns[39]},
+				Columns: []*schema.Column{UsageLogsColumns[40]},
 			},
 			{
 				Name:    "usagelog_subscription_id",
 				Unique:  false,
-				Columns: []*schema.Column{UsageLogsColumns[41]},
+				Columns: []*schema.Column{UsageLogsColumns[42]},
 			},
 			{
 				Name:    "usagelog_created_at",
 				Unique:  false,
-				Columns: []*schema.Column{UsageLogsColumns[36]},
+				Columns: []*schema.Column{UsageLogsColumns[37]},
 			},
 			{
 				Name:    "usagelog_model",
@@ -1970,17 +2111,27 @@ var (
 			{
 				Name:    "usagelog_user_id_created_at",
 				Unique:  false,
-				Columns: []*schema.Column{UsageLogsColumns[40], UsageLogsColumns[36]},
+				Columns: []*schema.Column{UsageLogsColumns[41], UsageLogsColumns[37]},
 			},
 			{
 				Name:    "usagelog_api_key_id_created_at",
 				Unique:  false,
-				Columns: []*schema.Column{UsageLogsColumns[37], UsageLogsColumns[36]},
+				Columns: []*schema.Column{UsageLogsColumns[38], UsageLogsColumns[37]},
 			},
 			{
 				Name:    "usagelog_group_id_created_at",
 				Unique:  false,
-				Columns: []*schema.Column{UsageLogsColumns[39], UsageLogsColumns[36]},
+				Columns: []*schema.Column{UsageLogsColumns[40], UsageLogsColumns[37]},
+			},
+			{
+				Name:    "usagelog_group_id_route_alias_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{UsageLogsColumns[40], UsageLogsColumns[5], UsageLogsColumns[37]},
+			},
+			{
+				Name:    "usagelog_route_alias_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{UsageLogsColumns[5], UsageLogsColumns[37]},
 			},
 		},
 	}
@@ -2302,6 +2453,8 @@ var (
 		GroupsTable,
 		IdempotencyRecordsTable,
 		IdentityAdoptionDecisionsTable,
+		ObservabilityConcurrencyBucketTable,
+		ObservabilityRequestBucketTable,
 		PaymentAuditLogsTable,
 		PaymentOrdersTable,
 		PaymentProviderInstancesTable,
@@ -2397,6 +2550,12 @@ func init() {
 	IdentityAdoptionDecisionsTable.ForeignKeys[1].RefTable = PendingAuthSessionsTable
 	IdentityAdoptionDecisionsTable.Annotation = &entsql.Annotation{
 		Table: "identity_adoption_decisions",
+	}
+	ObservabilityConcurrencyBucketTable.Annotation = &entsql.Annotation{
+		Table: "observability_concurrency_bucket",
+	}
+	ObservabilityRequestBucketTable.Annotation = &entsql.Annotation{
+		Table: "observability_request_bucket",
 	}
 	PaymentAuditLogsTable.Annotation = &entsql.Annotation{
 		Table: "payment_audit_logs",

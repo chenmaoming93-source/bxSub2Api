@@ -664,6 +664,7 @@ const flagPayment = makeSidebarFlag(FeatureFlags.payment)
 const flagAvailableChannels = makeSidebarFlag(FeatureFlags.availableChannels)
 const flagAffiliate = makeSidebarFlag(FeatureFlags.affiliate)
 const flagRiskControl = makeSidebarFlag(FeatureFlags.riskControl)
+const flagObservability = () => adminSettingsStore.observabilityEnabled
 const flagOpsMonitoring = () => adminSettingsStore.opsMonitoringEnabled
 const flagAdminPayment = () => adminSettingsStore.paymentEnabled
 
@@ -739,6 +740,7 @@ const adminNavItems = computed((): NavItem[] => {
     { path: '/admin/token-statistics', label: '可配置 Token 统计', icon: ChartIcon, hideInSimpleMode: true },
     { path: '/admin/settings', label: t('nav.settings'), icon: CogIcon },
     { path: '/admin/ops', label: t('nav.ops'), icon: ChartIcon, featureFlag: flagOpsMonitoring },
+    { path: '/admin/observability', label: t('nav.observability'), icon: ChartIcon, hideInSimpleMode: true, featureFlag: flagObservability },
     {
       path: '/admin/channels',
       label: t('nav.channelManagement'),

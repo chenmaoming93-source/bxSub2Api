@@ -4,6 +4,7 @@ import "context"
 
 type AuthorizationRepository interface {
 	LoadActiveGrants(ctx context.Context, userID int64) ([]Grant, error)
+	ListSuperAdminUserIDs(ctx context.Context, userIDs []int64) ([]int64, error)
 	GetUserVersion(ctx context.Context, userID int64) (int64, error)
 	GetPolicyVersion(ctx context.Context) (int64, error)
 }

@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"fmt"
-	"math"
 	"strconv"
 	"strings"
 	"sync"
@@ -11,6 +10,7 @@ import (
 
 	"github.com/Wei-Shaw/sub2api/internal/config"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/logger"
+	"github.com/Wei-Shaw/sub2api/internal/service/observability"
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 )
@@ -60,6 +60,7 @@ type OpsAlertEvaluatorService struct {
 type opsAlertRuleState struct {
 	LastEvaluatedAt     time.Time
 	ConsecutiveBreaches int
+	LastMetricMeta      map[string]any
 }
 
 func NewOpsAlertEvaluatorService(
@@ -217,7 +218,7 @@ func (s *OpsAlertEvaluatorService) evaluateOnce(interval time.Duration) {
 		}
 		rulesEnabled++
 
-		scopePlatform, scopeGroupID, scopeRegion := parseOpsAlertRuleScope(rule.Filters)
+		scope := parseOpsAlertRuleScope(rule.Filters)
 
 		windowMinutes := rule.WindowMinutes
 		if windowMinutes <= 0 {
@@ -226,7 +227,7 @@ func (s *OpsAlertEvaluatorService) evaluateOnce(interval time.Duration) {
 		windowStart := safeEnd.Add(-time.Duration(windowMinutes) * time.Minute)
 		windowEnd := safeEnd
 
-		metricValue, ok := s.computeRuleMetric(ctx, rule, systemMetrics, windowStart, windowEnd, scopePlatform, scopeGroupID)
+		metricValue, ok := s.computeRuleMetric(ctx, rule, systemMetrics, windowStart, windowEnd, scope)
 		if !ok {
 			s.resetRuleState(rule.ID, now)
 			continue
@@ -234,7 +235,11 @@ func (s *OpsAlertEvaluatorService) evaluateOnce(interval time.Duration) {
 		rulesEvaluated++
 
 		breachedNow := compareMetric(metricValue, rule.Operator, rule.Threshold)
-		required := requiredSustainedBreaches(rule.SustainedMinutes, interval)
+		requiredMinimum := 1
+		if isObservabilityAlertMetric(rule.MetricType) {
+			requiredMinimum = 3
+		}
+		required := observability.RequiredAlertEvaluations(rule.SustainedMinutes, interval, requiredMinimum)
 		consecutive := s.updateRuleBreaches(rule.ID, now, interval, breachedNow)
 
 		activeEvent, err := s.opsRepo.GetActiveAlertEvent(ctx, rule.ID)
@@ -250,10 +255,10 @@ func (s *OpsAlertEvaluatorService) evaluateOnce(interval time.Duration) {
 
 			// Scoped silencing: if a matching silence exists, skip creating a firing event.
 			if s.opsService != nil {
-				platform := strings.TrimSpace(scopePlatform)
-				region := scopeRegion
+				platform := strings.TrimSpace(scope.Platform)
+				region := scope.Region
 				if platform != "" {
-					if ok, err := s.opsService.IsAlertSilenced(ctx, rule.ID, platform, scopeGroupID, region, now); err == nil && ok {
+					if ok, err := s.opsService.IsAlertSilenced(ctx, rule.ID, platform, scope.GroupID, region, now); err == nil && ok {
 						continue
 					}
 				}
@@ -271,15 +276,22 @@ func (s *OpsAlertEvaluatorService) evaluateOnce(interval time.Duration) {
 				}
 			}
 
+			dimensions := buildOpsAlertDimensions(scope)
+			for key, value := range s.alertMetricMeta(rule.ID) {
+				if dimensions == nil {
+					dimensions = map[string]any{}
+				}
+				dimensions[key] = value
+			}
 			firedEvent := &OpsAlertEvent{
 				RuleID:         rule.ID,
 				Severity:       strings.TrimSpace(rule.Severity),
 				Status:         OpsAlertStatusFiring,
 				Title:          fmt.Sprintf("%s: %s", strings.TrimSpace(rule.Severity), strings.TrimSpace(rule.Name)),
-				Description:    buildOpsAlertDescription(rule, metricValue, windowMinutes, scopePlatform, scopeGroupID),
+				Description:    buildOpsAlertDescription(rule, metricValue, windowMinutes, scope),
 				MetricValue:    float64Ptr(metricValue),
 				ThresholdValue: float64Ptr(rule.Threshold),
-				Dimensions:     buildOpsAlertDimensions(scopePlatform, scopeGroupID),
+				Dimensions:     dimensions,
 				FiredAt:        now,
 				CreatedAt:      now,
 			}
@@ -374,27 +386,70 @@ func (s *OpsAlertEvaluatorService) updateRuleBreaches(ruleID int64, now time.Tim
 	return state.ConsecutiveBreaches
 }
 
-func requiredSustainedBreaches(sustainedMinutes int, interval time.Duration) int {
-	if sustainedMinutes <= 0 {
-		return 1
+func (s *OpsAlertEvaluatorService) setAlertMetricMeta(ruleID int64, metric OpsObservabilityAlertMetric) {
+	if s == nil || ruleID <= 0 {
+		return
 	}
-	if interval <= 0 {
-		return sustainedMinutes
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	state := s.ruleStates[ruleID]
+	if state == nil {
+		state = &opsAlertRuleState{}
+		s.ruleStates[ruleID] = state
 	}
-	required := int(math.Ceil(float64(sustainedMinutes*60) / interval.Seconds()))
-	if required < 1 {
-		return 1
+	state.LastMetricMeta = map[string]any{"sample_count": metric.SampleCount}
+	if metric.DataAt != nil {
+		state.LastMetricMeta["data_at"] = metric.DataAt.UTC().Format(time.RFC3339)
 	}
-	return required
 }
 
-func parseOpsAlertRuleScope(filters map[string]any) (platform string, groupID *int64, region *string) {
+func (s *OpsAlertEvaluatorService) alertMetricMeta(ruleID int64) map[string]any {
+	if s == nil || ruleID <= 0 {
+		return nil
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	state := s.ruleStates[ruleID]
+	if state == nil || len(state.LastMetricMeta) == 0 {
+		return nil
+	}
+	out := make(map[string]any, len(state.LastMetricMeta))
+	for key, value := range state.LastMetricMeta {
+		out[key] = value
+	}
+	return out
+}
+
+func requiredSustainedBreaches(sustainedMinutes int, interval time.Duration) int {
+	return observability.RequiredAlertEvaluations(sustainedMinutes, interval, 1)
+}
+
+type OpsAlertRuleScope struct {
+	Platform   string
+	GroupID    *int64
+	RouteAlias string
+	AccountID  *int64
+	Region     *string
+}
+
+type OpsObservabilityAlertMetricReader interface {
+	QueryObservabilityAlertMetric(ctx context.Context, metricType string, scope OpsAlertRuleScope, start, end time.Time) (OpsObservabilityAlertMetric, bool)
+}
+
+type OpsObservabilityAlertMetric struct {
+	Value       float64
+	SampleCount int64
+	DataAt      *time.Time
+}
+
+func parseOpsAlertRuleScope(filters map[string]any) OpsAlertRuleScope {
+	var scope OpsAlertRuleScope
 	if filters == nil {
-		return "", nil, nil
+		return scope
 	}
 	if v, ok := filters["platform"]; ok {
 		if s, ok := v.(string); ok {
-			platform = strings.TrimSpace(s)
+			scope.Platform = strings.TrimSpace(s)
 		}
 	}
 	if v, ok := filters["group_id"]; ok {
@@ -402,22 +457,46 @@ func parseOpsAlertRuleScope(filters map[string]any) (platform string, groupID *i
 		case float64:
 			if t > 0 {
 				id := int64(t)
-				groupID = &id
+				scope.GroupID = &id
 			}
 		case int64:
 			if t > 0 {
 				id := t
-				groupID = &id
+				scope.GroupID = &id
 			}
 		case int:
 			if t > 0 {
 				id := int64(t)
-				groupID = &id
+				scope.GroupID = &id
 			}
 		case string:
 			n, err := strconv.ParseInt(strings.TrimSpace(t), 10, 64)
 			if err == nil && n > 0 {
-				groupID = &n
+				scope.GroupID = &n
+			}
+		}
+	}
+	if v, ok := filters["route_alias"]; ok {
+		if s, ok := v.(string); ok {
+			scope.RouteAlias = strings.TrimSpace(s)
+		}
+	}
+	if v, ok := filters["account_id"]; ok {
+		switch t := v.(type) {
+		case float64:
+			if t > 0 {
+				id := int64(t)
+				scope.AccountID = &id
+			}
+		case int64:
+			if t > 0 {
+				id := t
+				scope.AccountID = &id
+			}
+		case string:
+			n, err := strconv.ParseInt(strings.TrimSpace(t), 10, 64)
+			if err == nil && n > 0 {
+				scope.AccountID = &n
 			}
 		}
 	}
@@ -425,11 +504,11 @@ func parseOpsAlertRuleScope(filters map[string]any) (platform string, groupID *i
 		if s, ok := v.(string); ok {
 			vv := strings.TrimSpace(s)
 			if vv != "" {
-				region = &vv
+				scope.Region = &vv
 			}
 		}
 	}
-	return platform, groupID, region
+	return scope
 }
 
 func (s *OpsAlertEvaluatorService) computeRuleMetric(
@@ -438,11 +517,23 @@ func (s *OpsAlertEvaluatorService) computeRuleMetric(
 	systemMetrics *OpsSystemMetricsSnapshot,
 	start time.Time,
 	end time.Time,
-	platform string,
-	groupID *int64,
+	scope OpsAlertRuleScope,
 ) (float64, bool) {
 	if rule == nil {
 		return 0, false
+	}
+	platform, groupID := scope.Platform, scope.GroupID
+	if isObservabilityAlertMetric(rule.MetricType) {
+		reader, ok := s.opsRepo.(OpsObservabilityAlertMetricReader)
+		if !ok {
+			return 0, false
+		}
+		metric, ok := reader.QueryObservabilityAlertMetric(ctx, rule.MetricType, scope, start, end)
+		if !ok {
+			return 0, false
+		}
+		s.setAlertMetricMeta(rule.ID, metric)
+		return metric.Value, true
 	}
 	switch strings.TrimSpace(rule.MetricType) {
 	case "cpu_usage_percent":
@@ -637,13 +728,32 @@ func compareMetric(value float64, operator string, threshold float64) bool {
 	}
 }
 
-func buildOpsAlertDimensions(platform string, groupID *int64) map[string]any {
-	dims := map[string]any{}
-	if strings.TrimSpace(platform) != "" {
-		dims["platform"] = strings.TrimSpace(platform)
+func isObservabilityAlertMetric(metricType string) bool {
+	switch strings.TrimSpace(metricType) {
+	case "observability_client_failure_rate",
+		"observability_business_limited_rate",
+		"observability_sla_error_rate",
+		"observability_ttft_p95_ms",
+		"observability_concurrency_saturation":
+		return true
+	default:
+		return false
 	}
-	if groupID != nil && *groupID > 0 {
-		dims["group_id"] = *groupID
+}
+
+func buildOpsAlertDimensions(scope OpsAlertRuleScope) map[string]any {
+	dims := map[string]any{}
+	if strings.TrimSpace(scope.Platform) != "" {
+		dims["platform"] = strings.TrimSpace(scope.Platform)
+	}
+	if scope.GroupID != nil && *scope.GroupID > 0 {
+		dims["group_id"] = *scope.GroupID
+	}
+	if scope.RouteAlias != "" {
+		dims["route_alias"] = scope.RouteAlias
+	}
+	if scope.AccountID != nil && *scope.AccountID > 0 {
+		dims["account_id"] = *scope.AccountID
 	}
 	if len(dims) == 0 {
 		return nil
@@ -651,16 +761,22 @@ func buildOpsAlertDimensions(platform string, groupID *int64) map[string]any {
 	return dims
 }
 
-func buildOpsAlertDescription(rule *OpsAlertRule, value float64, windowMinutes int, platform string, groupID *int64) string {
+func buildOpsAlertDescription(rule *OpsAlertRule, value float64, windowMinutes int, scope OpsAlertRuleScope) string {
 	if rule == nil {
 		return ""
 	}
-	scope := "overall"
-	if strings.TrimSpace(platform) != "" {
-		scope = fmt.Sprintf("platform=%s", strings.TrimSpace(platform))
+	scopeText := "overall"
+	if strings.TrimSpace(scope.Platform) != "" {
+		scopeText = fmt.Sprintf("platform=%s", strings.TrimSpace(scope.Platform))
 	}
-	if groupID != nil && *groupID > 0 {
-		scope = fmt.Sprintf("%s group_id=%d", scope, *groupID)
+	if scope.GroupID != nil && *scope.GroupID > 0 {
+		scopeText = fmt.Sprintf("%s group_id=%d", scopeText, *scope.GroupID)
+	}
+	if scope.RouteAlias != "" {
+		scopeText += " route_alias=" + scope.RouteAlias
+	}
+	if scope.AccountID != nil && *scope.AccountID > 0 {
+		scopeText = fmt.Sprintf("%s account_id=%d", scopeText, *scope.AccountID)
 	}
 	if windowMinutes <= 0 {
 		windowMinutes = 1
@@ -671,7 +787,7 @@ func buildOpsAlertDescription(rule *OpsAlertRule, value float64, windowMinutes i
 		rule.Threshold,
 		value,
 		windowMinutes,
-		strings.TrimSpace(scope),
+		strings.TrimSpace(scopeText),
 	)
 }
 
