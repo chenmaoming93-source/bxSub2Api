@@ -55,6 +55,15 @@ func TestDoubleEntryTransferConcurrencyRollbackAndReplay(t *testing.T) {
 	require.Equal(t, award.TransferID, replay.TransferID)
 	require.True(t, replay.Replayed)
 	require.Equal(t, int64(30), replay.CurrentBalance)
+	_, err = client.ExecContext(ctx,
+		"INSERT INTO users (id, email, password_hash, username) VALUES (2, 'transfer-user-2@example.com', 'x', 'user2')",
+	)
+	require.NoError(t, err)
+	_, err = transfers.AwardFromTask(ctx, TaskAwardCommand{
+		UserID: 2, TaskID: task.TaskID, Points: 30,
+		BizType: "CHECKIN", IdempotencyKey: "award-1", Title: "跨用户重放", ReferenceID: 1,
+	})
+	require.ErrorIs(t, err, ErrTransferReplay)
 
 	var (
 		wg      sync.WaitGroup

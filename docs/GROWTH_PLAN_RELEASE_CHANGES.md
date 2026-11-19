@@ -3,7 +3,7 @@
 - 投产批次：sub2api 成长计划 MVP
 - 日期：2026-11-18
 - 范围：管理端、Web 用户端、AIWork U 面、共享账务与履约
-- 当前状态：业务功能已完成；`MVP-019` 发布总验收仍为 `BLOCKED`
+- 当前状态：代码审查修复完成并通过单元、MySQL 集成、前端类型/测试/lint/build 验证；`MVP-019` 发布总验收仍为 `BLOCKED`
 
 > 本文把自动生成的 138 个 Ent 文件和同类实现文件按模块汇总。上线时仍应以 Git 提交中的完整文件列表为准。
 
@@ -12,6 +12,8 @@
 | 类型 | 对象 | 变更内容 | 投产动作 |
 |---|---|---|---|
 | DDL | `backend/sqlArchiving/182_create_growth_tables.sql` | 新增 17 张成长计划表：总预算、预算流水、钱包、转账、双边账务、任务、任务规则、用户任务进度、完成请求、奖励领取、商品、商品版本、库存、兑换订单、履约任务、库存流水、管理员审计 | 上线前执行 |
+| DDL | `backend/sqlArchiving/184_growth_adjustment_account.sql` | 为转账和账务流水增加独立 `ADJUST` 账户枚举；修正预算检查为 `distributed_amount <= total_amount` | 在 182 后执行；存量环境必须执行 |
+| DDL | `backend/sqlArchiving/185_growth_multi_reward_claims.sql` | 奖励领取增加周期内 `sequence`，唯一键改为 `(user_id, task_id, cycle_key, sequence)`，支持同周期多次发分 | 在 184 后执行；兼容新旧表结构 |
 | DML | `backend/sqlArchiving/183_add_growth_rbac_permissions.sql` | 新增 5 个权限码；为普通用户角色授权 `growth.self.read`、`growth.self.exchange` | 在 182 后执行，可重复执行 |
 | DML | `backend/sqlArchiving/163_seed_rbac_compatibility.sql` | 兼容 seed 同步加入 5 个 growth 权限及普通用户授权 | 在 182 后执行 |
 | Ent 元数据 | `backend/ent/schema/user.go` | 用户增加成长钱包关联关系 | 随代码发布 |
@@ -40,6 +42,7 @@
 | Redis nonce | `backend/internal/service/growth/nonce_cache.go` | 防重放 nonce 窗口缓存 |
 | 履约 Worker | `backend/internal/service/growth/fulfillment_service.go` | 订单预占、Outbox、自动重试、人工完成、失败退款、库存恢复 |
 | 对账 | `backend/internal/service/growth/admin_service.go` | 六类账务不变量检查；用户积分列表支持零钱包用户 |
+| 代码审查修复 | `backend/internal/service/growth/`、`backend/internal/handler/growth/` | 同周期多次发分、统一 task→budget 锁顺序、预算核减保护、概览 SQL 聚合、条件更新发分、重新上线额度重置、调账幂等与独立账户、跨用户幂等冲突、参数与文案修复 | 随代码发布 |
 | 路由 | `backend/internal/server/routes/growth.go` | AIWork U 面 `/api/v1/growth/*` |
 | 路由 | `backend/internal/server/routes/user_growth.go` | Web W 面 `/api/v1/user/growth/*` |
 | 路由 | `backend/internal/server/routes/admin.go` | 管理 M 面 `/api/v1/admin/growth/*` |
@@ -139,7 +142,28 @@
 - `docs/prototype/growth_pages_preview.html`
 - `RBAC_ENDPOINT_INVENTORY.md` 中追加 Growth M/W/U 路由记录。
 
-## 7. 刻意未包含
+## 7. 代码审查修复结果
+
+| 审查项 | 修复结果 |
+|---|---|
+| P0-1 任务周期上限静默失效 | 奖励领取增加 `sequence`，同一周期可按 `daily_limit`、`per_user_limit` 多次发分；序号在发分事务内生成并由唯一键兜底 |
+| P0-2 划拨/发分 ABBA 死锁 | 同时触达任务和预算的事务统一为 `growth_tasks → growth_budgets` 锁顺序；发分改为带额度条件的原子更新 |
+| P0-3 预算低于已发放 | 核减上限取 `max(allocated_amount, distributed_amount)`；新增 `locked_amount` 和 `BUDGET_BELOW_LOCKED` |
+| P1-1 概览全量内存聚合 | 月度积分改为 SQL `COALESCE(SUM(...), 0)`，任务进度改为计数查询 |
+| P1-2 任务发分串行瓶颈 | 改为原生 SQL 条件更新，仅任务额度不足时失败 |
+| P1-3 重新上线额度叠加 | 重新上线将任务总额度重设为输入值，并校验不得低于已发放 |
+| P1-4 Publish 事务返回值倒置 | 无待发布规则时显式回滚并返回成功，避免依赖 rollback error |
+| P1-5 调账 key 重复生成 | 调账入口固定生成一次 key，所有查询和写入复用同一值；接口要求 `request_id` |
+| P1-6 调账扣减混算消费 | 扣减转入 `ADJUST` 账户，不再增加 `spent_total`；对账新增 `adjustment_out` |
+| P2-1～P2-9 | 拆分预算/任务错误码、跨用户幂等冲突、HTTP 环境 request ID、403 文案、Growth 菜单 i18n、任务字段校验、无用变量、零积分筛选均已完成 |
+
+验证结果：
+
+- 后端 Growth 单元测试、MySQL 集成测试、全仓串行单元测试通过。
+- 前端 Growth 15 个测试、类型检查、定向 ESLint、生产构建通过。
+- MySQL 并发测试覆盖同周期并发生分、每日上限、累计上限和序号连续性。
+
+## 8. 刻意未包含
 
 | 项目 | 原因 |
 |---|---|
@@ -148,20 +172,22 @@
 | Docker Compose | 本次使用本机 MySQL 8.4 验证；Docker Desktop 引擎不可用，未新增或修改 Compose 配置。 |
 | AIWork Main/Renderer 源码 | 由其他项目组实现；sub2api 只交付 U 面、固定公钥、契约和调用示例。 |
 
-## 8. 建议投产顺序
+## 9. 建议投产顺序
 
 1. 备份数据库，确认 MySQL 8 / GoldenDB 兼容性。
 2. 执行 `182_create_growth_tables.sql`。
-3. 执行 `163_seed_rbac_compatibility.sql`。
-4. 执行 `183_add_growth_rbac_permissions.sql`。
-5. 发布后端，确认 `/health` 正常。
-6. 发布前端，检查 `/admin/growth`、`/growth` 和权限菜单。
-7. 将固定 SM2 公钥交付 AIWork Main，完成固定向量互操作测试。
-8. 配置并验证 Token/订阅生产履约适配器。
-9. 验证自动兑换、失败退款、库存恢复、对账和告警。
-10. 完成 `MVP-019` 剩余发布门禁后再对外投产。
+3. 执行 `184_growth_adjustment_account.sql`。
+4. 执行 `185_growth_multi_reward_claims.sql`。
+5. 执行 `163_seed_rbac_compatibility.sql`。
+6. 执行 `183_add_growth_rbac_permissions.sql`。
+7. 发布后端，确认 `/health` 正常。
+8. 发布前端，检查 `/admin/growth`、`/growth` 和权限菜单。
+9. 将固定 SM2 公钥交付 AIWork Main，完成固定向量互操作测试。
+10. 配置并验证 Token/订阅生产履约适配器。
+11. 验证自动兑换、失败退款、库存恢复、对账和告警。
+12. 完成 `MVP-019` 剩余发布门禁后再对外投产。
 
-## 9. 投产阻塞
+## 10. 投产阻塞
 
 | 阻塞项 | 影响 | 当前处置 |
 |---|---|---|

@@ -31025,6 +31025,8 @@ type GrowthRewardClaimMutation struct {
 	rule_id         *int64
 	addrule_id      *int64
 	cycle_key       *string
+	sequence        *int
+	addsequence     *int
 	idempotency_key *string
 	transfer_id     *int64
 	addtransfer_id  *int64
@@ -31394,6 +31396,62 @@ func (m *GrowthRewardClaimMutation) ResetCycleKey() {
 	m.cycle_key = nil
 }
 
+// SetSequence sets the "sequence" field.
+func (m *GrowthRewardClaimMutation) SetSequence(i int) {
+	m.sequence = &i
+	m.addsequence = nil
+}
+
+// Sequence returns the value of the "sequence" field in the mutation.
+func (m *GrowthRewardClaimMutation) Sequence() (r int, exists bool) {
+	v := m.sequence
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldSequence returns the old "sequence" field's value of the GrowthRewardClaim entity.
+// If the GrowthRewardClaim object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *GrowthRewardClaimMutation) OldSequence(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldSequence is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldSequence requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldSequence: %w", err)
+	}
+	return oldValue.Sequence, nil
+}
+
+// AddSequence adds i to the "sequence" field.
+func (m *GrowthRewardClaimMutation) AddSequence(i int) {
+	if m.addsequence != nil {
+		*m.addsequence += i
+	} else {
+		m.addsequence = &i
+	}
+}
+
+// AddedSequence returns the value that was added to the "sequence" field in this mutation.
+func (m *GrowthRewardClaimMutation) AddedSequence() (r int, exists bool) {
+	v := m.addsequence
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetSequence resets all changes to the "sequence" field.
+func (m *GrowthRewardClaimMutation) ResetSequence() {
+	m.sequence = nil
+	m.addsequence = nil
+}
+
 // SetIdempotencyKey sets the "idempotency_key" field.
 func (m *GrowthRewardClaimMutation) SetIdempotencyKey(s string) {
 	m.idempotency_key = &s
@@ -31675,7 +31733,7 @@ func (m *GrowthRewardClaimMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *GrowthRewardClaimMutation) Fields() []string {
-	fields := make([]string, 0, 11)
+	fields := make([]string, 0, 12)
 	if m.created_at != nil {
 		fields = append(fields, growthrewardclaim.FieldCreatedAt)
 	}
@@ -31693,6 +31751,9 @@ func (m *GrowthRewardClaimMutation) Fields() []string {
 	}
 	if m.cycle_key != nil {
 		fields = append(fields, growthrewardclaim.FieldCycleKey)
+	}
+	if m.sequence != nil {
+		fields = append(fields, growthrewardclaim.FieldSequence)
 	}
 	if m.idempotency_key != nil {
 		fields = append(fields, growthrewardclaim.FieldIdempotencyKey)
@@ -31729,6 +31790,8 @@ func (m *GrowthRewardClaimMutation) Field(name string) (ent.Value, bool) {
 		return m.RuleID()
 	case growthrewardclaim.FieldCycleKey:
 		return m.CycleKey()
+	case growthrewardclaim.FieldSequence:
+		return m.Sequence()
 	case growthrewardclaim.FieldIdempotencyKey:
 		return m.IdempotencyKey()
 	case growthrewardclaim.FieldTransferID:
@@ -31760,6 +31823,8 @@ func (m *GrowthRewardClaimMutation) OldField(ctx context.Context, name string) (
 		return m.OldRuleID(ctx)
 	case growthrewardclaim.FieldCycleKey:
 		return m.OldCycleKey(ctx)
+	case growthrewardclaim.FieldSequence:
+		return m.OldSequence(ctx)
 	case growthrewardclaim.FieldIdempotencyKey:
 		return m.OldIdempotencyKey(ctx)
 	case growthrewardclaim.FieldTransferID:
@@ -31821,6 +31886,13 @@ func (m *GrowthRewardClaimMutation) SetField(name string, value ent.Value) error
 		}
 		m.SetCycleKey(v)
 		return nil
+	case growthrewardclaim.FieldSequence:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetSequence(v)
+		return nil
 	case growthrewardclaim.FieldIdempotencyKey:
 		v, ok := value.(string)
 		if !ok {
@@ -31870,6 +31942,9 @@ func (m *GrowthRewardClaimMutation) AddedFields() []string {
 	if m.addrule_id != nil {
 		fields = append(fields, growthrewardclaim.FieldRuleID)
 	}
+	if m.addsequence != nil {
+		fields = append(fields, growthrewardclaim.FieldSequence)
+	}
 	if m.addtransfer_id != nil {
 		fields = append(fields, growthrewardclaim.FieldTransferID)
 	}
@@ -31888,6 +31963,8 @@ func (m *GrowthRewardClaimMutation) AddedField(name string) (ent.Value, bool) {
 		return m.AddedTaskID()
 	case growthrewardclaim.FieldRuleID:
 		return m.AddedRuleID()
+	case growthrewardclaim.FieldSequence:
+		return m.AddedSequence()
 	case growthrewardclaim.FieldTransferID:
 		return m.AddedTransferID()
 	case growthrewardclaim.FieldPoints:
@@ -31914,6 +31991,13 @@ func (m *GrowthRewardClaimMutation) AddField(name string, value ent.Value) error
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.AddRuleID(v)
+		return nil
+	case growthrewardclaim.FieldSequence:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddSequence(v)
 		return nil
 	case growthrewardclaim.FieldTransferID:
 		v, ok := value.(int64)
@@ -31973,6 +32057,9 @@ func (m *GrowthRewardClaimMutation) ResetField(name string) error {
 		return nil
 	case growthrewardclaim.FieldCycleKey:
 		m.ResetCycleKey()
+		return nil
+	case growthrewardclaim.FieldSequence:
+		m.ResetSequence()
 		return nil
 	case growthrewardclaim.FieldIdempotencyKey:
 		m.ResetIdempotencyKey()

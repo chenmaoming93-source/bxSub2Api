@@ -38,6 +38,8 @@ type WalletDebitCommand struct {
 	IdempotencyKey string
 	Title          string
 	ReferenceID    int64
+	ToAccountType  string
+	IsAdjustment   bool
 	AfterLedger    func(context.Context, *ent.Tx) error
 }
 
@@ -88,7 +90,7 @@ func (s *TransferService) AwardFromTask(ctx context.Context, command TaskAwardCo
 	if command.TaskID <= 0 {
 		return TransferResult{}, infraerrors.BadRequest("INVALID_TASK_ID", "task_id must be positive")
 	}
-	if existing, ok, err := s.findExisting(ctx, command.BizType, command.IdempotencyKey); err != nil {
+	if existing, ok, err := s.findExisting(ctx, command.UserID, command.BizType, command.IdempotencyKey); err != nil {
 		return TransferResult{}, err
 	} else if ok {
 		return existing, nil
@@ -101,7 +103,7 @@ func (s *TransferService) AwardFromTask(ctx context.Context, command TaskAwardCo
 	if err != nil {
 		_ = tx.Rollback()
 		if isDuplicateKey(err) {
-			if existing, ok, readErr := s.findExisting(ctx, command.BizType, command.IdempotencyKey); readErr == nil && ok {
+			if existing, ok, readErr := s.findExisting(ctx, command.UserID, command.BizType, command.IdempotencyKey); readErr == nil && ok {
 				existing.Replayed = true
 				return existing, nil
 			}
@@ -119,15 +121,31 @@ func (s *TransferService) awardFromTaskTx(ctx context.Context, tx *ent.Tx, comma
 	if err != nil {
 		return TransferResult{}, err
 	}
-	task, err := tx.GrowthTask.Query().Where(growthtask.ID(command.TaskID)).ForUpdate().Only(ctx)
-	if ent.IsNotFound(err) {
-		return TransferResult{}, ErrGrowthTaskNotFound
-	}
+	result, err := tx.ExecContext(ctx, `
+UPDATE growth_tasks
+SET distributed_points = distributed_points + ?, updated_at = CURRENT_TIMESTAMP(6)
+WHERE id = ? AND allocated_points - distributed_points >= ?`,
+		command.Points, command.TaskID, command.Points)
 	if err != nil {
 		return TransferResult{}, err
 	}
-	if task.AllocatedPoints-task.DistributedPoints < command.Points {
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return TransferResult{}, err
+	}
+	if affected == 0 {
+		exists, existErr := tx.GrowthTask.Query().Where(growthtask.ID(command.TaskID)).Exist(ctx)
+		if existErr != nil {
+			return TransferResult{}, existErr
+		}
+		if !exists {
+			return TransferResult{}, ErrGrowthTaskNotFound
+		}
 		return TransferResult{}, ErrPoolExhausted
+	}
+	task, err := tx.GrowthTask.Get(ctx, command.TaskID)
+	if err != nil {
+		return TransferResult{}, err
 	}
 	budget, err := tx.GrowthBudget.Query().Where(growthbudget.ID(1)).ForUpdate().Only(ctx)
 	if ent.IsNotFound(err) {
@@ -136,17 +154,14 @@ func (s *TransferService) awardFromTaskTx(ctx context.Context, tx *ent.Tx, comma
 	if err != nil {
 		return TransferResult{}, err
 	}
+	if budget.DistributedAmount > budget.TotalAmount-command.Points {
+		return TransferResult{}, ErrPoolExhausted
+	}
 	wallet, err := lockOrCreateWallet(ctx, tx, command.UserID)
 	if err != nil {
 		return TransferResult{}, err
 	}
 
-	task, err = tx.GrowthTask.UpdateOneID(task.ID).
-		SetDistributedPoints(task.DistributedPoints + command.Points).
-		Save(ctx)
-	if err != nil {
-		return TransferResult{}, err
-	}
 	if _, err := tx.GrowthBudget.UpdateOneID(1).
 		SetDistributedAmount(budget.DistributedAmount + command.Points).
 		SetVersion(budget.Version + 1).
@@ -204,7 +219,7 @@ func (s *TransferService) DebitWallet(ctx context.Context, command WalletDebitCo
 	if err := validateTransferIdentity(command.UserID, command.Points, command.BizType, command.IdempotencyKey); err != nil {
 		return TransferResult{}, err
 	}
-	if existing, ok, err := s.findExisting(ctx, command.BizType, command.IdempotencyKey); err != nil {
+	if existing, ok, err := s.findExisting(ctx, command.UserID, command.BizType, command.IdempotencyKey); err != nil {
 		return TransferResult{}, err
 	} else if ok {
 		return existing, nil
@@ -217,7 +232,7 @@ func (s *TransferService) DebitWallet(ctx context.Context, command WalletDebitCo
 	if err != nil {
 		_ = tx.Rollback()
 		if isDuplicateKey(err) {
-			if existing, ok, readErr := s.findExisting(ctx, command.BizType, command.IdempotencyKey); readErr == nil && ok {
+			if existing, ok, readErr := s.findExisting(ctx, command.UserID, command.BizType, command.IdempotencyKey); readErr == nil && ok {
 				existing.Replayed = true
 				return existing, nil
 			}
@@ -231,7 +246,11 @@ func (s *TransferService) DebitWallet(ctx context.Context, command WalletDebitCo
 }
 
 func (s *TransferService) debitWalletTx(ctx context.Context, tx *ent.Tx, command WalletDebitCommand) (TransferResult, error) {
-	transfer, err := createPendingTransfer(ctx, tx, command.BizType, command.IdempotencyKey, "WALLET", "REDEEMED", &command.UserID, nil, nil, command.Points)
+	toAccount := strings.TrimSpace(command.ToAccountType)
+	if toAccount == "" {
+		toAccount = "REDEEMED"
+	}
+	transfer, err := createPendingTransfer(ctx, tx, command.BizType, command.IdempotencyKey, "WALLET", toAccount, &command.UserID, nil, nil, command.Points)
 	if err != nil {
 		return TransferResult{}, err
 	}
@@ -242,12 +261,14 @@ func (s *TransferService) debitWalletTx(ctx context.Context, tx *ent.Tx, command
 	if wallet.AvailablePoints < command.Points {
 		return TransferResult{}, ErrInsufficientPoints
 	}
-	wallet, err = tx.GrowthWallet.UpdateOneID(wallet.ID).
+	update := tx.GrowthWallet.UpdateOneID(wallet.ID).
 		SetAvailablePoints(wallet.AvailablePoints - command.Points).
-		SetSpentTotal(wallet.SpentTotal + command.Points).
 		SetVersion(wallet.Version + 1).
-		SetBalanceUpdatedAt(time.Now()).
-		Save(ctx)
+		SetBalanceUpdatedAt(time.Now())
+	if !command.IsAdjustment {
+		update.SetSpentTotal(wallet.SpentTotal + command.Points)
+	}
+	wallet, err = update.Save(ctx)
 	if err != nil {
 		return TransferResult{}, err
 	}
@@ -263,7 +284,7 @@ func (s *TransferService) debitWalletTx(ctx context.Context, tx *ent.Tx, command
 		&command.UserID,
 		command.Points,
 		int64Pointer(wallet.AvailablePoints),
-		"REDEEMED",
+		toAccount,
 		"IN",
 		&command.UserID,
 		command.Points,
@@ -292,7 +313,7 @@ func (s *TransferService) ReverseRedeem(ctx context.Context, command RedeemRever
 	if err := validateTransferIdentity(command.UserID, command.Points, command.BizType, command.IdempotencyKey); err != nil {
 		return TransferResult{}, err
 	}
-	if existing, ok, err := s.findExisting(ctx, command.BizType, command.IdempotencyKey); err != nil {
+	if existing, ok, err := s.findExisting(ctx, command.UserID, command.BizType, command.IdempotencyKey); err != nil {
 		return TransferResult{}, err
 	} else if ok {
 		return existing, nil
@@ -305,7 +326,7 @@ func (s *TransferService) ReverseRedeem(ctx context.Context, command RedeemRever
 	if err != nil {
 		_ = tx.Rollback()
 		if isDuplicateKey(err) {
-			if existing, ok, readErr := s.findExisting(ctx, command.BizType, command.IdempotencyKey); readErr == nil && ok {
+			if existing, ok, readErr := s.findExisting(ctx, command.UserID, command.BizType, command.IdempotencyKey); readErr == nil && ok {
 				existing.Replayed = true
 				return existing, nil
 			}
@@ -477,7 +498,7 @@ func validateTransferIdentity(userID, points int64, bizType, key string) error {
 	return nil
 }
 
-func (s *TransferService) findExisting(ctx context.Context, bizType, key string) (TransferResult, bool, error) {
+func (s *TransferService) findExisting(ctx context.Context, userID int64, bizType, key string) (TransferResult, bool, error) {
 	transfer, err := s.client.GrowthTransfer.Query().
 		Where(
 			growthtransfer.BizTypeEQ(bizType),
@@ -493,11 +514,14 @@ func (s *TransferService) findExisting(ctx context.Context, bizType, key string)
 	if transfer.Status != "SUCCEEDED" {
 		return TransferResult{}, false, ErrTransferReplay
 	}
-	userID := int64(0)
+	transferUserID := int64(0)
 	if transfer.ToUserID != nil {
-		userID = *transfer.ToUserID
+		transferUserID = *transfer.ToUserID
 	} else if transfer.FromUserID != nil {
-		userID = *transfer.FromUserID
+		transferUserID = *transfer.FromUserID
+	}
+	if transferUserID != userID {
+		return TransferResult{}, false, ErrTransferReplay
 	}
 	balance, err := s.CurrentBalance(ctx, userID)
 	if err != nil {

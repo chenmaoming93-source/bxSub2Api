@@ -22,10 +22,11 @@ const (
 )
 
 var (
-	ErrBudgetAllocatedLocked = infraerrors.Conflict("BUDGET_ALLOCATED_LOCKED", "budget allocated amount is locked by tasks")
-	ErrBudgetInsufficient    = infraerrors.Conflict("BUDGET_INSUFFICIENT", "unallocated budget is insufficient")
-	ErrTaskQuotaInvalid      = infraerrors.Conflict("TASK_QUOTA_INVALID", "task quota cannot be revoked")
-	ErrGrowthTaskNotFound    = infraerrors.NotFound("TASK_NOT_FOUND", "growth task not found")
+	ErrBudgetBelowZero    = infraerrors.Conflict("BUDGET_BELOW_ZERO", "budget cannot be reduced below zero")
+	ErrBudgetBelowLocked  = infraerrors.Conflict("BUDGET_BELOW_LOCKED", "budget cannot be reduced below allocated or distributed points")
+	ErrBudgetInsufficient = infraerrors.Conflict("BUDGET_INSUFFICIENT", "unallocated budget is insufficient")
+	ErrTaskQuotaExceeded  = infraerrors.Conflict("TASK_QUOTA_EXCEEDED", "task quota is insufficient")
+	ErrGrowthTaskNotFound = infraerrors.NotFound("TASK_NOT_FOUND", "growth task not found")
 )
 
 type BudgetAccount struct {
@@ -33,6 +34,7 @@ type BudgetAccount struct {
 	AllocatedAmount   int64     `json:"allocated_amount"`
 	DistributedAmount int64     `json:"distributed_amount"`
 	UnallocatedAmount int64     `json:"unallocated_amount"`
+	LockedAmount      int64     `json:"locked_amount"`
 	DistributedRate   float64   `json:"distributed_rate"`
 	Version           int64     `json:"version"`
 	UpdatedAt         time.Time `json:"updated_at"`
@@ -139,11 +141,12 @@ func (s *BudgetService) changeTotal(ctx context.Context, entryType string, mutat
 	nextTotal := budget.TotalAmount + mutation.Points
 	if entryType == BudgetEntryReduce {
 		if mutation.Points > budget.TotalAmount {
-			return BudgetAccount{}, ErrBudgetAllocatedLocked
+			return BudgetAccount{}, ErrBudgetBelowZero
 		}
 		nextTotal = budget.TotalAmount - mutation.Points
-		if nextTotal < budget.AllocatedAmount {
-			return BudgetAccount{}, ErrBudgetAllocatedLocked
+		locked := maxInt64(budget.AllocatedAmount, budget.DistributedAmount)
+		if nextTotal < locked {
+			return BudgetAccount{}, ErrBudgetBelowLocked
 		}
 	}
 
@@ -185,10 +188,8 @@ func (s *BudgetService) Allocate(ctx context.Context, taskID int64, mutation Bud
 		}
 	}()
 
-	budget, err := ensureBudgetForUpdate(ctx, tx)
-	if err != nil {
-		return BudgetAccount{}, err
-	}
+	// Lock order is fixed: growth_tasks -> growth_budgets. The task award path
+	// follows the same order; reversing it causes an ABBA deadlock.
 	task, err := tx.GrowthTask.Query().
 		Where(growthtask.ID(taskID)).
 		ForUpdate().
@@ -196,6 +197,10 @@ func (s *BudgetService) Allocate(ctx context.Context, taskID int64, mutation Bud
 	if ent.IsNotFound(err) {
 		return BudgetAccount{}, ErrGrowthTaskNotFound
 	}
+	if err != nil {
+		return BudgetAccount{}, err
+	}
+	budget, err := ensureBudgetForUpdate(ctx, tx)
 	if err != nil {
 		return BudgetAccount{}, err
 	}
@@ -252,10 +257,7 @@ func (s *BudgetService) Revoke(ctx context.Context, taskID int64, mutation Budge
 		}
 	}()
 
-	budget, err := ensureBudgetForUpdate(ctx, tx)
-	if err != nil {
-		return BudgetAccount{}, err
-	}
+	// Lock order is fixed: growth_tasks -> growth_budgets.
 	task, err := tx.GrowthTask.Query().
 		Where(growthtask.ID(taskID)).
 		ForUpdate().
@@ -266,12 +268,19 @@ func (s *BudgetService) Revoke(ctx context.Context, taskID int64, mutation Budge
 	if err != nil {
 		return BudgetAccount{}, err
 	}
+	budget, err := ensureBudgetForUpdate(ctx, tx)
+	if err != nil {
+		return BudgetAccount{}, err
+	}
 	remaining := task.AllocatedPoints - task.DistributedPoints
-	if task.Status != "OFFLINE" || mutation.Points > remaining {
-		return BudgetAccount{}, ErrTaskQuotaInvalid
+	if task.Status != "OFFLINE" {
+		return BudgetAccount{}, ErrTaskStateInvalid
+	}
+	if mutation.Points > remaining {
+		return BudgetAccount{}, ErrTaskQuotaExceeded
 	}
 	if mutation.Points > budget.AllocatedAmount {
-		return BudgetAccount{}, ErrTaskQuotaInvalid
+		return BudgetAccount{}, ErrTaskQuotaExceeded
 	}
 	beforeBudget := accountFromEntity(budget)
 	beforeTask := taskAllocationFromEntity(task)
@@ -484,11 +493,13 @@ func accountFromEntity(entity *ent.GrowthBudget) BudgetAccount {
 }
 
 func accountFromValues(total, allocated, distributed, version int64, updatedAt time.Time) BudgetAccount {
+	locked := maxInt64(allocated, distributed)
 	account := BudgetAccount{
 		TotalAmount:       total,
 		AllocatedAmount:   allocated,
 		DistributedAmount: distributed,
 		UnallocatedAmount: total - allocated,
+		LockedAmount:      locked,
 		Version:           version,
 		UpdatedAt:         updatedAt,
 	}
@@ -496,6 +507,13 @@ func accountFromValues(total, allocated, distributed, version int64, updatedAt t
 		account.DistributedRate = float64(distributed) / float64(total)
 	}
 	return account
+}
+
+func maxInt64(left, right int64) int64 {
+	if left > right {
+		return left
+	}
+	return right
 }
 
 func taskAllocationFromEntity(entity *ent.GrowthTask) TaskAllocation {

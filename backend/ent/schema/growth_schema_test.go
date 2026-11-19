@@ -63,6 +63,7 @@ func TestGrowthSchemaAndArchiveStayAligned(t *testing.T) {
 	require.Contains(t, sql, "UNIQUE KEY uq_growth_task_rules_version (task_id, version)")
 	require.Contains(t, sql, "UNIQUE KEY uq_growth_user_tasks_cycle (user_id, task_id, rule_id, cycle_key)")
 	require.Contains(t, sql, "UNIQUE KEY uq_growth_completion_business (user_id, task_id, completion_ref)")
+	require.Contains(t, sql, "UNIQUE KEY uq_growth_reward_claims_cycle (user_id, task_id, cycle_key, sequence)")
 	require.Contains(t, sql, "UNIQUE KEY uq_growth_exchange_orders_key (user_id, idempotency_key)")
 	require.Contains(t, sql, "UNIQUE KEY uq_growth_fulfillment_jobs_order (order_id)")
 	require.Contains(t, sql, "CHECK")

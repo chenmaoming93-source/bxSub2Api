@@ -509,6 +509,8 @@ const completion = await callGrowth<CompletionResult>({
 ```
 
 可能结果：`AWARDED`、`ALREADY_COMPLETED`、`NOT_ELIGIBLE`。  
+`ALREADY_COMPLETED` 仅表示同一 `completion_ref` 已处理；新的完成实例使用新的 `completion_ref` 和幂等键，在每日/每人上限和任务额度未耗尽时仍可再次返回 `AWARDED`。
+
 不得调用已删除的 `/growth/completion-requests/{request_id}` 轮询接口。
 
 ### 5.9 创建兑换

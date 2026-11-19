@@ -136,6 +136,70 @@ func TestDSTAwareness(t *testing.T) {
 	_ = StartOfDay(Now())
 }
 
+func TestSQLUTCOffset(t *testing.T) {
+	t.Cleanup(func() { _ = Init("UTC") })
+
+	tests := []struct {
+		name     string
+		timezone string
+		at       time.Time
+		want     string
+	}{
+		{
+			name:     "shanghai",
+			timezone: "Asia/Shanghai",
+			at:       time.Date(2026, 11, 19, 12, 0, 0, 0, time.UTC),
+			want:     "+08:00",
+		},
+		{
+			name:     "utc",
+			timezone: "UTC",
+			at:       time.Date(2026, 11, 19, 12, 0, 0, 0, time.UTC),
+			want:     "+00:00",
+		},
+		{
+			name:     "half-hour offset",
+			timezone: "Asia/Kolkata",
+			at:       time.Date(2026, 11, 19, 12, 0, 0, 0, time.UTC),
+			want:     "+05:30",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			if err := Init(test.timezone); err != nil {
+				t.Skipf("timezone %s unavailable: %v", test.timezone, err)
+			}
+			if got := SQLUTCOffset(test.at); got != test.want {
+				t.Fatalf("SQLUTCOffset() = %s, want %s", got, test.want)
+			}
+		})
+	}
+}
+
+func TestSQLUTCOffsetRangeRejectsDSTTransition(t *testing.T) {
+	if err := Init("America/New_York"); err != nil {
+		t.Skipf("America/New_York timezone not available: %v", err)
+	}
+	t.Cleanup(func() { _ = Init("UTC") })
+
+	start := time.Date(2026, 3, 7, 12, 0, 0, 0, time.UTC)
+	end := time.Date(2026, 3, 9, 12, 0, 0, 0, time.UTC)
+	if _, err := SQLUTCOffsetRange(start, end); err == nil {
+		t.Fatal("SQLUTCOffsetRange() should reject a range crossing a DST transition")
+	}
+
+	offset, err := SQLUTCOffsetRange(
+		time.Date(2026, 11, 19, 0, 0, 0, 0, time.UTC),
+		time.Date(2026, 11, 20, 0, 0, 0, 0, time.UTC),
+	)
+	if err != nil {
+		t.Fatalf("SQLUTCOffsetRange() returned unexpected error: %v", err)
+	}
+	if offset != "-05:00" {
+		t.Fatalf("SQLUTCOffsetRange() = %s, want -05:00", offset)
+	}
+}
+
 func TestStartOfWeek_Boundaries(t *testing.T) {
 	if err := Init("Asia/Shanghai"); err != nil {
 		t.Fatalf("Init: %v", err)

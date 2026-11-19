@@ -3,6 +3,7 @@ export interface BudgetAccount {
   allocated_amount: number
   distributed_amount: number
   unallocated_amount: number
+  locked_amount: number
   distributed_rate: number
   version: number
   updated_at?: string

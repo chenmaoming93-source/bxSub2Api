@@ -1160,6 +1160,7 @@ var (
 		{Name: "task_id", Type: field.TypeInt64},
 		{Name: "rule_id", Type: field.TypeInt64},
 		{Name: "cycle_key", Type: field.TypeString, Size: 64},
+		{Name: "sequence", Type: field.TypeInt, Default: 1},
 		{Name: "idempotency_key", Type: field.TypeString, Size: 128},
 		{Name: "transfer_id", Type: field.TypeInt64},
 		{Name: "points", Type: field.TypeInt64},
@@ -1175,7 +1176,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "growth_reward_claims_users_growth_reward_claims",
-				Columns:    []*schema.Column{GrowthRewardClaimsColumns[11]},
+				Columns:    []*schema.Column{GrowthRewardClaimsColumns[12]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -1184,22 +1185,22 @@ var (
 			{
 				Name:    "growthrewardclaim_user_id_idempotency_key",
 				Unique:  true,
-				Columns: []*schema.Column{GrowthRewardClaimsColumns[11], GrowthRewardClaimsColumns[6]},
+				Columns: []*schema.Column{GrowthRewardClaimsColumns[12], GrowthRewardClaimsColumns[7]},
 			},
 			{
-				Name:    "growthrewardclaim_user_id_task_id_cycle_key",
+				Name:    "growthrewardclaim_user_id_task_id_cycle_key_sequence",
 				Unique:  true,
-				Columns: []*schema.Column{GrowthRewardClaimsColumns[11], GrowthRewardClaimsColumns[3], GrowthRewardClaimsColumns[5]},
+				Columns: []*schema.Column{GrowthRewardClaimsColumns[12], GrowthRewardClaimsColumns[3], GrowthRewardClaimsColumns[5], GrowthRewardClaimsColumns[6]},
 			},
 			{
 				Name:    "growthrewardclaim_transfer_id",
 				Unique:  false,
-				Columns: []*schema.Column{GrowthRewardClaimsColumns[7]},
+				Columns: []*schema.Column{GrowthRewardClaimsColumns[8]},
 			},
 			{
 				Name:    "growthrewardclaim_user_id_claimed_at",
 				Unique:  false,
-				Columns: []*schema.Column{GrowthRewardClaimsColumns[11], GrowthRewardClaimsColumns[10]},
+				Columns: []*schema.Column{GrowthRewardClaimsColumns[12], GrowthRewardClaimsColumns[11]},
 			},
 		},
 	}
@@ -3270,7 +3271,7 @@ func init() {
 	}
 	GrowthBudgetsTable.Annotation = &entsql.Annotation{
 		Table: "growth_budgets",
-		Check: "total_amount >= 0 AND allocated_amount >= 0 AND distributed_amount >= 0 AND allocated_amount <= total_amount AND distributed_amount <= allocated_amount",
+		Check: "total_amount >= 0 AND allocated_amount >= 0 AND distributed_amount >= 0 AND allocated_amount <= total_amount AND distributed_amount <= total_amount",
 	}
 	GrowthBudgetEntriesTable.Annotation = &entsql.Annotation{
 		Table: "growth_budget_entries",

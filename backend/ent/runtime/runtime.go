@@ -5,7 +5,6 @@ package runtime
 import (
 	"time"
 
-	"github.com/Wei-Shaw/sub2api/ent/schema"
 	"github.com/Wei-Shaw/sub2api/ent/account"
 	"github.com/Wei-Shaw/sub2api/ent/accountgroup"
 	"github.com/Wei-Shaw/sub2api/ent/announcement"
@@ -55,6 +54,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/rbacuserrole"
 	"github.com/Wei-Shaw/sub2api/ent/rbacuserversion"
 	"github.com/Wei-Shaw/sub2api/ent/redeemcode"
+	"github.com/Wei-Shaw/sub2api/ent/schema"
 	"github.com/Wei-Shaw/sub2api/ent/securitychecklog"
 	"github.com/Wei-Shaw/sub2api/ent/securitysecret"
 	"github.com/Wei-Shaw/sub2api/ent/setting"
@@ -1762,8 +1762,14 @@ func init() {
 	growthrewardclaimDescCycleKey := growthrewardclaimFields[3].Descriptor()
 	// growthrewardclaim.CycleKeyValidator is a validator for the "cycle_key" field. It is called by the builders before save.
 	growthrewardclaim.CycleKeyValidator = growthrewardclaimDescCycleKey.Validators[0].(func(string) error)
+	// growthrewardclaimDescSequence is the schema descriptor for sequence field.
+	growthrewardclaimDescSequence := growthrewardclaimFields[4].Descriptor()
+	// growthrewardclaim.DefaultSequence holds the default value on creation for the sequence field.
+	growthrewardclaim.DefaultSequence = growthrewardclaimDescSequence.Default.(int)
+	// growthrewardclaim.SequenceValidator is a validator for the "sequence" field. It is called by the builders before save.
+	growthrewardclaim.SequenceValidator = growthrewardclaimDescSequence.Validators[0].(func(int) error)
 	// growthrewardclaimDescIdempotencyKey is the schema descriptor for idempotency_key field.
-	growthrewardclaimDescIdempotencyKey := growthrewardclaimFields[4].Descriptor()
+	growthrewardclaimDescIdempotencyKey := growthrewardclaimFields[5].Descriptor()
 	// growthrewardclaim.IdempotencyKeyValidator is a validator for the "idempotency_key" field. It is called by the builders before save.
 	growthrewardclaim.IdempotencyKeyValidator = func() func(string) error {
 		validators := growthrewardclaimDescIdempotencyKey.Validators
@@ -1781,11 +1787,11 @@ func init() {
 		}
 	}()
 	// growthrewardclaimDescPoints is the schema descriptor for points field.
-	growthrewardclaimDescPoints := growthrewardclaimFields[6].Descriptor()
+	growthrewardclaimDescPoints := growthrewardclaimFields[7].Descriptor()
 	// growthrewardclaim.PointsValidator is a validator for the "points" field. It is called by the builders before save.
 	growthrewardclaim.PointsValidator = growthrewardclaimDescPoints.Validators[0].(func(int64) error)
 	// growthrewardclaimDescStatus is the schema descriptor for status field.
-	growthrewardclaimDescStatus := growthrewardclaimFields[7].Descriptor()
+	growthrewardclaimDescStatus := growthrewardclaimFields[8].Descriptor()
 	// growthrewardclaim.DefaultStatus holds the default value on creation for the status field.
 	growthrewardclaim.DefaultStatus = growthrewardclaimDescStatus.Default.(string)
 	// growthrewardclaim.StatusValidator is a validator for the "status" field. It is called by the builders before save.

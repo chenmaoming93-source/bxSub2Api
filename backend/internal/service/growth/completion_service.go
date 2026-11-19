@@ -19,6 +19,8 @@ import (
 	"github.com/google/uuid"
 )
 
+var errCompletionNotEligible = errors.New("growth completion is not eligible")
+
 type CompletionResult struct {
 	RequestID      string `json:"request_id"`
 	Result         string `json:"result"`
@@ -76,7 +78,7 @@ func (s *CompletionService) Complete(ctx context.Context, command CompletionComm
 		return result, infraerrors.BadRequest("INVALID_REQUEST", "user, task, completion_ref and idempotency_key are required")
 	}
 	if existing, err := s.existingRequest(ctx, command.UserID, command.TaskID, result.CompletionRef); err == nil {
-		_, sameIdempotencyKey, transferErr := s.transfers.findExisting(ctx, "TASK", command.IdempotencyKey)
+		_, sameIdempotencyKey, transferErr := s.transfers.findExisting(ctx, command.UserID, "TASK", command.IdempotencyKey)
 		if transferErr != nil {
 			return CompletionResult{}, transferErr
 		}
@@ -134,49 +136,7 @@ func (s *CompletionService) Complete(ctx context.Context, command CompletionComm
 	}
 	result.CycleKey = cycleKey
 
-	if claim, err := s.client.GrowthRewardClaim.Query().
-		Where(
-			growthrewardclaim.UserIDEQ(command.UserID),
-			growthrewardclaim.TaskIDEQ(task.ID),
-			growthrewardclaim.CycleKeyEQ(cycleKey),
-		).
-		Only(ctx); err == nil {
-		transferID := claim.TransferID
-		result.Result = "ALREADY_COMPLETED"
-		result.TransferID = &transferID
-		result.AwardedPoints = 0
-		if balance, balanceErr := s.transfers.CurrentBalance(ctx, command.UserID); balanceErr == nil {
-			result.CurrentBalance = &balance
-		}
-		return s.persistNonAward(ctx, command, result, now)
-	} else if !ent.IsNotFound(err) {
-		return CompletionResult{}, err
-	}
-
 	dayStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, s.location)
-	dailyClaims, err := s.client.GrowthRewardClaim.Query().
-		Where(
-			growthrewardclaim.UserIDEQ(command.UserID),
-			growthrewardclaim.TaskIDEQ(task.ID),
-			growthrewardclaim.ClaimedAtGTE(dayStart),
-		).
-		Count(ctx)
-	if err != nil {
-		return CompletionResult{}, err
-	}
-	perUserClaims, err := s.client.GrowthRewardClaim.Query().
-		Where(growthrewardclaim.UserIDEQ(command.UserID), growthrewardclaim.TaskIDEQ(task.ID)).
-		Count(ctx)
-	if err != nil {
-		return CompletionResult{}, err
-	}
-	if (rule.DailyLimit > 0 && dailyClaims >= rule.DailyLimit) ||
-		(rule.PerUserLimit > 0 && perUserClaims >= rule.PerUserLimit) {
-		result.Result = "NOT_ELIGIBLE"
-		return s.persistNonAward(ctx, command, result, now)
-	}
-
-	var claimedID int64
 	award, err := s.transfers.AwardFromTask(ctx, TaskAwardCommand{
 		UserID:         command.UserID,
 		TaskID:         task.ID,
@@ -192,6 +152,10 @@ func (s *CompletionService) Complete(ctx context.Context, command CompletionComm
 					growthtransfer.IdempotencyKeyEQ(command.IdempotencyKey),
 				).
 				Only(callbackCtx)
+			if err != nil {
+				return err
+			}
+			sequence, err := completionSequence(callbackCtx, tx, command.UserID, task.ID, cycleKey, dayStart, rule)
 			if err != nil {
 				return err
 			}
@@ -235,11 +199,12 @@ func (s *CompletionService) Complete(ctx context.Context, command CompletionComm
 			if err != nil {
 				return err
 			}
-			claim, err := tx.GrowthRewardClaim.Create().
+			_, err = tx.GrowthRewardClaim.Create().
 				SetUserID(command.UserID).
 				SetTaskID(task.ID).
 				SetRuleID(rule.ID).
 				SetCycleKey(cycleKey).
+				SetSequence(sequence).
 				SetIdempotencyKey(command.IdempotencyKey).
 				SetTransferID(transfer.ID).
 				SetPoints(rule.RewardPoints).
@@ -249,7 +214,6 @@ func (s *CompletionService) Complete(ctx context.Context, command CompletionComm
 			if err != nil {
 				return err
 			}
-			claimedID = claim.ID
 			_, err = tx.GrowthCompletionRequest.Create().
 				SetUserID(command.UserID).
 				SetTaskID(task.ID).
@@ -267,6 +231,10 @@ func (s *CompletionService) Complete(ctx context.Context, command CompletionComm
 	if err != nil {
 		if errors.Is(err, ErrPoolExhausted) {
 			return CompletionResult{}, err
+		}
+		if errors.Is(err, errCompletionNotEligible) {
+			result.Result = "NOT_ELIGIBLE"
+			return s.persistNonAward(ctx, command, result, now)
 		}
 		if isDuplicateKey(err) {
 			if existing, existingErr := s.existingRequest(ctx, command.UserID, task.ID, result.CompletionRef); existingErr == nil {
@@ -296,8 +264,57 @@ func (s *CompletionService) Complete(ctx context.Context, command CompletionComm
 	result.TransferID = &award.TransferID
 	result.AwardedPoints = award.Points
 	result.CurrentBalance = &award.CurrentBalance
-	_ = claimedID
 	return result, nil
+}
+
+func completionSequence(
+	ctx context.Context,
+	tx *ent.Tx,
+	userID int64,
+	taskID int64,
+	cycleKey string,
+	dayStart time.Time,
+	rule *ent.GrowthTaskRule,
+) (int, error) {
+	cycleClaims, err := tx.GrowthRewardClaim.Query().
+		Where(
+			growthrewardclaim.UserIDEQ(userID),
+			growthrewardclaim.TaskIDEQ(taskID),
+			growthrewardclaim.CycleKeyEQ(cycleKey),
+			growthrewardclaim.StatusEQ("SUCCEEDED"),
+		).
+		Count(ctx)
+	if err != nil {
+		return 0, err
+	}
+	dailyClaims, err := tx.GrowthRewardClaim.Query().
+		Where(
+			growthrewardclaim.UserIDEQ(userID),
+			growthrewardclaim.TaskIDEQ(taskID),
+			growthrewardclaim.ClaimedAtGTE(dayStart),
+			growthrewardclaim.StatusEQ("SUCCEEDED"),
+		).
+		Count(ctx)
+	if err != nil {
+		return 0, err
+	}
+	if rule.DailyLimit > 0 && dailyClaims >= rule.DailyLimit {
+		return 0, errCompletionNotEligible
+	}
+	perUserClaims, err := tx.GrowthRewardClaim.Query().
+		Where(
+			growthrewardclaim.UserIDEQ(userID),
+			growthrewardclaim.TaskIDEQ(taskID),
+			growthrewardclaim.StatusEQ("SUCCEEDED"),
+		).
+		Count(ctx)
+	if err != nil {
+		return 0, err
+	}
+	if rule.PerUserLimit > 0 && perUserClaims >= rule.PerUserLimit {
+		return 0, errCompletionNotEligible
+	}
+	return cycleClaims + 1, nil
 }
 
 func (s *CompletionService) existingRequest(ctx context.Context, userID, taskID int64, completionRef string) (*ent.GrowthCompletionRequest, error) {

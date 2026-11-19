@@ -5,11 +5,14 @@ package growth
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/Wei-Shaw/sub2api/ent"
 	"github.com/Wei-Shaw/sub2api/ent/growthcompletionrequest"
+	"github.com/Wei-Shaw/sub2api/ent/growthrewardclaim"
 	"github.com/Wei-Shaw/sub2api/ent/growthtransfer"
 	"github.com/Wei-Shaw/sub2api/internal/config"
 
@@ -22,10 +25,11 @@ func TestCompletionAwardDedupeLimitsConcurrencyAndQuota(t *testing.T) {
 	tasks := NewTaskService(client)
 	transfers := NewTransferService(client)
 	completions := NewCompletionService(client, transfers, &config.Config{Timezone: "Asia/Shanghai"})
+	reads := NewReadService(client, &config.Config{Timezone: "Asia/Shanghai"})
 	ctx := context.Background()
 
 	_, err := budget.TopUp(ctx, BudgetMutation{
-		OperatorID: 1, Points: 100, Reason: "任务完成测试预算", RequestID: "completion-topup",
+		OperatorID: 1, Points: 200, Reason: "任务完成测试预算", RequestID: "completion-topup",
 	})
 	require.NoError(t, err)
 	rule := TaskRuleInput{
@@ -73,7 +77,7 @@ func TestCompletionAwardDedupeLimitsConcurrencyAndQuota(t *testing.T) {
 		RequestID: "cr-3", IdempotencyKey: "completion-key-3",
 	})
 	require.NoError(t, err)
-	require.Equal(t, "ALREADY_COMPLETED", differentRef.Result)
+	require.Equal(t, "NOT_ELIGIBLE", differentRef.Result)
 	require.Zero(t, differentRef.AwardedPoints)
 
 	completions.now = func() time.Time { return dayOne.Add(24 * time.Hour) }
@@ -86,8 +90,8 @@ func TestCompletionAwardDedupeLimitsConcurrencyAndQuota(t *testing.T) {
 
 	task2, err := tasks.Create(ctx, TaskCreateInput{
 		OperatorID: 1, TaskCode: "complete_concurrent", Title: "并发任务", Category: "DAILY", TaskType: "DAILY",
-		InitialAllocation: 20,
-		Rule:              TaskRuleInput{Target: 1, RewardPoints: 10, PeriodType: "DAILY"},
+		InitialAllocation: 30,
+		Rule:              TaskRuleInput{Target: 1, RewardPoints: 10, PeriodType: "DAILY", DailyLimit: 2, PerUserLimit: 2},
 		RequestID:         "completion-task2",
 	})
 	require.NoError(t, err)
@@ -98,9 +102,8 @@ func TestCompletionAwardDedupeLimitsConcurrencyAndQuota(t *testing.T) {
 
 	var (
 		wg      sync.WaitGroup
-		mu      sync.Mutex
-		awarded int
-		already int
+		results = make(chan CompletionResult, 2)
+		errs    = make(chan error, 2)
 	)
 	for index := 0; index < 2; index++ {
 		wg.Add(1)
@@ -110,22 +113,98 @@ func TestCompletionAwardDedupeLimitsConcurrencyAndQuota(t *testing.T) {
 				UserID: 1, TaskID: task2.TaskID, CompletionRef: "concurrent-ref-" + string(rune('a'+index)),
 				RequestID: "concurrent-cr", IdempotencyKey: "concurrent-key-" + string(rune('a'+index)),
 			})
-			require.NoError(t, err)
-			mu.Lock()
-			defer mu.Unlock()
-			switch result.Result {
-			case "AWARDED":
-				awarded++
-			case "ALREADY_COMPLETED":
-				already++
-			default:
-				t.Fatalf("unexpected completion result %s", result.Result)
+			if err != nil {
+				errs <- err
+				return
 			}
+			results <- result
 		}(index)
 	}
 	wg.Wait()
-	require.Equal(t, 1, awarded)
-	require.Equal(t, 1, already)
+	close(errs)
+	close(results)
+	for err := range errs {
+		require.NoError(t, err)
+	}
+	for result := range results {
+		require.Equal(t, "AWARDED", result.Result)
+	}
+
+	dailyExhausted, err := completions.Complete(ctx, CompletionCommand{
+		UserID: 1, TaskID: task2.TaskID, CompletionRef: "concurrent-ref-c",
+		RequestID: "concurrent-cr-c", IdempotencyKey: "concurrent-key-c",
+	})
+	require.NoError(t, err)
+	require.Equal(t, "NOT_ELIGIBLE", dailyExhausted.Result)
+
+	task4, err := tasks.Create(ctx, TaskCreateInput{
+		OperatorID: 1, TaskCode: "complete_multiple", Title: "多次任务", Category: "DAILY", TaskType: "DAILY",
+		InitialAllocation: 60,
+		Rule:              TaskRuleInput{Target: 1, RewardPoints: 10, PeriodType: "DAILY", DailyLimit: 3, PerUserLimit: 5},
+		RequestID:         "completion-task4",
+	})
+	require.NoError(t, err)
+	_, err = tasks.Publish(ctx, task4.TaskID, 1, nil, "completion-publish4")
+	require.NoError(t, err)
+	completions.now = func() time.Time { return dayOne.Add(48 * time.Hour) }
+	for index := 1; index <= 3; index++ {
+		result, err := completions.Complete(ctx, CompletionCommand{
+			UserID: 1, TaskID: task4.TaskID, CompletionRef: fmt.Sprintf("multi-ref-%d", index),
+			RequestID: fmt.Sprintf("multi-cr-%d", index), IdempotencyKey: fmt.Sprintf("multi-key-%d", index),
+		})
+		require.NoError(t, err)
+		require.Equal(t, "AWARDED", result.Result)
+	}
+	reads.now = completions.now
+	multiTaskItems, _, err := reads.UTasks(ctx, 1, 1, 20, "")
+	require.NoError(t, err)
+	var multiTaskItem *UTaskItemView
+	for index := range multiTaskItems {
+		if multiTaskItems[index].TaskID == task4.TaskID {
+			multiTaskItem = &multiTaskItems[index]
+			break
+		}
+	}
+	require.NotNil(t, multiTaskItem)
+	require.Equal(t, "REWARDED", multiTaskItem.Status)
+	require.Equal(t, int64(3), multiTaskItem.MyCompletedCount)
+	dailyExhausted, err = completions.Complete(ctx, CompletionCommand{
+		UserID: 1, TaskID: task4.TaskID, CompletionRef: "multi-ref-4",
+		RequestID: "multi-cr-4", IdempotencyKey: "multi-key-4",
+	})
+	require.NoError(t, err)
+	require.Equal(t, "NOT_ELIGIBLE", dailyExhausted.Result)
+	for day := 3; day <= 4; day++ {
+		completions.now = func() time.Time { return dayOne.Add(time.Duration(day) * 24 * time.Hour) }
+		result, err := completions.Complete(ctx, CompletionCommand{
+			UserID: 1, TaskID: task4.TaskID, CompletionRef: fmt.Sprintf("multi-ref-day-%d", day),
+			RequestID: fmt.Sprintf("multi-cr-day-%d", day), IdempotencyKey: fmt.Sprintf("multi-key-day-%d", day),
+		})
+		require.NoError(t, err)
+		require.Equal(t, "AWARDED", result.Result)
+	}
+	completions.now = func() time.Time { return dayOne.Add(5 * 24 * time.Hour) }
+	perUserExhausted, err := completions.Complete(ctx, CompletionCommand{
+		UserID: 1, TaskID: task4.TaskID, CompletionRef: "multi-ref-6",
+		RequestID: "multi-cr-6", IdempotencyKey: "multi-key-6",
+	})
+	require.NoError(t, err)
+	require.Equal(t, "NOT_ELIGIBLE", perUserExhausted.Result)
+
+	multiClaims, err := client.GrowthRewardClaim.Query().
+		Where(growthrewardclaim.TaskIDEQ(task4.TaskID)).
+		Order(ent.Asc(growthrewardclaim.FieldSequence)).
+		All(ctx)
+	require.NoError(t, err)
+	require.Len(t, multiClaims, 5)
+	sequencesByCycle := make(map[string][]int)
+	for _, claim := range multiClaims {
+		sequencesByCycle[claim.CycleKey] = append(sequencesByCycle[claim.CycleKey], claim.Sequence)
+	}
+	require.Len(t, sequencesByCycle, 3)
+	require.ElementsMatch(t, []int{1, 2, 3}, sequencesByCycle[dayOne.Add(48*time.Hour).Format("2006-01-02")])
+	require.Equal(t, []int{1}, sequencesByCycle[dayOne.Add(72*time.Hour).Format("2006-01-02")])
+	require.Equal(t, []int{1}, sequencesByCycle[dayOne.Add(96*time.Hour).Format("2006-01-02")])
 
 	task3, err := tasks.Create(ctx, TaskCreateInput{
 		OperatorID: 1, TaskCode: "complete_exhausted", Title: "额度耗尽", Category: "DAILY", TaskType: "DAILY",
@@ -144,10 +223,10 @@ func TestCompletionAwardDedupeLimitsConcurrencyAndQuota(t *testing.T) {
 
 	transferCount, err := client.GrowthTransfer.Query().Where(growthtransfer.BizTypeEQ("TASK")).Count(ctx)
 	require.NoError(t, err)
-	require.Equal(t, 2, transferCount)
+	require.Equal(t, 8, transferCount)
 	ledgerCount, err := client.GrowthAccountLedger.Query().Count(ctx)
 	require.NoError(t, err)
-	require.Equal(t, 4, ledgerCount)
+	require.Equal(t, 16, ledgerCount)
 	requestCount, err := client.GrowthCompletionRequest.Query().
 		Where(growthcompletionrequest.TaskIDEQ(task.TaskID)).
 		Count(ctx)

@@ -37,6 +37,8 @@ func TestValidateTaskCreate(t *testing.T) {
 		{name: "invalid category", mutate: func(input *TaskCreateInput) { input.Category = "OTHER" }},
 		{name: "zero allocation", mutate: func(input *TaskCreateInput) { input.InitialAllocation = 0 }},
 		{name: "invalid rule", mutate: func(input *TaskCreateInput) { input.Rule.RewardPoints = 0 }},
+		{name: "invalid task code characters", mutate: func(input *TaskCreateInput) { input.TaskCode = "任务 编码" }},
+		{name: "title too long", mutate: func(input *TaskCreateInput) { input.Title = string(make([]rune, 256)) }},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -45,6 +47,26 @@ func TestValidateTaskCreate(t *testing.T) {
 			require.Error(t, validateTaskCreate(input))
 		})
 	}
+}
+
+func TestValidateTaskCreateAllowsMultipleRewards(t *testing.T) {
+	input := TaskCreateInput{
+		OperatorID:        1,
+		TaskCode:          "multiple_daily_rewards",
+		Title:             "每日多次奖励",
+		Category:          "DAILY",
+		TaskType:          "DAILY",
+		InitialAllocation: 100,
+		Rule: TaskRuleInput{
+			Target:       1,
+			RewardPoints: 10,
+			PeriodType:   "DAILY",
+			DailyLimit:   3,
+			PerUserLimit: 5,
+		},
+	}
+
+	require.NoError(t, validateTaskCreate(input))
 }
 
 func TestBuildTaskViewExposesPublishedAndPendingVersions(t *testing.T) {

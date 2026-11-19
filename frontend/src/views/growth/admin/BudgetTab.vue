@@ -15,7 +15,7 @@ import { useAppStore } from '@/stores/app'
 
 type DialogMode = 'INCREASE' | 'DECREASE' | 'ALLOCATE' | 'REVOKE'
 
-const { t } = useI18n()
+const { t, te } = useI18n()
 const authStore = useAuthStore()
 const appStore = useAppStore()
 const budget = ref<BudgetAccount>()
@@ -38,7 +38,12 @@ const form = reactive({
 const canManage = computed(() => authStore.can('growth.manage'))
 const isDanger = computed(() => form.mode === 'DECREASE' || form.mode === 'REVOKE')
 const amount = computed(() => positiveInteger(form.amount))
-const maxReduce = computed(() => Math.max(0, (budget.value?.total_amount ?? 0) - (budget.value?.allocated_amount ?? 0)))
+const maxReduce = computed(() => {
+  const total = budget.value?.total_amount ?? 0
+  const locked = budget.value?.locked_amount
+    ?? Math.max(budget.value?.allocated_amount ?? 0, budget.value?.distributed_amount ?? 0)
+  return Math.max(0, total - locked)
+})
 const maxRevoke = computed(() => Math.max(0, selectedTask.value?.remaining_points ?? 0))
 const revokeAllowed = computed(() => selectedTask.value ? canRevokeTaskQuota(selectedTask.value) : true)
 const limitMessage = computed(() => {
@@ -161,7 +166,11 @@ async function submit() {
 
 function errorMessage(cause: unknown): string {
   if (cause && typeof cause === 'object') {
-    const value = cause as { reason?: string; message?: string }
+    const value = cause as { reason?: string; message?: string; code?: string }
+    const code = value.code === 'CONFLICT' ? value.reason : value.code
+    if (code && te(`growth.admin.budget.errors.${code}`)) {
+      return t(`growth.admin.budget.errors.${code}`)
+    }
     return value.reason || value.message || t('growth.common.requestFailed')
   }
   return t('growth.common.requestFailed')

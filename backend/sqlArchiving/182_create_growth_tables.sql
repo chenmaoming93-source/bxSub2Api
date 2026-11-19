@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS growth_budgets (
         AND allocated_amount >= 0
         AND distributed_amount >= 0
         AND allocated_amount <= total_amount
-        AND distributed_amount <= allocated_amount
+        AND distributed_amount <= total_amount
     )
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -92,8 +92,8 @@ CREATE TABLE IF NOT EXISTS growth_transfers (
     KEY idx_growth_transfers_order (order_id),
     KEY idx_growth_transfers_status (status),
     CONSTRAINT chk_growth_transfers_accounts CHECK (
-        from_account_type IN ('TASK', 'WALLET', 'REDEEMED', 'SYSTEM')
-        AND to_account_type IN ('TASK', 'WALLET', 'REDEEMED', 'SYSTEM')
+        from_account_type IN ('TASK', 'WALLET', 'REDEEMED', 'SYSTEM', 'ADJUST')
+        AND to_account_type IN ('TASK', 'WALLET', 'REDEEMED', 'SYSTEM', 'ADJUST')
         AND points > 0
     ),
     CONSTRAINT chk_growth_transfers_status CHECK (status IN ('PENDING', 'SUCCEEDED', 'FAILED', 'REVERSED'))
@@ -117,7 +117,7 @@ CREATE TABLE IF NOT EXISTS growth_account_ledger (
     KEY idx_growth_account_ledger_user_time (user_id, created_at, id),
     KEY idx_growth_account_ledger_biz_time (biz_type, created_at),
     CONSTRAINT chk_growth_account_ledger_values CHECK (
-        account_type IN ('TASK', 'WALLET', 'REDEEMED', 'SYSTEM')
+        account_type IN ('TASK', 'WALLET', 'REDEEMED', 'SYSTEM', 'ADJUST')
         AND direction IN ('IN', 'OUT')
         AND points > 0
         AND (balance_after IS NULL OR balance_after >= 0)
@@ -242,6 +242,7 @@ CREATE TABLE IF NOT EXISTS growth_reward_claims (
     task_id BIGINT NOT NULL,
     rule_id BIGINT NOT NULL,
     cycle_key VARCHAR(64) NOT NULL,
+    sequence INT NOT NULL DEFAULT 1,
     idempotency_key VARCHAR(128) NOT NULL,
     transfer_id BIGINT NOT NULL,
     points BIGINT NOT NULL,
@@ -251,11 +252,11 @@ CREATE TABLE IF NOT EXISTS growth_reward_claims (
     updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
     PRIMARY KEY (id),
     UNIQUE KEY uq_growth_reward_claims_key (user_id, idempotency_key),
-    UNIQUE KEY uq_growth_reward_claims_cycle (user_id, task_id, cycle_key),
+    UNIQUE KEY uq_growth_reward_claims_cycle (user_id, task_id, cycle_key, sequence),
     KEY idx_growth_reward_claims_transfer (transfer_id),
     KEY idx_growth_reward_claims_user_time (user_id, claimed_at),
     CONSTRAINT fk_growth_reward_claims_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE RESTRICT ON UPDATE RESTRICT,
-    CONSTRAINT chk_growth_reward_claims_points CHECK (points > 0)
+    CONSTRAINT chk_growth_reward_claims_points CHECK (points > 0 AND sequence > 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS growth_products (

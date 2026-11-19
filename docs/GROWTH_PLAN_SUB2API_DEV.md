@@ -78,6 +78,7 @@ GoldenDB / MySQL 8            双边账本（不可变流水）+ 幂等记录
 | `growth_task_rules` | 规则版本 | `(task_id, version)` 唯一；触发事件、条件 JSON、目标、奖励、周期、上限；已发布不可覆盖。**不含额度**（额度属于任务，跨版本延续） |
 | `growth_user_tasks` | 用户任务进度 | `(user_id, task_id, rule_id, cycle_key)` 唯一 |
 | `growth_completion_requests`（v4.0 新增） | 完成请求记录 + 完成实例去重 | `(user_id, task_id, completion_ref)` 唯一；记录 `request_id`、发分结果、关联 `transfer_id`；替代旧 `growth_task_events` |
+| `growth_reward_claims` | 奖励领取凭证 + 周期内多次发分 | `(user_id, idempotency_key)` 唯一；`(user_id, task_id, cycle_key, sequence)` 唯一 |
 | ~~`growth_task_events`~~ | ~~可信事件收件/去重~~ | **v4.0 删除**：任务完成判定在 AIWork、无外部事件接入 |
 | `growth_products` | 商品主档 | `product_code` 唯一；类型、状态、排序 |
 | `growth_product_versions` | 商品配置版本 | `(product_id, version)` 唯一；积分价格、权益 JSON、限购；被订单引用后不可覆盖 |
@@ -260,7 +261,7 @@ executeUserIdempotentJSON(c, "growth.checkin", req, service.DefaultWriteIdempote
 
 - `growth_transfers`：`(biz_type, idempotency_key)` 唯一。
 - 签到：`(user_id, task_id, cycle_key)` 唯一（规则版本作审计字段，避免换版本重复领取）。
-- `growth_reward_claims`：`(user_id, idempotency_key)`；`growth_exchange_orders`：`(user_id, idempotency_key)`。
+- `growth_reward_claims`：`(user_id, idempotency_key)` 与 `(user_id, task_id, cycle_key, sequence)` 唯一；签到固定 `sequence=1`，普通任务在发分事务内递增序号。`growth_exchange_orders`：`(user_id, idempotency_key)`。
 - **`growth_completion_requests`（v4.0）**：`(user_id, task_id, completion_ref)` 唯一——同一完成实例重复申报（含超时重放、换幂等键但同 `completion_ref`）不重复发分。
 - 唯一键冲突时**读取既有结果返回**，不依赖「先查后写」。
 
@@ -321,7 +322,7 @@ Revoke(ctx, taskID int64, reason string, operatorID int64) (Budget, error)  // �
   2. 查当前生效任务规则（规则版本、奖励积分、周期、每日/总量上限）+ **该任务剩余额度**。
   3. **防重/限额/额度三重裁决**：
      - `growth_completion_requests` 按 `(user_id, task_id, completion_ref)` 唯一去重——命中则读既有结果返回 `ALREADY_COMPLETED`；
-     - 按周期/每日/总量上限判断，超限返回 `NOT_ELIGIBLE`（不发分）；
+     - 在发分事务内按每日/总量上限判断，并为当前周期生成下一个 `sequence`；未超限时允许同一周期多次发分，超限返回 `NOT_ELIGIBLE`（整笔发分回滚）；
      - 任务已暂停/规则不适用返回 `NOT_ELIGIBLE`；**任务额度不足返回 503 `POOL_EXHAUSTED`（对外「暂不可用」）**，不发分。
   4. 同一 GoldenDB 事务内执行 `任务额度 → 钱包` 双边入账（同 4.3 事务结构）：条件扣减任务额度、增加钱包、累加 `distributed_amount`、写 `growth_completion_requests` / `growth_user_tasks` / `growth_reward_claims` / `growth_transfers` / 恰好两条 `growth_account_ledger` 分录。
   5. **同步返回** `AWARDED` + `transfer_id` / `awarded_points` / `current_balance` / `rule_version` / `cycle_key`。

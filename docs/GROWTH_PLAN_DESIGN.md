@@ -194,7 +194,7 @@ sub2api 收到完成请求后，**不回查 `usage_logs`、不接收任何外部
 ```text
 AIWork 判定完成 → 提交完成请求（completion_ref + 幂等键）
         ├──► AWARDED          按规则已发分（返回 transfer_id / awarded_points / current_balance）
-        ├──► ALREADY_COMPLETED 幂等重放（同 completion_ref / 同周期已领），返回原结果
+        ├──► ALREADY_COMPLETED 幂等重放（同一 completion_ref），返回原结果
         └──► NOT_ELIGIBLE      任务暂停 / 周期或每日上限已满 / 规则不适用，不发分
 ```
 
@@ -213,7 +213,7 @@ AIWork 判定完成 + 不做服务间身份校验 ⇒ **sub2api 无法独立证�
 | 层 | 机制 | 防什么 | 实现 |
 |---|---|---|---|
 | **L1 请求幂等** | `Idempotency-Key` + `idempotency_records( scope, key_hash )` | 网络重试、用户连点、超时重放 | 复用 `IdempotencyCoordinator`；`Scope` = `growth.checkin` / `growth.task-completion` / `growth.exchange`，`ActorScope` = `user:<users.id>` **显式构造**，禁止依赖默认 `user:0`；回 `X-Idempotency-Replayed` |
-| **L2 账务幂等** | DB 唯一约束 | L1 被绕过、并发、内部重放 | `growth_transfers` 统一 `(biz_type, idempotency_key)` 唯一；签到另有 `(user_id, task_id, cycle_key)`；`growth_reward_claims`、`growth_exchange_orders` 各自业务唯一键 |
+| **L2 账务幂等** | DB 唯一约束 | L1 被绕过、并发、内部重放 | `growth_transfers` 统一 `(biz_type, idempotency_key)` 唯一；签到固定当日领取序号 `1`；任务奖励 `growth_reward_claims` 使用 `(user_id, task_id, cycle_key, sequence)` 唯一，支持同周期多次发分；`growth_exchange_orders` 另有业务唯一键 |
 
 > v1 给 `growth_transfers` 设计 `(user_id, key)` 与 `(pool_id, key)` 两套唯一键，v2 统一为 `(biz_type, idempotency_key)` + 业务唯一键，避免管理转账与用户转账两套语义。
 

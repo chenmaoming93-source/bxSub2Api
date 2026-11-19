@@ -26,6 +26,8 @@ const (
 	FieldRuleID = "rule_id"
 	// FieldCycleKey holds the string denoting the cycle_key field in the database.
 	FieldCycleKey = "cycle_key"
+	// FieldSequence holds the string denoting the sequence field in the database.
+	FieldSequence = "sequence"
 	// FieldIdempotencyKey holds the string denoting the idempotency_key field in the database.
 	FieldIdempotencyKey = "idempotency_key"
 	// FieldTransferID holds the string denoting the transfer_id field in the database.
@@ -58,6 +60,7 @@ var Columns = []string{
 	FieldTaskID,
 	FieldRuleID,
 	FieldCycleKey,
+	FieldSequence,
 	FieldIdempotencyKey,
 	FieldTransferID,
 	FieldPoints,
@@ -84,6 +87,10 @@ var (
 	UpdateDefaultUpdatedAt func() time.Time
 	// CycleKeyValidator is a validator for the "cycle_key" field. It is called by the builders before save.
 	CycleKeyValidator func(string) error
+	// DefaultSequence holds the default value on creation for the "sequence" field.
+	DefaultSequence int
+	// SequenceValidator is a validator for the "sequence" field. It is called by the builders before save.
+	SequenceValidator func(int) error
 	// IdempotencyKeyValidator is a validator for the "idempotency_key" field. It is called by the builders before save.
 	IdempotencyKeyValidator func(string) error
 	// PointsValidator is a validator for the "points" field. It is called by the builders before save.
@@ -130,6 +137,11 @@ func ByRuleID(opts ...sql.OrderTermOption) OrderOption {
 // ByCycleKey orders the results by the cycle_key field.
 func ByCycleKey(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCycleKey, opts...).ToFunc()
+}
+
+// BySequence orders the results by the sequence field.
+func BySequence(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldSequence, opts...).ToFunc()
 }
 
 // ByIdempotencyKey orders the results by the idempotency_key field.

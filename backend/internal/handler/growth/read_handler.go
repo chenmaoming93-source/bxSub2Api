@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/Wei-Shaw/sub2api/internal/pkg/response"
 	servermiddleware "github.com/Wei-Shaw/sub2api/internal/server/middleware"
@@ -197,6 +198,10 @@ func (h *Handler) UExchanges(c *gin.Context) {
 		return
 	}
 	if params.ProductID > 0 {
+		if params.Page > 0 || params.PageSize > 0 || strings.TrimSpace(params.Status) != "" {
+			response.BadRequest(c, "exchange create params cannot include list-only fields")
+			return
+		}
 		payload, ok := servermiddleware.GetGrowthPayloadFromContext(c)
 		if !ok || payload == nil {
 			response.Unauthorized(c, "growth payload is unavailable")
@@ -215,6 +220,10 @@ func (h *Handler) UExchanges(c *gin.Context) {
 				})
 			},
 		)
+		return
+	}
+	if params.ExpectedVersion != nil || strings.TrimSpace(params.RequestID) != "" {
+		response.BadRequest(c, "exchange list params cannot include create-only fields")
 		return
 	}
 	page, pageSize := normalizeReadPage(params.Page, params.PageSize)

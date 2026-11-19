@@ -30,7 +30,7 @@ func (GrowthAccountLedger) Fields() []ent.Field {
 	return []ent.Field{
 		field.Int64("transfer_id"),
 		field.Int64("user_id").Optional().Nillable(),
-		field.String("account_type").MaxLen(32).Validate(growthEnum("account_type", "TASK", "WALLET", "REDEEMED", "SYSTEM")),
+		field.String("account_type").MaxLen(32).Validate(growthEnum("account_type", "TASK", "WALLET", "REDEEMED", "SYSTEM", "ADJUST")),
 		field.String("direction").MaxLen(8).Validate(growthEnum("direction", "IN", "OUT")),
 		field.Int64("points").Validate(growthPositive("points")),
 		field.Int64("balance_after").Optional().Nillable(),

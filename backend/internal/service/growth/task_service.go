@@ -3,6 +3,7 @@ package growth
 import (
 	"context"
 	"errors"
+	"regexp"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -20,6 +21,8 @@ var (
 	ErrTaskStateInvalid   = infraerrors.Conflict("TASK_STATE_INVALID", "task state does not allow this operation")
 	ErrTaskRuleMissing    = infraerrors.NotFound("TASK_RULE_MISSING", "task rule is missing")
 )
+
+var taskCodePattern = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9_-]*$`)
 
 type TaskRuleInput struct {
 	TriggerEvent  string         `json:"trigger_event"`
@@ -208,6 +211,12 @@ func (s *TaskService) Update(ctx context.Context, taskID int64, input TaskUpdate
 	if strings.TrimSpace(input.Title) == "" {
 		return TaskListView{}, infraerrors.BadRequest("TITLE_REQUIRED", "title is required")
 	}
+	if !isTaskCategory(input.Category) || !isTaskCategory(input.TaskType) {
+		return TaskListView{}, infraerrors.BadRequest("INVALID_TASK", "category and task_type are invalid")
+	}
+	if err := validateTaskTextFields("", input.Title, input.Description, input.Icon); err != nil {
+		return TaskListView{}, err
+	}
 	tx, err := s.client.Tx(ctx)
 	if err != nil {
 		return TaskListView{}, err
@@ -310,7 +319,9 @@ func (s *TaskService) Publish(ctx context.Context, taskID int64, operatorID int6
 		if task.Status == "ACTIVE" {
 			current, currentErr := currentPublishedRuleTx(ctx, tx, taskID)
 			if currentErr == nil {
-				return buildTaskView(task, current, nil), tx.Rollback()
+				_ = tx.Rollback()
+				committed = true
+				return buildTaskView(task, current, nil), nil
 			}
 		}
 		return TaskListView{}, ErrTaskRuleMissing
@@ -491,17 +502,24 @@ func (s *TaskService) Online(ctx context.Context, taskID int64, operatorID int64
 	if ruleCount == 0 {
 		return TaskListView{}, ErrTaskRuleMissing
 	}
+	if initialAllocation < task.DistributedPoints {
+		return TaskListView{}, infraerrors.BadRequest(
+			"INITIAL_ALLOCATION_BELOW_DISTRIBUTED",
+			"initial_allocation cannot be lower than points already distributed",
+		)
+	}
 	budget, err := ensureBudgetForUpdate(ctx, tx)
 	if err != nil {
 		return TaskListView{}, err
 	}
-	if initialAllocation > budget.TotalAmount-budget.AllocatedAmount {
+	allocationDelta := initialAllocation - task.AllocatedPoints
+	if allocationDelta > budget.TotalAmount-budget.AllocatedAmount {
 		return TaskListView{}, ErrBudgetInsufficient
 	}
 	before := *task
 	beforeBudget := accountFromEntity(budget)
 	task, err = tx.GrowthTask.UpdateOneID(taskID).
-		SetAllocatedPoints(task.AllocatedPoints + initialAllocation).
+		SetAllocatedPoints(initialAllocation).
 		SetStatus("ACTIVE").
 		SetEffectiveFrom(now).
 		ClearEffectiveTo().
@@ -510,18 +528,33 @@ func (s *TaskService) Online(ctx context.Context, taskID int64, operatorID int64
 		return TaskListView{}, err
 	}
 	updatedBudget, err := tx.GrowthBudget.UpdateOneID(1).
-		SetAllocatedAmount(budget.AllocatedAmount + initialAllocation).
+		SetAllocatedAmount(budget.AllocatedAmount + allocationDelta).
 		SetVersion(budget.Version + 1).
 		Save(ctx)
 	if err != nil {
 		return TaskListView{}, err
 	}
-	mutation := BudgetMutation{OperatorID: operatorID, Points: initialAllocation, Reason: "任务重新上线额度", RequestID: requestID}
-	if err := appendBudgetEntry(ctx, tx, BudgetEntryAllocate, mutation, updatedBudget, &taskID); err != nil {
-		return TaskListView{}, err
-	}
-	if err := appendBudgetAudit(ctx, tx, mutation, beforeBudget, updatedBudget, nil, "task.online.allocate"); err != nil {
-		return TaskListView{}, err
+	if allocationDelta != 0 {
+		entryType := BudgetEntryAllocate
+		points := allocationDelta
+		action := "task.online.allocate"
+		if points < 0 {
+			entryType = BudgetEntryRevoke
+			points = -points
+			action = "task.online.adjust"
+		}
+		mutation := BudgetMutation{
+			OperatorID: operatorID,
+			Points:     points,
+			Reason:     "任务重新上线额度",
+			RequestID:  requestID,
+		}
+		if err := appendBudgetEntry(ctx, tx, entryType, mutation, updatedBudget, &taskID); err != nil {
+			return TaskListView{}, err
+		}
+		if err := appendBudgetAudit(ctx, tx, mutation, beforeBudget, updatedBudget, nil, action); err != nil {
+			return TaskListView{}, err
+		}
 	}
 	if err := appendTaskAudit(ctx, tx, operatorID, "task.online", "重新上线任务", taskID, &before, task, requestID); err != nil {
 		return TaskListView{}, err
@@ -785,6 +818,9 @@ func validateTaskCreate(input TaskCreateInput) error {
 	if strings.TrimSpace(input.TaskCode) == "" || strings.TrimSpace(input.Title) == "" {
 		return infraerrors.BadRequest("INVALID_TASK", "task_code and title are required")
 	}
+	if err := validateTaskTextFields(input.TaskCode, input.Title, input.Description, input.Icon); err != nil {
+		return err
+	}
 	if !isTaskCategory(input.Category) || !isTaskCategory(input.TaskType) {
 		return infraerrors.BadRequest("INVALID_TASK", "category and task_type are invalid")
 	}
@@ -803,6 +839,28 @@ func validateTaskRule(rule TaskRuleInput) error {
 	}
 	if rule.PeriodType != "DAILY" && rule.PeriodType != "ONCE" && rule.PeriodType != "WEEKLY" {
 		return infraerrors.BadRequest("INVALID_RULE", "period_type is invalid")
+	}
+	if utf8.RuneCountInString(strings.TrimSpace(rule.TriggerEvent)) > 64 {
+		return infraerrors.BadRequest("INVALID_RULE", "trigger_event is too long")
+	}
+	return nil
+}
+
+func validateTaskTextFields(code, title, description, icon string) error {
+	if code != "" {
+		code = strings.TrimSpace(code)
+		if utf8.RuneCountInString(code) > 64 || !taskCodePattern.MatchString(code) {
+			return infraerrors.BadRequest("INVALID_TASK_CODE", "task_code must be 1-64 characters using letters, numbers, underscore or hyphen")
+		}
+	}
+	if count := utf8.RuneCountInString(strings.TrimSpace(title)); count == 0 || count > 255 {
+		return infraerrors.BadRequest("INVALID_TITLE", "title must contain 1-255 characters")
+	}
+	if utf8.RuneCountInString(description) > 2048 {
+		return infraerrors.BadRequest("INVALID_DESCRIPTION", "description is too long")
+	}
+	if utf8.RuneCountInString(icon) > 128 {
+		return infraerrors.BadRequest("INVALID_ICON", "icon is too long")
 	}
 	return nil
 }

@@ -88,7 +88,7 @@ func (s *CheckinService) Checkin(ctx context.Context, userID int64, idempotencyK
 		return CheckinResult{}, err
 	}
 
-	if existing, found, err := s.transfers.findExisting(ctx, "CHECKIN", idempotencyKey); err != nil {
+	if existing, found, err := s.transfers.findExisting(ctx, userID, "CHECKIN", idempotencyKey); err != nil {
 		return CheckinResult{}, err
 	} else if found {
 		result.Result = "AWARDED"
@@ -186,6 +186,7 @@ func (s *CheckinService) Checkin(ctx context.Context, userID int64, idempotencyK
 				SetTaskID(task.ID).
 				SetRuleID(rule.ID).
 				SetCycleKey(cycleKey).
+				SetSequence(1).
 				SetIdempotencyKey(idempotencyKey).
 				SetTransferID(transfer.ID).
 				SetPoints(rule.RewardPoints).

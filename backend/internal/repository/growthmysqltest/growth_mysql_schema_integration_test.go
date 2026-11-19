@@ -72,6 +72,17 @@ func TestGrowthMySQLArchiveAndConstraints(t *testing.T) {
 			require.NoErrorf(t, err, "growth archive pass %d failed: %s", pass, statement)
 		}
 	}
+	for _, upgradeFile := range []string{"184_growth_adjustment_account.sql", "185_growth_multi_reward_claims.sql"} {
+		upgradePath := filepath.Join(filepath.Dir(sourceFile), "..", "..", "..", "sqlArchiving", upgradeFile)
+		raw, err := os.ReadFile(upgradePath)
+		require.NoError(t, err)
+		for pass := 1; pass <= 2; pass++ {
+			for _, statement := range growthSQLStatements(string(raw)) {
+				_, err := db.ExecContext(ctx, statement)
+				require.NoErrorf(t, err, "%s pass %d failed: %s", upgradeFile, pass, statement)
+			}
+		}
+	}
 
 	tables := []string{
 		"growth_budgets", "growth_budget_entries", "growth_wallets", "growth_transfers",
@@ -92,6 +103,33 @@ func TestGrowthMySQLArchiveAndConstraints(t *testing.T) {
 		SELECT COUNT(*) FROM information_schema.columns
 		WHERE table_schema = DATABASE() AND table_name = 'growth_tasks' AND column_name = 'deleted_at'`).Scan(&taskDeleteColumn))
 	require.Zero(t, taskDeleteColumn)
+	var rewardSequenceColumn int
+	require.NoError(t, db.QueryRowContext(ctx, `
+		SELECT COUNT(*) FROM information_schema.columns
+		WHERE table_schema = DATABASE() AND table_name = 'growth_reward_claims' AND column_name = 'sequence'`).Scan(&rewardSequenceColumn))
+	require.Equal(t, 1, rewardSequenceColumn)
+	var rewardCycleIndexColumns int
+	require.NoError(t, db.QueryRowContext(ctx, `
+		SELECT COUNT(*) FROM information_schema.statistics
+		WHERE table_schema = DATABASE() AND table_name = 'growth_reward_claims'
+		  AND index_name = 'uq_growth_reward_claims_cycle'`).Scan(&rewardCycleIndexColumns))
+	require.Equal(t, 4, rewardCycleIndexColumns)
+	_, err = db.ExecContext(ctx, `ALTER TABLE growth_reward_claims
+		DROP INDEX uq_growth_reward_claims_cycle,
+		ADD UNIQUE KEY uq_growth_reward_claims_cycle (user_id, task_id, cycle_key)`)
+	require.NoError(t, err)
+	multiRewardPath := filepath.Join(filepath.Dir(sourceFile), "..", "..", "..", "sqlArchiving", "185_growth_multi_reward_claims.sql")
+	raw, err = os.ReadFile(multiRewardPath)
+	require.NoError(t, err)
+	for _, statement := range growthSQLStatements(string(raw)) {
+		_, err := db.ExecContext(ctx, statement)
+		require.NoErrorf(t, err, "legacy-shape multi-reward upgrade failed: %s", statement)
+	}
+	require.NoError(t, db.QueryRowContext(ctx, `
+		SELECT COUNT(*) FROM information_schema.statistics
+		WHERE table_schema = DATABASE() AND table_name = 'growth_reward_claims'
+		  AND index_name = 'uq_growth_reward_claims_cycle'`).Scan(&rewardCycleIndexColumns))
+	require.Equal(t, 4, rewardCycleIndexColumns)
 
 	_, err = db.ExecContext(ctx, `INSERT INTO growth_tasks
 		(task_code, title, category, task_type, status, allocated_points)
@@ -116,6 +154,19 @@ func TestGrowthMySQLArchiveAndConstraints(t *testing.T) {
 	require.NoError(t, err)
 	_, err = db.ExecContext(ctx, `INSERT INTO growth_user_tasks
 		(user_id, task_id, rule_id, cycle_key) VALUES (1, 1, 1, '2026-11-17')`)
+	requireMySQLError(t, err, 1062)
+
+	_, err = db.ExecContext(ctx, `INSERT INTO growth_reward_claims
+		(user_id, task_id, rule_id, cycle_key, sequence, idempotency_key, transfer_id, points, claimed_at)
+		VALUES (1, 1, 1, '2026-11-17', 1, 'reward-key-1', 1, 10, CURRENT_TIMESTAMP(6))`)
+	require.NoError(t, err)
+	_, err = db.ExecContext(ctx, `INSERT INTO growth_reward_claims
+		(user_id, task_id, rule_id, cycle_key, sequence, idempotency_key, transfer_id, points, claimed_at)
+		VALUES (1, 1, 1, '2026-11-17', 2, 'reward-key-2', 2, 10, CURRENT_TIMESTAMP(6))`)
+	require.NoError(t, err)
+	_, err = db.ExecContext(ctx, `INSERT INTO growth_reward_claims
+		(user_id, task_id, rule_id, cycle_key, sequence, idempotency_key, transfer_id, points, claimed_at)
+		VALUES (1, 1, 1, '2026-11-17', 2, 'reward-key-3', 3, 10, CURRENT_TIMESTAMP(6))`)
 	requireMySQLError(t, err, 1062)
 
 	_, err = db.ExecContext(ctx, `INSERT INTO growth_completion_requests

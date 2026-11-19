@@ -28,8 +28,8 @@ func (GrowthTransfer) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("biz_type").MaxLen(64).NotEmpty(),
 		field.String("idempotency_key").MaxLen(128).NotEmpty(),
-		field.String("from_account_type").MaxLen(32).Validate(growthEnum("from_account_type", "TASK", "WALLET", "REDEEMED", "SYSTEM")),
-		field.String("to_account_type").MaxLen(32).Validate(growthEnum("to_account_type", "TASK", "WALLET", "REDEEMED", "SYSTEM")),
+		field.String("from_account_type").MaxLen(32).Validate(growthEnum("from_account_type", "TASK", "WALLET", "REDEEMED", "SYSTEM", "ADJUST")),
+		field.String("to_account_type").MaxLen(32).Validate(growthEnum("to_account_type", "TASK", "WALLET", "REDEEMED", "SYSTEM", "ADJUST")),
 		field.Int64("from_user_id").Optional().Nillable(),
 		field.Int64("to_user_id").Optional().Nillable(),
 		field.Int64("task_id").Optional().Nillable(),

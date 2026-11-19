@@ -12,6 +12,7 @@ import PointsAmount from '@/components/growth/PointsAmount.vue'
 import { isOverdueFailed, orderMatches, productTitle, reasonIsValid } from '@/components/growth/growthRules'
 import { useAppStore } from '@/stores/app'
 import { useAuthStore } from '@/stores/auth'
+import { createRequestId } from '@/utils/requestId'
 
 type ActionMode = 'retry' | 'refund' | 'complete' | ''
 
@@ -129,12 +130,12 @@ async function submitAction() {
     } else if (actionMode.value === 'refund') {
       result = await growthAdminAPI.refundOrder(selected.value.order_id, {
         reason: actionReason.value.trim(),
-        request_id: crypto.randomUUID(),
+        request_id: createRequestId(),
       })
     } else {
       result = await growthAdminAPI.completeOrder(selected.value.order_id, {
         reason: actionReason.value.trim(),
-        request_id: crypto.randomUUID(),
+        request_id: createRequestId(),
       })
     }
     replaceOrder(result.data)

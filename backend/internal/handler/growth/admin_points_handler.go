@@ -2,7 +2,9 @@ package growth
 
 import (
 	"context"
+	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/Wei-Shaw/sub2api/ent"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/response"
@@ -12,7 +14,7 @@ import (
 )
 
 type AdminGrowthService interface {
-	ListUsers(context.Context, int, int, string, int64, int64) ([]growthservice.AdminUserPoints, int64, error)
+	ListUsers(context.Context, int, int, string, *int64, *int64) ([]growthservice.AdminUserPoints, int64, error)
 	Adjust(context.Context, growthservice.AdjustmentCommand) (growthservice.AdjustmentResult, error)
 	Reconcile(context.Context) (growthservice.ReconciliationReport, error)
 	AuditLogs(context.Context, int, int, string) ([]*ent.GrowthAdminAudit, int64, error)
@@ -22,13 +24,21 @@ type adjustmentRequest struct {
 	Direction string `json:"direction" binding:"required,oneof=INCREASE DECREASE"`
 	Points    int64  `json:"points" binding:"required,gt=0"`
 	Reason    string `json:"reason" binding:"required"`
-	RequestID string `json:"request_id"`
+	RequestID string `json:"request_id" binding:"required"`
 }
 
 func (h *Handler) AdminListUserPoints(c *gin.Context) {
 	page, pageSize := response.ParsePagination(c)
-	minPoints, _ := strconv.ParseInt(c.Query("min_points"), 10, 64)
-	maxPoints, _ := strconv.ParseInt(c.Query("max_points"), 10, 64)
+	minPoints, err := optionalPointsQuery(c, "min_points")
+	if err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+	maxPoints, err := optionalPointsQuery(c, "max_points")
+	if err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
 	items, total, err := h.adminPoints.ListUsers(
 		c.Request.Context(), page, pageSize, c.Query("search"), minPoints, maxPoints,
 	)
@@ -37,6 +47,18 @@ func (h *Handler) AdminListUserPoints(c *gin.Context) {
 		return
 	}
 	response.Paginated(c, items, total, page, pageSize)
+}
+
+func optionalPointsQuery(c *gin.Context, key string) (*int64, error) {
+	raw, exists := c.GetQuery(key)
+	if !exists || strings.TrimSpace(raw) == "" {
+		return nil, nil
+	}
+	value, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil || value < 0 {
+		return nil, fmt.Errorf("%s must be a non-negative integer", key)
+	}
+	return &value, nil
 }
 
 func (h *Handler) AdminUserLedger(c *gin.Context) {

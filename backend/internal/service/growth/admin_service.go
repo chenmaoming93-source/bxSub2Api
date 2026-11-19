@@ -12,7 +12,6 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/growthbudget"
 	"github.com/Wei-Shaw/sub2api/ent/growthtransfer"
 	"github.com/Wei-Shaw/sub2api/ent/growthwallet"
-	"github.com/Wei-Shaw/sub2api/ent/predicate"
 	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
 )
 
@@ -58,6 +57,7 @@ type ReconciliationReport struct {
 	TaskAllocated     int64                 `json:"task_allocated"`
 	TaskDistributed   int64                 `json:"task_distributed"`
 	AdjustmentIn      int64                 `json:"adjustment_in"`
+	AdjustmentOut     int64                 `json:"adjustment_out"`
 	Issues            []ReconciliationIssue `json:"issues"`
 }
 
@@ -71,7 +71,7 @@ func NewAdminGrowthService(client *ent.Client, transfers *TransferService) *Admi
 	return &AdminGrowthService{client: client, transfers: transfers, now: time.Now}
 }
 
-func (s *AdminGrowthService) ListUsers(ctx context.Context, page, pageSize int, search string, minPoints, maxPoints int64) ([]AdminUserPoints, int64, error) {
+func (s *AdminGrowthService) ListUsers(ctx context.Context, page, pageSize int, search string, minPoints, maxPoints *int64) ([]AdminUserPoints, int64, error) {
 	if page <= 0 {
 		page = 1
 	}
@@ -85,13 +85,13 @@ func (s *AdminGrowthService) ListUsers(ctx context.Context, page, pageSize int, 
 		value := "%" + strings.TrimSpace(search) + "%"
 		args = append(args, value, value)
 	}
-	if minPoints > 0 {
-		where = append(where, "w.available_points >= ?")
-		args = append(args, minPoints)
+	if minPoints != nil {
+		where = append(where, "COALESCE(w.available_points, 0) >= ?")
+		args = append(args, *minPoints)
 	}
-	if maxPoints >= 0 && maxPoints != 0 {
-		where = append(where, "w.available_points <= ?")
-		args = append(args, maxPoints)
+	if maxPoints != nil {
+		where = append(where, "COALESCE(w.available_points, 0) <= ?")
+		args = append(args, *maxPoints)
 	}
 	whereSQL := strings.Join(where, " AND ")
 	var total int64
@@ -151,6 +151,9 @@ func (s *AdminGrowthService) Adjust(ctx context.Context, command AdjustmentComma
 	if command.Points <= 0 || (command.Direction != "INCREASE" && command.Direction != "DECREASE") {
 		return AdjustmentResult{}, infraerrors.BadRequest("INVALID_ADJUSTMENT", "direction and positive points are required")
 	}
+	if strings.TrimSpace(command.RequestID) == "" {
+		return AdjustmentResult{}, infraerrors.BadRequest("IDEMPOTENCY_KEY_REQUIRED", "request_id is required")
+	}
 	if err := validateReason(command.Reason); err != nil {
 		return AdjustmentResult{}, err
 	}
@@ -161,6 +164,7 @@ func (s *AdminGrowthService) Adjust(ctx context.Context, command AdjustmentComma
 }
 
 func (s *AdminGrowthService) increase(ctx context.Context, command AdjustmentCommand) (AdjustmentResult, error) {
+	key := adjustmentKey(command)
 	tx, err := s.client.Tx(ctx)
 	if err != nil {
 		return AdjustmentResult{}, err
@@ -186,7 +190,7 @@ func (s *AdminGrowthService) increase(ctx context.Context, command AdjustmentCom
 		return AdjustmentResult{}, err
 	}
 	before := wallet.AvailablePoints
-	transfer, err := createPendingTransfer(ctx, tx, "ADJUST", adjustmentKey(command), "SYSTEM", "WALLET", nil, &command.UserID, nil, command.Points)
+	transfer, err := createPendingTransfer(ctx, tx, "ADJUST", key, "SYSTEM", "WALLET", nil, &command.UserID, nil, command.Points)
 	if err != nil {
 		return AdjustmentResult{}, err
 	}
@@ -228,6 +232,7 @@ func (s *AdminGrowthService) increase(ctx context.Context, command AdjustmentCom
 }
 
 func (s *AdminGrowthService) decrease(ctx context.Context, command AdjustmentCommand) (AdjustmentResult, error) {
+	key := adjustmentKey(command)
 	tx, err := s.client.Tx(ctx)
 	if err != nil {
 		return AdjustmentResult{}, err
@@ -249,7 +254,8 @@ func (s *AdminGrowthService) decrease(ctx context.Context, command AdjustmentCom
 	var after int64
 	_, err = s.transfers.debitWalletTx(ctx, tx, WalletDebitCommand{
 		UserID: command.UserID, Points: command.Points, BizType: "ADJUST",
-		IdempotencyKey: adjustmentKey(command), Title: "人工调账扣减",
+		IdempotencyKey: key, Title: "人工调账扣减",
+		ToAccountType: "ADJUST", IsAdjustment: true,
 		AfterLedger: func(callbackCtx context.Context, callbackTx *ent.Tx) error {
 			current, err := callbackTx.GrowthWallet.Query().Where(growthwallet.UserIDEQ(command.UserID)).Only(callbackCtx)
 			if err != nil {
@@ -267,7 +273,10 @@ func (s *AdminGrowthService) decrease(ctx context.Context, command AdjustmentCom
 	}
 	committed = true
 	transfer, err := s.client.GrowthTransfer.Query().
-		Where(growthtransferPredicate(command)).
+		Where(
+			growthtransfer.BizTypeEQ("ADJUST"),
+			growthtransfer.IdempotencyKeyEQ(key),
+		).
 		Only(ctx)
 	if err != nil {
 		return AdjustmentResult{}, err
@@ -358,6 +367,19 @@ WHERE biz_type='ADJUST' AND from_account_type='SYSTEM' AND to_account_type='WALL
 	if report.TaskDistributed+report.AdjustmentIn != report.DistributedAmount {
 		report.Issues = append(report.Issues, ReconciliationIssue{Code: "TASK_DISTRIBUTION_MISMATCH", Message: "task distributed points differ from budget distributed amount"})
 	}
+	adjustOutRows, err := s.client.QueryContext(ctx, `SELECT COALESCE(SUM(points),0)
+FROM growth_transfers
+WHERE biz_type='ADJUST' AND from_account_type='WALLET' AND to_account_type='ADJUST' AND status='SUCCEEDED'`)
+	if err != nil {
+		return report, err
+	}
+	if adjustOutRows.Next() {
+		if err := adjustOutRows.Scan(&report.AdjustmentOut); err != nil {
+			_ = adjustOutRows.Close()
+			return report, err
+		}
+	}
+	_ = adjustOutRows.Close()
 	rows, err := s.client.QueryContext(ctx, `SELECT w.user_id, w.available_points,
 COALESCE(SUM(CASE WHEN l.direction='IN' THEN l.points ELSE -l.points END),0)
 FROM growth_wallets w
@@ -416,11 +438,4 @@ func (s *AdminGrowthService) AuditLogs(ctx context.Context, page, pageSize int, 
 	items, err := query.Order(ent.Desc(growthadminaudit.FieldCreatedAt)).
 		Offset((page - 1) * pageSize).Limit(pageSize).All(ctx)
 	return items, int64(total), err
-}
-
-func growthtransferPredicate(command AdjustmentCommand) predicate.GrowthTransfer {
-	return growthtransfer.And(
-		growthtransfer.BizTypeEQ("ADJUST"),
-		growthtransfer.IdempotencyKeyEQ(adjustmentKey(command)),
-	)
 }

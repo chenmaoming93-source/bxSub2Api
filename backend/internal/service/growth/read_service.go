@@ -271,33 +271,45 @@ func (s *ReadService) readOverview(ctx context.Context, userID int64) (overviewC
 
 	dayStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, s.location)
 	monthStart := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, s.location)
-	monthEntries, err := s.client.GrowthAccountLedger.Query().
-		Where(
-			growthaccountledger.UserIDEQ(userID),
-			growthaccountledger.AccountTypeEQ("WALLET"),
-			growthaccountledger.DirectionEQ("IN"),
-			growthaccountledger.CreatedAtGTE(monthStart),
-		).
-		All(ctx)
+	monthEarnedRows, err := s.client.QueryContext(ctx, `
+SELECT COALESCE(SUM(points), 0)
+FROM growth_account_ledger
+WHERE user_id = ?
+  AND account_type = 'WALLET'
+  AND direction = 'IN'
+  AND created_at >= ?`,
+		userID,
+		monthStart,
+	)
 	if err != nil {
 		return overviewCore{}, err
 	}
-	for _, entry := range monthEntries {
-		result.monthEarned += entry.Points
+	defer monthEarnedRows.Close()
+	monthEarned := int64(0)
+	if monthEarnedRows.Next() {
+		if err := monthEarnedRows.Scan(&monthEarned); err != nil {
+			return overviewCore{}, err
+		}
 	}
+	if err := monthEarnedRows.Err(); err != nil {
+		return overviewCore{}, err
+	}
+	result.monthEarned = monthEarned
 
-	userTasks, err := s.client.GrowthUserTask.Query().Where(growthusertask.UserIDEQ(userID)).All(ctx)
+	inProgress, err := s.client.GrowthUserTask.Query().
+		Where(growthusertask.UserIDEQ(userID), growthusertask.StatusEQ("IN_PROGRESS")).
+		Count(ctx)
 	if err != nil {
 		return overviewCore{}, err
 	}
-	for _, task := range userTasks {
-		if task.Status == "IN_PROGRESS" {
-			result.inProgress++
-		}
-		if task.RewardedAt != nil && !task.RewardedAt.Before(dayStart) {
-			result.completedToday++
-		}
+	result.inProgress = inProgress
+	completedToday, err := s.client.GrowthUserTask.Query().
+		Where(growthusertask.UserIDEQ(userID), growthusertask.RewardedAtGTE(dayStart)).
+		Count(ctx)
+	if err != nil {
+		return overviewCore{}, err
 	}
+	result.completedToday = completedToday
 
 	checkinTask, err := s.client.GrowthTask.Query().Where(growthtask.TaskCodeEQ("daily_checkin"), growthtask.StatusEQ("ACTIVE")).Only(ctx)
 	if ent.IsNotFound(err) {
@@ -513,23 +525,50 @@ func (s *ReadService) taskProgress(ctx context.Context, userID, taskID int64, ru
 	if err == nil {
 		progress = userTask.Progress
 		completed = userTask.CompletedCount
-		if userTask.RewardedAt != nil {
-			status = "REWARDED"
-		} else if progress > 0 {
+		if progress > 0 {
 			status = "IN_PROGRESS"
 		}
 	} else if !ent.IsNotFound(err) {
 		return 0, "PAUSED", cycleKey, 0
 	}
-	claimCount, err := s.client.GrowthRewardClaim.Query().
+	cycleClaims, err := s.client.GrowthRewardClaim.Query().
 		Where(
 			growthrewardclaim.UserIDEQ(userID),
 			growthrewardclaim.TaskIDEQ(taskID),
 			growthrewardclaim.CycleKeyEQ(cycleKey),
+			growthrewardclaim.StatusEQ("SUCCEEDED"),
 		).
 		Count(ctx)
-	if err == nil && claimCount > 0 {
+	if err != nil {
+		return progress, status, cycleKey, completed
+	}
+	dayStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, s.location)
+	dailyClaims, err := s.client.GrowthRewardClaim.Query().
+		Where(
+			growthrewardclaim.UserIDEQ(userID),
+			growthrewardclaim.TaskIDEQ(taskID),
+			growthrewardclaim.ClaimedAtGTE(dayStart),
+			growthrewardclaim.StatusEQ("SUCCEEDED"),
+		).
+		Count(ctx)
+	if err != nil {
+		return progress, status, cycleKey, completed
+	}
+	perUserClaims, err := s.client.GrowthRewardClaim.Query().
+		Where(
+			growthrewardclaim.UserIDEQ(userID),
+			growthrewardclaim.TaskIDEQ(taskID),
+			growthrewardclaim.StatusEQ("SUCCEEDED"),
+		).
+		Count(ctx)
+	if err != nil {
+		return progress, status, cycleKey, completed
+	}
+	if (rule.DailyLimit > 0 && dailyClaims >= rule.DailyLimit) ||
+		(rule.PerUserLimit > 0 && perUserClaims >= rule.PerUserLimit) {
 		status = "REWARDED"
+	} else if cycleClaims > 0 || progress > 0 {
+		status = "AVAILABLE"
 	}
 	return progress, status, cycleKey, completed
 }

@@ -12,6 +12,7 @@ import PointsAmount from '@/components/growth/PointsAmount.vue'
 import { positiveInteger, reasonIsValid } from '@/components/growth/growthRules'
 import { useAppStore } from '@/stores/app'
 import { useAuthStore } from '@/stores/auth'
+import { createRequestId } from '@/utils/requestId'
 
 const { t } = useI18n()
 const route = useRoute()
@@ -65,12 +66,12 @@ async function load() {
   loading.value = true
   error.value = ''
   try {
-    const min = Number(minInput.value)
-    const max = Number(maxInput.value)
+    const min = minInput.value.trim() === '' ? undefined : Number(minInput.value)
+    const max = maxInput.value.trim() === '' ? undefined : Number(maxInput.value)
     items.value = (await growthAdminAPI.users({
       search: searchInput.value.trim(),
-      min_points: Number.isFinite(min) && min > 0 ? min : undefined,
-      max_points: Number.isFinite(max) && max > 0 ? max : undefined,
+      min_points: Number.isFinite(min) && Number(min) >= 0 ? min : undefined,
+      max_points: Number.isFinite(max) && Number(max) >= 0 ? max : undefined,
       page_size: 100,
     })).data.items
   } catch (cause) {
@@ -83,8 +84,10 @@ async function load() {
 async function applyFilters() {
   const query: Record<string, string> = { tab: 'users' }
   if (searchInput.value.trim()) query.q = searchInput.value.trim()
-  if (positiveInteger(minInput.value)) query.min = String(positiveInteger(minInput.value))
-  if (positiveInteger(maxInput.value)) query.max = String(positiveInteger(maxInput.value))
+  const min = Number(minInput.value)
+  const max = Number(maxInput.value)
+  if (minInput.value.trim() !== '' && Number.isFinite(min) && min >= 0) query.min = String(min)
+  if (maxInput.value.trim() !== '' && Number.isFinite(max) && max >= 0) query.max = String(max)
   if (sort.value !== 'balance_desc') query.sort = sort.value
   await router.replace({ query })
   await load()
@@ -149,7 +152,7 @@ async function submitAdjust() {
       direction: adjustDirection.value,
       points: adjustAmount.value,
       reason: adjustReason.value.trim(),
-      request_id: crypto.randomUUID(),
+      request_id: createRequestId(),
     })
     const updated: UserPoints = {
       ...selected.value,

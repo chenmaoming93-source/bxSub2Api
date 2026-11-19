@@ -86,7 +86,7 @@ func TestBudgetTopUpReduceAllocateRevoke(t *testing.T) {
 	_, err = service.Reduce(ctx, BudgetMutation{
 		OperatorID: 1, Points: 201, Reason: "核减超过未分配额度", RequestID: "reduce-locked",
 	})
-	require.ErrorIs(t, err, ErrBudgetAllocatedLocked)
+	require.ErrorIs(t, err, ErrBudgetBelowLocked)
 
 	account, err = service.Revoke(ctx, task2.ID, BudgetMutation{
 		OperatorID: 1, Points: 200, Reason: "下线任务回收额度", RequestID: "revoke-2",
@@ -98,7 +98,7 @@ func TestBudgetTopUpReduceAllocateRevoke(t *testing.T) {
 	_, err = service.Revoke(ctx, task1.ID, BudgetMutation{
 		OperatorID: 1, Points: 100, Reason: "草稿任务不可回收", RequestID: "revoke-draft",
 	})
-	require.ErrorIs(t, err, ErrTaskQuotaInvalid)
+	require.ErrorIs(t, err, ErrTaskStateInvalid)
 
 	account, err = service.Reduce(ctx, BudgetMutation{
 		OperatorID: 1, Points: 200, Reason: "年度预算核减", RequestID: "reduce-ok",
@@ -125,6 +125,90 @@ func TestBudgetTopUpReduceAllocateRevoke(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, int64(2), allocationTotal)
 	require.Len(t, allocations, 2)
+}
+
+func TestBudgetReduceHonorsDistributedAndAllocationLockOrderIsStable(t *testing.T) {
+	client := openGrowthIntegrationClient(t)
+	budget := NewBudgetService(client)
+	transfers := NewTransferService(client)
+	admin := NewAdminGrowthService(client, transfers)
+	ctx := context.Background()
+
+	_, err := budget.TopUp(ctx, BudgetMutation{
+		OperatorID: 1, Points: 100, Reason: "账务不变量测试预算", RequestID: "invariant-topup",
+	})
+	require.NoError(t, err)
+	task := createIntegrationTask(t, client, "invariant_task", "DRAFT")
+	_, err = budget.Allocate(ctx, task.ID, BudgetMutation{
+		OperatorID: 1, Points: 60, Reason: "任务初始额度", RequestID: "invariant-allocate",
+	})
+	require.NoError(t, err)
+	_, err = transfers.AwardFromTask(ctx, TaskAwardCommand{
+		UserID: 1, TaskID: task.ID, Points: 20, BizType: "TASK",
+		IdempotencyKey: "invariant-award", Title: "不变量奖励",
+	})
+	require.NoError(t, err)
+	_, err = client.GrowthTask.UpdateOneID(task.ID).SetStatus("OFFLINE").Save(ctx)
+	require.NoError(t, err)
+	_, err = budget.Revoke(ctx, task.ID, BudgetMutation{
+		OperatorID: 1, Points: 40, Reason: "回收未发放额度", RequestID: "invariant-revoke",
+	})
+	require.NoError(t, err)
+	_, err = admin.Adjust(ctx, AdjustmentCommand{
+		OperatorID: 1, UserID: 1, Direction: "INCREASE", Points: 30,
+		Reason: "制造已发放高于已分配场景", RequestID: "invariant-adjust",
+	})
+	require.NoError(t, err)
+
+	account, err := budget.GetAccount(ctx)
+	require.NoError(t, err)
+	require.Equal(t, int64(20), account.AllocatedAmount)
+	require.Equal(t, int64(50), account.DistributedAmount)
+	require.Equal(t, int64(50), account.LockedAmount)
+
+	_, err = budget.Reduce(ctx, BudgetMutation{
+		OperatorID: 1, Points: 60, Reason: "核减后低于已发放余额", RequestID: "invariant-reduce",
+	})
+	require.ErrorIs(t, err, ErrBudgetBelowLocked)
+
+	lockTask := createIntegrationTask(t, client, "lock_order_task", "DRAFT")
+	_, err = budget.Allocate(ctx, lockTask.ID, BudgetMutation{
+		OperatorID: 1, Points: 40, Reason: "并发锁顺序额度", RequestID: "lock-order-initial",
+	})
+	require.NoError(t, err)
+	start := make(chan struct{})
+	errs := make(chan error, 12)
+	var wg sync.WaitGroup
+	for index := 0; index < 8; index++ {
+		wg.Add(1)
+		go func(index int) {
+			defer wg.Done()
+			<-start
+			_, err := transfers.AwardFromTask(ctx, TaskAwardCommand{
+				UserID: 1, TaskID: lockTask.ID, Points: 5, BizType: "TASK",
+				IdempotencyKey: fmt.Sprintf("lock-order-award-%d", index), Title: "并发发分",
+			})
+			errs <- err
+		}(index)
+	}
+	for index := 0; index < 4; index++ {
+		wg.Add(1)
+		go func(index int) {
+			defer wg.Done()
+			<-start
+			_, err := budget.Allocate(ctx, lockTask.ID, BudgetMutation{
+				OperatorID: 1, Points: 5, Reason: "并发追加额度",
+				RequestID: fmt.Sprintf("lock-order-allocate-%d", index),
+			})
+			errs <- err
+		}(index)
+	}
+	close(start)
+	wg.Wait()
+	close(errs)
+	for err := range errs {
+		require.NoError(t, err)
+	}
 }
 
 func createIntegrationTask(t *testing.T, client *ent.Client, code, status string) *ent.GrowthTask {
@@ -189,6 +273,20 @@ func openGrowthIntegrationClient(t *testing.T) *ent.Client {
 	for _, statement := range budgetSQLStatements(string(raw)) {
 		_, err := db.ExecContext(ctx, statement)
 		require.NoErrorf(t, err, "execute statement: %s", statement)
+	}
+	upgradePath := filepath.Join(filepath.Dir(sourceFile), "..", "..", "..", "sqlArchiving", "184_growth_adjustment_account.sql")
+	raw, err = os.ReadFile(upgradePath)
+	require.NoError(t, err)
+	for _, statement := range budgetSQLStatements(string(raw)) {
+		_, err := db.ExecContext(ctx, statement)
+		require.NoErrorf(t, err, "execute upgrade statement: %s", statement)
+	}
+	multiRewardPath := filepath.Join(filepath.Dir(sourceFile), "..", "..", "..", "sqlArchiving", "185_growth_multi_reward_claims.sql")
+	raw, err = os.ReadFile(multiRewardPath)
+	require.NoError(t, err)
+	for _, statement := range budgetSQLStatements(string(raw)) {
+		_, err := db.ExecContext(ctx, statement)
+		require.NoErrorf(t, err, "execute multi-reward upgrade statement: %s", statement)
 	}
 
 	client, err := ent.Open("mysql", cfg.FormatDSN())

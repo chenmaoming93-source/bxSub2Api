@@ -23,6 +23,7 @@ import {
 } from '@/components/growth/growthRules'
 import { useAppStore } from '@/stores/app'
 import { useAuthStore } from '@/stores/auth'
+import { createRequestId } from '@/utils/requestId'
 
 type EditorMode = 'create' | 'edit'
 type ActionMode = 'offline' | 'online' | 'publish' | 'quota' | ''
@@ -81,7 +82,7 @@ const rewardPoints = computed(() => positiveInteger(form.rewardPoints))
 const editorValid = computed(() => {
   if (!form.code.trim() && editorMode.value === 'create') return false
   if (!form.title.trim() || !rewardPoints.value) return false
-  if (Number(form.target) <= 0 || Number(form.dailyLimit) <= 0 || Number(form.perUserLimit) <= 0) return false
+  if (!positiveInteger(form.target) || !positiveInteger(form.dailyLimit) || !positiveInteger(form.perUserLimit)) return false
   if (editorMode.value === 'create' && (!initialQuota.value || initialQuota.value > availableBudget.value || existingCode.value)) return false
   return true
 })
@@ -98,7 +99,8 @@ const actionSubmitDisabled = computed(() => {
   }
   if (actionMode.value === 'online') {
     const points = positiveInteger(actionAmount.value)
-    return !points || points > availableBudget.value
+    if (!points || !selectedTask.value || points < selectedTask.value.distributed_points) return true
+    return points - selectedTask.value.allocated_points > availableBudget.value
   }
   if (actionMode.value === 'offline') return !reasonIsValid(actionReason.value)
   return false
@@ -210,7 +212,7 @@ async function saveTask() {
         sort_order: Number(form.sortOrder) || 0,
         initial_allocation: initialQuota.value,
         rule,
-        request_id: crypto.randomUUID(),
+        request_id: createRequestId(),
       })
       items.value = [result.data, ...items.value]
       if (budget.value) {
@@ -229,7 +231,7 @@ async function saveTask() {
         icon: form.icon.trim(),
         sort_order: Number(form.sortOrder) || 0,
         rule,
-        request_id: crypto.randomUUID(),
+        request_id: createRequestId(),
       })
       replaceTask(result.data)
     }
@@ -259,7 +261,7 @@ function availableActions(task: GrowthTask): TaskAction[] {
 function openAction(task: GrowthTask, mode: Exclude<ActionMode, ''>) {
   selectedTask.value = task
   actionMode.value = mode
-  actionAmount.value = mode === 'online' ? '' : ''
+  actionAmount.value = mode === 'online' ? String(task.allocated_points) : ''
   actionReason.value = ''
   actionDateTime.value = ''
   revokeRemaining.value = true
@@ -279,25 +281,25 @@ async function submitAction() {
     if (actionMode.value === 'publish') {
       result = await growthAdminAPI.publishTask(selectedTask.value.task_id, {
         effective_from: actionDateTime.value ? new Date(actionDateTime.value).toISOString() : null,
-        request_id: crypto.randomUUID(),
+        request_id: createRequestId(),
       })
     } else if (actionMode.value === 'offline') {
       result = await growthAdminAPI.offlineTask(selectedTask.value.task_id, {
         reason: actionReason.value.trim(),
         revoke_remaining: revokeRemaining.value,
-        request_id: crypto.randomUUID(),
+        request_id: createRequestId(),
       })
     } else if (actionMode.value === 'online') {
       result = await growthAdminAPI.onlineTask(selectedTask.value.task_id, {
         initial_allocation: positiveInteger(actionAmount.value),
-        request_id: crypto.randomUUID(),
+        request_id: createRequestId(),
       })
     } else {
       const budgetResult = await growthAdminAPI.allocate({
         task_id: selectedTask.value.task_id,
         points: positiveInteger(actionAmount.value),
         reason: actionReason.value.trim(),
-        request_id: crypto.randomUUID(),
+        request_id: createRequestId(),
       })
       budget.value = budgetResult.data
       await load()
@@ -530,14 +532,15 @@ onMounted(load)
             </label>
             <label class="block">
               <span class="input-label">{{ t('growth.admin.task.dailyLimit') }}</span>
-              <input v-model="form.dailyLimit" class="input w-full" inputmode="numeric">
+              <input v-model="form.dailyLimit" class="input w-full" inputmode="numeric" min="1">
             </label>
             <label class="block">
               <span class="input-label">{{ t('growth.admin.task.perUserLimit') }}</span>
-              <input v-model="form.perUserLimit" class="input w-full" inputmode="numeric">
+              <input v-model="form.perUserLimit" class="input w-full" inputmode="numeric" min="1">
             </label>
           </div>
           <p class="mt-2 text-xs text-gray-500 dark:text-dark-400">{{ t('growth.admin.task.rewardEstimate', { count: number(estimate) }) }}</p>
+          <p class="mt-1 text-xs text-gray-500 dark:text-dark-400">{{ t('growth.admin.task.multiRewardHint') }}</p>
           <p v-if="editorMode === 'edit'" class="mt-2 text-xs text-amber-600 dark:text-amber-300">{{ t('growth.admin.task.pendingVersion', { version: (selectedTask?.rule_version ?? 0) + 1 }) }}</p>
         </div>
         <div class="flex justify-end gap-2">

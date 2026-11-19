@@ -75,6 +75,20 @@ func (_c *GrowthRewardClaimCreate) SetCycleKey(v string) *GrowthRewardClaimCreat
 	return _c
 }
 
+// SetSequence sets the "sequence" field.
+func (_c *GrowthRewardClaimCreate) SetSequence(v int) *GrowthRewardClaimCreate {
+	_c.mutation.SetSequence(v)
+	return _c
+}
+
+// SetNillableSequence sets the "sequence" field if the given value is not nil.
+func (_c *GrowthRewardClaimCreate) SetNillableSequence(v *int) *GrowthRewardClaimCreate {
+	if v != nil {
+		_c.SetSequence(*v)
+	}
+	return _c
+}
+
 // SetIdempotencyKey sets the "idempotency_key" field.
 func (_c *GrowthRewardClaimCreate) SetIdempotencyKey(v string) *GrowthRewardClaimCreate {
 	_c.mutation.SetIdempotencyKey(v)
@@ -161,6 +175,10 @@ func (_c *GrowthRewardClaimCreate) defaults() {
 		v := growthrewardclaim.DefaultUpdatedAt()
 		_c.mutation.SetUpdatedAt(v)
 	}
+	if _, ok := _c.mutation.Sequence(); !ok {
+		v := growthrewardclaim.DefaultSequence
+		_c.mutation.SetSequence(v)
+	}
 	if _, ok := _c.mutation.Status(); !ok {
 		v := growthrewardclaim.DefaultStatus
 		_c.mutation.SetStatus(v)
@@ -190,6 +208,14 @@ func (_c *GrowthRewardClaimCreate) check() error {
 	if v, ok := _c.mutation.CycleKey(); ok {
 		if err := growthrewardclaim.CycleKeyValidator(v); err != nil {
 			return &ValidationError{Name: "cycle_key", err: fmt.Errorf(`ent: validator failed for field "GrowthRewardClaim.cycle_key": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.Sequence(); !ok {
+		return &ValidationError{Name: "sequence", err: errors.New(`ent: missing required field "GrowthRewardClaim.sequence"`)}
+	}
+	if v, ok := _c.mutation.Sequence(); ok {
+		if err := growthrewardclaim.SequenceValidator(v); err != nil {
+			return &ValidationError{Name: "sequence", err: fmt.Errorf(`ent: validator failed for field "GrowthRewardClaim.sequence": %w`, err)}
 		}
 	}
 	if _, ok := _c.mutation.IdempotencyKey(); !ok {
@@ -271,6 +297,10 @@ func (_c *GrowthRewardClaimCreate) createSpec() (*GrowthRewardClaim, *sqlgraph.C
 	if value, ok := _c.mutation.CycleKey(); ok {
 		_spec.SetField(growthrewardclaim.FieldCycleKey, field.TypeString, value)
 		_node.CycleKey = value
+	}
+	if value, ok := _c.mutation.Sequence(); ok {
+		_spec.SetField(growthrewardclaim.FieldSequence, field.TypeInt, value)
+		_node.Sequence = value
 	}
 	if value, ok := _c.mutation.IdempotencyKey(); ok {
 		_spec.SetField(growthrewardclaim.FieldIdempotencyKey, field.TypeString, value)
@@ -430,6 +460,24 @@ func (u *GrowthRewardClaimUpsert) SetCycleKey(v string) *GrowthRewardClaimUpsert
 // UpdateCycleKey sets the "cycle_key" field to the value that was provided on create.
 func (u *GrowthRewardClaimUpsert) UpdateCycleKey() *GrowthRewardClaimUpsert {
 	u.SetExcluded(growthrewardclaim.FieldCycleKey)
+	return u
+}
+
+// SetSequence sets the "sequence" field.
+func (u *GrowthRewardClaimUpsert) SetSequence(v int) *GrowthRewardClaimUpsert {
+	u.Set(growthrewardclaim.FieldSequence, v)
+	return u
+}
+
+// UpdateSequence sets the "sequence" field to the value that was provided on create.
+func (u *GrowthRewardClaimUpsert) UpdateSequence() *GrowthRewardClaimUpsert {
+	u.SetExcluded(growthrewardclaim.FieldSequence)
+	return u
+}
+
+// AddSequence adds v to the "sequence" field.
+func (u *GrowthRewardClaimUpsert) AddSequence(v int) *GrowthRewardClaimUpsert {
+	u.Add(growthrewardclaim.FieldSequence, v)
 	return u
 }
 
@@ -631,6 +679,27 @@ func (u *GrowthRewardClaimUpsertOne) SetCycleKey(v string) *GrowthRewardClaimUps
 func (u *GrowthRewardClaimUpsertOne) UpdateCycleKey() *GrowthRewardClaimUpsertOne {
 	return u.Update(func(s *GrowthRewardClaimUpsert) {
 		s.UpdateCycleKey()
+	})
+}
+
+// SetSequence sets the "sequence" field.
+func (u *GrowthRewardClaimUpsertOne) SetSequence(v int) *GrowthRewardClaimUpsertOne {
+	return u.Update(func(s *GrowthRewardClaimUpsert) {
+		s.SetSequence(v)
+	})
+}
+
+// AddSequence adds v to the "sequence" field.
+func (u *GrowthRewardClaimUpsertOne) AddSequence(v int) *GrowthRewardClaimUpsertOne {
+	return u.Update(func(s *GrowthRewardClaimUpsert) {
+		s.AddSequence(v)
+	})
+}
+
+// UpdateSequence sets the "sequence" field to the value that was provided on create.
+func (u *GrowthRewardClaimUpsertOne) UpdateSequence() *GrowthRewardClaimUpsertOne {
+	return u.Update(func(s *GrowthRewardClaimUpsert) {
+		s.UpdateSequence()
 	})
 }
 
@@ -1010,6 +1079,27 @@ func (u *GrowthRewardClaimUpsertBulk) SetCycleKey(v string) *GrowthRewardClaimUp
 func (u *GrowthRewardClaimUpsertBulk) UpdateCycleKey() *GrowthRewardClaimUpsertBulk {
 	return u.Update(func(s *GrowthRewardClaimUpsert) {
 		s.UpdateCycleKey()
+	})
+}
+
+// SetSequence sets the "sequence" field.
+func (u *GrowthRewardClaimUpsertBulk) SetSequence(v int) *GrowthRewardClaimUpsertBulk {
+	return u.Update(func(s *GrowthRewardClaimUpsert) {
+		s.SetSequence(v)
+	})
+}
+
+// AddSequence adds v to the "sequence" field.
+func (u *GrowthRewardClaimUpsertBulk) AddSequence(v int) *GrowthRewardClaimUpsertBulk {
+	return u.Update(func(s *GrowthRewardClaimUpsert) {
+		s.AddSequence(v)
+	})
+}
+
+// UpdateSequence sets the "sequence" field to the value that was provided on create.
+func (u *GrowthRewardClaimUpsertBulk) UpdateSequence() *GrowthRewardClaimUpsertBulk {
+	return u.Update(func(s *GrowthRewardClaimUpsert) {
+		s.UpdateSequence()
 	})
 }
 

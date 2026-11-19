@@ -105,6 +105,27 @@ func (_u *GrowthRewardClaimUpdate) SetNillableCycleKey(v *string) *GrowthRewardC
 	return _u
 }
 
+// SetSequence sets the "sequence" field.
+func (_u *GrowthRewardClaimUpdate) SetSequence(v int) *GrowthRewardClaimUpdate {
+	_u.mutation.ResetSequence()
+	_u.mutation.SetSequence(v)
+	return _u
+}
+
+// SetNillableSequence sets the "sequence" field if the given value is not nil.
+func (_u *GrowthRewardClaimUpdate) SetNillableSequence(v *int) *GrowthRewardClaimUpdate {
+	if v != nil {
+		_u.SetSequence(*v)
+	}
+	return _u
+}
+
+// AddSequence adds value to the "sequence" field.
+func (_u *GrowthRewardClaimUpdate) AddSequence(v int) *GrowthRewardClaimUpdate {
+	_u.mutation.AddSequence(v)
+	return _u
+}
+
 // SetIdempotencyKey sets the "idempotency_key" field.
 func (_u *GrowthRewardClaimUpdate) SetIdempotencyKey(v string) *GrowthRewardClaimUpdate {
 	_u.mutation.SetIdempotencyKey(v)
@@ -248,6 +269,11 @@ func (_u *GrowthRewardClaimUpdate) check() error {
 			return &ValidationError{Name: "cycle_key", err: fmt.Errorf(`ent: validator failed for field "GrowthRewardClaim.cycle_key": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.Sequence(); ok {
+		if err := growthrewardclaim.SequenceValidator(v); err != nil {
+			return &ValidationError{Name: "sequence", err: fmt.Errorf(`ent: validator failed for field "GrowthRewardClaim.sequence": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.IdempotencyKey(); ok {
 		if err := growthrewardclaim.IdempotencyKeyValidator(v); err != nil {
 			return &ValidationError{Name: "idempotency_key", err: fmt.Errorf(`ent: validator failed for field "GrowthRewardClaim.idempotency_key": %w`, err)}
@@ -298,6 +324,12 @@ func (_u *GrowthRewardClaimUpdate) sqlSave(ctx context.Context) (_node int, err 
 	}
 	if value, ok := _u.mutation.CycleKey(); ok {
 		_spec.SetField(growthrewardclaim.FieldCycleKey, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.Sequence(); ok {
+		_spec.SetField(growthrewardclaim.FieldSequence, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedSequence(); ok {
+		_spec.AddField(growthrewardclaim.FieldSequence, field.TypeInt, value)
 	}
 	if value, ok := _u.mutation.IdempotencyKey(); ok {
 		_spec.SetField(growthrewardclaim.FieldIdempotencyKey, field.TypeString, value)
@@ -442,6 +474,27 @@ func (_u *GrowthRewardClaimUpdateOne) SetNillableCycleKey(v *string) *GrowthRewa
 	if v != nil {
 		_u.SetCycleKey(*v)
 	}
+	return _u
+}
+
+// SetSequence sets the "sequence" field.
+func (_u *GrowthRewardClaimUpdateOne) SetSequence(v int) *GrowthRewardClaimUpdateOne {
+	_u.mutation.ResetSequence()
+	_u.mutation.SetSequence(v)
+	return _u
+}
+
+// SetNillableSequence sets the "sequence" field if the given value is not nil.
+func (_u *GrowthRewardClaimUpdateOne) SetNillableSequence(v *int) *GrowthRewardClaimUpdateOne {
+	if v != nil {
+		_u.SetSequence(*v)
+	}
+	return _u
+}
+
+// AddSequence adds value to the "sequence" field.
+func (_u *GrowthRewardClaimUpdateOne) AddSequence(v int) *GrowthRewardClaimUpdateOne {
+	_u.mutation.AddSequence(v)
 	return _u
 }
 
@@ -601,6 +654,11 @@ func (_u *GrowthRewardClaimUpdateOne) check() error {
 			return &ValidationError{Name: "cycle_key", err: fmt.Errorf(`ent: validator failed for field "GrowthRewardClaim.cycle_key": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.Sequence(); ok {
+		if err := growthrewardclaim.SequenceValidator(v); err != nil {
+			return &ValidationError{Name: "sequence", err: fmt.Errorf(`ent: validator failed for field "GrowthRewardClaim.sequence": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.IdempotencyKey(); ok {
 		if err := growthrewardclaim.IdempotencyKeyValidator(v); err != nil {
 			return &ValidationError{Name: "idempotency_key", err: fmt.Errorf(`ent: validator failed for field "GrowthRewardClaim.idempotency_key": %w`, err)}
@@ -668,6 +726,12 @@ func (_u *GrowthRewardClaimUpdateOne) sqlSave(ctx context.Context) (_node *Growt
 	}
 	if value, ok := _u.mutation.CycleKey(); ok {
 		_spec.SetField(growthrewardclaim.FieldCycleKey, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.Sequence(); ok {
+		_spec.SetField(growthrewardclaim.FieldSequence, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedSequence(); ok {
+		_spec.AddField(growthrewardclaim.FieldSequence, field.TypeInt, value)
 	}
 	if value, ok := _u.mutation.IdempotencyKey(); ok {
 		_spec.SetField(growthrewardclaim.FieldIdempotencyKey, field.TypeString, value)

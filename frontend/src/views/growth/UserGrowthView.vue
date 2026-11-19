@@ -25,6 +25,7 @@ import LedgerTab from './user/LedgerTab.vue'
 import { pollExchangeOrder } from './pollExchange'
 import { useAppStore } from '@/stores/app'
 import { useAuthStore } from '@/stores/auth'
+import { createRequestId } from '@/utils/requestId'
 
 const route = useRoute()
 const router = useRouter()
@@ -110,7 +111,7 @@ async function openProduct(product: UserProduct) {
   exchangeError.value = ''
   exchangeNotice.value = ''
   pendingStatus.value = ''
-  idempotencyKey.value = crypto.randomUUID()
+  idempotencyKey.value = createRequestId()
   selected.value = product
   detailOpen.value = true
   try {
@@ -240,6 +241,7 @@ onMounted(async () => {
     <div v-if="!canRead" class="card mx-auto mt-8 max-w-xl p-8 text-center">
       <div class="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-50 text-2xl text-rose-600 dark:bg-rose-500/10 dark:text-rose-300">403</div>
       <h2 class="text-lg font-semibold text-gray-900 dark:text-white">{{ t('growth.common.permissionDenied') }}</h2>
+      <p class="mt-2 text-sm text-gray-500 dark:text-dark-400">{{ t('growth.common.permissionDeniedHint') }}</p>
     </div>
 
     <template v-else>

@@ -11,6 +11,7 @@ import PointsAmount from '@/components/growth/PointsAmount.vue'
 import { positiveInteger, reasonIsValid } from '@/components/growth/growthRules'
 import { useAppStore } from '@/stores/app'
 import { useAuthStore } from '@/stores/auth'
+import { createRequestId } from '@/utils/requestId'
 
 type ViewMode = 'table' | 'cards'
 type ActionMode = 'publish' | 'offline' | 'stock' | ''
@@ -162,7 +163,7 @@ async function saveProduct() {
         stock_mode: form.stockMode,
         initial_stock: form.stockMode === 'UNLIMITED' ? 0 : Math.max(0, Number(form.initialStock) || 0),
         version,
-        request_id: crypto.randomUUID(),
+        request_id: createRequestId(),
       })
       items.value = [result.data, ...items.value]
     } else if (selectedProduct.value) {
@@ -172,7 +173,7 @@ async function saveProduct() {
         fulfillment_mode: form.fulfillmentMode,
         sort_order: Number(form.sortOrder) || 0,
         version,
-        request_id: crypto.randomUUID(),
+        request_id: createRequestId(),
       })
       replaceProduct(result.data)
     }
@@ -236,13 +237,13 @@ async function submitAction() {
       }
       result = await growthAdminAPI.offlineProduct(selectedProduct.value.product_id, {
         reason: actionReason.value.trim(),
-        request_id: crypto.randomUUID(),
+        request_id: createRequestId(),
       })
     } else {
       result = await growthAdminAPI.adjustStock(selectedProduct.value.product_id, {
         delta: Number(actionDelta.value),
         reason: actionReason.value.trim(),
-        request_id: crypto.randomUUID(),
+        request_id: createRequestId(),
       })
     }
     replaceProduct(result.data)

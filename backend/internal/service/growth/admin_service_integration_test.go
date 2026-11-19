@@ -66,22 +66,33 @@ func TestAdjustmentAuditAndReconciliation(t *testing.T) {
 		Reason: "短", RequestID: "adjust-short",
 	})
 	require.Error(t, err)
+	_, err = admin.Adjust(ctx, AdjustmentCommand{
+		OperatorID: 1, UserID: 1, Direction: "DECREASE", Points: 1,
+		Reason: "缺少幂等请求标识",
+	})
+	require.Error(t, err)
 
 	_, err = client.ExecContext(ctx,
 		"INSERT INTO users (id, email, password_hash, username) VALUES (2, 'no-wallet@example.com', 'x', 'no-wallet')",
 	)
 	require.NoError(t, err)
-	users, total, err := admin.ListUsers(ctx, 1, 20, "", 0, 0)
+	users, total, err := admin.ListUsers(ctx, 1, 20, "", nil, nil)
 	require.NoError(t, err)
 	require.Equal(t, int64(2), total)
 	require.Len(t, users, 2)
 	require.Equal(t, int64(40), users[0].AvailablePoints)
 	require.Equal(t, int64(50), users[0].TotalEarned)
-	require.Equal(t, int64(10), users[0].TotalSpent)
+	require.Zero(t, users[0].TotalSpent)
 	require.Equal(t, int64(2), users[1].UserID)
 	require.Zero(t, users[1].AvailablePoints)
 	require.Zero(t, users[1].TotalEarned)
 	require.Zero(t, users[1].TotalSpent)
+	zero := int64(0)
+	zeroUsers, zeroTotal, err := admin.ListUsers(ctx, 1, 20, "", nil, &zero)
+	require.NoError(t, err)
+	require.Equal(t, int64(1), zeroTotal)
+	require.Len(t, zeroUsers, 1)
+	require.Equal(t, int64(2), zeroUsers[0].UserID)
 
 	ledger, err := reads.Ledger(ctx, 1, 0, 20, "")
 	require.NoError(t, err)
@@ -104,6 +115,7 @@ func TestAdjustmentAuditAndReconciliation(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, report.OK, "issues: %+v", report.Issues)
 	require.Equal(t, int64(30), report.AdjustmentIn)
+	require.Equal(t, int64(10), report.AdjustmentOut)
 
 	wallet, err := client.GrowthWallet.Query().Where(growthwallet.UserIDEQ(1)).Only(ctx)
 	require.NoError(t, err)

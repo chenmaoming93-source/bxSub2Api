@@ -107,6 +107,10 @@ func TestTaskLifecycleWithQuota(t *testing.T) {
 	require.Equal(t, int64(20), publishedV2.RewardPoints)
 	require.Nil(t, publishedV2.PendingRuleVersion)
 	require.Equal(t, "daily_checkin_test", publishedV2.TaskCode)
+	publishedAgain, err := tasks.Publish(ctx, created.TaskID, 1, nil, "publish-noop")
+	require.NoError(t, err)
+	require.Equal(t, 2, *publishedAgain.RuleVersion)
+	require.Nil(t, publishedAgain.PendingRuleVersion)
 
 	versions, err := tasks.RuleVersions(ctx, created.TaskID)
 	require.NoError(t, err)
@@ -154,6 +158,44 @@ func TestTaskLifecycleWithQuota(t *testing.T) {
 	require.Len(t, listed, 1)
 	require.Equal(t, "ACTIVE", listed[0].Status)
 	require.Equal(t, 3, *listed[0].RuleVersion)
+}
+
+func TestReonlineResetsTaskAllocationAccounting(t *testing.T) {
+	client := openGrowthIntegrationClient(t)
+	budget := NewBudgetService(client)
+	tasks := NewTaskService(client)
+	ctx := context.Background()
+
+	_, err := budget.TopUp(ctx, BudgetMutation{
+		OperatorID: 1, Points: 1000, Reason: "重新上线额度测试", RequestID: "online-reset-topup",
+	})
+	require.NoError(t, err)
+	rule := TaskRuleInput{
+		Target: 1, RewardPoints: 10, PeriodType: "DAILY", DailyLimit: 1, PerUserLimit: 1,
+	}
+	task, err := tasks.Create(ctx, TaskCreateInput{
+		OperatorID: 1, TaskCode: "online_reset", Title: "重新上线任务", Category: "DAILY",
+		TaskType: "DAILY", InitialAllocation: 200, Rule: rule, RequestID: "online-reset-create",
+	})
+	require.NoError(t, err)
+	_, err = tasks.Publish(ctx, task.TaskID, 1, nil, "online-reset-publish")
+	require.NoError(t, err)
+	offline, err := tasks.Offline(ctx, task.TaskID, 1, "暂时下线但保留额度", false, "online-reset-offline")
+	require.NoError(t, err)
+	require.Equal(t, int64(200), offline.AllocatedPoints)
+
+	rule.RewardPoints = 20
+	_, err = tasks.Update(ctx, task.TaskID, TaskUpdateInput{
+		OperatorID: 1, Title: "重新上线任务新版", Category: "DAILY", TaskType: "DAILY",
+		Rule: rule, RequestID: "online-reset-update",
+	})
+	require.NoError(t, err)
+	_, err = tasks.Publish(ctx, task.TaskID, 1, nil, "online-reset-publish-v2")
+	require.NoError(t, err)
+	online, err := tasks.Online(ctx, task.TaskID, 1, 120, "online-reset-online")
+	require.NoError(t, err)
+	require.Equal(t, int64(120), online.AllocatedPoints)
+	require.Equal(t, int64(120), mustBudget(t, budget).AllocatedAmount)
 }
 
 func mustBudget(t *testing.T, service *BudgetService) BudgetAccount {

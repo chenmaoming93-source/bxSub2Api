@@ -85,6 +85,11 @@ func CycleKey(v string) predicate.GrowthRewardClaim {
 	return predicate.GrowthRewardClaim(sql.FieldEQ(FieldCycleKey, v))
 }
 
+// Sequence applies equality check predicate on the "sequence" field. It's identical to SequenceEQ.
+func Sequence(v int) predicate.GrowthRewardClaim {
+	return predicate.GrowthRewardClaim(sql.FieldEQ(FieldSequence, v))
+}
+
 // IdempotencyKey applies equality check predicate on the "idempotency_key" field. It's identical to IdempotencyKeyEQ.
 func IdempotencyKey(v string) predicate.GrowthRewardClaim {
 	return predicate.GrowthRewardClaim(sql.FieldEQ(FieldIdempotencyKey, v))
@@ -353,6 +358,46 @@ func CycleKeyEqualFold(v string) predicate.GrowthRewardClaim {
 // CycleKeyContainsFold applies the ContainsFold predicate on the "cycle_key" field.
 func CycleKeyContainsFold(v string) predicate.GrowthRewardClaim {
 	return predicate.GrowthRewardClaim(sql.FieldContainsFold(FieldCycleKey, v))
+}
+
+// SequenceEQ applies the EQ predicate on the "sequence" field.
+func SequenceEQ(v int) predicate.GrowthRewardClaim {
+	return predicate.GrowthRewardClaim(sql.FieldEQ(FieldSequence, v))
+}
+
+// SequenceNEQ applies the NEQ predicate on the "sequence" field.
+func SequenceNEQ(v int) predicate.GrowthRewardClaim {
+	return predicate.GrowthRewardClaim(sql.FieldNEQ(FieldSequence, v))
+}
+
+// SequenceIn applies the In predicate on the "sequence" field.
+func SequenceIn(vs ...int) predicate.GrowthRewardClaim {
+	return predicate.GrowthRewardClaim(sql.FieldIn(FieldSequence, vs...))
+}
+
+// SequenceNotIn applies the NotIn predicate on the "sequence" field.
+func SequenceNotIn(vs ...int) predicate.GrowthRewardClaim {
+	return predicate.GrowthRewardClaim(sql.FieldNotIn(FieldSequence, vs...))
+}
+
+// SequenceGT applies the GT predicate on the "sequence" field.
+func SequenceGT(v int) predicate.GrowthRewardClaim {
+	return predicate.GrowthRewardClaim(sql.FieldGT(FieldSequence, v))
+}
+
+// SequenceGTE applies the GTE predicate on the "sequence" field.
+func SequenceGTE(v int) predicate.GrowthRewardClaim {
+	return predicate.GrowthRewardClaim(sql.FieldGTE(FieldSequence, v))
+}
+
+// SequenceLT applies the LT predicate on the "sequence" field.
+func SequenceLT(v int) predicate.GrowthRewardClaim {
+	return predicate.GrowthRewardClaim(sql.FieldLT(FieldSequence, v))
+}
+
+// SequenceLTE applies the LTE predicate on the "sequence" field.
+func SequenceLTE(v int) predicate.GrowthRewardClaim {
+	return predicate.GrowthRewardClaim(sql.FieldLTE(FieldSequence, v))
 }
 
 // IdempotencyKeyEQ applies the EQ predicate on the "idempotency_key" field.

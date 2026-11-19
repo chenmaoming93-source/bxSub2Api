@@ -31,6 +31,7 @@ func (GrowthRewardClaim) Fields() []ent.Field {
 		field.Int64("task_id"),
 		field.Int64("rule_id"),
 		field.String("cycle_key").MaxLen(64),
+		field.Int("sequence").Default(1).Validate(growthPositiveInt("sequence")),
 		field.String("idempotency_key").MaxLen(128).NotEmpty(),
 		field.Int64("transfer_id"),
 		field.Int64("points").Validate(growthPositive("points")),
@@ -53,7 +54,7 @@ func (GrowthRewardClaim) Edges() []ent.Edge {
 func (GrowthRewardClaim) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Fields("user_id", "idempotency_key").Unique(),
-		index.Fields("user_id", "task_id", "cycle_key").Unique(),
+		index.Fields("user_id", "task_id", "cycle_key", "sequence").Unique(),
 		index.Fields("transfer_id"),
 		index.Fields("user_id", "claimed_at"),
 	}

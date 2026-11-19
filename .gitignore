@@ -165,6 +165,9 @@ docs/*
 !docs/GROWTH_PLAN_PAGES_DESIGN.md
 !docs/GROWTH_PLAN_EXTERNAL_API_EXAMPLES.md
 !docs/GROWTH_PLAN_RELEASE_CHANGES.md
+!docs/GROWTH_PLAN_RELEASE_RUNBOOK.md
+!docs/GROWTH_PLAN_RELEASE_CHANGE_TICKET.md
+!docs/GROWTH_PLAN_CODE_REVIEW.md
 !docs/prototype/
 !docs/prototype/*.html
 !docs/legal/

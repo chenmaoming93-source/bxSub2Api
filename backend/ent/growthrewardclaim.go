@@ -30,6 +30,8 @@ type GrowthRewardClaim struct {
 	RuleID int64 `json:"rule_id,omitempty"`
 	// CycleKey holds the value of the "cycle_key" field.
 	CycleKey string `json:"cycle_key,omitempty"`
+	// Sequence holds the value of the "sequence" field.
+	Sequence int `json:"sequence,omitempty"`
 	// IdempotencyKey holds the value of the "idempotency_key" field.
 	IdempotencyKey string `json:"idempotency_key,omitempty"`
 	// TransferID holds the value of the "transfer_id" field.
@@ -71,7 +73,7 @@ func (*GrowthRewardClaim) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case growthrewardclaim.FieldID, growthrewardclaim.FieldUserID, growthrewardclaim.FieldTaskID, growthrewardclaim.FieldRuleID, growthrewardclaim.FieldTransferID, growthrewardclaim.FieldPoints:
+		case growthrewardclaim.FieldID, growthrewardclaim.FieldUserID, growthrewardclaim.FieldTaskID, growthrewardclaim.FieldRuleID, growthrewardclaim.FieldSequence, growthrewardclaim.FieldTransferID, growthrewardclaim.FieldPoints:
 			values[i] = new(sql.NullInt64)
 		case growthrewardclaim.FieldCycleKey, growthrewardclaim.FieldIdempotencyKey, growthrewardclaim.FieldStatus:
 			values[i] = new(sql.NullString)
@@ -133,6 +135,12 @@ func (_m *GrowthRewardClaim) assignValues(columns []string, values []any) error 
 				return fmt.Errorf("unexpected type %T for field cycle_key", values[i])
 			} else if value.Valid {
 				_m.CycleKey = value.String
+			}
+		case growthrewardclaim.FieldSequence:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field sequence", values[i])
+			} else if value.Valid {
+				_m.Sequence = int(value.Int64)
 			}
 		case growthrewardclaim.FieldIdempotencyKey:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -222,6 +230,9 @@ func (_m *GrowthRewardClaim) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("cycle_key=")
 	builder.WriteString(_m.CycleKey)
+	builder.WriteString(", ")
+	builder.WriteString("sequence=")
+	builder.WriteString(fmt.Sprintf("%v", _m.Sequence))
 	builder.WriteString(", ")
 	builder.WriteString("idempotency_key=")
 	builder.WriteString(_m.IdempotencyKey)

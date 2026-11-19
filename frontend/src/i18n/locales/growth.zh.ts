@@ -20,6 +20,7 @@ export default {
     positiveAmountRequired: '请输入大于 0 的整数。',
     operationSucceeded: '操作成功',
     permissionDenied: '你没有成长计划查看权限，请联系管理员。',
+    permissionDeniedHint: '请联系管理员为当前角色授予 growth.read 或 growth.self.read 权限。',
     requestFailed: '请求失败，请稍后重试。',
     previous: '上一页',
     next: '下一页',
@@ -49,6 +50,7 @@ export default {
   },
   admin: {
     title: '成长计划',
+    menu: '成长计划',
     description: '管理总预算、任务额度、兑换商品与完整履约链路',
     tabs: {
       budget: '总预算与任务额度',
@@ -106,6 +108,13 @@ export default {
       maxReduce: '当前最多可核减 {points} 积分。',
       maxRevoke: '当前最多可回收 {points} 积分。',
       auditWarning: '该操作会写入审计日志，确认后不可撤销。',
+      errors: {
+        BUDGET_BELOW_ZERO: '核减数量不能超过当前总预算。',
+        BUDGET_BELOW_LOCKED: '核减后总预算不能低于已分配或已发放积分。',
+        BUDGET_INSUFFICIENT: '未分配预算不足。',
+        TASK_STATE_INVALID: '当前任务状态不允许回收额度，请先下线任务。',
+        TASK_QUOTA_EXCEEDED: '回收数量不能超过任务剩余额度。',
+      },
     },
     task: {
       create: '新建任务',
@@ -171,6 +180,7 @@ export default {
       periodType: '奖励周期',
       dailyLimit: '每日上限',
       perUserLimit: '每人上限',
+      multiRewardHint: '每日上限和每人上限支持大于 1；同一奖励周期内可按上限多次发分。',
       effectiveFrom: '生效时间',
       save: '保存',
       editReason: '编辑说明',
@@ -180,8 +190,8 @@ export default {
       offlineHint: '下线后用户端不再展示该任务，已发放积分不受影响。',
       revokeRemaining: '同时回收剩余额度（{points} 积分）',
       onlineTitle: '重新上线任务',
-      onlineHint: '重新上线必须从总预算重新划拨额度。',
-      initialQuota: '重新划拨额度',
+      onlineHint: '上线后任务总额度将按本次输入重置；已发放积分视为已占用。',
+      initialQuota: '上线后任务总额度',
       publishTitle: '发布规则版本',
       publishImmediate: '立即生效',
       publishScheduled: '定时生效',
@@ -327,6 +337,7 @@ export default {
   },
   user: {
     title: '我的积分',
+    menu: '我的积分',
     description: '签到与任务在 AIWork 完成，积分与兑换在此查看',
     tabs: {
       overview: '积分总览',

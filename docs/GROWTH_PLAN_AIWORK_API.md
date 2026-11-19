@@ -357,7 +357,7 @@
   "rule_version": 7, "cycle_key": "2026-11-17", "server_time": "..." }
 ```
 
-`result`：`AWARDED`（已按规则发分，附带 `transfer_id` / `awarded_points` / `current_balance`）/ `ALREADY_COMPLETED`（同一 `completion_ref` 或同周期已达上限的幂等重放，返回原结果，`awarded_points` 按首次结果，可能为 0）/ `NOT_ELIGIBLE`（任务已暂停/周期上限已满/规则不适用，不发分）。**v4.0 删除 `PENDING_VERIFICATION` 与 `REJECTED`**：不再异步核验，也不存在「证据不可信」判定。网关任务原本的 `X-Client-Request-ID` 如需保留追溯，可放入 `request_id`，但不作为发奖依据。
+`result`：`AWARDED`（已按规则发分，附带 `transfer_id` / `awarded_points` / `current_balance`）/ `ALREADY_COMPLETED`（同一 `completion_ref` 已处理过，返回原结果，`awarded_points` 按首次结果，可能为 0）/ `NOT_ELIGIBLE`（任务已暂停/每日或每人上限已满/规则不适用，不发分）。**同一任务在同一周期内可以多次发分**：每次真实完成必须使用新的 `completion_ref` 和新的幂等键，服务端按 `daily_limit`、`per_user_limit` 及任务剩余额度裁决；达到任一上限后返回 `NOT_ELIGIBLE`。**v4.0 删除 `PENDING_VERIFICATION` 与 `REJECTED`**：不再异步核验，也不存在「证据不可信」判定。网关任务原本的 `X-Client-Request-ID` 如需保留追溯，可放入 `request_id`，但不作为发奖依据。
 
 ### 3.10 `POST /growth/exchanges` — 命令
 

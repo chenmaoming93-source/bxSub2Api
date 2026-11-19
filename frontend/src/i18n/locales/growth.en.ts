@@ -20,6 +20,7 @@ export default {
     positiveAmountRequired: 'Enter a positive whole number.',
     operationSucceeded: 'Operation completed',
     permissionDenied: 'You do not have permission to view the growth plan. Contact an administrator.',
+    permissionDeniedHint: 'Ask an administrator to grant growth.read or growth.self.read to your role.',
     requestFailed: 'Request failed. Try again later.',
     previous: 'Previous',
     next: 'Next',
@@ -49,6 +50,7 @@ export default {
   },
   admin: {
     title: 'Growth Plan',
+    menu: 'Growth Plan',
     description: 'Manage budget, task quotas, products, and fulfillment',
     tabs: {
       budget: 'Budget & Quotas',
@@ -106,6 +108,13 @@ export default {
       maxReduce: 'Up to {points} points can be reduced.',
       maxRevoke: 'Up to {points} points can be reclaimed.',
       auditWarning: 'This operation is written to the audit log and cannot be undone.',
+      errors: {
+        BUDGET_BELOW_ZERO: 'The reduction cannot exceed the current total budget.',
+        BUDGET_BELOW_LOCKED: 'The total budget cannot fall below allocated or distributed points.',
+        BUDGET_INSUFFICIENT: 'Unallocated budget is insufficient.',
+        TASK_STATE_INVALID: 'Take the task offline before reclaiming quota.',
+        TASK_QUOTA_EXCEEDED: 'The reclaim amount exceeds the task’s remaining quota.',
+      },
     },
     task: {
       create: 'New task',
@@ -171,6 +180,7 @@ export default {
       periodType: 'Reward period',
       dailyLimit: 'Daily limit',
       perUserLimit: 'Per-user limit',
+      multiRewardHint: 'Daily and per-user limits can exceed 1, allowing multiple rewards within the same business cycle.',
       effectiveFrom: 'Effective from',
       save: 'Save',
       editReason: 'Edit note',
@@ -180,8 +190,8 @@ export default {
       offlineHint: 'The task will disappear from AIWork. Delivered points are unchanged.',
       revokeRemaining: 'Reclaim remaining quota ({points} points)',
       onlineTitle: 'Bring task online',
-      onlineHint: 'Bringing a task online requires a fresh quota allocation.',
-      initialQuota: 'New quota',
+      onlineHint: 'Bringing the task online resets its total quota to this value; distributed points remain occupied.',
+      initialQuota: 'Total quota after coming online',
       publishTitle: 'Publish rule version',
       publishImmediate: 'Immediately',
       publishScheduled: 'At a scheduled time',
@@ -327,6 +337,7 @@ export default {
   },
   user: {
     title: 'My Points',
+    menu: 'My Points',
     description: 'Check in and complete tasks in AIWork; review points and exchanges here',
     tabs: {
       overview: 'Overview',

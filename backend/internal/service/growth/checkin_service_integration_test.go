@@ -59,34 +59,44 @@ func TestCheckinAwardReplayConcurrencyAndQuotaExhaustion(t *testing.T) {
 
 	checkins.now = func() time.Time { return dayOne.Add(24 * time.Hour) }
 	var (
-		wg         sync.WaitGroup
-		mu         sync.Mutex
-		awarded    int
-		notAwarded int
-		balances   []int64
+		wg      sync.WaitGroup
+		results = make(chan CheckinResult, 2)
+		errs    = make(chan error, 2)
 	)
 	for index := 0; index < 2; index++ {
 		wg.Add(1)
 		go func(index int) {
 			defer wg.Done()
 			result, err := checkins.Checkin(ctx, 1, "checkin-day2-"+string(rune('a'+index)))
-			require.NoError(t, err)
-			mu.Lock()
-			defer mu.Unlock()
-			switch result.Result {
-			case "AWARDED":
-				awarded++
-				if result.CurrentBalance != nil {
-					balances = append(balances, *result.CurrentBalance)
-				}
-			case "ALREADY_CLAIMED", "UNAVAILABLE":
-				notAwarded++
-			default:
-				t.Fatalf("unexpected concurrent result %s", result.Result)
+			if err != nil {
+				errs <- err
+				return
 			}
+			results <- result
 		}(index)
 	}
 	wg.Wait()
+	close(errs)
+	close(results)
+	for err := range errs {
+		require.NoError(t, err)
+	}
+	awarded := 0
+	notAwarded := 0
+	var balances []int64
+	for result := range results {
+		switch result.Result {
+		case "AWARDED":
+			awarded++
+			if result.CurrentBalance != nil {
+				balances = append(balances, *result.CurrentBalance)
+			}
+		case "ALREADY_CLAIMED", "UNAVAILABLE":
+			notAwarded++
+		default:
+			t.Fatalf("unexpected concurrent result %s", result.Result)
+		}
+	}
 	require.Equal(t, 1, awarded)
 	require.Equal(t, 1, notAwarded)
 	require.Contains(t, balances, int64(20))
