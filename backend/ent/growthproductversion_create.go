@@ -83,16 +83,8 @@ func (_c *GrowthProductVersionCreate) SetNillableBenefitSummary(v *string) *Grow
 }
 
 // SetBenefitDetail sets the "benefit_detail" field.
-func (_c *GrowthProductVersionCreate) SetBenefitDetail(v string) *GrowthProductVersionCreate {
+func (_c *GrowthProductVersionCreate) SetBenefitDetail(v map[string]interface{}) *GrowthProductVersionCreate {
 	_c.mutation.SetBenefitDetail(v)
-	return _c
-}
-
-// SetNillableBenefitDetail sets the "benefit_detail" field if the given value is not nil.
-func (_c *GrowthProductVersionCreate) SetNillableBenefitDetail(v *string) *GrowthProductVersionCreate {
-	if v != nil {
-		_c.SetBenefitDetail(*v)
-	}
 	return _c
 }
 
@@ -335,7 +327,7 @@ func (_c *GrowthProductVersionCreate) createSpec() (*GrowthProductVersion, *sqlg
 		_node.BenefitSummary = value
 	}
 	if value, ok := _c.mutation.BenefitDetail(); ok {
-		_spec.SetField(growthproductversion.FieldBenefitDetail, field.TypeString, value)
+		_spec.SetField(growthproductversion.FieldBenefitDetail, field.TypeJSON, value)
 		_node.BenefitDetail = value
 	}
 	if value, ok := _c.mutation.TokenAmount(); ok {
@@ -493,7 +485,7 @@ func (u *GrowthProductVersionUpsert) UpdateBenefitSummary() *GrowthProductVersio
 }
 
 // SetBenefitDetail sets the "benefit_detail" field.
-func (u *GrowthProductVersionUpsert) SetBenefitDetail(v string) *GrowthProductVersionUpsert {
+func (u *GrowthProductVersionUpsert) SetBenefitDetail(v map[string]interface{}) *GrowthProductVersionUpsert {
 	u.Set(growthproductversion.FieldBenefitDetail, v)
 	return u
 }
@@ -755,7 +747,7 @@ func (u *GrowthProductVersionUpsertOne) UpdateBenefitSummary() *GrowthProductVer
 }
 
 // SetBenefitDetail sets the "benefit_detail" field.
-func (u *GrowthProductVersionUpsertOne) SetBenefitDetail(v string) *GrowthProductVersionUpsertOne {
+func (u *GrowthProductVersionUpsertOne) SetBenefitDetail(v map[string]interface{}) *GrowthProductVersionUpsertOne {
 	return u.Update(func(s *GrowthProductVersionUpsert) {
 		s.SetBenefitDetail(v)
 	})
@@ -1204,7 +1196,7 @@ func (u *GrowthProductVersionUpsertBulk) UpdateBenefitSummary() *GrowthProductVe
 }
 
 // SetBenefitDetail sets the "benefit_detail" field.
-func (u *GrowthProductVersionUpsertBulk) SetBenefitDetail(v string) *GrowthProductVersionUpsertBulk {
+func (u *GrowthProductVersionUpsertBulk) SetBenefitDetail(v map[string]interface{}) *GrowthProductVersionUpsertBulk {
 	return u.Update(func(s *GrowthProductVersionUpsert) {
 		s.SetBenefitDetail(v)
 	})

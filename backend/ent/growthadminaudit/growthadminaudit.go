@@ -131,16 +131,6 @@ func ByResourceID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldResourceID, opts...).ToFunc()
 }
 
-// ByBeforeJSON orders the results by the before_json field.
-func ByBeforeJSON(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldBeforeJSON, opts...).ToFunc()
-}
-
-// ByAfterJSON orders the results by the after_json field.
-func ByAfterJSON(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldAfterJSON, opts...).ToFunc()
-}
-
 // ByReason orders the results by the reason field.
 func ByReason(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldReason, opts...).ToFunc()

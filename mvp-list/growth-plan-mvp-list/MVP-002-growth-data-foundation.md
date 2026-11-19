@@ -17,7 +17,7 @@ The design lists 17 `growth_*` schemas and forbids UUID/soft-deleted tasks. Proj
 ## In Scope
 
 - Add the 17 Ent schemas under `backend/ent/schema/growth_*.go` and required `User` edges.
-- Add `backend/sqlArchiving/182_create_growth_tables.sql` for MySQL 8/GoldenDB with all tables, indexes, unique keys, and verification statements.
+- Add `backend/sqlArchiving/growth/ddl/182_create_growth_tables.sql` for MySQL 8/GoldenDB with all tables, indexes, unique keys, and verification statements.
 - Model budget row id `1`; task status `DRAFT/ACTIVE/OFFLINE`; no `deleted_at`; immutable task code; rule/product version uniqueness; completion request uniqueness; order/fulfillment/inventory uniqueness.
 - Add Ent/repository tests for key constraints and fixed-point fields.
 - Run `make generate` and confirm generated code is committed.
@@ -45,7 +45,7 @@ The design lists 17 `growth_*` schemas and forbids UUID/soft-deleted tasks. Proj
 
 - `cd backend && make generate`
 - `go test -tags=unit ./ent/...`
-- Execute `backend/sqlArchiving/182_create_growth_tables.sql` twice in the configured MySQL 8/GoldenDB test database.
+- Execute `backend/sqlArchiving/growth/ddl/182_create_growth_tables.sql` twice in the configured MySQL 8/GoldenDB test database.
 - `go test -tags=integration ./internal/repository/... -run Growth`
 
 ## Completion Evidence
@@ -57,7 +57,7 @@ The design lists 17 `growth_*` schemas and forbids UUID/soft-deleted tasks. Proj
 | Generation | `make generate` | PASS: Ent and Wire generation completed. |
 | Ent tests | `go test -tags=unit ./ent/...` | PASS across all generated Ent packages. |
 | Static schema test | `go test -p=1 -gcflags=all='-N -l' -tags=unit ./ent/schema -run Growth -count=1` | PASS: 17 schemas, table annotations, unique keys, checks, and User edges verified. |
-| DDL inventory | `backend/sqlArchiving/182_create_growth_tables.sql` | Static inspection finds exactly 17 `CREATE TABLE IF NOT EXISTS growth_*` statements and all required unique keys/checks. |
+| DDL inventory | `backend/sqlArchiving/growth/ddl/182_create_growth_tables.sql` | Static inspection finds exactly 17 `CREATE TABLE IF NOT EXISTS growth_*` statements and all required unique keys/checks. |
 | MySQL integration test | `GROWTH_MYSQL_TEST_DSN='root@tcp(127.0.0.1:3307)/?parseTime=true' go test -tags=integration ./internal/repository/growthmysqltest -run TestGrowthMySQLArchiveAndConstraints -count=1 -v` | PASS on MySQL 8.4.9: archive executed twice, 17 tables created, duplicate business keys and negative quotas rejected. |
 | Generated paths | `backend/ent/growth*.go`, `backend/ent/growth*/`, `backend/ent/migrate/schema.go`, `backend/ent/user*.go` | Present and generated. |
 | Test path | `backend/internal/repository/growthmysqltest/growth_mysql_schema_integration_test.go` | Creates and removes a disposable schema using the explicit test DSN. |

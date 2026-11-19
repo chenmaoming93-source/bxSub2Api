@@ -112,16 +112,8 @@ func (_u *GrowthProductVersionUpdate) SetNillableBenefitSummary(v *string) *Grow
 }
 
 // SetBenefitDetail sets the "benefit_detail" field.
-func (_u *GrowthProductVersionUpdate) SetBenefitDetail(v string) *GrowthProductVersionUpdate {
+func (_u *GrowthProductVersionUpdate) SetBenefitDetail(v map[string]interface{}) *GrowthProductVersionUpdate {
 	_u.mutation.SetBenefitDetail(v)
-	return _u
-}
-
-// SetNillableBenefitDetail sets the "benefit_detail" field if the given value is not nil.
-func (_u *GrowthProductVersionUpdate) SetNillableBenefitDetail(v *string) *GrowthProductVersionUpdate {
-	if v != nil {
-		_u.SetBenefitDetail(*v)
-	}
 	return _u
 }
 
@@ -362,10 +354,10 @@ func (_u *GrowthProductVersionUpdate) sqlSave(ctx context.Context) (_node int, e
 		_spec.SetField(growthproductversion.FieldBenefitSummary, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.BenefitDetail(); ok {
-		_spec.SetField(growthproductversion.FieldBenefitDetail, field.TypeString, value)
+		_spec.SetField(growthproductversion.FieldBenefitDetail, field.TypeJSON, value)
 	}
 	if _u.mutation.BenefitDetailCleared() {
-		_spec.ClearField(growthproductversion.FieldBenefitDetail, field.TypeString)
+		_spec.ClearField(growthproductversion.FieldBenefitDetail, field.TypeJSON)
 	}
 	if value, ok := _u.mutation.TokenAmount(); ok {
 		_spec.SetField(growthproductversion.FieldTokenAmount, field.TypeInt64, value)
@@ -507,16 +499,8 @@ func (_u *GrowthProductVersionUpdateOne) SetNillableBenefitSummary(v *string) *G
 }
 
 // SetBenefitDetail sets the "benefit_detail" field.
-func (_u *GrowthProductVersionUpdateOne) SetBenefitDetail(v string) *GrowthProductVersionUpdateOne {
+func (_u *GrowthProductVersionUpdateOne) SetBenefitDetail(v map[string]interface{}) *GrowthProductVersionUpdateOne {
 	_u.mutation.SetBenefitDetail(v)
-	return _u
-}
-
-// SetNillableBenefitDetail sets the "benefit_detail" field if the given value is not nil.
-func (_u *GrowthProductVersionUpdateOne) SetNillableBenefitDetail(v *string) *GrowthProductVersionUpdateOne {
-	if v != nil {
-		_u.SetBenefitDetail(*v)
-	}
 	return _u
 }
 
@@ -787,10 +771,10 @@ func (_u *GrowthProductVersionUpdateOne) sqlSave(ctx context.Context) (_node *Gr
 		_spec.SetField(growthproductversion.FieldBenefitSummary, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.BenefitDetail(); ok {
-		_spec.SetField(growthproductversion.FieldBenefitDetail, field.TypeString, value)
+		_spec.SetField(growthproductversion.FieldBenefitDetail, field.TypeJSON, value)
 	}
 	if _u.mutation.BenefitDetailCleared() {
-		_spec.ClearField(growthproductversion.FieldBenefitDetail, field.TypeString)
+		_spec.ClearField(growthproductversion.FieldBenefitDetail, field.TypeJSON)
 	}
 	if value, ok := _u.mutation.TokenAmount(); ok {
 		_spec.SetField(growthproductversion.FieldTokenAmount, field.TypeInt64, value)

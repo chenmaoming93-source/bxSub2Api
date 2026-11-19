@@ -129,7 +129,7 @@ AIWork Main 使用的公钥格式：
 
 ```bash
 mysql -h <db-host> -P <db-port> -u <db-user> -p \
-  <database-name> < backend/sqlArchiving/182_create_growth_tables.sql
+  <database-name> < backend/sqlArchiving/growth/ddl/182_create_growth_tables.sql
 ```
 
 创建 17 张表：
@@ -154,40 +154,26 @@ growth_inventory_ledger
 growth_admin_audit
 ```
 
-全新环境使用最新版 182 即可，该脚本已经包含 ADJUST、多次发分和 GoldenDB 兼容字段，不执行 184/185/186。
+全新环境使用最新版 182 即可，该脚本已经包含 ADJUST、多次发分、原生 JSON 和兼容列名，不执行 185/186/189。
 
-### 3.2 存量环境升级账务约束与 ADJUST 账户
-
-仅当环境已执行过旧版 `182_create_growth_tables.sql` 时执行：
-
-```bash
-mysql -h <db-host> -P <db-port> -u <db-user> -p \
-  <database-name> < backend/sqlArchiving/184_growth_adjustment_account.sql
-```
-
-该脚本完成两项必要变更：
-
-- 允许人工调账扣减写入独立的 `ADJUST` 账户，不再混入 `REDEEMED` 消费口径。
-- 将预算检查修正为 `distributed_amount <= total_amount`，保证“任务发分 + 人工调账增加”不超过总预算；任务分配仍满足 `allocated_amount <= total_amount`。
-
-### 3.3 启用同周期多次任务奖励
+### 3.2 启用同周期多次任务奖励
 
 仅旧版单次领取表执行：
 
 ```bash
 mysql -h <db-host> -P <db-port> -u <db-user> -p \
-  <database-name> < backend/sqlArchiving/185_growth_multi_reward_claims.sql
+  <database-name> < backend/sqlArchiving/growth/ddl/185_growth_multi_reward_claims.sql
 ```
 
 脚本直接补列并替换唯一键，不使用动态 SQL。
 
-### 3.4 删除旧版校验约束
+### 3.3 删除旧版校验约束
 
 仅旧版带校验约束的 Growth 表执行，并且必须先于 186：
 
 ```bash
 mysql -h <db-host> -P <db-port> -u <db-user> -p \
-  <database-name> < backend/sqlArchiving/187_growth_drop_legacy_constraints.sql
+  <database-name> < backend/sqlArchiving/growth/ddl/187_growth_drop_legacy_constraints.sql
 ```
 
 该脚本只使用 `ALTER TABLE ... DROP CONSTRAINT`。
@@ -196,24 +182,34 @@ mysql -h <db-host> -P <db-port> -u <db-user> -p \
 
 ```bash
 mysql -h <db-host> -P <db-port> -u <db-user> -p \
-  <database-name> < backend/sqlArchiving/188_growth_drop_sequence_constraint.sql
+  <database-name> < backend/sqlArchiving/growth/ddl/188_growth_drop_sequence_constraint.sql
 ```
 
-### 3.5 GoldenDB 字段兼容升级
+### 3.4 GoldenDB 字段兼容升级
 
 仅旧版 Growth 表执行：
 
 ```bash
 mysql -h <db-host> -P <db-port> -u <db-user> -p \
-  <database-name> < backend/sqlArchiving/186_growth_goldendb_schema_compat.sql
+  <database-name> < backend/sqlArchiving/growth/ddl/186_growth_goldendb_schema_compat.sql
 ```
 
-该脚本使用简单 `ALTER TABLE ... CHANGE/MODIFY COLUMN`：
+该脚本使用简单 `ALTER TABLE ... CHANGE COLUMN`：
 
 - `status` 改为按语义命名的非保留字列。
 - `description` 改为 `remark`。
 - `action` 改为 `action_type`。
-- 5 个 JSON 字段改为 `LONGTEXT NULL`。
+
+### 3.5 恢复原生 JSON 字段
+
+仅执行过旧版 186 且 5 个 JSON 字段仍为 `LONGTEXT` 时执行：
+
+```bash
+mysql -h <db-host> -P <db-port> -u <db-user> -p \
+  <database-name> < backend/sqlArchiving/growth/ddl/189_growth_restore_json_columns.sql
+```
+
+脚本将 `conditions`、`benefit_detail`、`product_snapshot`、`before_json`、`after_json` 恢复为可空原生 `JSON`，已有合法 JSON 数据保持不变。
 
 ### 3.6 更新 RBAC 兼容 seed
 
@@ -228,7 +224,7 @@ mysql -h <db-host> -P <db-port> -u <db-user> -p \
 
 ```bash
 mysql -h <db-host> -P <db-port> -u <db-user> -p \
-  <database-name> < backend/sqlArchiving/183_add_growth_rbac_permissions.sql
+  <database-name> < backend/sqlArchiving/growth/dml/183_add_growth_rbac_permissions.sql
 ```
 
 ### 3.8 数据库验证

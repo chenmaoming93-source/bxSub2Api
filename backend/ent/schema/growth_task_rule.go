@@ -31,7 +31,7 @@ func (GrowthTaskRule) Fields() []ent.Field {
 		field.Int64("task_id"),
 		field.Int("version").Validate(growthPositiveInt("version")),
 		field.String("trigger_event").MaxLen(64).Default("COMPLETION"),
-		field.Text("conditions").Optional(),
+		field.JSON("conditions", map[string]any{}).Optional(),
 		field.Int64("target").Default(1).Validate(growthPositive("target")),
 		field.Int64("reward_points").Validate(growthPositive("reward_points")),
 		field.String("period_type").MaxLen(20).Validate(growthEnum("period_type", "DAILY", "ONCE", "WEEKLY")),

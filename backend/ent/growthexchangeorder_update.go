@@ -106,16 +106,8 @@ func (_u *GrowthExchangeOrderUpdate) AddProductVersion(v int) *GrowthExchangeOrd
 }
 
 // SetProductSnapshot sets the "product_snapshot" field.
-func (_u *GrowthExchangeOrderUpdate) SetProductSnapshot(v string) *GrowthExchangeOrderUpdate {
+func (_u *GrowthExchangeOrderUpdate) SetProductSnapshot(v map[string]interface{}) *GrowthExchangeOrderUpdate {
 	_u.mutation.SetProductSnapshot(v)
-	return _u
-}
-
-// SetNillableProductSnapshot sets the "product_snapshot" field if the given value is not nil.
-func (_u *GrowthExchangeOrderUpdate) SetNillableProductSnapshot(v *string) *GrowthExchangeOrderUpdate {
-	if v != nil {
-		_u.SetProductSnapshot(*v)
-	}
 	return _u
 }
 
@@ -430,10 +422,10 @@ func (_u *GrowthExchangeOrderUpdate) sqlSave(ctx context.Context) (_node int, er
 		_spec.AddField(growthexchangeorder.FieldProductVersion, field.TypeInt, value)
 	}
 	if value, ok := _u.mutation.ProductSnapshot(); ok {
-		_spec.SetField(growthexchangeorder.FieldProductSnapshot, field.TypeString, value)
+		_spec.SetField(growthexchangeorder.FieldProductSnapshot, field.TypeJSON, value)
 	}
 	if _u.mutation.ProductSnapshotCleared() {
-		_spec.ClearField(growthexchangeorder.FieldProductSnapshot, field.TypeString)
+		_spec.ClearField(growthexchangeorder.FieldProductSnapshot, field.TypeJSON)
 	}
 	if value, ok := _u.mutation.PointsCost(); ok {
 		_spec.SetField(growthexchangeorder.FieldPointsCost, field.TypeInt64, value)
@@ -615,16 +607,8 @@ func (_u *GrowthExchangeOrderUpdateOne) AddProductVersion(v int) *GrowthExchange
 }
 
 // SetProductSnapshot sets the "product_snapshot" field.
-func (_u *GrowthExchangeOrderUpdateOne) SetProductSnapshot(v string) *GrowthExchangeOrderUpdateOne {
+func (_u *GrowthExchangeOrderUpdateOne) SetProductSnapshot(v map[string]interface{}) *GrowthExchangeOrderUpdateOne {
 	_u.mutation.SetProductSnapshot(v)
-	return _u
-}
-
-// SetNillableProductSnapshot sets the "product_snapshot" field if the given value is not nil.
-func (_u *GrowthExchangeOrderUpdateOne) SetNillableProductSnapshot(v *string) *GrowthExchangeOrderUpdateOne {
-	if v != nil {
-		_u.SetProductSnapshot(*v)
-	}
 	return _u
 }
 
@@ -969,10 +953,10 @@ func (_u *GrowthExchangeOrderUpdateOne) sqlSave(ctx context.Context) (_node *Gro
 		_spec.AddField(growthexchangeorder.FieldProductVersion, field.TypeInt, value)
 	}
 	if value, ok := _u.mutation.ProductSnapshot(); ok {
-		_spec.SetField(growthexchangeorder.FieldProductSnapshot, field.TypeString, value)
+		_spec.SetField(growthexchangeorder.FieldProductSnapshot, field.TypeJSON, value)
 	}
 	if _u.mutation.ProductSnapshotCleared() {
-		_spec.ClearField(growthexchangeorder.FieldProductSnapshot, field.TypeString)
+		_spec.ClearField(growthexchangeorder.FieldProductSnapshot, field.TypeJSON)
 	}
 	if value, ok := _u.mutation.PointsCost(); ok {
 		_spec.SetField(growthexchangeorder.FieldPointsCost, field.TypeInt64, value)

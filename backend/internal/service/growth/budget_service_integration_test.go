@@ -267,7 +267,7 @@ func openGrowthIntegrationClient(t *testing.T) *ent.Client {
 
 	_, sourceFile, _, ok := runtime.Caller(0)
 	require.True(t, ok)
-	archivePath := filepath.Join(filepath.Dir(sourceFile), "..", "..", "..", "sqlArchiving", "182_create_growth_tables.sql")
+	archivePath := filepath.Join(filepath.Dir(sourceFile), "..", "..", "..", "sqlArchiving", "growth", "ddl", "182_create_growth_tables.sql")
 	raw, err := os.ReadFile(archivePath)
 	require.NoError(t, err)
 	for _, statement := range budgetSQLStatements(string(raw)) {

@@ -141,11 +141,6 @@ func ByTriggerEvent(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldTriggerEvent, opts...).ToFunc()
 }
 
-// ByConditions orders the results by the conditions field.
-func ByConditions(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldConditions, opts...).ToFunc()
-}
-
 // ByTarget orders the results by the target field.
 func ByTarget(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldTarget, opts...).ToFunc()

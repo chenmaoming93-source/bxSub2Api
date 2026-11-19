@@ -153,11 +153,6 @@ func ByProductVersion(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldProductVersion, opts...).ToFunc()
 }
 
-// ByProductSnapshot orders the results by the product_snapshot field.
-func ByProductSnapshot(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldProductSnapshot, opts...).ToFunc()
-}
-
 // ByPointsCost orders the results by the points_cost field.
 func ByPointsCost(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldPointsCost, opts...).ToFunc()

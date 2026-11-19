@@ -270,7 +270,7 @@ func (s *TaskService) Update(ctx context.Context, taskID int64, input TaskUpdate
 			SetPeriodType(input.Rule.PeriodType).
 			SetDailyLimit(input.Rule.DailyLimit).
 			SetPerUserLimit(input.Rule.PerUserLimit)
-		update.SetConditions(encodeJSONText(input.Rule.Conditions))
+		update.SetConditions(normalizeJSONMap(input.Rule.Conditions))
 		if input.Rule.EffectiveFrom != nil {
 			update.SetEffectiveFrom(*input.Rule.EffectiveFrom)
 		}
@@ -643,7 +643,7 @@ func createTaskRule(ctx context.Context, tx *ent.Tx, taskID int64, version int, 
 		SetPerUserLimit(input.PerUserLimit).
 		SetCreatedBy(operatorID).
 		SetEffectiveFrom(*effectiveFrom)
-	create.SetConditions(encodeJSONText(input.Conditions))
+	create.SetConditions(normalizeJSONMap(input.Conditions))
 	return create.Save(ctx)
 }
 
@@ -728,8 +728,8 @@ func appendTaskAudit(ctx context.Context, tx *ent.Tx, operatorID int64, action, 
 		SetActionType(action).
 		SetResourceType("growth_task").
 		SetResourceID(taskID).
-		SetBeforeJSON(encodeJSONText(beforeJSON)).
-		SetAfterJSON(encodeJSONText(afterJSON)).
+		SetBeforeJSON(normalizeJSONMap(beforeJSON)).
+		SetAfterJSON(normalizeJSONMap(afterJSON)).
 		SetReason(strings.TrimSpace(reason)).
 		SetRequestID(requestID).
 		Save(ctx)
@@ -793,7 +793,7 @@ func ruleView(rule *ent.GrowthTaskRule) TaskRuleView {
 		ID:            rule.ID,
 		Version:       rule.Version,
 		TriggerEvent:  rule.TriggerEvent,
-		Conditions:    decodeJSONText(rule.Conditions),
+		Conditions:    normalizeJSONMap(rule.Conditions),
 		Target:        rule.Target,
 		RewardPoints:  rule.RewardPoints,
 		PeriodType:    rule.PeriodType,

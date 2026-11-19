@@ -263,11 +263,11 @@ func TestGrowthCompatibilityUpgradeScripts(t *testing.T) {
 	require.True(t, ok)
 	for _, filename := range []string{
 		"187_growth_drop_legacy_constraints.sql",
-		"184_growth_adjustment_account.sql",
 		"185_growth_multi_reward_claims.sql",
 		"186_growth_goldendb_schema_compat.sql",
+		"189_growth_restore_json_columns.sql",
 	} {
-		path := filepath.Join(filepath.Dir(sourceFile), "..", "..", "..", "sqlArchiving", filename)
+		path := filepath.Join(filepath.Dir(sourceFile), "..", "..", "..", "sqlArchiving", "growth", "ddl", filename)
 		raw, err := os.ReadFile(path)
 		require.NoError(t, err)
 		for _, statement := range growthSQLStatements(string(raw)) {
@@ -288,14 +288,14 @@ func TestGrowthCompatibilityUpgradeScripts(t *testing.T) {
 		{"growth_reward_claims", "claim_status", "varchar"},
 		{"growth_reward_claims", "sequence", "int"},
 		{"growth_products", "product_status", "varchar"},
-		{"growth_task_rules", "conditions", "longtext"},
-		{"growth_product_versions", "benefit_detail", "longtext"},
+		{"growth_task_rules", "conditions", "json"},
+		{"growth_product_versions", "benefit_detail", "json"},
 		{"growth_exchange_orders", "order_status", "varchar"},
-		{"growth_exchange_orders", "product_snapshot", "longtext"},
+		{"growth_exchange_orders", "product_snapshot", "json"},
 		{"growth_fulfillment_jobs", "job_status", "varchar"},
 		{"growth_admin_audit", "action_type", "varchar"},
-		{"growth_admin_audit", "before_json", "longtext"},
-		{"growth_admin_audit", "after_json", "longtext"},
+		{"growth_admin_audit", "before_json", "json"},
+		{"growth_admin_audit", "after_json", "json"},
 	} {
 		var count int
 		require.NoError(t, db.QueryRowContext(ctx, `

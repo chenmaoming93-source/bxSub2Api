@@ -76,16 +76,8 @@ func (_c *GrowthExchangeOrderCreate) SetProductVersion(v int) *GrowthExchangeOrd
 }
 
 // SetProductSnapshot sets the "product_snapshot" field.
-func (_c *GrowthExchangeOrderCreate) SetProductSnapshot(v string) *GrowthExchangeOrderCreate {
+func (_c *GrowthExchangeOrderCreate) SetProductSnapshot(v map[string]interface{}) *GrowthExchangeOrderCreate {
 	_c.mutation.SetProductSnapshot(v)
-	return _c
-}
-
-// SetNillableProductSnapshot sets the "product_snapshot" field if the given value is not nil.
-func (_c *GrowthExchangeOrderCreate) SetNillableProductSnapshot(v *string) *GrowthExchangeOrderCreate {
-	if v != nil {
-		_c.SetProductSnapshot(*v)
-	}
 	return _c
 }
 
@@ -370,7 +362,7 @@ func (_c *GrowthExchangeOrderCreate) createSpec() (*GrowthExchangeOrder, *sqlgra
 		_node.ProductVersion = value
 	}
 	if value, ok := _c.mutation.ProductSnapshot(); ok {
-		_spec.SetField(growthexchangeorder.FieldProductSnapshot, field.TypeString, value)
+		_spec.SetField(growthexchangeorder.FieldProductSnapshot, field.TypeJSON, value)
 		_node.ProductSnapshot = value
 	}
 	if value, ok := _c.mutation.PointsCost(); ok {
@@ -551,7 +543,7 @@ func (u *GrowthExchangeOrderUpsert) AddProductVersion(v int) *GrowthExchangeOrde
 }
 
 // SetProductSnapshot sets the "product_snapshot" field.
-func (u *GrowthExchangeOrderUpsert) SetProductSnapshot(v string) *GrowthExchangeOrderUpsert {
+func (u *GrowthExchangeOrderUpsert) SetProductSnapshot(v map[string]interface{}) *GrowthExchangeOrderUpsert {
 	u.Set(growthexchangeorder.FieldProductSnapshot, v)
 	return u
 }
@@ -860,7 +852,7 @@ func (u *GrowthExchangeOrderUpsertOne) UpdateProductVersion() *GrowthExchangeOrd
 }
 
 // SetProductSnapshot sets the "product_snapshot" field.
-func (u *GrowthExchangeOrderUpsertOne) SetProductSnapshot(v string) *GrowthExchangeOrderUpsertOne {
+func (u *GrowthExchangeOrderUpsertOne) SetProductSnapshot(v map[string]interface{}) *GrowthExchangeOrderUpsertOne {
 	return u.Update(func(s *GrowthExchangeOrderUpsert) {
 		s.SetProductSnapshot(v)
 	})
@@ -1365,7 +1357,7 @@ func (u *GrowthExchangeOrderUpsertBulk) UpdateProductVersion() *GrowthExchangeOr
 }
 
 // SetProductSnapshot sets the "product_snapshot" field.
-func (u *GrowthExchangeOrderUpsertBulk) SetProductSnapshot(v string) *GrowthExchangeOrderUpsertBulk {
+func (u *GrowthExchangeOrderUpsertBulk) SetProductSnapshot(v map[string]interface{}) *GrowthExchangeOrderUpsertBulk {
 	return u.Update(func(s *GrowthExchangeOrderUpsert) {
 		s.SetProductSnapshot(v)
 	})

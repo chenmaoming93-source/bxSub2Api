@@ -119,7 +119,7 @@ CREATE TABLE IF NOT EXISTS growth_task_rules (
     task_id BIGINT NOT NULL,
     version INT NOT NULL,
     trigger_event VARCHAR(64) NOT NULL DEFAULT 'COMPLETION',
-    conditions LONGTEXT NULL,
+    conditions JSON NULL,
     target BIGINT NOT NULL DEFAULT 1,
     reward_points BIGINT NOT NULL,
     period_type VARCHAR(20) NOT NULL,
@@ -225,7 +225,7 @@ CREATE TABLE IF NOT EXISTS growth_product_versions (
     version INT NOT NULL,
     points_cost BIGINT NOT NULL,
     benefit_summary VARCHAR(512) NOT NULL DEFAULT '',
-    benefit_detail LONGTEXT NULL,
+    benefit_detail JSON NULL,
     token_amount BIGINT NOT NULL DEFAULT 0,
     per_user_limit INT NOT NULL DEFAULT 0,
     created_by BIGINT NOT NULL,
@@ -261,7 +261,7 @@ CREATE TABLE IF NOT EXISTS growth_exchange_orders (
     user_id BIGINT NOT NULL,
     product_id BIGINT NOT NULL,
     product_version INT NOT NULL,
-    product_snapshot LONGTEXT NULL,
+    product_snapshot JSON NULL,
     points_cost BIGINT NOT NULL,
     order_status VARCHAR(20) NOT NULL DEFAULT 'CREATED',
     idempotency_key VARCHAR(128) NOT NULL,
@@ -331,8 +331,8 @@ CREATE TABLE IF NOT EXISTS growth_admin_audit (
     action_type VARCHAR(64) NOT NULL,
     resource_type VARCHAR(64) NOT NULL,
     resource_id BIGINT NULL,
-    before_json LONGTEXT NULL,
-    after_json LONGTEXT NULL,
+    before_json JSON NULL,
+    after_json JSON NULL,
     reason VARCHAR(512) NOT NULL DEFAULT '',
     request_id VARCHAR(128) NOT NULL DEFAULT '',
     created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
@@ -343,28 +343,3 @@ CREATE TABLE IF NOT EXISTS growth_admin_audit (
     KEY idx_growth_admin_audit_action_time (action_type, created_at),
     CONSTRAINT fk_growth_admin_audit_operator FOREIGN KEY (operator_id) REFERENCES users (id) ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- Verification
-SELECT table_name
-FROM information_schema.tables
-WHERE table_schema = DATABASE()
-  AND table_name IN (
-    'growth_budgets',
-    'growth_budget_entries',
-    'growth_wallets',
-    'growth_transfers',
-    'growth_account_ledger',
-    'growth_tasks',
-    'growth_task_rules',
-    'growth_user_tasks',
-    'growth_completion_requests',
-    'growth_reward_claims',
-    'growth_products',
-    'growth_product_versions',
-    'growth_product_inventory',
-    'growth_exchange_orders',
-    'growth_fulfillment_jobs',
-    'growth_inventory_ledger',
-    'growth_admin_audit'
-  )
-ORDER BY table_name;

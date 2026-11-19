@@ -293,8 +293,8 @@ func appendAdjustmentAudit(ctx context.Context, tx *ent.Tx, command AdjustmentCo
 		SetActionType("points.adjust." + strings.ToLower(command.Direction)).
 		SetResourceType("growth_wallet").
 		SetResourceID(command.UserID).
-		SetBeforeJSON(encodeJSONText(map[string]any{"available_points": before})).
-		SetAfterJSON(encodeJSONText(map[string]any{"available_points": after})).
+		SetBeforeJSON(normalizeJSONMap(map[string]any{"available_points": before})).
+		SetAfterJSON(normalizeJSONMap(map[string]any{"available_points": after})).
 		SetReason(strings.TrimSpace(command.Reason)).
 		SetRequestID(strings.TrimSpace(command.RequestID)).
 		Save(ctx)

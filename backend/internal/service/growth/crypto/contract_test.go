@@ -29,7 +29,7 @@ const (
 // so an accidental omission is caught while each endpoint MVP is implemented.
 //
 // DDL decision: growth DDL is archived only at
-// backend/sqlArchiving/182_create_growth_tables.sql. Historical files under
+// backend/sqlArchiving/growth/ddl/182_create_growth_tables.sql. Historical files under
 // backend/migrations are immutable.
 //
 // External release blockers: production SM2 pair handoff, NTP synchronization,

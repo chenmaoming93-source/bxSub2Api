@@ -3,6 +3,7 @@
 package ent
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -31,9 +32,9 @@ type GrowthAdminAudit struct {
 	// ResourceID holds the value of the "resource_id" field.
 	ResourceID *int64 `json:"resource_id,omitempty"`
 	// BeforeJSON holds the value of the "before_json" field.
-	BeforeJSON string `json:"before_json,omitempty"`
+	BeforeJSON map[string]interface{} `json:"before_json,omitempty"`
 	// AfterJSON holds the value of the "after_json" field.
-	AfterJSON string `json:"after_json,omitempty"`
+	AfterJSON map[string]interface{} `json:"after_json,omitempty"`
 	// Reason holds the value of the "reason" field.
 	Reason string `json:"reason,omitempty"`
 	// RequestID holds the value of the "request_id" field.
@@ -69,9 +70,11 @@ func (*GrowthAdminAudit) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case growthadminaudit.FieldBeforeJSON, growthadminaudit.FieldAfterJSON:
+			values[i] = new([]byte)
 		case growthadminaudit.FieldID, growthadminaudit.FieldOperatorID, growthadminaudit.FieldResourceID:
 			values[i] = new(sql.NullInt64)
-		case growthadminaudit.FieldActionType, growthadminaudit.FieldResourceType, growthadminaudit.FieldBeforeJSON, growthadminaudit.FieldAfterJSON, growthadminaudit.FieldReason, growthadminaudit.FieldRequestID:
+		case growthadminaudit.FieldActionType, growthadminaudit.FieldResourceType, growthadminaudit.FieldReason, growthadminaudit.FieldRequestID:
 			values[i] = new(sql.NullString)
 		case growthadminaudit.FieldCreatedAt, growthadminaudit.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -134,16 +137,20 @@ func (_m *GrowthAdminAudit) assignValues(columns []string, values []any) error {
 				*_m.ResourceID = value.Int64
 			}
 		case growthadminaudit.FieldBeforeJSON:
-			if value, ok := values[i].(*sql.NullString); !ok {
+			if value, ok := values[i].(*[]byte); !ok {
 				return fmt.Errorf("unexpected type %T for field before_json", values[i])
-			} else if value.Valid {
-				_m.BeforeJSON = value.String
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &_m.BeforeJSON); err != nil {
+					return fmt.Errorf("unmarshal field before_json: %w", err)
+				}
 			}
 		case growthadminaudit.FieldAfterJSON:
-			if value, ok := values[i].(*sql.NullString); !ok {
+			if value, ok := values[i].(*[]byte); !ok {
 				return fmt.Errorf("unexpected type %T for field after_json", values[i])
-			} else if value.Valid {
-				_m.AfterJSON = value.String
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &_m.AfterJSON); err != nil {
+					return fmt.Errorf("unmarshal field after_json: %w", err)
+				}
 			}
 		case growthadminaudit.FieldReason:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -219,10 +226,10 @@ func (_m *GrowthAdminAudit) String() string {
 	}
 	builder.WriteString(", ")
 	builder.WriteString("before_json=")
-	builder.WriteString(_m.BeforeJSON)
+	builder.WriteString(fmt.Sprintf("%v", _m.BeforeJSON))
 	builder.WriteString(", ")
 	builder.WriteString("after_json=")
-	builder.WriteString(_m.AfterJSON)
+	builder.WriteString(fmt.Sprintf("%v", _m.AfterJSON))
 	builder.WriteString(", ")
 	builder.WriteString("reason=")
 	builder.WriteString(_m.Reason)

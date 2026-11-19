@@ -132,7 +132,7 @@ func (s *FulfillmentService) ProcessDue(ctx context.Context) (int, error) {
 			_ = s.failOrRetry(ctx, job, order, fmt.Errorf("%w: adapter not configured", ErrRetryableFulfillment), "")
 			continue
 		}
-		snapshot := decodeJSONText(order.ProductSnapshot)
+		snapshot := normalizeJSONMap(order.ProductSnapshot)
 		response, fulfillErr := adapter.Fulfill(ctx, FulfillmentRequest{
 			OrderID: order.ID, UserID: order.UserID, ProductType: productType(order),
 			TokenAmount:     int64FromSnapshot(snapshot, "token_amount"),
@@ -577,8 +577,8 @@ func appendOrderAudit(ctx context.Context, tx *ent.Tx, operatorID int64, action 
 		SetActionType(action).
 		SetResourceType("growth_exchange_order").
 		SetResourceID(order.ID).
-		SetBeforeJSON(encodeJSONText(map[string]any{"status": order.OrderStatus, "refund_transfer_id": order.RefundTransferID})).
-		SetAfterJSON(encodeJSONText(map[string]any{"reason": reason})).
+		SetBeforeJSON(normalizeJSONMap(map[string]any{"status": order.OrderStatus, "refund_transfer_id": order.RefundTransferID})).
+		SetAfterJSON(normalizeJSONMap(map[string]any{"reason": reason})).
 		SetReason(strings.TrimSpace(reason)).
 		SetRequestID(strings.TrimSpace(requestID)).
 		Save(ctx)
@@ -586,7 +586,7 @@ func appendOrderAudit(ctx context.Context, tx *ent.Tx, operatorID int64, action 
 }
 
 func productType(order *ent.GrowthExchangeOrder) string {
-	if value, ok := decodeJSONText(order.ProductSnapshot)["product_type"].(string); ok {
+	if value, ok := normalizeJSONMap(order.ProductSnapshot)["product_type"].(string); ok {
 		return value
 	}
 	return ""

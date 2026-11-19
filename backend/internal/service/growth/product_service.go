@@ -220,7 +220,7 @@ func (s *ProductService) Update(ctx context.Context, productID int64, input Prod
 			SetBenefitSummary(strings.TrimSpace(input.Version.BenefitSummary)).
 			SetTokenAmount(input.Version.TokenAmount).
 			SetPerUserLimit(input.Version.PerUserLimit)
-		update.SetBenefitDetail(encodeJSONText(input.Version.BenefitDetail))
+		update.SetBenefitDetail(normalizeJSONMap(input.Version.BenefitDetail))
 		draft, err = update.Save(ctx)
 	}
 	if err != nil {
@@ -550,7 +550,7 @@ func createProductVersion(ctx context.Context, tx *ent.Tx, productID int64, vers
 		SetTokenAmount(input.TokenAmount).
 		SetPerUserLimit(input.PerUserLimit).
 		SetCreatedBy(operatorID)
-	create.SetBenefitDetail(encodeJSONText(input.BenefitDetail))
+	create.SetBenefitDetail(normalizeJSONMap(input.BenefitDetail))
 	return create.Save(ctx)
 }
 
@@ -659,7 +659,7 @@ func buildProductView(product *ent.GrowthProduct, current, pending *ent.GrowthPr
 	if current != nil {
 		view.PointsCost = current.PointsCost
 		view.BenefitSummary = current.BenefitSummary
-		view.BenefitDetail = decodeJSONText(current.BenefitDetail)
+		view.BenefitDetail = normalizeJSONMap(current.BenefitDetail)
 		view.TokenAmount = current.TokenAmount
 		view.PerUserLimit = current.PerUserLimit
 	}
@@ -688,7 +688,7 @@ func productVersionView(version *ent.GrowthProductVersion) ProductVersionView {
 		Version:        version.Version,
 		PointsCost:     version.PointsCost,
 		BenefitSummary: version.BenefitSummary,
-		BenefitDetail:  decodeJSONText(version.BenefitDetail),
+		BenefitDetail:  normalizeJSONMap(version.BenefitDetail),
 		TokenAmount:    version.TokenAmount,
 		PerUserLimit:   version.PerUserLimit,
 		CreatedBy:      version.CreatedBy,
@@ -745,8 +745,8 @@ func appendProductAudit(ctx context.Context, tx *ent.Tx, operatorID int64, actio
 		SetActionType(action).
 		SetResourceType("growth_product").
 		SetResourceID(productID).
-		SetBeforeJSON(encodeJSONText(beforeJSON)).
-		SetAfterJSON(encodeJSONText(productAuditSnapshot(after))).
+		SetBeforeJSON(normalizeJSONMap(beforeJSON)).
+		SetAfterJSON(normalizeJSONMap(productAuditSnapshot(after))).
 		SetReason(strings.TrimSpace(reason)).
 		SetRequestID(strings.TrimSpace(requestID)).
 		Save(ctx)
@@ -759,8 +759,8 @@ func appendProductInventoryAudit(ctx context.Context, tx *ent.Tx, operatorID int
 		SetActionType("product.stock.adjust").
 		SetResourceType("growth_product_inventory").
 		SetResourceID(productID).
-		SetBeforeJSON(encodeJSONText(productInventorySnapshot(before))).
-		SetAfterJSON(encodeJSONText(productInventorySnapshot(after))).
+		SetBeforeJSON(normalizeJSONMap(productInventorySnapshot(before))).
+		SetAfterJSON(normalizeJSONMap(productInventorySnapshot(after))).
 		SetReason(strings.TrimSpace(reason)).
 		SetRequestID(strings.TrimSpace(requestID)).
 		Save(ctx)

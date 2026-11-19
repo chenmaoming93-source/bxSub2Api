@@ -19881,8 +19881,8 @@ type GrowthAdminAuditMutation struct {
 	resource_type   *string
 	resource_id     *int64
 	addresource_id  *int64
-	before_json     *string
-	after_json      *string
+	before_json     *map[string]interface{}
+	after_json      *map[string]interface{}
 	reason          *string
 	request_id      *string
 	clearedFields   map[string]struct{}
@@ -20242,12 +20242,12 @@ func (m *GrowthAdminAuditMutation) ResetResourceID() {
 }
 
 // SetBeforeJSON sets the "before_json" field.
-func (m *GrowthAdminAuditMutation) SetBeforeJSON(s string) {
-	m.before_json = &s
+func (m *GrowthAdminAuditMutation) SetBeforeJSON(value map[string]interface{}) {
+	m.before_json = &value
 }
 
 // BeforeJSON returns the value of the "before_json" field in the mutation.
-func (m *GrowthAdminAuditMutation) BeforeJSON() (r string, exists bool) {
+func (m *GrowthAdminAuditMutation) BeforeJSON() (r map[string]interface{}, exists bool) {
 	v := m.before_json
 	if v == nil {
 		return
@@ -20258,7 +20258,7 @@ func (m *GrowthAdminAuditMutation) BeforeJSON() (r string, exists bool) {
 // OldBeforeJSON returns the old "before_json" field's value of the GrowthAdminAudit entity.
 // If the GrowthAdminAudit object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *GrowthAdminAuditMutation) OldBeforeJSON(ctx context.Context) (v string, err error) {
+func (m *GrowthAdminAuditMutation) OldBeforeJSON(ctx context.Context) (v map[string]interface{}, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldBeforeJSON is only allowed on UpdateOne operations")
 	}
@@ -20291,12 +20291,12 @@ func (m *GrowthAdminAuditMutation) ResetBeforeJSON() {
 }
 
 // SetAfterJSON sets the "after_json" field.
-func (m *GrowthAdminAuditMutation) SetAfterJSON(s string) {
-	m.after_json = &s
+func (m *GrowthAdminAuditMutation) SetAfterJSON(value map[string]interface{}) {
+	m.after_json = &value
 }
 
 // AfterJSON returns the value of the "after_json" field in the mutation.
-func (m *GrowthAdminAuditMutation) AfterJSON() (r string, exists bool) {
+func (m *GrowthAdminAuditMutation) AfterJSON() (r map[string]interface{}, exists bool) {
 	v := m.after_json
 	if v == nil {
 		return
@@ -20307,7 +20307,7 @@ func (m *GrowthAdminAuditMutation) AfterJSON() (r string, exists bool) {
 // OldAfterJSON returns the old "after_json" field's value of the GrowthAdminAudit entity.
 // If the GrowthAdminAudit object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *GrowthAdminAuditMutation) OldAfterJSON(ctx context.Context) (v string, err error) {
+func (m *GrowthAdminAuditMutation) OldAfterJSON(ctx context.Context) (v map[string]interface{}, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldAfterJSON is only allowed on UpdateOne operations")
 	}
@@ -20612,14 +20612,14 @@ func (m *GrowthAdminAuditMutation) SetField(name string, value ent.Value) error 
 		m.SetResourceID(v)
 		return nil
 	case growthadminaudit.FieldBeforeJSON:
-		v, ok := value.(string)
+		v, ok := value.(map[string]interface{})
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetBeforeJSON(v)
 		return nil
 	case growthadminaudit.FieldAfterJSON:
-		v, ok := value.(string)
+		v, ok := value.(map[string]interface{})
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
@@ -23831,7 +23831,7 @@ type GrowthExchangeOrderMutation struct {
 	addproduct_id         *int64
 	product_version       *int
 	addproduct_version    *int
-	product_snapshot      *string
+	product_snapshot      *map[string]interface{}
 	points_cost           *int64
 	addpoints_cost        *int64
 	order_status          *string
@@ -24208,12 +24208,12 @@ func (m *GrowthExchangeOrderMutation) ResetProductVersion() {
 }
 
 // SetProductSnapshot sets the "product_snapshot" field.
-func (m *GrowthExchangeOrderMutation) SetProductSnapshot(s string) {
-	m.product_snapshot = &s
+func (m *GrowthExchangeOrderMutation) SetProductSnapshot(value map[string]interface{}) {
+	m.product_snapshot = &value
 }
 
 // ProductSnapshot returns the value of the "product_snapshot" field in the mutation.
-func (m *GrowthExchangeOrderMutation) ProductSnapshot() (r string, exists bool) {
+func (m *GrowthExchangeOrderMutation) ProductSnapshot() (r map[string]interface{}, exists bool) {
 	v := m.product_snapshot
 	if v == nil {
 		return
@@ -24224,7 +24224,7 @@ func (m *GrowthExchangeOrderMutation) ProductSnapshot() (r string, exists bool) 
 // OldProductSnapshot returns the old "product_snapshot" field's value of the GrowthExchangeOrder entity.
 // If the GrowthExchangeOrder object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *GrowthExchangeOrderMutation) OldProductSnapshot(ctx context.Context) (v string, err error) {
+func (m *GrowthExchangeOrderMutation) OldProductSnapshot(ctx context.Context) (v map[string]interface{}, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldProductSnapshot is only allowed on UpdateOne operations")
 	}
@@ -24971,7 +24971,7 @@ func (m *GrowthExchangeOrderMutation) SetField(name string, value ent.Value) err
 		m.SetProductVersion(v)
 		return nil
 	case growthexchangeorder.FieldProductSnapshot:
-		v, ok := value.(string)
+		v, ok := value.(map[string]interface{})
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
@@ -29792,7 +29792,7 @@ type GrowthProductVersionMutation struct {
 	points_cost       *int64
 	addpoints_cost    *int64
 	benefit_summary   *string
-	benefit_detail    *string
+	benefit_detail    *map[string]interface{}
 	token_amount      *int64
 	addtoken_amount   *int64
 	per_user_limit    *int
@@ -30183,12 +30183,12 @@ func (m *GrowthProductVersionMutation) ResetBenefitSummary() {
 }
 
 // SetBenefitDetail sets the "benefit_detail" field.
-func (m *GrowthProductVersionMutation) SetBenefitDetail(s string) {
-	m.benefit_detail = &s
+func (m *GrowthProductVersionMutation) SetBenefitDetail(value map[string]interface{}) {
+	m.benefit_detail = &value
 }
 
 // BenefitDetail returns the value of the "benefit_detail" field in the mutation.
-func (m *GrowthProductVersionMutation) BenefitDetail() (r string, exists bool) {
+func (m *GrowthProductVersionMutation) BenefitDetail() (r map[string]interface{}, exists bool) {
 	v := m.benefit_detail
 	if v == nil {
 		return
@@ -30199,7 +30199,7 @@ func (m *GrowthProductVersionMutation) BenefitDetail() (r string, exists bool) {
 // OldBenefitDetail returns the old "benefit_detail" field's value of the GrowthProductVersion entity.
 // If the GrowthProductVersion object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *GrowthProductVersionMutation) OldBenefitDetail(ctx context.Context) (v string, err error) {
+func (m *GrowthProductVersionMutation) OldBenefitDetail(ctx context.Context) (v map[string]interface{}, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldBenefitDetail is only allowed on UpdateOne operations")
 	}
@@ -30741,7 +30741,7 @@ func (m *GrowthProductVersionMutation) SetField(name string, value ent.Value) er
 		m.SetBenefitSummary(v)
 		return nil
 	case growthproductversion.FieldBenefitDetail:
-		v, ok := value.(string)
+		v, ok := value.(map[string]interface{})
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
@@ -33357,7 +33357,7 @@ type GrowthTaskRuleMutation struct {
 	version           *int
 	addversion        *int
 	trigger_event     *string
-	conditions        *string
+	conditions        *map[string]interface{}
 	target            *int64
 	addtarget         *int64
 	reward_points     *int64
@@ -33697,12 +33697,12 @@ func (m *GrowthTaskRuleMutation) ResetTriggerEvent() {
 }
 
 // SetConditions sets the "conditions" field.
-func (m *GrowthTaskRuleMutation) SetConditions(s string) {
-	m.conditions = &s
+func (m *GrowthTaskRuleMutation) SetConditions(value map[string]interface{}) {
+	m.conditions = &value
 }
 
 // Conditions returns the value of the "conditions" field in the mutation.
-func (m *GrowthTaskRuleMutation) Conditions() (r string, exists bool) {
+func (m *GrowthTaskRuleMutation) Conditions() (r map[string]interface{}, exists bool) {
 	v := m.conditions
 	if v == nil {
 		return
@@ -33713,7 +33713,7 @@ func (m *GrowthTaskRuleMutation) Conditions() (r string, exists bool) {
 // OldConditions returns the old "conditions" field's value of the GrowthTaskRule entity.
 // If the GrowthTaskRule object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *GrowthTaskRuleMutation) OldConditions(ctx context.Context) (v string, err error) {
+func (m *GrowthTaskRuleMutation) OldConditions(ctx context.Context) (v map[string]interface{}, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldConditions is only allowed on UpdateOne operations")
 	}
@@ -34397,7 +34397,7 @@ func (m *GrowthTaskRuleMutation) SetField(name string, value ent.Value) error {
 		m.SetTriggerEvent(v)
 		return nil
 	case growthtaskrule.FieldConditions:
-		v, ok := value.(string)
+		v, ok := value.(map[string]interface{})
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}

@@ -108,7 +108,7 @@ func TestGrowthUAndWReadModelsIsolationAndCursor(t *testing.T) {
 		SetUserID(1).
 		SetProductID(product.ProductID).
 		SetProductVersion(currentVersion.Version).
-		SetProductSnapshot(encodeJSONText(map[string]any{"title": product.Title, "version": currentVersion.Version, "points_cost": 5})).
+		SetProductSnapshot(normalizeJSONMap(map[string]any{"title": product.Title, "version": currentVersion.Version, "points_cost": 5})).
 		SetPointsCost(5).
 		SetOrderStatus("SUCCEEDED").
 		SetIdempotencyKey("read-order-1").

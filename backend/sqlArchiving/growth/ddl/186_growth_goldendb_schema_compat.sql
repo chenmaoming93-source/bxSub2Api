@@ -1,5 +1,5 @@
--- Upgrade Growth tables created by the earlier 182 script.
--- Do not run this script on a database created from the latest 182 script.
+-- Rename reserved-word columns in Growth tables created by the earlier 182 script.
+-- JSON fields are restored to the native JSON type by 189.
 
 ALTER TABLE growth_transfers
   CHANGE COLUMN status transfer_status VARCHAR(20) NOT NULL DEFAULT 'PENDING';
@@ -17,20 +17,11 @@ ALTER TABLE growth_reward_claims
 ALTER TABLE growth_products
   CHANGE COLUMN status product_status VARCHAR(20) NOT NULL DEFAULT 'DRAFT';
 
-ALTER TABLE growth_task_rules
-  MODIFY COLUMN conditions LONGTEXT NULL;
-
-ALTER TABLE growth_product_versions
-  MODIFY COLUMN benefit_detail LONGTEXT NULL;
-
 ALTER TABLE growth_exchange_orders
-  CHANGE COLUMN status order_status VARCHAR(20) NOT NULL DEFAULT 'CREATED',
-  MODIFY COLUMN product_snapshot LONGTEXT NULL;
+  CHANGE COLUMN status order_status VARCHAR(20) NOT NULL DEFAULT 'CREATED';
 
 ALTER TABLE growth_fulfillment_jobs
   CHANGE COLUMN status job_status VARCHAR(20) NOT NULL DEFAULT 'PENDING';
 
 ALTER TABLE growth_admin_audit
-  CHANGE COLUMN action action_type VARCHAR(64) NOT NULL,
-  MODIFY COLUMN before_json LONGTEXT NULL,
-  MODIFY COLUMN after_json LONGTEXT NULL;
+  CHANGE COLUMN action action_type VARCHAR(64) NOT NULL;

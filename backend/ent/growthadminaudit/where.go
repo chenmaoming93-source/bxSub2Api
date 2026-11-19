@@ -85,16 +85,6 @@ func ResourceID(v int64) predicate.GrowthAdminAudit {
 	return predicate.GrowthAdminAudit(sql.FieldEQ(FieldResourceID, v))
 }
 
-// BeforeJSON applies equality check predicate on the "before_json" field. It's identical to BeforeJSONEQ.
-func BeforeJSON(v string) predicate.GrowthAdminAudit {
-	return predicate.GrowthAdminAudit(sql.FieldEQ(FieldBeforeJSON, v))
-}
-
-// AfterJSON applies equality check predicate on the "after_json" field. It's identical to AfterJSONEQ.
-func AfterJSON(v string) predicate.GrowthAdminAudit {
-	return predicate.GrowthAdminAudit(sql.FieldEQ(FieldAfterJSON, v))
-}
-
 // Reason applies equality check predicate on the "reason" field. It's identical to ReasonEQ.
 func Reason(v string) predicate.GrowthAdminAudit {
 	return predicate.GrowthAdminAudit(sql.FieldEQ(FieldReason, v))
@@ -385,61 +375,6 @@ func ResourceIDNotNil() predicate.GrowthAdminAudit {
 	return predicate.GrowthAdminAudit(sql.FieldNotNull(FieldResourceID))
 }
 
-// BeforeJSONEQ applies the EQ predicate on the "before_json" field.
-func BeforeJSONEQ(v string) predicate.GrowthAdminAudit {
-	return predicate.GrowthAdminAudit(sql.FieldEQ(FieldBeforeJSON, v))
-}
-
-// BeforeJSONNEQ applies the NEQ predicate on the "before_json" field.
-func BeforeJSONNEQ(v string) predicate.GrowthAdminAudit {
-	return predicate.GrowthAdminAudit(sql.FieldNEQ(FieldBeforeJSON, v))
-}
-
-// BeforeJSONIn applies the In predicate on the "before_json" field.
-func BeforeJSONIn(vs ...string) predicate.GrowthAdminAudit {
-	return predicate.GrowthAdminAudit(sql.FieldIn(FieldBeforeJSON, vs...))
-}
-
-// BeforeJSONNotIn applies the NotIn predicate on the "before_json" field.
-func BeforeJSONNotIn(vs ...string) predicate.GrowthAdminAudit {
-	return predicate.GrowthAdminAudit(sql.FieldNotIn(FieldBeforeJSON, vs...))
-}
-
-// BeforeJSONGT applies the GT predicate on the "before_json" field.
-func BeforeJSONGT(v string) predicate.GrowthAdminAudit {
-	return predicate.GrowthAdminAudit(sql.FieldGT(FieldBeforeJSON, v))
-}
-
-// BeforeJSONGTE applies the GTE predicate on the "before_json" field.
-func BeforeJSONGTE(v string) predicate.GrowthAdminAudit {
-	return predicate.GrowthAdminAudit(sql.FieldGTE(FieldBeforeJSON, v))
-}
-
-// BeforeJSONLT applies the LT predicate on the "before_json" field.
-func BeforeJSONLT(v string) predicate.GrowthAdminAudit {
-	return predicate.GrowthAdminAudit(sql.FieldLT(FieldBeforeJSON, v))
-}
-
-// BeforeJSONLTE applies the LTE predicate on the "before_json" field.
-func BeforeJSONLTE(v string) predicate.GrowthAdminAudit {
-	return predicate.GrowthAdminAudit(sql.FieldLTE(FieldBeforeJSON, v))
-}
-
-// BeforeJSONContains applies the Contains predicate on the "before_json" field.
-func BeforeJSONContains(v string) predicate.GrowthAdminAudit {
-	return predicate.GrowthAdminAudit(sql.FieldContains(FieldBeforeJSON, v))
-}
-
-// BeforeJSONHasPrefix applies the HasPrefix predicate on the "before_json" field.
-func BeforeJSONHasPrefix(v string) predicate.GrowthAdminAudit {
-	return predicate.GrowthAdminAudit(sql.FieldHasPrefix(FieldBeforeJSON, v))
-}
-
-// BeforeJSONHasSuffix applies the HasSuffix predicate on the "before_json" field.
-func BeforeJSONHasSuffix(v string) predicate.GrowthAdminAudit {
-	return predicate.GrowthAdminAudit(sql.FieldHasSuffix(FieldBeforeJSON, v))
-}
-
 // BeforeJSONIsNil applies the IsNil predicate on the "before_json" field.
 func BeforeJSONIsNil() predicate.GrowthAdminAudit {
 	return predicate.GrowthAdminAudit(sql.FieldIsNull(FieldBeforeJSON))
@@ -450,71 +385,6 @@ func BeforeJSONNotNil() predicate.GrowthAdminAudit {
 	return predicate.GrowthAdminAudit(sql.FieldNotNull(FieldBeforeJSON))
 }
 
-// BeforeJSONEqualFold applies the EqualFold predicate on the "before_json" field.
-func BeforeJSONEqualFold(v string) predicate.GrowthAdminAudit {
-	return predicate.GrowthAdminAudit(sql.FieldEqualFold(FieldBeforeJSON, v))
-}
-
-// BeforeJSONContainsFold applies the ContainsFold predicate on the "before_json" field.
-func BeforeJSONContainsFold(v string) predicate.GrowthAdminAudit {
-	return predicate.GrowthAdminAudit(sql.FieldContainsFold(FieldBeforeJSON, v))
-}
-
-// AfterJSONEQ applies the EQ predicate on the "after_json" field.
-func AfterJSONEQ(v string) predicate.GrowthAdminAudit {
-	return predicate.GrowthAdminAudit(sql.FieldEQ(FieldAfterJSON, v))
-}
-
-// AfterJSONNEQ applies the NEQ predicate on the "after_json" field.
-func AfterJSONNEQ(v string) predicate.GrowthAdminAudit {
-	return predicate.GrowthAdminAudit(sql.FieldNEQ(FieldAfterJSON, v))
-}
-
-// AfterJSONIn applies the In predicate on the "after_json" field.
-func AfterJSONIn(vs ...string) predicate.GrowthAdminAudit {
-	return predicate.GrowthAdminAudit(sql.FieldIn(FieldAfterJSON, vs...))
-}
-
-// AfterJSONNotIn applies the NotIn predicate on the "after_json" field.
-func AfterJSONNotIn(vs ...string) predicate.GrowthAdminAudit {
-	return predicate.GrowthAdminAudit(sql.FieldNotIn(FieldAfterJSON, vs...))
-}
-
-// AfterJSONGT applies the GT predicate on the "after_json" field.
-func AfterJSONGT(v string) predicate.GrowthAdminAudit {
-	return predicate.GrowthAdminAudit(sql.FieldGT(FieldAfterJSON, v))
-}
-
-// AfterJSONGTE applies the GTE predicate on the "after_json" field.
-func AfterJSONGTE(v string) predicate.GrowthAdminAudit {
-	return predicate.GrowthAdminAudit(sql.FieldGTE(FieldAfterJSON, v))
-}
-
-// AfterJSONLT applies the LT predicate on the "after_json" field.
-func AfterJSONLT(v string) predicate.GrowthAdminAudit {
-	return predicate.GrowthAdminAudit(sql.FieldLT(FieldAfterJSON, v))
-}
-
-// AfterJSONLTE applies the LTE predicate on the "after_json" field.
-func AfterJSONLTE(v string) predicate.GrowthAdminAudit {
-	return predicate.GrowthAdminAudit(sql.FieldLTE(FieldAfterJSON, v))
-}
-
-// AfterJSONContains applies the Contains predicate on the "after_json" field.
-func AfterJSONContains(v string) predicate.GrowthAdminAudit {
-	return predicate.GrowthAdminAudit(sql.FieldContains(FieldAfterJSON, v))
-}
-
-// AfterJSONHasPrefix applies the HasPrefix predicate on the "after_json" field.
-func AfterJSONHasPrefix(v string) predicate.GrowthAdminAudit {
-	return predicate.GrowthAdminAudit(sql.FieldHasPrefix(FieldAfterJSON, v))
-}
-
-// AfterJSONHasSuffix applies the HasSuffix predicate on the "after_json" field.
-func AfterJSONHasSuffix(v string) predicate.GrowthAdminAudit {
-	return predicate.GrowthAdminAudit(sql.FieldHasSuffix(FieldAfterJSON, v))
-}
-
 // AfterJSONIsNil applies the IsNil predicate on the "after_json" field.
 func AfterJSONIsNil() predicate.GrowthAdminAudit {
 	return predicate.GrowthAdminAudit(sql.FieldIsNull(FieldAfterJSON))
@@ -523,16 +393,6 @@ func AfterJSONIsNil() predicate.GrowthAdminAudit {
 // AfterJSONNotNil applies the NotNil predicate on the "after_json" field.
 func AfterJSONNotNil() predicate.GrowthAdminAudit {
 	return predicate.GrowthAdminAudit(sql.FieldNotNull(FieldAfterJSON))
-}
-
-// AfterJSONEqualFold applies the EqualFold predicate on the "after_json" field.
-func AfterJSONEqualFold(v string) predicate.GrowthAdminAudit {
-	return predicate.GrowthAdminAudit(sql.FieldEqualFold(FieldAfterJSON, v))
-}
-
-// AfterJSONContainsFold applies the ContainsFold predicate on the "after_json" field.
-func AfterJSONContainsFold(v string) predicate.GrowthAdminAudit {
-	return predicate.GrowthAdminAudit(sql.FieldContainsFold(FieldAfterJSON, v))
 }
 
 // ReasonEQ applies the EQ predicate on the "reason" field.

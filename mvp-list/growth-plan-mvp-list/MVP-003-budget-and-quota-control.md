@@ -58,7 +58,7 @@ An operator can increase or reduce the total budget, allocate quota to a task, r
 | Server/RBAC regression | `go test ./internal/rbac ./internal/server/... -count=1` | PASS, including RBAC compatibility seed and route coverage. |
 | Service | `backend/internal/service/growth/budget_service.go` | Single-row lock/transaction implementation for all four budget operations. |
 | Handler and routes | `backend/internal/handler/growth/budget_handler.go`, `backend/internal/server/routes/admin.go` | Seven M-face endpoints with `growth.read`/`growth.manage`. |
-| Permission seed | `backend/internal/rbac/permissions.go`, `backend/sqlArchiving/163_seed_rbac_compatibility.sql`, `backend/sqlArchiving/183_add_growth_rbac_permissions.sql` | Growth permissions added to catalog and deployment seed. |
+| Permission seed | `backend/internal/rbac/permissions.go`, `backend/sqlArchiving/163_seed_rbac_compatibility.sql`, `backend/sqlArchiving/growth/dml/183_add_growth_rbac_permissions.sql` | Growth permissions added to catalog and deployment seed. |
 | Inventory | `RBAC_ENDPOINT_INVENTORY.md` | Seven growth budget endpoints registered. |
 
 ## Execution Notes

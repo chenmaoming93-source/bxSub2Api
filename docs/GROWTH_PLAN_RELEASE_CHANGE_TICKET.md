@@ -52,16 +52,16 @@ AIWork 协同事项：
 
 ### 3.1 变更清单
 
-| 顺序 | 脚本 | 变更内容 | 风险 |
+| 场景/顺序 | 脚本 | 变更内容 | 风险 |
 |---|---|---|---|
-| 1 | `backend/sqlArchiving/182_create_growth_tables.sql` | 创建 17 张 Growth 表、索引和唯一键，不包含数据库校验约束 | 中 |
-| 2 | `backend/sqlArchiving/184_growth_adjustment_account.sql` | `ADJUST` 账户由应用层校验，无数据库 DDL | 低 |
-| 3 | `backend/sqlArchiving/185_growth_multi_reward_claims.sql` | 旧环境增加领取 `sequence` 和多发分唯一键 | 中 |
-| 4 | `backend/sqlArchiving/186_growth_goldendb_schema_compat.sql` | 旧环境重命名保留字列并将 JSON 改为 LONGTEXT | 中 |
-| 5 | `backend/sqlArchiving/187_growth_drop_legacy_constraints.sql` | 删除旧版 Growth 表遗留的校验约束 | 中 |
-| 6 | `backend/sqlArchiving/188_growth_drop_sequence_constraint.sql` | 可选：删除旧版 185 留下的领取序号约束 | 低 |
-| 7 | `backend/sqlArchiving/163_seed_rbac_compatibility.sql` | 同步 RBAC 兼容 seed | 低 |
-| 8 | `backend/sqlArchiving/183_add_growth_rbac_permissions.sql` | 新增 Growth 权限和普通用户授权 | 中 |
+| 新环境 1 | `backend/sqlArchiving/growth/ddl/182_create_growth_tables.sql` | 创建 17 张 Growth 表、索引和唯一键，不包含数据库校验约束 | 中 |
+| 存量环境 1（按需） | `backend/sqlArchiving/growth/ddl/187_growth_drop_legacy_constraints.sql` | 删除旧版 Growth 表遗留的校验约束 | 中 |
+| 存量环境 2（按需） | `backend/sqlArchiving/growth/ddl/188_growth_drop_sequence_constraint.sql` | 删除旧版 185 留下的领取序号约束 | 低 |
+| 存量环境 3（按需） | `backend/sqlArchiving/growth/ddl/185_growth_multi_reward_claims.sql` | 旧环境增加领取 `sequence` 和多发分唯一键 | 中 |
+| 存量环境 4（按需） | `backend/sqlArchiving/growth/ddl/186_growth_goldendb_schema_compat.sql` | 旧环境重命名保留字列 | 中 |
+| 存量环境 5（按需） | `backend/sqlArchiving/growth/ddl/189_growth_restore_json_columns.sql` | 将 5 个 JSON 字段恢复为原生 `JSON NULL` | 中 |
+| 新/存量 DML 1 | `backend/sqlArchiving/163_seed_rbac_compatibility.sql` | 同步 RBAC 兼容 seed | 低 |
+| 新/存量 DML 2 | `backend/sqlArchiving/growth/dml/183_add_growth_rbac_permissions.sql` | 新增 Growth 权限和普通用户授权 | 中 |
 
 核心结构变化：
 
@@ -83,7 +83,7 @@ GoldenDB-compatible columns:
 JSON fields:
   conditions / benefit_detail / product_snapshot
   before_json / after_json
-  -> LONGTEXT NULL
+  -> JSON NULL
 ```
 
 ### 3.2 执行前置条件
@@ -108,47 +108,47 @@ mysqldump --single-transaction --routines --triggers \
 
 ```bash
 mysql -h <db-host> -P <db-port> -u <db-user> -p <database-name> \
-  < backend/sqlArchiving/182_create_growth_tables.sql
+  < backend/sqlArchiving/growth/ddl/182_create_growth_tables.sql
 
 mysql -h <db-host> -P <db-port> -u <db-user> -p <database-name> \
   < backend/sqlArchiving/163_seed_rbac_compatibility.sql
 
 mysql -h <db-host> -P <db-port> -u <db-user> -p <database-name> \
-  < backend/sqlArchiving/183_add_growth_rbac_permissions.sql
+  < backend/sqlArchiving/growth/dml/183_add_growth_rbac_permissions.sql
 ```
 
 已经执行过旧版 182 的存量环境，再按以下顺序升级：
 
 ```bash
 mysql -h <db-host> -P <db-port> -u <db-user> -p <database-name> \
-  < backend/sqlArchiving/187_growth_drop_legacy_constraints.sql
+  < backend/sqlArchiving/growth/ddl/187_growth_drop_legacy_constraints.sql
 
 mysql -h <db-host> -P <db-port> -u <db-user> -p <database-name> \
-  < backend/sqlArchiving/184_growth_adjustment_account.sql
+  < backend/sqlArchiving/growth/ddl/185_growth_multi_reward_claims.sql
 
 mysql -h <db-host> -P <db-port> -u <db-user> -p <database-name> \
-  < backend/sqlArchiving/185_growth_multi_reward_claims.sql
+  < backend/sqlArchiving/growth/ddl/186_growth_goldendb_schema_compat.sql
 
 mysql -h <db-host> -P <db-port> -u <db-user> -p <database-name> \
-  < backend/sqlArchiving/186_growth_goldendb_schema_compat.sql
+  < backend/sqlArchiving/growth/ddl/189_growth_restore_json_columns.sql
 ```
 
 如果该环境曾经执行过旧版 `185_growth_multi_reward_claims.sql`，再执行：
 
 ```bash
 mysql -h <db-host> -P <db-port> -u <db-user> -p <database-name> \
-  < backend/sqlArchiving/188_growth_drop_sequence_constraint.sql
+  < backend/sqlArchiving/growth/ddl/188_growth_drop_sequence_constraint.sql
 ```
 
 说明：
 
 - 最新版 182 只用于全新环境，不能在字段已经升级的环境重复执行增量字段升级。
-- 184/185/186/187 只用于旧版 Growth 表，不使用 `PREPARE`、`EXECUTE` 或动态 SQL。
+- 185/186/187/188/189 只用于旧版 Growth 表，不使用 `PREPARE`、`EXECUTE` 或动态 SQL。
 - 188 仅在旧版 185 已产生对应约束时执行。
 - 185 直接替换旧三列唯一键为包含 `sequence` 的新唯一键。
 - 187 先删除旧版校验约束，再执行列改名。
 - 186 直接重命名列，不创建任何数据库校验约束。
-- 186 将 5 个 JSON 字段修改为 `LONGTEXT NULL`，已有 JSON 文本内容保持不变。
+- 189 将 5 个 JSON 字段恢复为 `JSON NULL`，已有合法 JSON 数据保持不变。
 - 不在生产执行 Ent 重新生成命令。
 
 ## 4. 配置与权限
@@ -263,7 +263,7 @@ ORDER BY code;
 - `growth_reward_claims.sequence` 存在。
 - `uq_growth_reward_claims_cycle` 包含 `user_id, task_id, cycle_key, sequence`。
 - Growth 表中不存在 `status/description/action` 列，也不存在 JSON 类型列。
-- `conditions/benefit_detail/product_snapshot/before_json/after_json` 均为可空 LONGTEXT。
+- `conditions/benefit_detail/product_snapshot/before_json/after_json` 均为可空原生 JSON。
 - Growth 表数据库校验约束数量为 `0`。
 - Growth 权限数量为 `5`。
 - 普通用户拥有 `growth.self.read`、`growth.self.exchange`。
@@ -334,7 +334,7 @@ ORDER BY code;
 - 新库只执行最新版 182，连续执行两次通过。
 - 旧库执行 `184 → 185 → 186` 升级测试通过。
 - 旧版奖励唯一键成功升级为包含 `sequence` 的新唯一键。
-- 旧版 JSON 字段成功转换为可空 LONGTEXT，数据内容保持一致。
+- 旧版 JSON 字段保留为可空原生 JSON，数据内容保持一致。
 - Growth 管理端和用户端已恢复 `AppLayout`，实际桌面窗口验证侧边栏和 Header 正常。
 - MySQL 固定偏移聚合测试通过，Dashboard 聚合不再出现 `bucket_start cannot be null`。
 - 限额用户选择器使用服务端搜索并通过类型检查、ESLint 和测试。

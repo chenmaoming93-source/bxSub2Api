@@ -33,7 +33,7 @@
 |---|---|
 | 栈 | Go + Gin + Ent + MySQL 8 / GoldenDB（MySQL 兼容模式） |
 | 主键 | `BIGINT AUTO_INCREMENT`（Ent `--idtype int64`），不引入 UUID/雪花 |
-| DDL | 自动路径 `backend/migrations/<下一号>_*.sql` + 手工路径 `backend/sqlArchiving/182_*.sql`，二者一致；**禁止**改历史迁移 |
+| DDL | 自动路径 `backend/migrations/<下一号>_*.sql` + 手工路径 `backend/sqlArchiving/growth/ddl/182_*.sql`，二者一致；**禁止**改历史迁移 |
 | 配置 | 新增 `growth.*` 同步 `backend/config/config.yaml`（顶层已有 `timezone: "Asia/Shanghai"`，可复用作为业务时区） |
 | 响应 | 业务响应用 `internal/pkg/response`（`Code int`，成功 0）；中间件早退用 string-code envelope |
 | RBAC | 新路由须登记，否则 `ValidateRouteCoverage` 启动 panic（见 5.4） |
@@ -90,7 +90,7 @@ GoldenDB / MySQL 8            双边账本（不可变流水）+ 幂等记录
 
 > 完整字段见总体设计第 4 章。**本设计只约定工程落点**，不重复字段清单。
 >
-> GoldenDB 兼容约定：数据库不使用 `status`、`description`、`action` 作为列名，分别使用 `*_status`、`remark`、`action_type`。`conditions`、`benefit_detail`、`product_snapshot`、`before_json`、`after_json` 使用 `LONGTEXT NULL` 存储 JSON 文本，由应用层序列化/反序列化；空对象写入 `{}`。
+> GoldenDB 兼容约定：数据库不使用 `status`、`description`、`action` 作为列名，分别使用 `*_status`、`remark`、`action_type`。`conditions`、`benefit_detail`、`product_snapshot`、`before_json`、`after_json` 使用原生可空 `JSON`；空对象由应用层写为 `{}`。
 
 ### 2.2 Ent schema 落点
 
@@ -121,14 +121,14 @@ growth_admin_audit.go       → GrowthAdminAudit
 - 表名注解 `entsql.Annotation{Table: "growth_xxx"}`；Mixin 用 `mixins.TimeMixin{}`（`created_at/updated_at`）。
 - 金额/积分字段 `decimal(20,8)` 用 `SchemaType(map[string]string{dialect.MySQL: "decimal(20,8)"})`（仿 `user.go:49-51`）；积分也可用 `BIGINT`，但需与 DDL 一致。
 - 唯一约束用字段级 `.Unique()` 或 `index.Fields(...).Unique()`；以上唯一键必须落到 Ent 索引，不能只靠 DB 手工 DDL。
-- JSON 语义字段统一使用 Ent `field.Text` 映射为 `LONGTEXT NULL`，应用层负责 JSON 序列化/反序列化（**禁止执行管理界面写入的任意脚本**）。
+- JSON 语义字段统一使用 Ent `field.JSON` 映射为可空原生 `JSON`（**禁止执行管理界面写入的任意脚本**）。
 - 在 `User.Edges()`（`ent/schema/user.go:122-146`）追加 `edge.To("growth_wallet", GrowthWallet.Type)` 等必要关联。
 - 生成：`cd backend && make generate`（`go generate ./ent` + `go generate ./cmd/server`）。`ent/generate.go:5` 已开启 `sql/upsert, sql/lock, --idtype int64`，正好满足幂等插入与 `FOR UPDATE`。
 
 ### 2.3 DDL 落点
 
 - 自动路径：`backend/migrations/161_create_growth_tables.sql`（当前最大 160）—— 走 `ApplyMigrationsWithOptions`（`repository/ent.go:30-38`，开关 `cfg.Database.RunMigrations`）。
-- 手工路径：`backend/sqlArchiving/182_create_growth_tables.sql`（当前最大 181）—— 无 DDL 权限时执行；二者 SQL 保持一致。
+- 手工路径：`backend/sqlArchiving/growth/ddl/182_create_growth_tables.sql`（当前最大 181）—— 无 DDL 权限时执行；二者 SQL 保持一致。
 - 风格：开头 `-- MySQL 8 / GoldenDB（MySQL 兼容模式）`；`BIGINT NOT NULL AUTO_INCREMENT` + `PRIMARY KEY` + `ENGINE=InnoDB DEFAULT CHARSET=utf8mb4`；建表内联 `UNIQUE KEY / KEY`；结尾 `-- Verification` + `SHOW COLUMNS`。
 
 ---
@@ -425,7 +425,7 @@ M 面逐路由走 `rbacRoutes` 并登记 `RBAC_ENDPOINT_INVENTORY.md`。
 |---|---|
 | Ent schema | `backend/ent/schema/growth_*.go`（17 个，见 2.2） |
 | 代码生成 | `ent/generate.go:5`、`backend/Makefile:9-11`（`make generate`） |
-| DDL | `backend/migrations/161_create_growth_tables.sql` + `backend/sqlArchiving/182_create_growth_tables.sql` |
+| DDL | `backend/migrations/161_create_growth_tables.sql` + `backend/sqlArchiving/growth/ddl/182_create_growth_tables.sql` |
 | 解封装中间件 | `internal/server/middleware/growth_payload.go`（新）：写死私钥 + 固定 `kid` 校验 + SM2 解封 + SM3-HMAC + SM4 解密 + 防重放 + `path` 绑定 + 用户名映射；注入 `middleware/wire.go:22-27` |
 | 密钥/Nonce | 私钥写死在 `growth_payload.go` 常量（无 `crypto_keys.go` / `GrowthKeyStore` / 配置加载）、`internal/service/growth/nonce_cache.go`（窗口去重）、`sm3hmac`/`sm4DecryptCBC` 封装；配置仅 `growth.crypto.time_window`；`go.mod` 增 `github.com/tjfoc/gmsm` |
 | 路由 | `internal/server/routes/growth.go`（新，全 POST）；装配 `router.go:125-135`、`http.go:26+` |

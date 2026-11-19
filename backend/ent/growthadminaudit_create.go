@@ -84,30 +84,14 @@ func (_c *GrowthAdminAuditCreate) SetNillableResourceID(v *int64) *GrowthAdminAu
 }
 
 // SetBeforeJSON sets the "before_json" field.
-func (_c *GrowthAdminAuditCreate) SetBeforeJSON(v string) *GrowthAdminAuditCreate {
+func (_c *GrowthAdminAuditCreate) SetBeforeJSON(v map[string]interface{}) *GrowthAdminAuditCreate {
 	_c.mutation.SetBeforeJSON(v)
 	return _c
 }
 
-// SetNillableBeforeJSON sets the "before_json" field if the given value is not nil.
-func (_c *GrowthAdminAuditCreate) SetNillableBeforeJSON(v *string) *GrowthAdminAuditCreate {
-	if v != nil {
-		_c.SetBeforeJSON(*v)
-	}
-	return _c
-}
-
 // SetAfterJSON sets the "after_json" field.
-func (_c *GrowthAdminAuditCreate) SetAfterJSON(v string) *GrowthAdminAuditCreate {
+func (_c *GrowthAdminAuditCreate) SetAfterJSON(v map[string]interface{}) *GrowthAdminAuditCreate {
 	_c.mutation.SetAfterJSON(v)
-	return _c
-}
-
-// SetNillableAfterJSON sets the "after_json" field if the given value is not nil.
-func (_c *GrowthAdminAuditCreate) SetNillableAfterJSON(v *string) *GrowthAdminAuditCreate {
-	if v != nil {
-		_c.SetAfterJSON(*v)
-	}
 	return _c
 }
 
@@ -291,11 +275,11 @@ func (_c *GrowthAdminAuditCreate) createSpec() (*GrowthAdminAudit, *sqlgraph.Cre
 		_node.ResourceID = &value
 	}
 	if value, ok := _c.mutation.BeforeJSON(); ok {
-		_spec.SetField(growthadminaudit.FieldBeforeJSON, field.TypeString, value)
+		_spec.SetField(growthadminaudit.FieldBeforeJSON, field.TypeJSON, value)
 		_node.BeforeJSON = value
 	}
 	if value, ok := _c.mutation.AfterJSON(); ok {
-		_spec.SetField(growthadminaudit.FieldAfterJSON, field.TypeString, value)
+		_spec.SetField(growthadminaudit.FieldAfterJSON, field.TypeJSON, value)
 		_node.AfterJSON = value
 	}
 	if value, ok := _c.mutation.Reason(); ok {
@@ -448,7 +432,7 @@ func (u *GrowthAdminAuditUpsert) ClearResourceID() *GrowthAdminAuditUpsert {
 }
 
 // SetBeforeJSON sets the "before_json" field.
-func (u *GrowthAdminAuditUpsert) SetBeforeJSON(v string) *GrowthAdminAuditUpsert {
+func (u *GrowthAdminAuditUpsert) SetBeforeJSON(v map[string]interface{}) *GrowthAdminAuditUpsert {
 	u.Set(growthadminaudit.FieldBeforeJSON, v)
 	return u
 }
@@ -466,7 +450,7 @@ func (u *GrowthAdminAuditUpsert) ClearBeforeJSON() *GrowthAdminAuditUpsert {
 }
 
 // SetAfterJSON sets the "after_json" field.
-func (u *GrowthAdminAuditUpsert) SetAfterJSON(v string) *GrowthAdminAuditUpsert {
+func (u *GrowthAdminAuditUpsert) SetAfterJSON(v map[string]interface{}) *GrowthAdminAuditUpsert {
 	u.Set(growthadminaudit.FieldAfterJSON, v)
 	return u
 }
@@ -637,7 +621,7 @@ func (u *GrowthAdminAuditUpsertOne) ClearResourceID() *GrowthAdminAuditUpsertOne
 }
 
 // SetBeforeJSON sets the "before_json" field.
-func (u *GrowthAdminAuditUpsertOne) SetBeforeJSON(v string) *GrowthAdminAuditUpsertOne {
+func (u *GrowthAdminAuditUpsertOne) SetBeforeJSON(v map[string]interface{}) *GrowthAdminAuditUpsertOne {
 	return u.Update(func(s *GrowthAdminAuditUpsert) {
 		s.SetBeforeJSON(v)
 	})
@@ -658,7 +642,7 @@ func (u *GrowthAdminAuditUpsertOne) ClearBeforeJSON() *GrowthAdminAuditUpsertOne
 }
 
 // SetAfterJSON sets the "after_json" field.
-func (u *GrowthAdminAuditUpsertOne) SetAfterJSON(v string) *GrowthAdminAuditUpsertOne {
+func (u *GrowthAdminAuditUpsertOne) SetAfterJSON(v map[string]interface{}) *GrowthAdminAuditUpsertOne {
 	return u.Update(func(s *GrowthAdminAuditUpsert) {
 		s.SetAfterJSON(v)
 	})
@@ -1002,7 +986,7 @@ func (u *GrowthAdminAuditUpsertBulk) ClearResourceID() *GrowthAdminAuditUpsertBu
 }
 
 // SetBeforeJSON sets the "before_json" field.
-func (u *GrowthAdminAuditUpsertBulk) SetBeforeJSON(v string) *GrowthAdminAuditUpsertBulk {
+func (u *GrowthAdminAuditUpsertBulk) SetBeforeJSON(v map[string]interface{}) *GrowthAdminAuditUpsertBulk {
 	return u.Update(func(s *GrowthAdminAuditUpsert) {
 		s.SetBeforeJSON(v)
 	})
@@ -1023,7 +1007,7 @@ func (u *GrowthAdminAuditUpsertBulk) ClearBeforeJSON() *GrowthAdminAuditUpsertBu
 }
 
 // SetAfterJSON sets the "after_json" field.
-func (u *GrowthAdminAuditUpsertBulk) SetAfterJSON(v string) *GrowthAdminAuditUpsertBulk {
+func (u *GrowthAdminAuditUpsertBulk) SetAfterJSON(v map[string]interface{}) *GrowthAdminAuditUpsertBulk {
 	return u.Update(func(s *GrowthAdminAuditUpsert) {
 		s.SetAfterJSON(v)
 	})

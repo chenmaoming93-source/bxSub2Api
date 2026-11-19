@@ -61,7 +61,7 @@ func TestGrowthMySQLArchiveAndConstraints(t *testing.T) {
 
 	_, sourceFile, _, ok := runtime.Caller(0)
 	require.True(t, ok)
-	archivePath := filepath.Join(filepath.Dir(sourceFile), "..", "..", "..", "sqlArchiving", "182_create_growth_tables.sql")
+	archivePath := filepath.Join(filepath.Dir(sourceFile), "..", "..", "..", "sqlArchiving", "growth", "ddl", "182_create_growth_tables.sql")
 	raw, err := os.ReadFile(archivePath)
 	require.NoError(t, err)
 	statements := growthSQLStatements(string(raw))
@@ -115,7 +115,7 @@ func TestGrowthMySQLArchiveAndConstraints(t *testing.T) {
 		WHERE table_schema = DATABASE()
 		  AND table_name LIKE 'growth_%'
 		  AND data_type = 'json'`).Scan(&jsonColumns))
-	require.Zero(t, jsonColumns)
+	require.Equal(t, 5, jsonColumns)
 	var longTextFields int
 	require.NoError(t, db.QueryRowContext(ctx, `
 		SELECT COUNT(*) FROM information_schema.columns
@@ -128,7 +128,7 @@ func TestGrowthMySQLArchiveAndConstraints(t *testing.T) {
 		    OR (table_name = 'growth_exchange_orders' AND column_name = 'product_snapshot')
 		    OR (table_name = 'growth_admin_audit' AND column_name IN ('before_json', 'after_json'))
 		  )`).Scan(&longTextFields))
-	require.Equal(t, 5, longTextFields)
+	require.Zero(t, longTextFields)
 	var growthChecks int
 	require.NoError(t, db.QueryRowContext(ctx, `
 		SELECT COUNT(*) FROM information_schema.table_constraints

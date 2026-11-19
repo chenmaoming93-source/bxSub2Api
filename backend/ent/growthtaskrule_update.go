@@ -91,16 +91,8 @@ func (_u *GrowthTaskRuleUpdate) SetNillableTriggerEvent(v *string) *GrowthTaskRu
 }
 
 // SetConditions sets the "conditions" field.
-func (_u *GrowthTaskRuleUpdate) SetConditions(v string) *GrowthTaskRuleUpdate {
+func (_u *GrowthTaskRuleUpdate) SetConditions(v map[string]interface{}) *GrowthTaskRuleUpdate {
 	_u.mutation.SetConditions(v)
-	return _u
-}
-
-// SetNillableConditions sets the "conditions" field if the given value is not nil.
-func (_u *GrowthTaskRuleUpdate) SetNillableConditions(v *string) *GrowthTaskRuleUpdate {
-	if v != nil {
-		_u.SetConditions(*v)
-	}
 	return _u
 }
 
@@ -395,10 +387,10 @@ func (_u *GrowthTaskRuleUpdate) sqlSave(ctx context.Context) (_node int, err err
 		_spec.SetField(growthtaskrule.FieldTriggerEvent, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.Conditions(); ok {
-		_spec.SetField(growthtaskrule.FieldConditions, field.TypeString, value)
+		_spec.SetField(growthtaskrule.FieldConditions, field.TypeJSON, value)
 	}
 	if _u.mutation.ConditionsCleared() {
-		_spec.ClearField(growthtaskrule.FieldConditions, field.TypeString)
+		_spec.ClearField(growthtaskrule.FieldConditions, field.TypeJSON)
 	}
 	if value, ok := _u.mutation.Target(); ok {
 		_spec.SetField(growthtaskrule.FieldTarget, field.TypeInt64, value)
@@ -531,16 +523,8 @@ func (_u *GrowthTaskRuleUpdateOne) SetNillableTriggerEvent(v *string) *GrowthTas
 }
 
 // SetConditions sets the "conditions" field.
-func (_u *GrowthTaskRuleUpdateOne) SetConditions(v string) *GrowthTaskRuleUpdateOne {
+func (_u *GrowthTaskRuleUpdateOne) SetConditions(v map[string]interface{}) *GrowthTaskRuleUpdateOne {
 	_u.mutation.SetConditions(v)
-	return _u
-}
-
-// SetNillableConditions sets the "conditions" field if the given value is not nil.
-func (_u *GrowthTaskRuleUpdateOne) SetNillableConditions(v *string) *GrowthTaskRuleUpdateOne {
-	if v != nil {
-		_u.SetConditions(*v)
-	}
 	return _u
 }
 
@@ -865,10 +849,10 @@ func (_u *GrowthTaskRuleUpdateOne) sqlSave(ctx context.Context) (_node *GrowthTa
 		_spec.SetField(growthtaskrule.FieldTriggerEvent, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.Conditions(); ok {
-		_spec.SetField(growthtaskrule.FieldConditions, field.TypeString, value)
+		_spec.SetField(growthtaskrule.FieldConditions, field.TypeJSON, value)
 	}
 	if _u.mutation.ConditionsCleared() {
-		_spec.ClearField(growthtaskrule.FieldConditions, field.TypeString)
+		_spec.ClearField(growthtaskrule.FieldConditions, field.TypeJSON)
 	}
 	if value, ok := _u.mutation.Target(); ok {
 		_spec.SetField(growthtaskrule.FieldTarget, field.TypeInt64, value)

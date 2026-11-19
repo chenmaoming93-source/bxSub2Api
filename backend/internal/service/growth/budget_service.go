@@ -458,8 +458,8 @@ func appendBudgetAudit(
 		SetActionType(action).
 		SetResourceType(resourceType).
 		SetResourceID(resourceID).
-		SetBeforeJSON(encodeJSONText(beforeJSON)).
-		SetAfterJSON(encodeJSONText(afterJSON)).
+		SetBeforeJSON(normalizeJSONMap(beforeJSON)).
+		SetAfterJSON(normalizeJSONMap(afterJSON)).
 		SetReason(strings.TrimSpace(mutation.Reason)).
 		SetRequestID(strings.TrimSpace(mutation.RequestID)).
 		Save(ctx)

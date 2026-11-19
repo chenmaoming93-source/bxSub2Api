@@ -34,7 +34,7 @@ The sub2api team has one executable v4.0 baseline for the AIWork-facing U interf
 - Keep reusable crypto assertions under `backend/internal/service/growth/crypto` and test data under its `testdata/` directory.
 - Include all `CRYPTO_*` and `GROWTH_USER_NOT_FOUND` outcomes in the fixture matrix.
 - Include `growth.read`, `growth.manage`, `growth.adjust`, `growth.self.read`, and the security-corrected `growth.self.exchange` in the permission decision.
-- Resolve conflicting DDL text in favor of `backend/sqlArchiving/182_*` and no edits to `backend/migrations/`.
+- Resolve conflicting DDL text in favor of `backend/sqlArchiving/growth/ddl/182_*` and no edits to `backend/migrations/`.
 
 ## Acceptance Criteria
 

@@ -3,6 +3,7 @@
 package ent
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -31,7 +32,7 @@ type GrowthExchangeOrder struct {
 	// ProductVersion holds the value of the "product_version" field.
 	ProductVersion int `json:"product_version,omitempty"`
 	// ProductSnapshot holds the value of the "product_snapshot" field.
-	ProductSnapshot string `json:"product_snapshot,omitempty"`
+	ProductSnapshot map[string]interface{} `json:"product_snapshot,omitempty"`
 	// PointsCost holds the value of the "points_cost" field.
 	PointsCost int64 `json:"points_cost,omitempty"`
 	// OrderStatus holds the value of the "order_status" field.
@@ -81,9 +82,11 @@ func (*GrowthExchangeOrder) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
+		case growthexchangeorder.FieldProductSnapshot:
+			values[i] = new([]byte)
 		case growthexchangeorder.FieldID, growthexchangeorder.FieldUserID, growthexchangeorder.FieldProductID, growthexchangeorder.FieldProductVersion, growthexchangeorder.FieldPointsCost, growthexchangeorder.FieldExpectedVersion, growthexchangeorder.FieldTransferID, growthexchangeorder.FieldRefundTransferID:
 			values[i] = new(sql.NullInt64)
-		case growthexchangeorder.FieldOrderNo, growthexchangeorder.FieldProductSnapshot, growthexchangeorder.FieldOrderStatus, growthexchangeorder.FieldIdempotencyKey, growthexchangeorder.FieldFailureReason:
+		case growthexchangeorder.FieldOrderNo, growthexchangeorder.FieldOrderStatus, growthexchangeorder.FieldIdempotencyKey, growthexchangeorder.FieldFailureReason:
 			values[i] = new(sql.NullString)
 		case growthexchangeorder.FieldCreatedAt, growthexchangeorder.FieldUpdatedAt, growthexchangeorder.FieldFulfilledAt, growthexchangeorder.FieldRefundedAt:
 			values[i] = new(sql.NullTime)
@@ -145,10 +148,12 @@ func (_m *GrowthExchangeOrder) assignValues(columns []string, values []any) erro
 				_m.ProductVersion = int(value.Int64)
 			}
 		case growthexchangeorder.FieldProductSnapshot:
-			if value, ok := values[i].(*sql.NullString); !ok {
+			if value, ok := values[i].(*[]byte); !ok {
 				return fmt.Errorf("unexpected type %T for field product_snapshot", values[i])
-			} else if value.Valid {
-				_m.ProductSnapshot = value.String
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &_m.ProductSnapshot); err != nil {
+					return fmt.Errorf("unmarshal field product_snapshot: %w", err)
+				}
 			}
 		case growthexchangeorder.FieldPointsCost:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -269,7 +274,7 @@ func (_m *GrowthExchangeOrder) String() string {
 	builder.WriteString(fmt.Sprintf("%v", _m.ProductVersion))
 	builder.WriteString(", ")
 	builder.WriteString("product_snapshot=")
-	builder.WriteString(_m.ProductSnapshot)
+	builder.WriteString(fmt.Sprintf("%v", _m.ProductSnapshot))
 	builder.WriteString(", ")
 	builder.WriteString("points_cost=")
 	builder.WriteString(fmt.Sprintf("%v", _m.PointsCost))

@@ -31,7 +31,7 @@ func (GrowthExchangeOrder) Fields() []ent.Field {
 		field.Int64("user_id"),
 		field.Int64("product_id"),
 		field.Int("product_version").Validate(growthPositiveInt("product_version")),
-		field.Text("product_snapshot").Optional(),
+		field.JSON("product_snapshot", map[string]any{}).Optional(),
 		field.Int64("points_cost").Validate(growthPositive("points_cost")),
 		field.String("order_status").MaxLen(20).Default("CREATED").Validate(growthEnum("order_status", "CREATED", "FULFILLING", "SUCCEEDED", "FAILED", "REFUNDED")),
 		field.String("idempotency_key").MaxLen(128).NotEmpty(),

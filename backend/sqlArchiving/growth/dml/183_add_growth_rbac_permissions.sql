@@ -36,8 +36,3 @@ JOIN rbac_permissions AS permission_row
  AND permission_row.deleted_at IS NULL
 WHERE role_row.code = 'user'
 ON DUPLICATE KEY UPDATE updated_at = CURRENT_TIMESTAMP(6);
-
--- Verification
-SELECT code, name, module, status, deleted_at
-FROM rbac_permissions
-WHERE code LIKE 'growth.%';

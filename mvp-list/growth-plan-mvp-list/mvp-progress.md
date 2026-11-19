@@ -52,7 +52,7 @@
 - 交付范围严格限定在 sub2api：管理端 `/admin/growth`、Web 用户端 `/growth`、M/W 面、供 AIWork 调用的 U 面、共享账务服务及测试。AIWork 的 Main、Renderer、本地任务判定、签到判定和前端页面均由其他项目组实现，不在本计划内。
 - sub2api 负责保证 U 面符合冻结契约 v4.0、提供固定测试向量和接口文档，并以 Mock/契约测试证明兼容；与 AIWork 真实版本的项目组联合联调属于交付后的外部协调验收，不是 sub2api 内部开发任务。
 - 现有 `mvp-list/` 是已完成的观测台计划，共 27 项且全部为 `DONE`；本计划按设计文档要求独立放在 `mvp-list/growth-plan-mvp-list/`，不改动旧包编号与证据。
-- 仓库已归档 SQL 当前最大编号为 `181`，且 `PROJECT_CONVENTIONS.md` 明确禁止新增 `backend/migrations/` DDL。因此本计划固定使用 `backend/sqlArchiving/182_create_growth_tables.sql`，不采纳内部设计早期文字中的 `161` 和自动迁移路径。
+- 仓库已归档 SQL 当前最大编号为 `181`，且 `PROJECT_CONVENTIONS.md` 明确禁止新增 `backend/migrations/` DDL。因此本计划固定使用 `backend/sqlArchiving/growth/ddl/182_create_growth_tables.sql`，不采纳内部设计早期文字中的 `161` 和自动迁移路径。
 - 原型包含 Web 用户端，故计划纳入同源 `W` 面 `/api/v1/user/growth/*`：使用现有 JWT 会话，不重复使用 AIWork 的 SM2 信封；Web 不提供签到或任务完成接口。
 - 页面设计只列了 `growth.self.read`，但兑换是写操作。为避免读权限同时授予兑换能力，本计划假定新增 `growth.self.exchange`，仅用于 W 面兑换下单；列表与详情仍使用 `growth.self.read`。
 - 管理端使用 `growth.read`、`growth.manage`、`growth.adjust`；调账不做双人复核，由高风险权限、必填原因、审计和每日对账共同约束。

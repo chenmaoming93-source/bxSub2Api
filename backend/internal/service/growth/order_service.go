@@ -204,7 +204,7 @@ func (s *OrderService) Create(ctx context.Context, command ExchangeCommand) (Exc
 		"version":         version.Version,
 		"points_cost":     version.PointsCost,
 		"benefit_summary": version.BenefitSummary,
-		"benefit_detail":  decodeJSONText(version.BenefitDetail),
+		"benefit_detail":  normalizeJSONMap(version.BenefitDetail),
 		"token_amount":    version.TokenAmount,
 		"per_user_limit":  version.PerUserLimit,
 	}
@@ -226,7 +226,7 @@ func (s *OrderService) Create(ctx context.Context, command ExchangeCommand) (Exc
 				SetUserID(command.UserID).
 				SetProductID(product.ID).
 				SetProductVersion(version.Version).
-				SetProductSnapshot(encodeJSONText(snapshot)).
+				SetProductSnapshot(normalizeJSONMap(snapshot)).
 				SetPointsCost(version.PointsCost).
 				SetOrderStatus("FULFILLING").
 				SetIdempotencyKey(command.IdempotencyKey).
@@ -337,7 +337,7 @@ func (s *OrderService) detail(ctx context.Context, order *ent.GrowthExchangeOrde
 	}
 	return ExchangeOrderDetail{
 		OrderID: order.ID, OrderNo: order.OrderNo, Status: order.OrderStatus,
-		ProductSnapshot: decodeJSONText(order.ProductSnapshot), PointsCost: order.PointsCost,
+		ProductSnapshot: normalizeJSONMap(order.ProductSnapshot), PointsCost: order.PointsCost,
 		TransferID: transferID, FulfillmentStatus: status,
 		FailureReason: order.FailureReason, RefundTransferID: refundID,
 		CreatedAt: order.CreatedAt, FulfilledAt: order.FulfilledAt,

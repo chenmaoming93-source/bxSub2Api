@@ -722,7 +722,7 @@ func currentBenefitDetail(ctx context.Context, client *ent.Client, productID int
 	if err != nil {
 		return nil
 	}
-	return decodeJSONText(entity.BenefitDetail)
+	return normalizeJSONMap(entity.BenefitDetail)
 }
 
 func (s *ReadService) activeProducts(ctx context.Context, page, pageSize int) ([]*ent.GrowthProduct, int64, error) {
@@ -749,7 +749,7 @@ func (s *ReadService) UExchanges(ctx context.Context, userID int64, page, pageSi
 	}
 	result := make([]UExchangeItemView, 0, len(orders))
 	for _, order := range orders {
-		title, _ := decodeJSONText(order.ProductSnapshot)["title"].(string)
+		title, _ := normalizeJSONMap(order.ProductSnapshot)["title"].(string)
 		result = append(result, UExchangeItemView{
 			OrderID: order.ID, ProductTitle: title, PointsCost: order.PointsCost,
 			Status: order.OrderStatus, CreatedAt: order.CreatedAt, FulfilledAt: order.FulfilledAt,
@@ -765,7 +765,7 @@ func (s *ReadService) WExchanges(ctx context.Context, userID int64, page, pageSi
 	}
 	result := make([]WExchangeItemView, 0, len(orders))
 	for _, order := range orders {
-		title, _ := decodeJSONText(order.ProductSnapshot)["title"].(string)
+		title, _ := normalizeJSONMap(order.ProductSnapshot)["title"].(string)
 		result = append(result, WExchangeItemView{
 			OrderID: order.ID, OrderNo: order.OrderNo, ProductTitle: title,
 			ProductVersion: order.ProductVersion, PointsCost: order.PointsCost,
