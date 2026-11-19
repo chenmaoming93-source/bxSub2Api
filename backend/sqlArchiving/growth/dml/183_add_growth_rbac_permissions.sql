@@ -1,5 +1,8 @@
 -- MySQL manual migration: add growth-plan RBAC permissions.
--- Safe to execute repeatedly after the RBAC compatibility seed has been applied.
+-- Safe to run repeatedly after the RBAC compatibility seed has been applied.
+
+SET NAMES utf8mb4;
+START TRANSACTION;
 
 INSERT INTO rbac_permissions (
   code,
@@ -36,3 +39,5 @@ JOIN rbac_permissions AS permission_row
  AND permission_row.deleted_at IS NULL
 WHERE role_row.code = 'user'
 ON DUPLICATE KEY UPDATE updated_at = CURRENT_TIMESTAMP(6);
+
+COMMIT;

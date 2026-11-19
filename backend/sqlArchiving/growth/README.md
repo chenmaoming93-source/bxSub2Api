@@ -5,6 +5,9 @@ Growth 投产脚本按用途分目录，避免执行脚本时混入不同类型�
 - `ddl/`：仅包含 `CREATE`、`ALTER`、`DROP` 等结构变更。
 - `dml/`：仅包含用于初始化或修复数据的 `INSERT`、`UPDATE`、`DELETE`。
 
+脚本不使用动态 SQL、存储过程、CTE、窗口函数或 `CHECK` 约束。增量升级仅使用基础
+`ALTER TABLE`；RBAC 数据使用一条 INSERT、一条 INSERT SELECT 和事务包裹。
+
 ## 新环境
 
 1. 执行 `ddl/182_create_growth_tables.sql`。
