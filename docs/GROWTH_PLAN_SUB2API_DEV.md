@@ -89,6 +89,8 @@ GoldenDB / MySQL 8            双边账本（不可变流水）+ 幂等记录
 | `growth_admin_audit` | 运营/调账审计 | 操作人、资源、变更前后摘要、原因、request_id |
 
 > 完整字段见总体设计第 4 章。**本设计只约定工程落点**，不重复字段清单。
+>
+> GoldenDB 兼容约定：数据库不使用 `status`、`description`、`action` 作为列名，分别使用 `*_status`、`remark`、`action_type`。`conditions`、`benefit_detail`、`product_snapshot`、`before_json`、`after_json` 使用 `LONGTEXT NULL` 存储 JSON 文本，由应用层序列化/反序列化；空对象写入 `{}`。
 
 ### 2.2 Ent schema 落点
 
@@ -119,7 +121,7 @@ growth_admin_audit.go       → GrowthAdminAudit
 - 表名注解 `entsql.Annotation{Table: "growth_xxx"}`；Mixin 用 `mixins.TimeMixin{}`（`created_at/updated_at`）。
 - 金额/积分字段 `decimal(20,8)` 用 `SchemaType(map[string]string{dialect.MySQL: "decimal(20,8)"})`（仿 `user.go:49-51`）；积分也可用 `BIGINT`，但需与 DDL 一致。
 - 唯一约束用字段级 `.Unique()` 或 `index.Fields(...).Unique()`；以上唯一键必须落到 Ent 索引，不能只靠 DB 手工 DDL。
-- JSON 字段用 `SchemaType(..., dialect.MySQL: "JSON")`，兼容不确定时 `LONGTEXT` + 应用层 schema 校验（**禁止执行管理界面写入的任意脚本**）。
+- JSON 语义字段统一使用 Ent `field.Text` 映射为 `LONGTEXT NULL`，应用层负责 JSON 序列化/反序列化（**禁止执行管理界面写入的任意脚本**）。
 - 在 `User.Edges()`（`ent/schema/user.go:122-146`）追加 `edge.To("growth_wallet", GrowthWallet.Type)` 等必要关联。
 - 生成：`cd backend && make generate`（`go generate ./ent` + `go generate ./cmd/server`）。`ent/generate.go:5` 已开启 `sql/upsert, sql/lock, --idtype int64`，正好满足幂等插入与 `FOR UPDATE`。
 
@@ -351,7 +353,7 @@ DRAFT ──publish──► ACTIVE ──offline──► OFFLINE
 **发布 `POST /admin/growth/tasks/:id/publish`**
 
 1. 取该任务最新**未发布**规则（`published_at IS NULL`）；没有则 `TASK_RULE_MISSING`（404）。
-2. 同一事务内：把当前生效版本 `effective_to = now`；新版本 `published_at = now`、`effective_from = now` 或指定时间；任务 `status = ACTIVE`。
+2. 同一事务内：把当前生效版本 `effective_to = now`；新版本 `published_at = now`、`effective_from = now` 或指定时间；任务 `task_status = ACTIVE`。
 3. 幂等：重复发布同一版本直接返回当前状态（`ALREADY_PUBLISHED`），不产生第二个版本、不改生效区间。
 4. 已发布版本**无任何 UPDATE 奖励字段的代码路径**——改价只能 `INSERT` 新版本。
 5. **发布不改额度**：`allocated_points` 原样保留，额度跨规则版本延续。
@@ -359,14 +361,14 @@ DRAFT ──publish──► ACTIVE ──offline──► OFFLINE
 **下线 `POST /admin/growth/tasks/:id/offline`**
 
 1. 仅 `ACTIVE` 可下线，其余状态 → `TASK_STATE_INVALID`（409）。
-2. 事务内：`status = OFFLINE`；当前生效规则 `effective_to = now`（立即停止继续发分）；写 `growth_admin_audit`（原因必填）。
+2. 事务内：`task_status = OFFLINE`；当前生效规则 `effective_to = now`（立即停止继续发分）；写 `growth_admin_audit`（原因必填）。
 3. 传 `revoke_remaining = true` 时同事务执行 REVOKE：`growth_tasks.allocated_points` 与 `growth_budgets.allocated_amount` **同减** `allocated_points − distributed_points`，写 `growth_budget_entries(REVOKE)`。
 4. `distributed_points` 只增不减——**已发放永不回收**。
 
 **重新上线 `POST /admin/growth/tasks/:id/online`**
 
 1. 仅 `OFFLINE` 可调用；`initial_allocation > 0` 必填。
-2. 事务内：`total_amount − allocated_amount >= N` 否则 `BUDGET_ALLOCATED_LOCKED`（409）→ `allocated_points += N`、`allocated_amount += N` → 写 `ALLOCATE` 流水 → `status = ACTIVE`。
+2. 事务内：`total_amount − allocated_amount >= N` 否则 `BUDGET_ALLOCATED_LOCKED`（409）→ `allocated_points += N`、`allocated_amount += N` → 写 `ALLOCATE` 流水 → `task_status = ACTIVE`。
 3. 若该任务所有规则版本均已结束（无生效规则），拒绝并提示先发布新版本（`TASK_RULE_MISSING`）。
 4. 历史 `distributed_points` 保留，不占新额度。
 

@@ -74,9 +74,9 @@ func JobType(v string) predicate.GrowthFulfillmentJob {
 	return predicate.GrowthFulfillmentJob(sql.FieldEQ(FieldJobType, v))
 }
 
-// Status applies equality check predicate on the "status" field. It's identical to StatusEQ.
-func Status(v string) predicate.GrowthFulfillmentJob {
-	return predicate.GrowthFulfillmentJob(sql.FieldEQ(FieldStatus, v))
+// JobStatus applies equality check predicate on the "job_status" field. It's identical to JobStatusEQ.
+func JobStatus(v string) predicate.GrowthFulfillmentJob {
+	return predicate.GrowthFulfillmentJob(sql.FieldEQ(FieldJobStatus, v))
 }
 
 // AttemptCount applies equality check predicate on the "attempt_count" field. It's identical to AttemptCountEQ.
@@ -299,69 +299,69 @@ func JobTypeContainsFold(v string) predicate.GrowthFulfillmentJob {
 	return predicate.GrowthFulfillmentJob(sql.FieldContainsFold(FieldJobType, v))
 }
 
-// StatusEQ applies the EQ predicate on the "status" field.
-func StatusEQ(v string) predicate.GrowthFulfillmentJob {
-	return predicate.GrowthFulfillmentJob(sql.FieldEQ(FieldStatus, v))
+// JobStatusEQ applies the EQ predicate on the "job_status" field.
+func JobStatusEQ(v string) predicate.GrowthFulfillmentJob {
+	return predicate.GrowthFulfillmentJob(sql.FieldEQ(FieldJobStatus, v))
 }
 
-// StatusNEQ applies the NEQ predicate on the "status" field.
-func StatusNEQ(v string) predicate.GrowthFulfillmentJob {
-	return predicate.GrowthFulfillmentJob(sql.FieldNEQ(FieldStatus, v))
+// JobStatusNEQ applies the NEQ predicate on the "job_status" field.
+func JobStatusNEQ(v string) predicate.GrowthFulfillmentJob {
+	return predicate.GrowthFulfillmentJob(sql.FieldNEQ(FieldJobStatus, v))
 }
 
-// StatusIn applies the In predicate on the "status" field.
-func StatusIn(vs ...string) predicate.GrowthFulfillmentJob {
-	return predicate.GrowthFulfillmentJob(sql.FieldIn(FieldStatus, vs...))
+// JobStatusIn applies the In predicate on the "job_status" field.
+func JobStatusIn(vs ...string) predicate.GrowthFulfillmentJob {
+	return predicate.GrowthFulfillmentJob(sql.FieldIn(FieldJobStatus, vs...))
 }
 
-// StatusNotIn applies the NotIn predicate on the "status" field.
-func StatusNotIn(vs ...string) predicate.GrowthFulfillmentJob {
-	return predicate.GrowthFulfillmentJob(sql.FieldNotIn(FieldStatus, vs...))
+// JobStatusNotIn applies the NotIn predicate on the "job_status" field.
+func JobStatusNotIn(vs ...string) predicate.GrowthFulfillmentJob {
+	return predicate.GrowthFulfillmentJob(sql.FieldNotIn(FieldJobStatus, vs...))
 }
 
-// StatusGT applies the GT predicate on the "status" field.
-func StatusGT(v string) predicate.GrowthFulfillmentJob {
-	return predicate.GrowthFulfillmentJob(sql.FieldGT(FieldStatus, v))
+// JobStatusGT applies the GT predicate on the "job_status" field.
+func JobStatusGT(v string) predicate.GrowthFulfillmentJob {
+	return predicate.GrowthFulfillmentJob(sql.FieldGT(FieldJobStatus, v))
 }
 
-// StatusGTE applies the GTE predicate on the "status" field.
-func StatusGTE(v string) predicate.GrowthFulfillmentJob {
-	return predicate.GrowthFulfillmentJob(sql.FieldGTE(FieldStatus, v))
+// JobStatusGTE applies the GTE predicate on the "job_status" field.
+func JobStatusGTE(v string) predicate.GrowthFulfillmentJob {
+	return predicate.GrowthFulfillmentJob(sql.FieldGTE(FieldJobStatus, v))
 }
 
-// StatusLT applies the LT predicate on the "status" field.
-func StatusLT(v string) predicate.GrowthFulfillmentJob {
-	return predicate.GrowthFulfillmentJob(sql.FieldLT(FieldStatus, v))
+// JobStatusLT applies the LT predicate on the "job_status" field.
+func JobStatusLT(v string) predicate.GrowthFulfillmentJob {
+	return predicate.GrowthFulfillmentJob(sql.FieldLT(FieldJobStatus, v))
 }
 
-// StatusLTE applies the LTE predicate on the "status" field.
-func StatusLTE(v string) predicate.GrowthFulfillmentJob {
-	return predicate.GrowthFulfillmentJob(sql.FieldLTE(FieldStatus, v))
+// JobStatusLTE applies the LTE predicate on the "job_status" field.
+func JobStatusLTE(v string) predicate.GrowthFulfillmentJob {
+	return predicate.GrowthFulfillmentJob(sql.FieldLTE(FieldJobStatus, v))
 }
 
-// StatusContains applies the Contains predicate on the "status" field.
-func StatusContains(v string) predicate.GrowthFulfillmentJob {
-	return predicate.GrowthFulfillmentJob(sql.FieldContains(FieldStatus, v))
+// JobStatusContains applies the Contains predicate on the "job_status" field.
+func JobStatusContains(v string) predicate.GrowthFulfillmentJob {
+	return predicate.GrowthFulfillmentJob(sql.FieldContains(FieldJobStatus, v))
 }
 
-// StatusHasPrefix applies the HasPrefix predicate on the "status" field.
-func StatusHasPrefix(v string) predicate.GrowthFulfillmentJob {
-	return predicate.GrowthFulfillmentJob(sql.FieldHasPrefix(FieldStatus, v))
+// JobStatusHasPrefix applies the HasPrefix predicate on the "job_status" field.
+func JobStatusHasPrefix(v string) predicate.GrowthFulfillmentJob {
+	return predicate.GrowthFulfillmentJob(sql.FieldHasPrefix(FieldJobStatus, v))
 }
 
-// StatusHasSuffix applies the HasSuffix predicate on the "status" field.
-func StatusHasSuffix(v string) predicate.GrowthFulfillmentJob {
-	return predicate.GrowthFulfillmentJob(sql.FieldHasSuffix(FieldStatus, v))
+// JobStatusHasSuffix applies the HasSuffix predicate on the "job_status" field.
+func JobStatusHasSuffix(v string) predicate.GrowthFulfillmentJob {
+	return predicate.GrowthFulfillmentJob(sql.FieldHasSuffix(FieldJobStatus, v))
 }
 
-// StatusEqualFold applies the EqualFold predicate on the "status" field.
-func StatusEqualFold(v string) predicate.GrowthFulfillmentJob {
-	return predicate.GrowthFulfillmentJob(sql.FieldEqualFold(FieldStatus, v))
+// JobStatusEqualFold applies the EqualFold predicate on the "job_status" field.
+func JobStatusEqualFold(v string) predicate.GrowthFulfillmentJob {
+	return predicate.GrowthFulfillmentJob(sql.FieldEqualFold(FieldJobStatus, v))
 }
 
-// StatusContainsFold applies the ContainsFold predicate on the "status" field.
-func StatusContainsFold(v string) predicate.GrowthFulfillmentJob {
-	return predicate.GrowthFulfillmentJob(sql.FieldContainsFold(FieldStatus, v))
+// JobStatusContainsFold applies the ContainsFold predicate on the "job_status" field.
+func JobStatusContainsFold(v string) predicate.GrowthFulfillmentJob {
+	return predicate.GrowthFulfillmentJob(sql.FieldContainsFold(FieldJobStatus, v))
 }
 
 // AttemptCountEQ applies the EQ predicate on the "attempt_count" field.

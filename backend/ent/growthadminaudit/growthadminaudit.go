@@ -20,8 +20,8 @@ const (
 	FieldUpdatedAt = "updated_at"
 	// FieldOperatorID holds the string denoting the operator_id field in the database.
 	FieldOperatorID = "operator_id"
-	// FieldAction holds the string denoting the action field in the database.
-	FieldAction = "action"
+	// FieldActionType holds the string denoting the action_type field in the database.
+	FieldActionType = "action_type"
 	// FieldResourceType holds the string denoting the resource_type field in the database.
 	FieldResourceType = "resource_type"
 	// FieldResourceID holds the string denoting the resource_id field in the database.
@@ -53,7 +53,7 @@ var Columns = []string{
 	FieldCreatedAt,
 	FieldUpdatedAt,
 	FieldOperatorID,
-	FieldAction,
+	FieldActionType,
 	FieldResourceType,
 	FieldResourceID,
 	FieldBeforeJSON,
@@ -79,8 +79,8 @@ var (
 	DefaultUpdatedAt func() time.Time
 	// UpdateDefaultUpdatedAt holds the default value on update for the "updated_at" field.
 	UpdateDefaultUpdatedAt func() time.Time
-	// ActionValidator is a validator for the "action" field. It is called by the builders before save.
-	ActionValidator func(string) error
+	// ActionTypeValidator is a validator for the "action_type" field. It is called by the builders before save.
+	ActionTypeValidator func(string) error
 	// ResourceTypeValidator is a validator for the "resource_type" field. It is called by the builders before save.
 	ResourceTypeValidator func(string) error
 	// DefaultReason holds the default value on creation for the "reason" field.
@@ -116,9 +116,9 @@ func ByOperatorID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldOperatorID, opts...).ToFunc()
 }
 
-// ByAction orders the results by the action field.
-func ByAction(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldAction, opts...).ToFunc()
+// ByActionType orders the results by the action_type field.
+func ByActionType(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldActionType, opts...).ToFunc()
 }
 
 // ByResourceType orders the results by the resource_type field.
@@ -129,6 +129,16 @@ func ByResourceType(opts ...sql.OrderTermOption) OrderOption {
 // ByResourceID orders the results by the resource_id field.
 func ByResourceID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldResourceID, opts...).ToFunc()
+}
+
+// ByBeforeJSON orders the results by the before_json field.
+func ByBeforeJSON(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldBeforeJSON, opts...).ToFunc()
+}
+
+// ByAfterJSON orders the results by the after_json field.
+func ByAfterJSON(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldAfterJSON, opts...).ToFunc()
 }
 
 // ByReason orders the results by the reason field.

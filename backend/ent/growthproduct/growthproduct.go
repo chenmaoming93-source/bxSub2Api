@@ -29,8 +29,8 @@ const (
 	FieldFulfillmentMode = "fulfillment_mode"
 	// FieldSortOrder holds the string denoting the sort_order field in the database.
 	FieldSortOrder = "sort_order"
-	// FieldStatus holds the string denoting the status field in the database.
-	FieldStatus = "status"
+	// FieldProductStatus holds the string denoting the product_status field in the database.
+	FieldProductStatus = "product_status"
 	// FieldCurrentVersion holds the string denoting the current_version field in the database.
 	FieldCurrentVersion = "current_version"
 	// Table holds the table name of the growthproduct in the database.
@@ -48,7 +48,7 @@ var Columns = []string{
 	FieldIcon,
 	FieldFulfillmentMode,
 	FieldSortOrder,
-	FieldStatus,
+	FieldProductStatus,
 	FieldCurrentVersion,
 }
 
@@ -83,10 +83,10 @@ var (
 	FulfillmentModeValidator func(string) error
 	// DefaultSortOrder holds the default value on creation for the "sort_order" field.
 	DefaultSortOrder int
-	// DefaultStatus holds the default value on creation for the "status" field.
-	DefaultStatus string
-	// StatusValidator is a validator for the "status" field. It is called by the builders before save.
-	StatusValidator func(string) error
+	// DefaultProductStatus holds the default value on creation for the "product_status" field.
+	DefaultProductStatus string
+	// ProductStatusValidator is a validator for the "product_status" field. It is called by the builders before save.
+	ProductStatusValidator func(string) error
 	// DefaultCurrentVersion holds the default value on creation for the "current_version" field.
 	DefaultCurrentVersion int
 	// CurrentVersionValidator is a validator for the "current_version" field. It is called by the builders before save.
@@ -141,9 +141,9 @@ func BySortOrder(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldSortOrder, opts...).ToFunc()
 }
 
-// ByStatus orders the results by the status field.
-func ByStatus(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldStatus, opts...).ToFunc()
+// ByProductStatus orders the results by the product_status field.
+func ByProductStatus(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldProductStatus, opts...).ToFunc()
 }
 
 // ByCurrentVersion orders the results by the current_version field.

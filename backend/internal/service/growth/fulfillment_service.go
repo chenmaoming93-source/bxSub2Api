@@ -92,7 +92,7 @@ func (s *FulfillmentService) ProcessDue(ctx context.Context) (int, error) {
 	now := s.now()
 	jobs, err := s.client.GrowthFulfillmentJob.Query().
 		Where(
-			growthfulfillmentjob.StatusIn("PENDING", "RETRY"),
+			growthfulfillmentjob.JobStatusIn("PENDING", "RETRY"),
 			growthfulfillmentjob.NextRetryAtLTE(now),
 			growthfulfillmentjob.Or(
 				growthfulfillmentjob.LockedUntilIsNil(),
@@ -132,10 +132,11 @@ func (s *FulfillmentService) ProcessDue(ctx context.Context) (int, error) {
 			_ = s.failOrRetry(ctx, job, order, fmt.Errorf("%w: adapter not configured", ErrRetryableFulfillment), "")
 			continue
 		}
+		snapshot := decodeJSONText(order.ProductSnapshot)
 		response, fulfillErr := adapter.Fulfill(ctx, FulfillmentRequest{
 			OrderID: order.ID, UserID: order.UserID, ProductType: productType(order),
-			TokenAmount:     int64FromSnapshot(order.ProductSnapshot, "token_amount"),
-			ProductSnapshot: order.ProductSnapshot,
+			TokenAmount:     int64FromSnapshot(snapshot, "token_amount"),
+			ProductSnapshot: snapshot,
 		})
 		if fulfillErr != nil {
 			_ = s.failOrRetry(ctx, job, order, fulfillErr, "")
@@ -152,14 +153,14 @@ func (s *FulfillmentService) claim(ctx context.Context, jobID int64, now time.Ti
 	count, err := s.client.GrowthFulfillmentJob.Update().
 		Where(
 			growthfulfillmentjob.ID(jobID),
-			growthfulfillmentjob.StatusIn("PENDING", "RETRY"),
+			growthfulfillmentjob.JobStatusIn("PENDING", "RETRY"),
 			growthfulfillmentjob.NextRetryAtLTE(now),
 			growthfulfillmentjob.Or(
 				growthfulfillmentjob.LockedUntilIsNil(),
 				growthfulfillmentjob.LockedUntilLT(now),
 			),
 		).
-		SetStatus("PROCESSING").
+		SetJobStatus("PROCESSING").
 		SetLockedUntil(now.Add(45 * time.Second)).
 		AddAttemptCount(1).
 		Save(ctx)
@@ -187,10 +188,10 @@ func (s *FulfillmentService) complete(ctx context.Context, job *ent.GrowthFulfil
 	if err != nil {
 		return err
 	}
-	if currentOrder.Status == "SUCCEEDED" {
+	if currentOrder.OrderStatus == "SUCCEEDED" {
 		return nil
 	}
-	if currentOrder.Status != "FULFILLING" {
+	if currentOrder.OrderStatus != "FULFILLING" {
 		return infraerrors.Conflict("ORDER_STATE_INVALID", "order cannot be completed")
 	}
 	now := s.now()
@@ -215,13 +216,13 @@ func (s *FulfillmentService) complete(ctx context.Context, job *ent.GrowthFulfil
 		}
 	}
 	if _, err := tx.GrowthExchangeOrder.UpdateOneID(order.ID).
-		SetStatus("SUCCEEDED").
+		SetOrderStatus("SUCCEEDED").
 		SetFulfilledAt(now).
 		Save(ctx); err != nil {
 		return err
 	}
 	if _, err := tx.GrowthFulfillmentJob.UpdateOneID(job.ID).
-		SetStatus("SUCCEEDED").
+		SetJobStatus("SUCCEEDED").
 		SetCompletedAt(now).
 		ClearLockedUntil().
 		SetProviderReference(providerReference).
@@ -239,7 +240,7 @@ func (s *FulfillmentService) failOrRetry(ctx context.Context, job *ent.GrowthFul
 	if errors.Is(failure, ErrRetryableFulfillment) && job.AttemptCount < job.MaxAttempts {
 		backoffSeconds := 1 << min(job.AttemptCount, 6)
 		_, err := s.client.GrowthFulfillmentJob.UpdateOneID(job.ID).
-			SetStatus("RETRY").
+			SetJobStatus("RETRY").
 			SetLastError(failure.Error()).
 			SetProviderReference(providerReference).
 			SetNextRetryAt(s.now().Add(time.Duration(backoffSeconds) * time.Second)).
@@ -268,10 +269,10 @@ func (s *FulfillmentService) terminalRefund(ctx context.Context, orderID int64, 
 	if err != nil {
 		return err
 	}
-	if order.RefundTransferID != nil || order.Status == "REFUNDED" {
+	if order.RefundTransferID != nil || order.OrderStatus == "REFUNDED" {
 		return nil
 	}
-	if order.Status != "FULFILLING" && order.Status != "FAILED" {
+	if order.OrderStatus != "FULFILLING" && order.OrderStatus != "FAILED" {
 		return infraerrors.Conflict("ORDER_STATE_INVALID", "order cannot be refunded")
 	}
 	inventory, err := tx.GrowthProductInventory.Query().
@@ -309,7 +310,7 @@ func (s *FulfillmentService) terminalRefund(ctx context.Context, orderID int64, 
 	}
 	now := s.now()
 	if _, err := tx.GrowthExchangeOrder.UpdateOneID(order.ID).
-		SetStatus("REFUNDED").
+		SetOrderStatus("REFUNDED").
 		SetFailureReason(reason).
 		SetRefundTransferID(refund.TransferID).
 		SetRefundedAt(now).
@@ -318,7 +319,7 @@ func (s *FulfillmentService) terminalRefund(ctx context.Context, orderID int64, 
 	}
 	if _, err := tx.GrowthFulfillmentJob.Update().
 		Where(growthfulfillmentjob.OrderIDEQ(order.ID)).
-		SetStatus("FAILED").
+		SetJobStatus("FAILED").
 		SetLastError(reason).
 		SetCompletedAt(now).
 		ClearLockedUntil().
@@ -374,7 +375,7 @@ func (s *FulfillmentService) ManualComplete(ctx context.Context, orderID, operat
 	if err != nil {
 		return ExchangeOrderDetail{}, err
 	}
-	if productType(order) != "PHYSICAL" || order.Status != "FULFILLING" {
+	if productType(order) != "PHYSICAL" || order.OrderStatus != "FULFILLING" {
 		return ExchangeOrderDetail{}, infraerrors.Conflict("ORDER_STATE_INVALID", "manual completion requires a fulfilling physical order")
 	}
 	inventory, err := tx.GrowthProductInventory.Query().
@@ -398,12 +399,12 @@ func (s *FulfillmentService) ManualComplete(ctx context.Context, orderID, operat
 		}
 	}
 	now := s.now()
-	if _, err := tx.GrowthExchangeOrder.UpdateOneID(order.ID).SetStatus("SUCCEEDED").SetFulfilledAt(now).Save(ctx); err != nil {
+	if _, err := tx.GrowthExchangeOrder.UpdateOneID(order.ID).SetOrderStatus("SUCCEEDED").SetFulfilledAt(now).Save(ctx); err != nil {
 		return ExchangeOrderDetail{}, err
 	}
 	if _, err := tx.GrowthFulfillmentJob.Update().
 		Where(growthfulfillmentjob.OrderIDEQ(order.ID)).
-		SetStatus("SUCCEEDED").
+		SetJobStatus("SUCCEEDED").
 		SetCompletedAt(now).
 		ClearLockedUntil().
 		Save(ctx); err != nil {
@@ -438,10 +439,10 @@ func (s *FulfillmentService) AdminRefund(ctx context.Context, orderID, operatorI
 	if err != nil {
 		return ExchangeOrderDetail{}, err
 	}
-	if order.RefundTransferID != nil || order.Status == "REFUNDED" {
+	if order.RefundTransferID != nil || order.OrderStatus == "REFUNDED" {
 		return NewOrderService(s.client, s.transfers).detail(ctx, order)
 	}
-	if order.Status != "FAILED" {
+	if order.OrderStatus != "FAILED" {
 		return ExchangeOrderDetail{}, infraerrors.Conflict("ORDER_STATE_INVALID", "only failed orders can be refunded")
 	}
 	if err := s.terminalRefund(ctx, orderID, reason); err != nil {
@@ -479,7 +480,7 @@ func (s *FulfillmentService) ListAdminOrders(ctx context.Context, page, pageSize
 	}
 	query := s.client.GrowthExchangeOrder.Query()
 	if strings.TrimSpace(status) != "" {
-		query = query.Where(growthexchangeorder.StatusEQ(strings.TrimSpace(status)))
+		query = query.Where(growthexchangeorder.OrderStatusEQ(strings.TrimSpace(status)))
 	}
 	if strings.TrimSpace(search) != "" {
 		query = query.Where(growthexchangeorder.OrderNoContainsFold(strings.TrimSpace(search)))
@@ -537,11 +538,11 @@ func (s *FulfillmentService) Retry(ctx context.Context, orderID, operatorID int6
 	if err != nil {
 		return ExchangeOrderDetail{}, err
 	}
-	if order.Status != "FAILED" || order.RefundTransferID != nil {
+	if order.OrderStatus != "FAILED" || order.RefundTransferID != nil {
 		return ExchangeOrderDetail{}, infraerrors.Conflict("ORDER_RETRY_INVALID", "order is not eligible for retry")
 	}
 	now := s.now()
-	if _, err := tx.GrowthExchangeOrder.UpdateOneID(order.ID).SetStatus("FULFILLING").Save(ctx); err != nil {
+	if _, err := tx.GrowthExchangeOrder.UpdateOneID(order.ID).SetOrderStatus("FULFILLING").Save(ctx); err != nil {
 		return ExchangeOrderDetail{}, err
 	}
 	job, err := tx.GrowthFulfillmentJob.Query().Where(growthfulfillmentjob.OrderIDEQ(order.ID)).Only(ctx)
@@ -549,7 +550,7 @@ func (s *FulfillmentService) Retry(ctx context.Context, orderID, operatorID int6
 		return ExchangeOrderDetail{}, err
 	}
 	if _, err := tx.GrowthFulfillmentJob.UpdateOneID(job.ID).
-		SetStatus("PENDING").
+		SetJobStatus("PENDING").
 		SetAttemptCount(0).
 		SetNextRetryAt(now).
 		ClearLockedUntil().
@@ -573,11 +574,11 @@ func (s *FulfillmentService) Retry(ctx context.Context, orderID, operatorID int6
 func appendOrderAudit(ctx context.Context, tx *ent.Tx, operatorID int64, action string, order *ent.GrowthExchangeOrder, reason, requestID string) error {
 	_, err := tx.GrowthAdminAudit.Create().
 		SetOperatorID(operatorID).
-		SetAction(action).
+		SetActionType(action).
 		SetResourceType("growth_exchange_order").
 		SetResourceID(order.ID).
-		SetBeforeJSON(map[string]any{"status": order.Status, "refund_transfer_id": order.RefundTransferID}).
-		SetAfterJSON(map[string]any{"reason": reason}).
+		SetBeforeJSON(encodeJSONText(map[string]any{"status": order.OrderStatus, "refund_transfer_id": order.RefundTransferID})).
+		SetAfterJSON(encodeJSONText(map[string]any{"reason": reason})).
 		SetReason(strings.TrimSpace(reason)).
 		SetRequestID(strings.TrimSpace(requestID)).
 		Save(ctx)
@@ -585,7 +586,7 @@ func appendOrderAudit(ctx context.Context, tx *ent.Tx, operatorID int64, action 
 }
 
 func productType(order *ent.GrowthExchangeOrder) string {
-	if value, ok := order.ProductSnapshot["product_type"].(string); ok {
+	if value, ok := decodeJSONText(order.ProductSnapshot)["product_type"].(string); ok {
 		return value
 	}
 	return ""

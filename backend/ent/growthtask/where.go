@@ -74,9 +74,9 @@ func Title(v string) predicate.GrowthTask {
 	return predicate.GrowthTask(sql.FieldEQ(FieldTitle, v))
 }
 
-// Description applies equality check predicate on the "description" field. It's identical to DescriptionEQ.
-func Description(v string) predicate.GrowthTask {
-	return predicate.GrowthTask(sql.FieldEQ(FieldDescription, v))
+// Remark applies equality check predicate on the "remark" field. It's identical to RemarkEQ.
+func Remark(v string) predicate.GrowthTask {
+	return predicate.GrowthTask(sql.FieldEQ(FieldRemark, v))
 }
 
 // Category applies equality check predicate on the "category" field. It's identical to CategoryEQ.
@@ -99,9 +99,9 @@ func SortOrder(v int) predicate.GrowthTask {
 	return predicate.GrowthTask(sql.FieldEQ(FieldSortOrder, v))
 }
 
-// Status applies equality check predicate on the "status" field. It's identical to StatusEQ.
-func Status(v string) predicate.GrowthTask {
-	return predicate.GrowthTask(sql.FieldEQ(FieldStatus, v))
+// TaskStatus applies equality check predicate on the "task_status" field. It's identical to TaskStatusEQ.
+func TaskStatus(v string) predicate.GrowthTask {
+	return predicate.GrowthTask(sql.FieldEQ(FieldTaskStatus, v))
 }
 
 // EffectiveFrom applies equality check predicate on the "effective_from" field. It's identical to EffectiveFromEQ.
@@ -334,69 +334,69 @@ func TitleContainsFold(v string) predicate.GrowthTask {
 	return predicate.GrowthTask(sql.FieldContainsFold(FieldTitle, v))
 }
 
-// DescriptionEQ applies the EQ predicate on the "description" field.
-func DescriptionEQ(v string) predicate.GrowthTask {
-	return predicate.GrowthTask(sql.FieldEQ(FieldDescription, v))
+// RemarkEQ applies the EQ predicate on the "remark" field.
+func RemarkEQ(v string) predicate.GrowthTask {
+	return predicate.GrowthTask(sql.FieldEQ(FieldRemark, v))
 }
 
-// DescriptionNEQ applies the NEQ predicate on the "description" field.
-func DescriptionNEQ(v string) predicate.GrowthTask {
-	return predicate.GrowthTask(sql.FieldNEQ(FieldDescription, v))
+// RemarkNEQ applies the NEQ predicate on the "remark" field.
+func RemarkNEQ(v string) predicate.GrowthTask {
+	return predicate.GrowthTask(sql.FieldNEQ(FieldRemark, v))
 }
 
-// DescriptionIn applies the In predicate on the "description" field.
-func DescriptionIn(vs ...string) predicate.GrowthTask {
-	return predicate.GrowthTask(sql.FieldIn(FieldDescription, vs...))
+// RemarkIn applies the In predicate on the "remark" field.
+func RemarkIn(vs ...string) predicate.GrowthTask {
+	return predicate.GrowthTask(sql.FieldIn(FieldRemark, vs...))
 }
 
-// DescriptionNotIn applies the NotIn predicate on the "description" field.
-func DescriptionNotIn(vs ...string) predicate.GrowthTask {
-	return predicate.GrowthTask(sql.FieldNotIn(FieldDescription, vs...))
+// RemarkNotIn applies the NotIn predicate on the "remark" field.
+func RemarkNotIn(vs ...string) predicate.GrowthTask {
+	return predicate.GrowthTask(sql.FieldNotIn(FieldRemark, vs...))
 }
 
-// DescriptionGT applies the GT predicate on the "description" field.
-func DescriptionGT(v string) predicate.GrowthTask {
-	return predicate.GrowthTask(sql.FieldGT(FieldDescription, v))
+// RemarkGT applies the GT predicate on the "remark" field.
+func RemarkGT(v string) predicate.GrowthTask {
+	return predicate.GrowthTask(sql.FieldGT(FieldRemark, v))
 }
 
-// DescriptionGTE applies the GTE predicate on the "description" field.
-func DescriptionGTE(v string) predicate.GrowthTask {
-	return predicate.GrowthTask(sql.FieldGTE(FieldDescription, v))
+// RemarkGTE applies the GTE predicate on the "remark" field.
+func RemarkGTE(v string) predicate.GrowthTask {
+	return predicate.GrowthTask(sql.FieldGTE(FieldRemark, v))
 }
 
-// DescriptionLT applies the LT predicate on the "description" field.
-func DescriptionLT(v string) predicate.GrowthTask {
-	return predicate.GrowthTask(sql.FieldLT(FieldDescription, v))
+// RemarkLT applies the LT predicate on the "remark" field.
+func RemarkLT(v string) predicate.GrowthTask {
+	return predicate.GrowthTask(sql.FieldLT(FieldRemark, v))
 }
 
-// DescriptionLTE applies the LTE predicate on the "description" field.
-func DescriptionLTE(v string) predicate.GrowthTask {
-	return predicate.GrowthTask(sql.FieldLTE(FieldDescription, v))
+// RemarkLTE applies the LTE predicate on the "remark" field.
+func RemarkLTE(v string) predicate.GrowthTask {
+	return predicate.GrowthTask(sql.FieldLTE(FieldRemark, v))
 }
 
-// DescriptionContains applies the Contains predicate on the "description" field.
-func DescriptionContains(v string) predicate.GrowthTask {
-	return predicate.GrowthTask(sql.FieldContains(FieldDescription, v))
+// RemarkContains applies the Contains predicate on the "remark" field.
+func RemarkContains(v string) predicate.GrowthTask {
+	return predicate.GrowthTask(sql.FieldContains(FieldRemark, v))
 }
 
-// DescriptionHasPrefix applies the HasPrefix predicate on the "description" field.
-func DescriptionHasPrefix(v string) predicate.GrowthTask {
-	return predicate.GrowthTask(sql.FieldHasPrefix(FieldDescription, v))
+// RemarkHasPrefix applies the HasPrefix predicate on the "remark" field.
+func RemarkHasPrefix(v string) predicate.GrowthTask {
+	return predicate.GrowthTask(sql.FieldHasPrefix(FieldRemark, v))
 }
 
-// DescriptionHasSuffix applies the HasSuffix predicate on the "description" field.
-func DescriptionHasSuffix(v string) predicate.GrowthTask {
-	return predicate.GrowthTask(sql.FieldHasSuffix(FieldDescription, v))
+// RemarkHasSuffix applies the HasSuffix predicate on the "remark" field.
+func RemarkHasSuffix(v string) predicate.GrowthTask {
+	return predicate.GrowthTask(sql.FieldHasSuffix(FieldRemark, v))
 }
 
-// DescriptionEqualFold applies the EqualFold predicate on the "description" field.
-func DescriptionEqualFold(v string) predicate.GrowthTask {
-	return predicate.GrowthTask(sql.FieldEqualFold(FieldDescription, v))
+// RemarkEqualFold applies the EqualFold predicate on the "remark" field.
+func RemarkEqualFold(v string) predicate.GrowthTask {
+	return predicate.GrowthTask(sql.FieldEqualFold(FieldRemark, v))
 }
 
-// DescriptionContainsFold applies the ContainsFold predicate on the "description" field.
-func DescriptionContainsFold(v string) predicate.GrowthTask {
-	return predicate.GrowthTask(sql.FieldContainsFold(FieldDescription, v))
+// RemarkContainsFold applies the ContainsFold predicate on the "remark" field.
+func RemarkContainsFold(v string) predicate.GrowthTask {
+	return predicate.GrowthTask(sql.FieldContainsFold(FieldRemark, v))
 }
 
 // CategoryEQ applies the EQ predicate on the "category" field.
@@ -634,69 +634,69 @@ func SortOrderLTE(v int) predicate.GrowthTask {
 	return predicate.GrowthTask(sql.FieldLTE(FieldSortOrder, v))
 }
 
-// StatusEQ applies the EQ predicate on the "status" field.
-func StatusEQ(v string) predicate.GrowthTask {
-	return predicate.GrowthTask(sql.FieldEQ(FieldStatus, v))
+// TaskStatusEQ applies the EQ predicate on the "task_status" field.
+func TaskStatusEQ(v string) predicate.GrowthTask {
+	return predicate.GrowthTask(sql.FieldEQ(FieldTaskStatus, v))
 }
 
-// StatusNEQ applies the NEQ predicate on the "status" field.
-func StatusNEQ(v string) predicate.GrowthTask {
-	return predicate.GrowthTask(sql.FieldNEQ(FieldStatus, v))
+// TaskStatusNEQ applies the NEQ predicate on the "task_status" field.
+func TaskStatusNEQ(v string) predicate.GrowthTask {
+	return predicate.GrowthTask(sql.FieldNEQ(FieldTaskStatus, v))
 }
 
-// StatusIn applies the In predicate on the "status" field.
-func StatusIn(vs ...string) predicate.GrowthTask {
-	return predicate.GrowthTask(sql.FieldIn(FieldStatus, vs...))
+// TaskStatusIn applies the In predicate on the "task_status" field.
+func TaskStatusIn(vs ...string) predicate.GrowthTask {
+	return predicate.GrowthTask(sql.FieldIn(FieldTaskStatus, vs...))
 }
 
-// StatusNotIn applies the NotIn predicate on the "status" field.
-func StatusNotIn(vs ...string) predicate.GrowthTask {
-	return predicate.GrowthTask(sql.FieldNotIn(FieldStatus, vs...))
+// TaskStatusNotIn applies the NotIn predicate on the "task_status" field.
+func TaskStatusNotIn(vs ...string) predicate.GrowthTask {
+	return predicate.GrowthTask(sql.FieldNotIn(FieldTaskStatus, vs...))
 }
 
-// StatusGT applies the GT predicate on the "status" field.
-func StatusGT(v string) predicate.GrowthTask {
-	return predicate.GrowthTask(sql.FieldGT(FieldStatus, v))
+// TaskStatusGT applies the GT predicate on the "task_status" field.
+func TaskStatusGT(v string) predicate.GrowthTask {
+	return predicate.GrowthTask(sql.FieldGT(FieldTaskStatus, v))
 }
 
-// StatusGTE applies the GTE predicate on the "status" field.
-func StatusGTE(v string) predicate.GrowthTask {
-	return predicate.GrowthTask(sql.FieldGTE(FieldStatus, v))
+// TaskStatusGTE applies the GTE predicate on the "task_status" field.
+func TaskStatusGTE(v string) predicate.GrowthTask {
+	return predicate.GrowthTask(sql.FieldGTE(FieldTaskStatus, v))
 }
 
-// StatusLT applies the LT predicate on the "status" field.
-func StatusLT(v string) predicate.GrowthTask {
-	return predicate.GrowthTask(sql.FieldLT(FieldStatus, v))
+// TaskStatusLT applies the LT predicate on the "task_status" field.
+func TaskStatusLT(v string) predicate.GrowthTask {
+	return predicate.GrowthTask(sql.FieldLT(FieldTaskStatus, v))
 }
 
-// StatusLTE applies the LTE predicate on the "status" field.
-func StatusLTE(v string) predicate.GrowthTask {
-	return predicate.GrowthTask(sql.FieldLTE(FieldStatus, v))
+// TaskStatusLTE applies the LTE predicate on the "task_status" field.
+func TaskStatusLTE(v string) predicate.GrowthTask {
+	return predicate.GrowthTask(sql.FieldLTE(FieldTaskStatus, v))
 }
 
-// StatusContains applies the Contains predicate on the "status" field.
-func StatusContains(v string) predicate.GrowthTask {
-	return predicate.GrowthTask(sql.FieldContains(FieldStatus, v))
+// TaskStatusContains applies the Contains predicate on the "task_status" field.
+func TaskStatusContains(v string) predicate.GrowthTask {
+	return predicate.GrowthTask(sql.FieldContains(FieldTaskStatus, v))
 }
 
-// StatusHasPrefix applies the HasPrefix predicate on the "status" field.
-func StatusHasPrefix(v string) predicate.GrowthTask {
-	return predicate.GrowthTask(sql.FieldHasPrefix(FieldStatus, v))
+// TaskStatusHasPrefix applies the HasPrefix predicate on the "task_status" field.
+func TaskStatusHasPrefix(v string) predicate.GrowthTask {
+	return predicate.GrowthTask(sql.FieldHasPrefix(FieldTaskStatus, v))
 }
 
-// StatusHasSuffix applies the HasSuffix predicate on the "status" field.
-func StatusHasSuffix(v string) predicate.GrowthTask {
-	return predicate.GrowthTask(sql.FieldHasSuffix(FieldStatus, v))
+// TaskStatusHasSuffix applies the HasSuffix predicate on the "task_status" field.
+func TaskStatusHasSuffix(v string) predicate.GrowthTask {
+	return predicate.GrowthTask(sql.FieldHasSuffix(FieldTaskStatus, v))
 }
 
-// StatusEqualFold applies the EqualFold predicate on the "status" field.
-func StatusEqualFold(v string) predicate.GrowthTask {
-	return predicate.GrowthTask(sql.FieldEqualFold(FieldStatus, v))
+// TaskStatusEqualFold applies the EqualFold predicate on the "task_status" field.
+func TaskStatusEqualFold(v string) predicate.GrowthTask {
+	return predicate.GrowthTask(sql.FieldEqualFold(FieldTaskStatus, v))
 }
 
-// StatusContainsFold applies the ContainsFold predicate on the "status" field.
-func StatusContainsFold(v string) predicate.GrowthTask {
-	return predicate.GrowthTask(sql.FieldContainsFold(FieldStatus, v))
+// TaskStatusContainsFold applies the ContainsFold predicate on the "task_status" field.
+func TaskStatusContainsFold(v string) predicate.GrowthTask {
+	return predicate.GrowthTask(sql.FieldContainsFold(FieldTaskStatus, v))
 }
 
 // EffectiveFromEQ applies the EQ predicate on the "effective_from" field.

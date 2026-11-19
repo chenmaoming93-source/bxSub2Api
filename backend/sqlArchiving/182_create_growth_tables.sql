@@ -79,7 +79,7 @@ CREATE TABLE IF NOT EXISTS growth_transfers (
     task_id BIGINT NULL,
     order_id BIGINT NULL,
     points BIGINT NOT NULL,
-    status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+    transfer_status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
     failure_reason VARCHAR(512) NOT NULL DEFAULT '',
     completed_at DATETIME(6) NULL,
     created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
@@ -90,13 +90,13 @@ CREATE TABLE IF NOT EXISTS growth_transfers (
     KEY idx_growth_transfers_to_user_time (to_user_id, created_at),
     KEY idx_growth_transfers_task (task_id),
     KEY idx_growth_transfers_order (order_id),
-    KEY idx_growth_transfers_status (status),
+    KEY idx_growth_transfers_status (transfer_status),
     CONSTRAINT chk_growth_transfers_accounts CHECK (
         from_account_type IN ('TASK', 'WALLET', 'REDEEMED', 'SYSTEM', 'ADJUST')
         AND to_account_type IN ('TASK', 'WALLET', 'REDEEMED', 'SYSTEM', 'ADJUST')
         AND points > 0
     ),
-    CONSTRAINT chk_growth_transfers_status CHECK (status IN ('PENDING', 'SUCCEEDED', 'FAILED', 'REVERSED'))
+    CONSTRAINT chk_growth_transfers_status CHECK (transfer_status IN ('PENDING', 'SUCCEEDED', 'FAILED', 'REVERSED'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS growth_account_ledger (
@@ -128,12 +128,12 @@ CREATE TABLE IF NOT EXISTS growth_tasks (
     id BIGINT NOT NULL AUTO_INCREMENT,
     task_code VARCHAR(64) NOT NULL,
     title VARCHAR(255) NOT NULL,
-    description VARCHAR(2048) NOT NULL DEFAULT '',
+    remark VARCHAR(2048) NOT NULL DEFAULT '',
     category VARCHAR(32) NOT NULL,
     task_type VARCHAR(32) NOT NULL,
     icon VARCHAR(128) NOT NULL DEFAULT '',
     sort_order INT NOT NULL DEFAULT 0,
-    status VARCHAR(20) NOT NULL DEFAULT 'DRAFT',
+    task_status VARCHAR(20) NOT NULL DEFAULT 'DRAFT',
     effective_from DATETIME(6) NULL,
     effective_to DATETIME(6) NULL,
     allocated_points BIGINT NOT NULL DEFAULT 0,
@@ -142,14 +142,14 @@ CREATE TABLE IF NOT EXISTS growth_tasks (
     updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
     PRIMARY KEY (id),
     UNIQUE KEY uq_growth_tasks_code (task_code),
-    KEY idx_growth_tasks_status_sort (status, sort_order),
-    KEY idx_growth_tasks_category_status (category, status),
+    KEY idx_growth_tasks_status_sort (task_status, sort_order),
+    KEY idx_growth_tasks_category_status (category, task_status),
     CONSTRAINT chk_growth_tasks_quota CHECK (
         allocated_points >= 0
         AND distributed_points >= 0
         AND distributed_points <= allocated_points
     ),
-    CONSTRAINT chk_growth_tasks_status CHECK (status IN ('DRAFT', 'ACTIVE', 'OFFLINE')),
+    CONSTRAINT chk_growth_tasks_status CHECK (task_status IN ('DRAFT', 'ACTIVE', 'OFFLINE')),
     CONSTRAINT chk_growth_tasks_category CHECK (category IN ('CHECKIN', 'DAILY', 'ACHIEVEMENT')),
     CONSTRAINT chk_growth_tasks_type CHECK (task_type IN ('CHECKIN', 'DAILY', 'ACHIEVEMENT'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -159,7 +159,7 @@ CREATE TABLE IF NOT EXISTS growth_task_rules (
     task_id BIGINT NOT NULL,
     version INT NOT NULL,
     trigger_event VARCHAR(64) NOT NULL DEFAULT 'COMPLETION',
-    conditions JSON NULL,
+    conditions LONGTEXT NULL,
     target BIGINT NOT NULL DEFAULT 1,
     reward_points BIGINT NOT NULL,
     period_type VARCHAR(20) NOT NULL,
@@ -194,7 +194,7 @@ CREATE TABLE IF NOT EXISTS growth_user_tasks (
     progress BIGINT NOT NULL DEFAULT 0,
     target BIGINT NOT NULL DEFAULT 1,
     completed_count BIGINT NOT NULL DEFAULT 0,
-    status VARCHAR(32) NOT NULL DEFAULT 'IN_PROGRESS',
+    progress_status VARCHAR(32) NOT NULL DEFAULT 'IN_PROGRESS',
     completed_at DATETIME(6) NULL,
     rewarded_at DATETIME(6) NULL,
     created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
@@ -246,7 +246,7 @@ CREATE TABLE IF NOT EXISTS growth_reward_claims (
     idempotency_key VARCHAR(128) NOT NULL,
     transfer_id BIGINT NOT NULL,
     points BIGINT NOT NULL,
-    status VARCHAR(20) NOT NULL DEFAULT 'SUCCEEDED',
+    claim_status VARCHAR(20) NOT NULL DEFAULT 'SUCCEEDED',
     claimed_at DATETIME(6) NOT NULL,
     created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
@@ -267,18 +267,18 @@ CREATE TABLE IF NOT EXISTS growth_products (
     icon VARCHAR(128) NOT NULL DEFAULT '',
     fulfillment_mode VARCHAR(32) NOT NULL,
     sort_order INT NOT NULL DEFAULT 0,
-    status VARCHAR(20) NOT NULL DEFAULT 'DRAFT',
+    product_status VARCHAR(20) NOT NULL DEFAULT 'DRAFT',
     current_version INT NOT NULL DEFAULT 0,
     created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
     PRIMARY KEY (id),
     UNIQUE KEY uq_growth_products_code (product_code),
-    KEY idx_growth_products_status_sort (status, sort_order),
-    KEY idx_growth_products_type_status (product_type, status),
+    KEY idx_growth_products_status_sort (product_status, sort_order),
+    KEY idx_growth_products_type_status (product_type, product_status),
     CONSTRAINT chk_growth_products_values CHECK (
         product_type IN ('TOKEN_QUOTA', 'SUBSCRIPTION', 'PHYSICAL')
         AND fulfillment_mode IN ('AUTOMATIC', 'MANUAL')
-        AND status IN ('DRAFT', 'ACTIVE', 'PAUSED', 'OFFLINE')
+        AND product_status IN ('DRAFT', 'ACTIVE', 'PAUSED', 'OFFLINE')
         AND current_version >= 0
     )
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
@@ -289,7 +289,7 @@ CREATE TABLE IF NOT EXISTS growth_product_versions (
     version INT NOT NULL,
     points_cost BIGINT NOT NULL,
     benefit_summary VARCHAR(512) NOT NULL DEFAULT '',
-    benefit_detail JSON NULL,
+    benefit_detail LONGTEXT NULL,
     token_amount BIGINT NOT NULL DEFAULT 0,
     per_user_limit INT NOT NULL DEFAULT 0,
     created_by BIGINT NOT NULL,
@@ -341,9 +341,9 @@ CREATE TABLE IF NOT EXISTS growth_exchange_orders (
     user_id BIGINT NOT NULL,
     product_id BIGINT NOT NULL,
     product_version INT NOT NULL,
-    product_snapshot JSON NOT NULL,
+    product_snapshot LONGTEXT NULL,
     points_cost BIGINT NOT NULL,
-    status VARCHAR(20) NOT NULL DEFAULT 'CREATED',
+    order_status VARCHAR(20) NOT NULL DEFAULT 'CREATED',
     idempotency_key VARCHAR(128) NOT NULL,
     expected_version INT NULL,
     transfer_id BIGINT NULL,
@@ -357,13 +357,13 @@ CREATE TABLE IF NOT EXISTS growth_exchange_orders (
     UNIQUE KEY uq_growth_exchange_orders_no (order_no),
     UNIQUE KEY uq_growth_exchange_orders_key (user_id, idempotency_key),
     KEY idx_growth_exchange_orders_user_time (user_id, created_at),
-    KEY idx_growth_exchange_orders_product_status (product_id, status),
-    KEY idx_growth_exchange_orders_status_time (status, created_at),
+    KEY idx_growth_exchange_orders_product_status (product_id, order_status),
+    KEY idx_growth_exchange_orders_status_time (order_status, created_at),
     CONSTRAINT fk_growth_exchange_orders_user FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE RESTRICT ON UPDATE RESTRICT,
     CONSTRAINT chk_growth_exchange_orders_values CHECK (
         product_version > 0
         AND points_cost > 0
-        AND status IN ('CREATED', 'FULFILLING', 'SUCCEEDED', 'FAILED', 'REFUNDED')
+        AND order_status IN ('CREATED', 'FULFILLING', 'SUCCEEDED', 'FAILED', 'REFUNDED')
     )
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -371,7 +371,7 @@ CREATE TABLE IF NOT EXISTS growth_fulfillment_jobs (
     id BIGINT NOT NULL AUTO_INCREMENT,
     order_id BIGINT NOT NULL,
     job_type VARCHAR(32) NOT NULL DEFAULT 'FULFILL',
-    status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
+    job_status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
     attempt_count INT NOT NULL DEFAULT 0,
     max_attempts INT NOT NULL DEFAULT 3,
     next_retry_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
@@ -383,10 +383,10 @@ CREATE TABLE IF NOT EXISTS growth_fulfillment_jobs (
     updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
     PRIMARY KEY (id),
     UNIQUE KEY uq_growth_fulfillment_jobs_order (order_id),
-    KEY idx_growth_fulfillment_jobs_due (status, next_retry_at),
+    KEY idx_growth_fulfillment_jobs_due (job_status, next_retry_at),
     KEY idx_growth_fulfillment_jobs_lock (locked_until),
     CONSTRAINT chk_growth_fulfillment_jobs_values CHECK (
-        status IN ('PENDING', 'PROCESSING', 'RETRY', 'SUCCEEDED', 'FAILED', 'CANCELLED')
+        job_status IN ('PENDING', 'PROCESSING', 'RETRY', 'SUCCEEDED', 'FAILED', 'CANCELLED')
         AND attempt_count >= 0
         AND max_attempts > 0
         AND attempt_count <= max_attempts
@@ -425,11 +425,11 @@ CREATE TABLE IF NOT EXISTS growth_inventory_ledger (
 CREATE TABLE IF NOT EXISTS growth_admin_audit (
     id BIGINT NOT NULL AUTO_INCREMENT,
     operator_id BIGINT NOT NULL,
-    action VARCHAR(64) NOT NULL,
+    action_type VARCHAR(64) NOT NULL,
     resource_type VARCHAR(64) NOT NULL,
     resource_id BIGINT NULL,
-    before_json JSON NULL,
-    after_json JSON NULL,
+    before_json LONGTEXT NULL,
+    after_json LONGTEXT NULL,
     reason VARCHAR(512) NOT NULL DEFAULT '',
     request_id VARCHAR(128) NOT NULL DEFAULT '',
     created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
@@ -437,7 +437,7 @@ CREATE TABLE IF NOT EXISTS growth_admin_audit (
     PRIMARY KEY (id),
     KEY idx_growth_admin_audit_operator_time (operator_id, created_at),
     KEY idx_growth_admin_audit_resource_time (resource_type, resource_id, created_at),
-    KEY idx_growth_admin_audit_action_time (action, created_at),
+    KEY idx_growth_admin_audit_action_time (action_type, created_at),
     CONSTRAINT fk_growth_admin_audit_operator FOREIGN KEY (operator_id) REFERENCES users (id) ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 

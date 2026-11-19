@@ -136,16 +136,16 @@ func (_c *GrowthTransferCreate) SetPoints(v int64) *GrowthTransferCreate {
 	return _c
 }
 
-// SetStatus sets the "status" field.
-func (_c *GrowthTransferCreate) SetStatus(v string) *GrowthTransferCreate {
-	_c.mutation.SetStatus(v)
+// SetTransferStatus sets the "transfer_status" field.
+func (_c *GrowthTransferCreate) SetTransferStatus(v string) *GrowthTransferCreate {
+	_c.mutation.SetTransferStatus(v)
 	return _c
 }
 
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (_c *GrowthTransferCreate) SetNillableStatus(v *string) *GrowthTransferCreate {
+// SetNillableTransferStatus sets the "transfer_status" field if the given value is not nil.
+func (_c *GrowthTransferCreate) SetNillableTransferStatus(v *string) *GrowthTransferCreate {
 	if v != nil {
-		_c.SetStatus(*v)
+		_c.SetTransferStatus(*v)
 	}
 	return _c
 }
@@ -221,9 +221,9 @@ func (_c *GrowthTransferCreate) defaults() {
 		v := growthtransfer.DefaultUpdatedAt()
 		_c.mutation.SetUpdatedAt(v)
 	}
-	if _, ok := _c.mutation.Status(); !ok {
-		v := growthtransfer.DefaultStatus
-		_c.mutation.SetStatus(v)
+	if _, ok := _c.mutation.TransferStatus(); !ok {
+		v := growthtransfer.DefaultTransferStatus
+		_c.mutation.SetTransferStatus(v)
 	}
 	if _, ok := _c.mutation.FailureReason(); !ok {
 		v := growthtransfer.DefaultFailureReason
@@ -279,12 +279,12 @@ func (_c *GrowthTransferCreate) check() error {
 			return &ValidationError{Name: "points", err: fmt.Errorf(`ent: validator failed for field "GrowthTransfer.points": %w`, err)}
 		}
 	}
-	if _, ok := _c.mutation.Status(); !ok {
-		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "GrowthTransfer.status"`)}
+	if _, ok := _c.mutation.TransferStatus(); !ok {
+		return &ValidationError{Name: "transfer_status", err: errors.New(`ent: missing required field "GrowthTransfer.transfer_status"`)}
 	}
-	if v, ok := _c.mutation.Status(); ok {
-		if err := growthtransfer.StatusValidator(v); err != nil {
-			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "GrowthTransfer.status": %w`, err)}
+	if v, ok := _c.mutation.TransferStatus(); ok {
+		if err := growthtransfer.TransferStatusValidator(v); err != nil {
+			return &ValidationError{Name: "transfer_status", err: fmt.Errorf(`ent: validator failed for field "GrowthTransfer.transfer_status": %w`, err)}
 		}
 	}
 	if _, ok := _c.mutation.FailureReason(); !ok {
@@ -366,9 +366,9 @@ func (_c *GrowthTransferCreate) createSpec() (*GrowthTransfer, *sqlgraph.CreateS
 		_spec.SetField(growthtransfer.FieldPoints, field.TypeInt64, value)
 		_node.Points = value
 	}
-	if value, ok := _c.mutation.Status(); ok {
-		_spec.SetField(growthtransfer.FieldStatus, field.TypeString, value)
-		_node.Status = value
+	if value, ok := _c.mutation.TransferStatus(); ok {
+		_spec.SetField(growthtransfer.FieldTransferStatus, field.TypeString, value)
+		_node.TransferStatus = value
 	}
 	if value, ok := _c.mutation.FailureReason(); ok {
 		_spec.SetField(growthtransfer.FieldFailureReason, field.TypeString, value)
@@ -604,15 +604,15 @@ func (u *GrowthTransferUpsert) AddPoints(v int64) *GrowthTransferUpsert {
 	return u
 }
 
-// SetStatus sets the "status" field.
-func (u *GrowthTransferUpsert) SetStatus(v string) *GrowthTransferUpsert {
-	u.Set(growthtransfer.FieldStatus, v)
+// SetTransferStatus sets the "transfer_status" field.
+func (u *GrowthTransferUpsert) SetTransferStatus(v string) *GrowthTransferUpsert {
+	u.Set(growthtransfer.FieldTransferStatus, v)
 	return u
 }
 
-// UpdateStatus sets the "status" field to the value that was provided on create.
-func (u *GrowthTransferUpsert) UpdateStatus() *GrowthTransferUpsert {
-	u.SetExcluded(growthtransfer.FieldStatus)
+// UpdateTransferStatus sets the "transfer_status" field to the value that was provided on create.
+func (u *GrowthTransferUpsert) UpdateTransferStatus() *GrowthTransferUpsert {
+	u.SetExcluded(growthtransfer.FieldTransferStatus)
 	return u
 }
 
@@ -894,17 +894,17 @@ func (u *GrowthTransferUpsertOne) UpdatePoints() *GrowthTransferUpsertOne {
 	})
 }
 
-// SetStatus sets the "status" field.
-func (u *GrowthTransferUpsertOne) SetStatus(v string) *GrowthTransferUpsertOne {
+// SetTransferStatus sets the "transfer_status" field.
+func (u *GrowthTransferUpsertOne) SetTransferStatus(v string) *GrowthTransferUpsertOne {
 	return u.Update(func(s *GrowthTransferUpsert) {
-		s.SetStatus(v)
+		s.SetTransferStatus(v)
 	})
 }
 
-// UpdateStatus sets the "status" field to the value that was provided on create.
-func (u *GrowthTransferUpsertOne) UpdateStatus() *GrowthTransferUpsertOne {
+// UpdateTransferStatus sets the "transfer_status" field to the value that was provided on create.
+func (u *GrowthTransferUpsertOne) UpdateTransferStatus() *GrowthTransferUpsertOne {
 	return u.Update(func(s *GrowthTransferUpsert) {
-		s.UpdateStatus()
+		s.UpdateTransferStatus()
 	})
 }
 
@@ -1357,17 +1357,17 @@ func (u *GrowthTransferUpsertBulk) UpdatePoints() *GrowthTransferUpsertBulk {
 	})
 }
 
-// SetStatus sets the "status" field.
-func (u *GrowthTransferUpsertBulk) SetStatus(v string) *GrowthTransferUpsertBulk {
+// SetTransferStatus sets the "transfer_status" field.
+func (u *GrowthTransferUpsertBulk) SetTransferStatus(v string) *GrowthTransferUpsertBulk {
 	return u.Update(func(s *GrowthTransferUpsert) {
-		s.SetStatus(v)
+		s.SetTransferStatus(v)
 	})
 }
 
-// UpdateStatus sets the "status" field to the value that was provided on create.
-func (u *GrowthTransferUpsertBulk) UpdateStatus() *GrowthTransferUpsertBulk {
+// UpdateTransferStatus sets the "transfer_status" field to the value that was provided on create.
+func (u *GrowthTransferUpsertBulk) UpdateTransferStatus() *GrowthTransferUpsertBulk {
 	return u.Update(func(s *GrowthTransferUpsert) {
-		s.UpdateStatus()
+		s.UpdateTransferStatus()
 	})
 }
 

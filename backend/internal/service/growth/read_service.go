@@ -297,7 +297,7 @@ WHERE user_id = ?
 	result.monthEarned = monthEarned
 
 	inProgress, err := s.client.GrowthUserTask.Query().
-		Where(growthusertask.UserIDEQ(userID), growthusertask.StatusEQ("IN_PROGRESS")).
+		Where(growthusertask.UserIDEQ(userID), growthusertask.ProgressStatusEQ("IN_PROGRESS")).
 		Count(ctx)
 	if err != nil {
 		return overviewCore{}, err
@@ -311,7 +311,7 @@ WHERE user_id = ?
 	}
 	result.completedToday = completedToday
 
-	checkinTask, err := s.client.GrowthTask.Query().Where(growthtask.TaskCodeEQ("daily_checkin"), growthtask.StatusEQ("ACTIVE")).Only(ctx)
+	checkinTask, err := s.client.GrowthTask.Query().Where(growthtask.TaskCodeEQ("daily_checkin"), growthtask.TaskStatusEQ("ACTIVE")).Only(ctx)
 	if ent.IsNotFound(err) {
 		return result, nil
 	}
@@ -409,7 +409,7 @@ func (s *ReadService) UTasks(ctx context.Context, userID int64, page, pageSize i
 			Progress: progress, Target: rule.Target, CycleKey: cycleKey,
 			RewardHint: rule.RewardPoints, RewardPool: rewardPool(task.TaskType),
 			RuleVersion: rule.Version, Action: action, Icon: task.Icon, SortOrder: task.SortOrder,
-			Description: task.Description, PeriodType: rule.PeriodType,
+			Description: task.Remark, PeriodType: rule.PeriodType,
 			DailyLimit: rule.DailyLimit, PerUserLimit: rule.PerUserLimit,
 			MyCompletedCount: completedCount, CompletionRequestEndpoint: endpoint,
 			CompletionHint: "Complete the task in AIWork",
@@ -423,7 +423,7 @@ func (s *ReadService) UTasks(ctx context.Context, userID int64, page, pageSize i
 
 func (s *ReadService) UTask(ctx context.Context, userID, taskID int64) (UTaskItemView, error) {
 	task, err := s.client.GrowthTask.Get(ctx, taskID)
-	if ent.IsNotFound(err) || task.Status != "ACTIVE" {
+	if ent.IsNotFound(err) || task.TaskStatus != "ACTIVE" {
 		return UTaskItemView{}, ErrGrowthTaskNotFound
 	}
 	if err != nil {
@@ -446,7 +446,7 @@ func (s *ReadService) UTask(ctx context.Context, userID, taskID int64) (UTaskIte
 		Progress: progress, Target: rule.Target, CycleKey: cycleKey,
 		RewardHint: rule.RewardPoints, RewardPool: rewardPool(task.TaskType),
 		RuleVersion: rule.Version, Action: action, Icon: task.Icon, SortOrder: task.SortOrder,
-		Description: task.Description, EffectiveFrom: &rule.EffectiveFrom, EffectiveTo: task.EffectiveTo,
+		Description: task.Remark, EffectiveFrom: &rule.EffectiveFrom, EffectiveTo: task.EffectiveTo,
 		PeriodType: rule.PeriodType, DailyLimit: rule.DailyLimit, PerUserLimit: rule.PerUserLimit,
 		MyCompletedCount: completedCount, CompletionRequestEndpoint: endpoint,
 		CompletionHint: "Complete the task in AIWork",
@@ -467,7 +467,7 @@ func (s *ReadService) WTasks(ctx context.Context, userID int64) ([]WTaskItemView
 		}
 		_, status, _, completed := s.taskProgress(ctx, userID, task.ID, rule, now)
 		result = append(result, WTaskItemView{
-			TaskID: task.ID, Title: task.Title, Description: task.Description,
+			TaskID: task.ID, Title: task.Title, Description: task.Remark,
 			Points: rule.RewardPoints, Period: rule.PeriodType,
 			DailyLimit: rule.DailyLimit, PerUserLimit: rule.PerUserLimit,
 			CompletedToday: completed, Status: status, Action: "OPEN_AIWORK",
@@ -483,7 +483,7 @@ func (s *ReadService) activeTasks(ctx context.Context, page, pageSize int) ([]*e
 	if pageSize <= 0 || pageSize > 100 {
 		pageSize = 20
 	}
-	query := s.client.GrowthTask.Query().Where(growthtask.StatusEQ("ACTIVE"))
+	query := s.client.GrowthTask.Query().Where(growthtask.TaskStatusEQ("ACTIVE"))
 	total, err := query.Clone().Count(ctx)
 	if err != nil {
 		return nil, 0, err
@@ -536,7 +536,7 @@ func (s *ReadService) taskProgress(ctx context.Context, userID, taskID int64, ru
 			growthrewardclaim.UserIDEQ(userID),
 			growthrewardclaim.TaskIDEQ(taskID),
 			growthrewardclaim.CycleKeyEQ(cycleKey),
-			growthrewardclaim.StatusEQ("SUCCEEDED"),
+			growthrewardclaim.ClaimStatusEQ("SUCCEEDED"),
 		).
 		Count(ctx)
 	if err != nil {
@@ -548,7 +548,7 @@ func (s *ReadService) taskProgress(ctx context.Context, userID, taskID int64, ru
 			growthrewardclaim.UserIDEQ(userID),
 			growthrewardclaim.TaskIDEQ(taskID),
 			growthrewardclaim.ClaimedAtGTE(dayStart),
-			growthrewardclaim.StatusEQ("SUCCEEDED"),
+			growthrewardclaim.ClaimStatusEQ("SUCCEEDED"),
 		).
 		Count(ctx)
 	if err != nil {
@@ -558,7 +558,7 @@ func (s *ReadService) taskProgress(ctx context.Context, userID, taskID int64, ru
 		Where(
 			growthrewardclaim.UserIDEQ(userID),
 			growthrewardclaim.TaskIDEQ(taskID),
-			growthrewardclaim.StatusEQ("SUCCEEDED"),
+			growthrewardclaim.ClaimStatusEQ("SUCCEEDED"),
 		).
 		Count(ctx)
 	if err != nil {
@@ -592,7 +592,7 @@ func (s *ReadService) UProducts(ctx context.Context, userID int64, page, pageSiz
 
 func (s *ReadService) UProduct(ctx context.Context, userID, productID int64) (UProductDetailView, error) {
 	product, err := s.client.GrowthProduct.Get(ctx, productID)
-	if ent.IsNotFound(err) || product.Status != "ACTIVE" {
+	if ent.IsNotFound(err) || product.ProductStatus != "ACTIVE" {
 		return UProductDetailView{}, ErrGrowthProductNotFound
 	}
 	if err != nil {
@@ -626,7 +626,7 @@ func (s *ReadService) uProduct(ctx context.Context, userID int64, product *ent.G
 		Where(
 			growthexchangeorder.UserIDEQ(userID),
 			growthexchangeorder.ProductIDEQ(product.ID),
-			growthexchangeorder.StatusIn("CREATED", "FULFILLING", "SUCCEEDED"),
+			growthexchangeorder.OrderStatusIn("CREATED", "FULFILLING", "SUCCEEDED"),
 		).
 		Count(ctx)
 	stockHint := "不限"
@@ -691,7 +691,7 @@ func (s *ReadService) WProducts(ctx context.Context, userID int64) ([]WProductIt
 
 func (s *ReadService) WProduct(ctx context.Context, userID, productID int64) (WProductItemView, error) {
 	product, err := s.client.GrowthProduct.Get(ctx, productID)
-	if ent.IsNotFound(err) || product.Status != "ACTIVE" {
+	if ent.IsNotFound(err) || product.ProductStatus != "ACTIVE" {
 		return WProductItemView{}, ErrGrowthProductNotFound
 	}
 	if err != nil {
@@ -722,7 +722,7 @@ func currentBenefitDetail(ctx context.Context, client *ent.Client, productID int
 	if err != nil {
 		return nil
 	}
-	return entity.BenefitDetail
+	return decodeJSONText(entity.BenefitDetail)
 }
 
 func (s *ReadService) activeProducts(ctx context.Context, page, pageSize int) ([]*ent.GrowthProduct, int64, error) {
@@ -732,7 +732,7 @@ func (s *ReadService) activeProducts(ctx context.Context, page, pageSize int) ([
 	if pageSize <= 0 || pageSize > 100 {
 		pageSize = 20
 	}
-	query := s.client.GrowthProduct.Query().Where(growthproduct.StatusEQ("ACTIVE"))
+	query := s.client.GrowthProduct.Query().Where(growthproduct.ProductStatusEQ("ACTIVE"))
 	total, err := query.Clone().Count(ctx)
 	if err != nil {
 		return nil, 0, err
@@ -749,10 +749,10 @@ func (s *ReadService) UExchanges(ctx context.Context, userID int64, page, pageSi
 	}
 	result := make([]UExchangeItemView, 0, len(orders))
 	for _, order := range orders {
-		title, _ := order.ProductSnapshot["title"].(string)
+		title, _ := decodeJSONText(order.ProductSnapshot)["title"].(string)
 		result = append(result, UExchangeItemView{
 			OrderID: order.ID, ProductTitle: title, PointsCost: order.PointsCost,
-			Status: order.Status, CreatedAt: order.CreatedAt, FulfilledAt: order.FulfilledAt,
+			Status: order.OrderStatus, CreatedAt: order.CreatedAt, FulfilledAt: order.FulfilledAt,
 		})
 	}
 	return result, total, nil
@@ -765,12 +765,12 @@ func (s *ReadService) WExchanges(ctx context.Context, userID int64, page, pageSi
 	}
 	result := make([]WExchangeItemView, 0, len(orders))
 	for _, order := range orders {
-		title, _ := order.ProductSnapshot["title"].(string)
+		title, _ := decodeJSONText(order.ProductSnapshot)["title"].(string)
 		result = append(result, WExchangeItemView{
 			OrderID: order.ID, OrderNo: order.OrderNo, ProductTitle: title,
 			ProductVersion: order.ProductVersion, PointsCost: order.PointsCost,
-			Status: order.Status, FailureReason: order.FailureReason,
-			Refunded: order.Status == "REFUNDED", CreatedAt: order.CreatedAt,
+			Status: order.OrderStatus, FailureReason: order.FailureReason,
+			Refunded: order.OrderStatus == "REFUNDED", CreatedAt: order.CreatedAt,
 		})
 	}
 	return result, total, nil
@@ -785,7 +785,7 @@ func (s *ReadService) orders(ctx context.Context, userID int64, page, pageSize i
 	}
 	query := s.client.GrowthExchangeOrder.Query().Where(growthexchangeorder.UserIDEQ(userID))
 	if strings.TrimSpace(status) != "" {
-		query = query.Where(growthexchangeorder.StatusEQ(strings.TrimSpace(status)))
+		query = query.Where(growthexchangeorder.OrderStatusEQ(strings.TrimSpace(status)))
 	}
 	total, err := query.Clone().Count(ctx)
 	if err != nil {

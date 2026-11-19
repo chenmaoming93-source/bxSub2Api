@@ -131,12 +131,12 @@ func (s *TaskService) Create(ctx context.Context, input TaskCreateInput) (TaskLi
 	task, err := tx.GrowthTask.Create().
 		SetTaskCode(strings.TrimSpace(input.TaskCode)).
 		SetTitle(strings.TrimSpace(input.Title)).
-		SetDescription(strings.TrimSpace(input.Description)).
+		SetRemark(strings.TrimSpace(input.Description)).
 		SetCategory(input.Category).
 		SetTaskType(input.TaskType).
 		SetIcon(strings.TrimSpace(input.Icon)).
 		SetSortOrder(input.SortOrder).
-		SetStatus("DRAFT").
+		SetTaskStatus("DRAFT").
 		Save(ctx)
 	if err != nil {
 		if isDuplicateKey(err) {
@@ -237,7 +237,7 @@ func (s *TaskService) Update(ctx context.Context, taskID int64, input TaskUpdate
 	before := *task
 	task, err = tx.GrowthTask.UpdateOneID(taskID).
 		SetTitle(strings.TrimSpace(input.Title)).
-		SetDescription(strings.TrimSpace(input.Description)).
+		SetRemark(strings.TrimSpace(input.Description)).
 		SetCategory(input.Category).
 		SetTaskType(input.TaskType).
 		SetIcon(strings.TrimSpace(input.Icon)).
@@ -270,9 +270,7 @@ func (s *TaskService) Update(ctx context.Context, taskID int64, input TaskUpdate
 			SetPeriodType(input.Rule.PeriodType).
 			SetDailyLimit(input.Rule.DailyLimit).
 			SetPerUserLimit(input.Rule.PerUserLimit)
-		if input.Rule.Conditions != nil {
-			update.SetConditions(input.Rule.Conditions)
-		}
+		update.SetConditions(encodeJSONText(input.Rule.Conditions))
 		if input.Rule.EffectiveFrom != nil {
 			update.SetEffectiveFrom(*input.Rule.EffectiveFrom)
 		}
@@ -316,7 +314,7 @@ func (s *TaskService) Publish(ctx context.Context, taskID int64, operatorID int6
 	before := *task
 	draft, err := latestDraftRuleTx(ctx, tx, taskID)
 	if ent.IsNotFound(err) {
-		if task.Status == "ACTIVE" {
+		if task.TaskStatus == "ACTIVE" {
 			current, currentErr := currentPublishedRuleTx(ctx, tx, taskID)
 			if currentErr == nil {
 				_ = tx.Rollback()
@@ -353,13 +351,13 @@ func (s *TaskService) Publish(ctx context.Context, taskID int64, operatorID int6
 		return TaskListView{}, err
 	}
 	nextStatus := "ACTIVE"
-	if before.Status == "OFFLINE" {
+	if before.TaskStatus == "OFFLINE" {
 		// Publishing a replacement rule keeps an offline task hidden until the
 		// operator re-onlines it with a fresh quota allocation.
 		nextStatus = "OFFLINE"
 	}
 	task, err = tx.GrowthTask.UpdateOneID(taskID).
-		SetStatus(nextStatus).
+		SetTaskStatus(nextStatus).
 		SetEffectiveFrom(start).
 		ClearEffectiveTo().
 		Save(ctx)
@@ -400,7 +398,7 @@ func (s *TaskService) Offline(ctx context.Context, taskID int64, operatorID int6
 	if err != nil {
 		return TaskListView{}, err
 	}
-	if task.Status != "ACTIVE" {
+	if task.TaskStatus != "ACTIVE" {
 		return TaskListView{}, ErrTaskStateInvalid
 	}
 	before := *task
@@ -443,7 +441,7 @@ func (s *TaskService) Offline(ctx context.Context, taskID int64, operatorID int6
 			}
 		}
 	}
-	task, err = tx.GrowthTask.UpdateOneID(taskID).SetStatus("OFFLINE").SetEffectiveTo(now).Save(ctx)
+	task, err = tx.GrowthTask.UpdateOneID(taskID).SetTaskStatus("OFFLINE").SetEffectiveTo(now).Save(ctx)
 	if err != nil {
 		return TaskListView{}, err
 	}
@@ -482,7 +480,7 @@ func (s *TaskService) Online(ctx context.Context, taskID int64, operatorID int64
 	if err != nil {
 		return TaskListView{}, err
 	}
-	if task.Status != "OFFLINE" {
+	if task.TaskStatus != "OFFLINE" {
 		return TaskListView{}, ErrTaskStateInvalid
 	}
 	now := time.Now()
@@ -520,7 +518,7 @@ func (s *TaskService) Online(ctx context.Context, taskID int64, operatorID int64
 	beforeBudget := accountFromEntity(budget)
 	task, err = tx.GrowthTask.UpdateOneID(taskID).
 		SetAllocatedPoints(initialAllocation).
-		SetStatus("ACTIVE").
+		SetTaskStatus("ACTIVE").
 		SetEffectiveFrom(now).
 		ClearEffectiveTo().
 		Save(ctx)
@@ -571,7 +569,7 @@ func (s *TaskService) List(ctx context.Context, filter BudgetListFilter, categor
 	filter = normalizeBudgetFilter(filter)
 	query := s.client.GrowthTask.Query()
 	if filter.Status != "" {
-		query = query.Where(growthtask.StatusEQ(filter.Status))
+		query = query.Where(growthtask.TaskStatusEQ(filter.Status))
 	}
 	if category != "" {
 		query = query.Where(growthtask.CategoryEQ(category))
@@ -645,9 +643,7 @@ func createTaskRule(ctx context.Context, tx *ent.Tx, taskID int64, version int, 
 		SetPerUserLimit(input.PerUserLimit).
 		SetCreatedBy(operatorID).
 		SetEffectiveFrom(*effectiveFrom)
-	if input.Conditions != nil {
-		create.SetConditions(input.Conditions)
-	}
+	create.SetConditions(encodeJSONText(input.Conditions))
 	return create.Save(ctx)
 }
 
@@ -729,11 +725,11 @@ func appendTaskAudit(ctx context.Context, tx *ent.Tx, operatorID int64, action, 
 	afterJSON := taskAuditSnapshot(after)
 	_, err := tx.GrowthAdminAudit.Create().
 		SetOperatorID(operatorID).
-		SetAction(action).
+		SetActionType(action).
 		SetResourceType("growth_task").
 		SetResourceID(taskID).
-		SetBeforeJSON(beforeJSON).
-		SetAfterJSON(afterJSON).
+		SetBeforeJSON(encodeJSONText(beforeJSON)).
+		SetAfterJSON(encodeJSONText(afterJSON)).
 		SetReason(strings.TrimSpace(reason)).
 		SetRequestID(requestID).
 		Save(ctx)
@@ -748,7 +744,7 @@ func taskAuditSnapshot(task *ent.GrowthTask) map[string]any {
 		"task_id":            task.ID,
 		"task_code":          task.TaskCode,
 		"title":              task.Title,
-		"status":             task.Status,
+		"status":             task.TaskStatus,
 		"allocated_points":   task.AllocatedPoints,
 		"distributed_points": task.DistributedPoints,
 	}
@@ -759,12 +755,12 @@ func buildTaskView(task *ent.GrowthTask, current, pending *ent.GrowthTaskRule) T
 		TaskID:            task.ID,
 		TaskCode:          task.TaskCode,
 		Title:             task.Title,
-		Description:       task.Description,
+		Description:       task.Remark,
 		Category:          task.Category,
 		TaskType:          task.TaskType,
 		Icon:              task.Icon,
 		SortOrder:         task.SortOrder,
-		Status:            task.Status,
+		Status:            task.TaskStatus,
 		AllocatedPoints:   task.AllocatedPoints,
 		DistributedPoints: task.DistributedPoints,
 		RemainingPoints:   task.AllocatedPoints - task.DistributedPoints,
@@ -797,7 +793,7 @@ func ruleView(rule *ent.GrowthTaskRule) TaskRuleView {
 		ID:            rule.ID,
 		Version:       rule.Version,
 		TriggerEvent:  rule.TriggerEvent,
-		Conditions:    rule.Conditions,
+		Conditions:    decodeJSONText(rule.Conditions),
 		Target:        rule.Target,
 		RewardPoints:  rule.RewardPoints,
 		PeriodType:    rule.PeriodType,

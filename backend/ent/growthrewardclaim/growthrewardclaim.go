@@ -34,8 +34,8 @@ const (
 	FieldTransferID = "transfer_id"
 	// FieldPoints holds the string denoting the points field in the database.
 	FieldPoints = "points"
-	// FieldStatus holds the string denoting the status field in the database.
-	FieldStatus = "status"
+	// FieldClaimStatus holds the string denoting the claim_status field in the database.
+	FieldClaimStatus = "claim_status"
 	// FieldClaimedAt holds the string denoting the claimed_at field in the database.
 	FieldClaimedAt = "claimed_at"
 	// EdgeUser holds the string denoting the user edge name in mutations.
@@ -64,7 +64,7 @@ var Columns = []string{
 	FieldIdempotencyKey,
 	FieldTransferID,
 	FieldPoints,
-	FieldStatus,
+	FieldClaimStatus,
 	FieldClaimedAt,
 }
 
@@ -95,10 +95,10 @@ var (
 	IdempotencyKeyValidator func(string) error
 	// PointsValidator is a validator for the "points" field. It is called by the builders before save.
 	PointsValidator func(int64) error
-	// DefaultStatus holds the default value on creation for the "status" field.
-	DefaultStatus string
-	// StatusValidator is a validator for the "status" field. It is called by the builders before save.
-	StatusValidator func(string) error
+	// DefaultClaimStatus holds the default value on creation for the "claim_status" field.
+	DefaultClaimStatus string
+	// ClaimStatusValidator is a validator for the "claim_status" field. It is called by the builders before save.
+	ClaimStatusValidator func(string) error
 )
 
 // OrderOption defines the ordering options for the GrowthRewardClaim queries.
@@ -159,9 +159,9 @@ func ByPoints(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldPoints, opts...).ToFunc()
 }
 
-// ByStatus orders the results by the status field.
-func ByStatus(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldStatus, opts...).ToFunc()
+// ByClaimStatus orders the results by the claim_status field.
+func ByClaimStatus(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldClaimStatus, opts...).ToFunc()
 }
 
 // ByClaimedAt orders the results by the claimed_at field.

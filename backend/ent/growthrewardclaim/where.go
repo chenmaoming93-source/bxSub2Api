@@ -105,9 +105,9 @@ func Points(v int64) predicate.GrowthRewardClaim {
 	return predicate.GrowthRewardClaim(sql.FieldEQ(FieldPoints, v))
 }
 
-// Status applies equality check predicate on the "status" field. It's identical to StatusEQ.
-func Status(v string) predicate.GrowthRewardClaim {
-	return predicate.GrowthRewardClaim(sql.FieldEQ(FieldStatus, v))
+// ClaimStatus applies equality check predicate on the "claim_status" field. It's identical to ClaimStatusEQ.
+func ClaimStatus(v string) predicate.GrowthRewardClaim {
+	return predicate.GrowthRewardClaim(sql.FieldEQ(FieldClaimStatus, v))
 }
 
 // ClaimedAt applies equality check predicate on the "claimed_at" field. It's identical to ClaimedAtEQ.
@@ -545,69 +545,69 @@ func PointsLTE(v int64) predicate.GrowthRewardClaim {
 	return predicate.GrowthRewardClaim(sql.FieldLTE(FieldPoints, v))
 }
 
-// StatusEQ applies the EQ predicate on the "status" field.
-func StatusEQ(v string) predicate.GrowthRewardClaim {
-	return predicate.GrowthRewardClaim(sql.FieldEQ(FieldStatus, v))
+// ClaimStatusEQ applies the EQ predicate on the "claim_status" field.
+func ClaimStatusEQ(v string) predicate.GrowthRewardClaim {
+	return predicate.GrowthRewardClaim(sql.FieldEQ(FieldClaimStatus, v))
 }
 
-// StatusNEQ applies the NEQ predicate on the "status" field.
-func StatusNEQ(v string) predicate.GrowthRewardClaim {
-	return predicate.GrowthRewardClaim(sql.FieldNEQ(FieldStatus, v))
+// ClaimStatusNEQ applies the NEQ predicate on the "claim_status" field.
+func ClaimStatusNEQ(v string) predicate.GrowthRewardClaim {
+	return predicate.GrowthRewardClaim(sql.FieldNEQ(FieldClaimStatus, v))
 }
 
-// StatusIn applies the In predicate on the "status" field.
-func StatusIn(vs ...string) predicate.GrowthRewardClaim {
-	return predicate.GrowthRewardClaim(sql.FieldIn(FieldStatus, vs...))
+// ClaimStatusIn applies the In predicate on the "claim_status" field.
+func ClaimStatusIn(vs ...string) predicate.GrowthRewardClaim {
+	return predicate.GrowthRewardClaim(sql.FieldIn(FieldClaimStatus, vs...))
 }
 
-// StatusNotIn applies the NotIn predicate on the "status" field.
-func StatusNotIn(vs ...string) predicate.GrowthRewardClaim {
-	return predicate.GrowthRewardClaim(sql.FieldNotIn(FieldStatus, vs...))
+// ClaimStatusNotIn applies the NotIn predicate on the "claim_status" field.
+func ClaimStatusNotIn(vs ...string) predicate.GrowthRewardClaim {
+	return predicate.GrowthRewardClaim(sql.FieldNotIn(FieldClaimStatus, vs...))
 }
 
-// StatusGT applies the GT predicate on the "status" field.
-func StatusGT(v string) predicate.GrowthRewardClaim {
-	return predicate.GrowthRewardClaim(sql.FieldGT(FieldStatus, v))
+// ClaimStatusGT applies the GT predicate on the "claim_status" field.
+func ClaimStatusGT(v string) predicate.GrowthRewardClaim {
+	return predicate.GrowthRewardClaim(sql.FieldGT(FieldClaimStatus, v))
 }
 
-// StatusGTE applies the GTE predicate on the "status" field.
-func StatusGTE(v string) predicate.GrowthRewardClaim {
-	return predicate.GrowthRewardClaim(sql.FieldGTE(FieldStatus, v))
+// ClaimStatusGTE applies the GTE predicate on the "claim_status" field.
+func ClaimStatusGTE(v string) predicate.GrowthRewardClaim {
+	return predicate.GrowthRewardClaim(sql.FieldGTE(FieldClaimStatus, v))
 }
 
-// StatusLT applies the LT predicate on the "status" field.
-func StatusLT(v string) predicate.GrowthRewardClaim {
-	return predicate.GrowthRewardClaim(sql.FieldLT(FieldStatus, v))
+// ClaimStatusLT applies the LT predicate on the "claim_status" field.
+func ClaimStatusLT(v string) predicate.GrowthRewardClaim {
+	return predicate.GrowthRewardClaim(sql.FieldLT(FieldClaimStatus, v))
 }
 
-// StatusLTE applies the LTE predicate on the "status" field.
-func StatusLTE(v string) predicate.GrowthRewardClaim {
-	return predicate.GrowthRewardClaim(sql.FieldLTE(FieldStatus, v))
+// ClaimStatusLTE applies the LTE predicate on the "claim_status" field.
+func ClaimStatusLTE(v string) predicate.GrowthRewardClaim {
+	return predicate.GrowthRewardClaim(sql.FieldLTE(FieldClaimStatus, v))
 }
 
-// StatusContains applies the Contains predicate on the "status" field.
-func StatusContains(v string) predicate.GrowthRewardClaim {
-	return predicate.GrowthRewardClaim(sql.FieldContains(FieldStatus, v))
+// ClaimStatusContains applies the Contains predicate on the "claim_status" field.
+func ClaimStatusContains(v string) predicate.GrowthRewardClaim {
+	return predicate.GrowthRewardClaim(sql.FieldContains(FieldClaimStatus, v))
 }
 
-// StatusHasPrefix applies the HasPrefix predicate on the "status" field.
-func StatusHasPrefix(v string) predicate.GrowthRewardClaim {
-	return predicate.GrowthRewardClaim(sql.FieldHasPrefix(FieldStatus, v))
+// ClaimStatusHasPrefix applies the HasPrefix predicate on the "claim_status" field.
+func ClaimStatusHasPrefix(v string) predicate.GrowthRewardClaim {
+	return predicate.GrowthRewardClaim(sql.FieldHasPrefix(FieldClaimStatus, v))
 }
 
-// StatusHasSuffix applies the HasSuffix predicate on the "status" field.
-func StatusHasSuffix(v string) predicate.GrowthRewardClaim {
-	return predicate.GrowthRewardClaim(sql.FieldHasSuffix(FieldStatus, v))
+// ClaimStatusHasSuffix applies the HasSuffix predicate on the "claim_status" field.
+func ClaimStatusHasSuffix(v string) predicate.GrowthRewardClaim {
+	return predicate.GrowthRewardClaim(sql.FieldHasSuffix(FieldClaimStatus, v))
 }
 
-// StatusEqualFold applies the EqualFold predicate on the "status" field.
-func StatusEqualFold(v string) predicate.GrowthRewardClaim {
-	return predicate.GrowthRewardClaim(sql.FieldEqualFold(FieldStatus, v))
+// ClaimStatusEqualFold applies the EqualFold predicate on the "claim_status" field.
+func ClaimStatusEqualFold(v string) predicate.GrowthRewardClaim {
+	return predicate.GrowthRewardClaim(sql.FieldEqualFold(FieldClaimStatus, v))
 }
 
-// StatusContainsFold applies the ContainsFold predicate on the "status" field.
-func StatusContainsFold(v string) predicate.GrowthRewardClaim {
-	return predicate.GrowthRewardClaim(sql.FieldContainsFold(FieldStatus, v))
+// ClaimStatusContainsFold applies the ContainsFold predicate on the "claim_status" field.
+func ClaimStatusContainsFold(v string) predicate.GrowthRewardClaim {
+	return predicate.GrowthRewardClaim(sql.FieldContainsFold(FieldClaimStatus, v))
 }
 
 // ClaimedAtEQ applies the EQ predicate on the "claimed_at" field.

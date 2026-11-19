@@ -84,6 +84,11 @@ func BenefitSummary(v string) predicate.GrowthProductVersion {
 	return predicate.GrowthProductVersion(sql.FieldEQ(FieldBenefitSummary, v))
 }
 
+// BenefitDetail applies equality check predicate on the "benefit_detail" field. It's identical to BenefitDetailEQ.
+func BenefitDetail(v string) predicate.GrowthProductVersion {
+	return predicate.GrowthProductVersion(sql.FieldEQ(FieldBenefitDetail, v))
+}
+
 // TokenAmount applies equality check predicate on the "token_amount" field. It's identical to TokenAmountEQ.
 func TokenAmount(v int64) predicate.GrowthProductVersion {
 	return predicate.GrowthProductVersion(sql.FieldEQ(FieldTokenAmount, v))
@@ -379,6 +384,61 @@ func BenefitSummaryContainsFold(v string) predicate.GrowthProductVersion {
 	return predicate.GrowthProductVersion(sql.FieldContainsFold(FieldBenefitSummary, v))
 }
 
+// BenefitDetailEQ applies the EQ predicate on the "benefit_detail" field.
+func BenefitDetailEQ(v string) predicate.GrowthProductVersion {
+	return predicate.GrowthProductVersion(sql.FieldEQ(FieldBenefitDetail, v))
+}
+
+// BenefitDetailNEQ applies the NEQ predicate on the "benefit_detail" field.
+func BenefitDetailNEQ(v string) predicate.GrowthProductVersion {
+	return predicate.GrowthProductVersion(sql.FieldNEQ(FieldBenefitDetail, v))
+}
+
+// BenefitDetailIn applies the In predicate on the "benefit_detail" field.
+func BenefitDetailIn(vs ...string) predicate.GrowthProductVersion {
+	return predicate.GrowthProductVersion(sql.FieldIn(FieldBenefitDetail, vs...))
+}
+
+// BenefitDetailNotIn applies the NotIn predicate on the "benefit_detail" field.
+func BenefitDetailNotIn(vs ...string) predicate.GrowthProductVersion {
+	return predicate.GrowthProductVersion(sql.FieldNotIn(FieldBenefitDetail, vs...))
+}
+
+// BenefitDetailGT applies the GT predicate on the "benefit_detail" field.
+func BenefitDetailGT(v string) predicate.GrowthProductVersion {
+	return predicate.GrowthProductVersion(sql.FieldGT(FieldBenefitDetail, v))
+}
+
+// BenefitDetailGTE applies the GTE predicate on the "benefit_detail" field.
+func BenefitDetailGTE(v string) predicate.GrowthProductVersion {
+	return predicate.GrowthProductVersion(sql.FieldGTE(FieldBenefitDetail, v))
+}
+
+// BenefitDetailLT applies the LT predicate on the "benefit_detail" field.
+func BenefitDetailLT(v string) predicate.GrowthProductVersion {
+	return predicate.GrowthProductVersion(sql.FieldLT(FieldBenefitDetail, v))
+}
+
+// BenefitDetailLTE applies the LTE predicate on the "benefit_detail" field.
+func BenefitDetailLTE(v string) predicate.GrowthProductVersion {
+	return predicate.GrowthProductVersion(sql.FieldLTE(FieldBenefitDetail, v))
+}
+
+// BenefitDetailContains applies the Contains predicate on the "benefit_detail" field.
+func BenefitDetailContains(v string) predicate.GrowthProductVersion {
+	return predicate.GrowthProductVersion(sql.FieldContains(FieldBenefitDetail, v))
+}
+
+// BenefitDetailHasPrefix applies the HasPrefix predicate on the "benefit_detail" field.
+func BenefitDetailHasPrefix(v string) predicate.GrowthProductVersion {
+	return predicate.GrowthProductVersion(sql.FieldHasPrefix(FieldBenefitDetail, v))
+}
+
+// BenefitDetailHasSuffix applies the HasSuffix predicate on the "benefit_detail" field.
+func BenefitDetailHasSuffix(v string) predicate.GrowthProductVersion {
+	return predicate.GrowthProductVersion(sql.FieldHasSuffix(FieldBenefitDetail, v))
+}
+
 // BenefitDetailIsNil applies the IsNil predicate on the "benefit_detail" field.
 func BenefitDetailIsNil() predicate.GrowthProductVersion {
 	return predicate.GrowthProductVersion(sql.FieldIsNull(FieldBenefitDetail))
@@ -387,6 +447,16 @@ func BenefitDetailIsNil() predicate.GrowthProductVersion {
 // BenefitDetailNotNil applies the NotNil predicate on the "benefit_detail" field.
 func BenefitDetailNotNil() predicate.GrowthProductVersion {
 	return predicate.GrowthProductVersion(sql.FieldNotNull(FieldBenefitDetail))
+}
+
+// BenefitDetailEqualFold applies the EqualFold predicate on the "benefit_detail" field.
+func BenefitDetailEqualFold(v string) predicate.GrowthProductVersion {
+	return predicate.GrowthProductVersion(sql.FieldEqualFold(FieldBenefitDetail, v))
+}
+
+// BenefitDetailContainsFold applies the ContainsFold predicate on the "benefit_detail" field.
+func BenefitDetailContainsFold(v string) predicate.GrowthProductVersion {
+	return predicate.GrowthProductVersion(sql.FieldContainsFold(FieldBenefitDetail, v))
 }
 
 // TokenAmountEQ applies the EQ predicate on the "token_amount" field.

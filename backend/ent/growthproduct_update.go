@@ -125,16 +125,16 @@ func (_u *GrowthProductUpdate) AddSortOrder(v int) *GrowthProductUpdate {
 	return _u
 }
 
-// SetStatus sets the "status" field.
-func (_u *GrowthProductUpdate) SetStatus(v string) *GrowthProductUpdate {
-	_u.mutation.SetStatus(v)
+// SetProductStatus sets the "product_status" field.
+func (_u *GrowthProductUpdate) SetProductStatus(v string) *GrowthProductUpdate {
+	_u.mutation.SetProductStatus(v)
 	return _u
 }
 
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (_u *GrowthProductUpdate) SetNillableStatus(v *string) *GrowthProductUpdate {
+// SetNillableProductStatus sets the "product_status" field if the given value is not nil.
+func (_u *GrowthProductUpdate) SetNillableProductStatus(v *string) *GrowthProductUpdate {
 	if v != nil {
-		_u.SetStatus(*v)
+		_u.SetProductStatus(*v)
 	}
 	return _u
 }
@@ -228,9 +228,9 @@ func (_u *GrowthProductUpdate) check() error {
 			return &ValidationError{Name: "fulfillment_mode", err: fmt.Errorf(`ent: validator failed for field "GrowthProduct.fulfillment_mode": %w`, err)}
 		}
 	}
-	if v, ok := _u.mutation.Status(); ok {
-		if err := growthproduct.StatusValidator(v); err != nil {
-			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "GrowthProduct.status": %w`, err)}
+	if v, ok := _u.mutation.ProductStatus(); ok {
+		if err := growthproduct.ProductStatusValidator(v); err != nil {
+			return &ValidationError{Name: "product_status", err: fmt.Errorf(`ent: validator failed for field "GrowthProduct.product_status": %w`, err)}
 		}
 	}
 	if v, ok := _u.mutation.CurrentVersion(); ok {
@@ -277,8 +277,8 @@ func (_u *GrowthProductUpdate) sqlSave(ctx context.Context) (_node int, err erro
 	if value, ok := _u.mutation.AddedSortOrder(); ok {
 		_spec.AddField(growthproduct.FieldSortOrder, field.TypeInt, value)
 	}
-	if value, ok := _u.mutation.Status(); ok {
-		_spec.SetField(growthproduct.FieldStatus, field.TypeString, value)
+	if value, ok := _u.mutation.ProductStatus(); ok {
+		_spec.SetField(growthproduct.FieldProductStatus, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.CurrentVersion(); ok {
 		_spec.SetField(growthproduct.FieldCurrentVersion, field.TypeInt, value)
@@ -403,16 +403,16 @@ func (_u *GrowthProductUpdateOne) AddSortOrder(v int) *GrowthProductUpdateOne {
 	return _u
 }
 
-// SetStatus sets the "status" field.
-func (_u *GrowthProductUpdateOne) SetStatus(v string) *GrowthProductUpdateOne {
-	_u.mutation.SetStatus(v)
+// SetProductStatus sets the "product_status" field.
+func (_u *GrowthProductUpdateOne) SetProductStatus(v string) *GrowthProductUpdateOne {
+	_u.mutation.SetProductStatus(v)
 	return _u
 }
 
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (_u *GrowthProductUpdateOne) SetNillableStatus(v *string) *GrowthProductUpdateOne {
+// SetNillableProductStatus sets the "product_status" field if the given value is not nil.
+func (_u *GrowthProductUpdateOne) SetNillableProductStatus(v *string) *GrowthProductUpdateOne {
 	if v != nil {
-		_u.SetStatus(*v)
+		_u.SetProductStatus(*v)
 	}
 	return _u
 }
@@ -519,9 +519,9 @@ func (_u *GrowthProductUpdateOne) check() error {
 			return &ValidationError{Name: "fulfillment_mode", err: fmt.Errorf(`ent: validator failed for field "GrowthProduct.fulfillment_mode": %w`, err)}
 		}
 	}
-	if v, ok := _u.mutation.Status(); ok {
-		if err := growthproduct.StatusValidator(v); err != nil {
-			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "GrowthProduct.status": %w`, err)}
+	if v, ok := _u.mutation.ProductStatus(); ok {
+		if err := growthproduct.ProductStatusValidator(v); err != nil {
+			return &ValidationError{Name: "product_status", err: fmt.Errorf(`ent: validator failed for field "GrowthProduct.product_status": %w`, err)}
 		}
 	}
 	if v, ok := _u.mutation.CurrentVersion(); ok {
@@ -585,8 +585,8 @@ func (_u *GrowthProductUpdateOne) sqlSave(ctx context.Context) (_node *GrowthPro
 	if value, ok := _u.mutation.AddedSortOrder(); ok {
 		_spec.AddField(growthproduct.FieldSortOrder, field.TypeInt, value)
 	}
-	if value, ok := _u.mutation.Status(); ok {
-		_spec.SetField(growthproduct.FieldStatus, field.TypeString, value)
+	if value, ok := _u.mutation.ProductStatus(); ok {
+		_spec.SetField(growthproduct.FieldProductStatus, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.CurrentVersion(); ok {
 		_spec.SetField(growthproduct.FieldCurrentVersion, field.TypeInt, value)

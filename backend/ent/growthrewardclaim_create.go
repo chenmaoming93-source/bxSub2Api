@@ -107,16 +107,16 @@ func (_c *GrowthRewardClaimCreate) SetPoints(v int64) *GrowthRewardClaimCreate {
 	return _c
 }
 
-// SetStatus sets the "status" field.
-func (_c *GrowthRewardClaimCreate) SetStatus(v string) *GrowthRewardClaimCreate {
-	_c.mutation.SetStatus(v)
+// SetClaimStatus sets the "claim_status" field.
+func (_c *GrowthRewardClaimCreate) SetClaimStatus(v string) *GrowthRewardClaimCreate {
+	_c.mutation.SetClaimStatus(v)
 	return _c
 }
 
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (_c *GrowthRewardClaimCreate) SetNillableStatus(v *string) *GrowthRewardClaimCreate {
+// SetNillableClaimStatus sets the "claim_status" field if the given value is not nil.
+func (_c *GrowthRewardClaimCreate) SetNillableClaimStatus(v *string) *GrowthRewardClaimCreate {
 	if v != nil {
-		_c.SetStatus(*v)
+		_c.SetClaimStatus(*v)
 	}
 	return _c
 }
@@ -179,9 +179,9 @@ func (_c *GrowthRewardClaimCreate) defaults() {
 		v := growthrewardclaim.DefaultSequence
 		_c.mutation.SetSequence(v)
 	}
-	if _, ok := _c.mutation.Status(); !ok {
-		v := growthrewardclaim.DefaultStatus
-		_c.mutation.SetStatus(v)
+	if _, ok := _c.mutation.ClaimStatus(); !ok {
+		v := growthrewardclaim.DefaultClaimStatus
+		_c.mutation.SetClaimStatus(v)
 	}
 }
 
@@ -237,12 +237,12 @@ func (_c *GrowthRewardClaimCreate) check() error {
 			return &ValidationError{Name: "points", err: fmt.Errorf(`ent: validator failed for field "GrowthRewardClaim.points": %w`, err)}
 		}
 	}
-	if _, ok := _c.mutation.Status(); !ok {
-		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "GrowthRewardClaim.status"`)}
+	if _, ok := _c.mutation.ClaimStatus(); !ok {
+		return &ValidationError{Name: "claim_status", err: errors.New(`ent: missing required field "GrowthRewardClaim.claim_status"`)}
 	}
-	if v, ok := _c.mutation.Status(); ok {
-		if err := growthrewardclaim.StatusValidator(v); err != nil {
-			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "GrowthRewardClaim.status": %w`, err)}
+	if v, ok := _c.mutation.ClaimStatus(); ok {
+		if err := growthrewardclaim.ClaimStatusValidator(v); err != nil {
+			return &ValidationError{Name: "claim_status", err: fmt.Errorf(`ent: validator failed for field "GrowthRewardClaim.claim_status": %w`, err)}
 		}
 	}
 	if _, ok := _c.mutation.ClaimedAt(); !ok {
@@ -314,9 +314,9 @@ func (_c *GrowthRewardClaimCreate) createSpec() (*GrowthRewardClaim, *sqlgraph.C
 		_spec.SetField(growthrewardclaim.FieldPoints, field.TypeInt64, value)
 		_node.Points = value
 	}
-	if value, ok := _c.mutation.Status(); ok {
-		_spec.SetField(growthrewardclaim.FieldStatus, field.TypeString, value)
-		_node.Status = value
+	if value, ok := _c.mutation.ClaimStatus(); ok {
+		_spec.SetField(growthrewardclaim.FieldClaimStatus, field.TypeString, value)
+		_node.ClaimStatus = value
 	}
 	if value, ok := _c.mutation.ClaimedAt(); ok {
 		_spec.SetField(growthrewardclaim.FieldClaimedAt, field.TypeTime, value)
@@ -529,15 +529,15 @@ func (u *GrowthRewardClaimUpsert) AddPoints(v int64) *GrowthRewardClaimUpsert {
 	return u
 }
 
-// SetStatus sets the "status" field.
-func (u *GrowthRewardClaimUpsert) SetStatus(v string) *GrowthRewardClaimUpsert {
-	u.Set(growthrewardclaim.FieldStatus, v)
+// SetClaimStatus sets the "claim_status" field.
+func (u *GrowthRewardClaimUpsert) SetClaimStatus(v string) *GrowthRewardClaimUpsert {
+	u.Set(growthrewardclaim.FieldClaimStatus, v)
 	return u
 }
 
-// UpdateStatus sets the "status" field to the value that was provided on create.
-func (u *GrowthRewardClaimUpsert) UpdateStatus() *GrowthRewardClaimUpsert {
-	u.SetExcluded(growthrewardclaim.FieldStatus)
+// UpdateClaimStatus sets the "claim_status" field to the value that was provided on create.
+func (u *GrowthRewardClaimUpsert) UpdateClaimStatus() *GrowthRewardClaimUpsert {
+	u.SetExcluded(growthrewardclaim.FieldClaimStatus)
 	return u
 }
 
@@ -759,17 +759,17 @@ func (u *GrowthRewardClaimUpsertOne) UpdatePoints() *GrowthRewardClaimUpsertOne 
 	})
 }
 
-// SetStatus sets the "status" field.
-func (u *GrowthRewardClaimUpsertOne) SetStatus(v string) *GrowthRewardClaimUpsertOne {
+// SetClaimStatus sets the "claim_status" field.
+func (u *GrowthRewardClaimUpsertOne) SetClaimStatus(v string) *GrowthRewardClaimUpsertOne {
 	return u.Update(func(s *GrowthRewardClaimUpsert) {
-		s.SetStatus(v)
+		s.SetClaimStatus(v)
 	})
 }
 
-// UpdateStatus sets the "status" field to the value that was provided on create.
-func (u *GrowthRewardClaimUpsertOne) UpdateStatus() *GrowthRewardClaimUpsertOne {
+// UpdateClaimStatus sets the "claim_status" field to the value that was provided on create.
+func (u *GrowthRewardClaimUpsertOne) UpdateClaimStatus() *GrowthRewardClaimUpsertOne {
 	return u.Update(func(s *GrowthRewardClaimUpsert) {
-		s.UpdateStatus()
+		s.UpdateClaimStatus()
 	})
 }
 
@@ -1159,17 +1159,17 @@ func (u *GrowthRewardClaimUpsertBulk) UpdatePoints() *GrowthRewardClaimUpsertBul
 	})
 }
 
-// SetStatus sets the "status" field.
-func (u *GrowthRewardClaimUpsertBulk) SetStatus(v string) *GrowthRewardClaimUpsertBulk {
+// SetClaimStatus sets the "claim_status" field.
+func (u *GrowthRewardClaimUpsertBulk) SetClaimStatus(v string) *GrowthRewardClaimUpsertBulk {
 	return u.Update(func(s *GrowthRewardClaimUpsert) {
-		s.SetStatus(v)
+		s.SetClaimStatus(v)
 	})
 }
 
-// UpdateStatus sets the "status" field to the value that was provided on create.
-func (u *GrowthRewardClaimUpsertBulk) UpdateStatus() *GrowthRewardClaimUpsertBulk {
+// UpdateClaimStatus sets the "claim_status" field to the value that was provided on create.
+func (u *GrowthRewardClaimUpsertBulk) UpdateClaimStatus() *GrowthRewardClaimUpsertBulk {
 	return u.Update(func(s *GrowthRewardClaimUpsert) {
-		s.UpdateStatus()
+		s.UpdateClaimStatus()
 	})
 }
 

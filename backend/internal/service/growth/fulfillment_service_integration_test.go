@@ -71,10 +71,10 @@ func TestOutboxWorkerRetryRefundManualAndAdminOperations(t *testing.T) {
 	require.Equal(t, int32(1), tokenCalls.Load())
 	tokenOrderEntity, err := client.GrowthExchangeOrder.Get(ctx, tokenOrder.OrderID)
 	require.NoError(t, err)
-	require.Equal(t, "SUCCEEDED", tokenOrderEntity.Status)
+	require.Equal(t, "SUCCEEDED", tokenOrderEntity.OrderStatus)
 	tokenJob, err := client.GrowthFulfillmentJob.Query().Where(growthfulfillmentjob.OrderIDEQ(tokenOrder.OrderID)).Only(ctx)
 	require.NoError(t, err)
-	require.Equal(t, "SUCCEEDED", tokenJob.Status)
+	require.Equal(t, "SUCCEEDED", tokenJob.JobStatus)
 	require.Equal(t, 1, tokenJob.AttemptCount)
 
 	processed, err = fulfillment.ProcessDue(ctx)
@@ -105,7 +105,7 @@ func TestOutboxWorkerRetryRefundManualAndAdminOperations(t *testing.T) {
 	require.Equal(t, 1, processed)
 	subJob, err := client.GrowthFulfillmentJob.Query().Where(growthfulfillmentjob.OrderIDEQ(subOrder.OrderID)).Only(ctx)
 	require.NoError(t, err)
-	require.Equal(t, "RETRY", subJob.Status)
+	require.Equal(t, "RETRY", subJob.JobStatus)
 	require.Equal(t, 1, subJob.AttemptCount)
 	_, err = client.GrowthFulfillmentJob.UpdateOneID(subJob.ID).SetNextRetryAt(time.Now().Add(-time.Second)).Save(ctx)
 	require.NoError(t, err)
@@ -115,7 +115,7 @@ func TestOutboxWorkerRetryRefundManualAndAdminOperations(t *testing.T) {
 	require.Equal(t, int32(2), subCalls.Load())
 	subOrderEntity, err := client.GrowthExchangeOrder.Get(ctx, subOrder.OrderID)
 	require.NoError(t, err)
-	require.Equal(t, "SUCCEEDED", subOrderEntity.Status)
+	require.Equal(t, "SUCCEEDED", subOrderEntity.OrderStatus)
 
 	failingProduct, err := products.Create(ctx, ProductCreateInput{
 		OperatorID: 1, ProductCode: "fulfill_fail", Title: "失败履约", ProductType: "TOKEN_QUOTA",
@@ -135,7 +135,7 @@ func TestOutboxWorkerRetryRefundManualAndAdminOperations(t *testing.T) {
 	require.NoError(t, err)
 	refundedOrder, err := client.GrowthExchangeOrder.Get(ctx, failOrder.OrderID)
 	require.NoError(t, err)
-	require.Equal(t, "REFUNDED", refundedOrder.Status)
+	require.Equal(t, "REFUNDED", refundedOrder.OrderStatus)
 	require.NotNil(t, refundedOrder.RefundTransferID)
 	restoredInventory, err := client.GrowthProductInventory.Query().
 		Where(growthproductinventory.ProductIDEQ(failingProduct.ProductID)).
@@ -184,11 +184,11 @@ func TestOutboxWorkerRetryRefundManualAndAdminOperations(t *testing.T) {
 
 	retryOrder, err := orders.Create(ctx, ExchangeCommand{UserID: 1, ProductID: physicalProduct.ProductID, IdempotencyKey: "fulfill-retry-order"})
 	require.NoError(t, err)
-	_, err = client.GrowthExchangeOrder.UpdateOneID(retryOrder.OrderID).SetStatus("FAILED").Save(ctx)
+	_, err = client.GrowthExchangeOrder.UpdateOneID(retryOrder.OrderID).SetOrderStatus("FAILED").Save(ctx)
 	require.NoError(t, err)
 	_, err = client.GrowthFulfillmentJob.Update().
 		Where(growthfulfillmentjob.OrderIDEQ(retryOrder.OrderID)).
-		SetStatus("FAILED").
+		SetJobStatus("FAILED").
 		Save(ctx)
 	require.NoError(t, err)
 	beforeRetryWallet, err := client.GrowthWallet.Query().Where(growthwallet.UserIDEQ(1)).Only(ctx)

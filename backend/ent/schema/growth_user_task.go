@@ -34,7 +34,7 @@ func (GrowthUserTask) Fields() []ent.Field {
 		field.Int64("progress").Default(0).Validate(growthNonNegative("progress")),
 		field.Int64("target").Default(1).Validate(growthPositive("target")),
 		field.Int64("completed_count").Default(0).Validate(growthNonNegative("completed_count")),
-		field.String("status").MaxLen(32).Default("IN_PROGRESS"),
+		field.String("progress_status").MaxLen(32).Default("IN_PROGRESS"),
 		field.Time("completed_at").
 			Optional().
 			Nillable().

@@ -21,8 +21,8 @@ const (
 	FieldOrderID = "order_id"
 	// FieldJobType holds the string denoting the job_type field in the database.
 	FieldJobType = "job_type"
-	// FieldStatus holds the string denoting the status field in the database.
-	FieldStatus = "status"
+	// FieldJobStatus holds the string denoting the job_status field in the database.
+	FieldJobStatus = "job_status"
 	// FieldAttemptCount holds the string denoting the attempt_count field in the database.
 	FieldAttemptCount = "attempt_count"
 	// FieldMaxAttempts holds the string denoting the max_attempts field in the database.
@@ -48,7 +48,7 @@ var Columns = []string{
 	FieldUpdatedAt,
 	FieldOrderID,
 	FieldJobType,
-	FieldStatus,
+	FieldJobStatus,
 	FieldAttemptCount,
 	FieldMaxAttempts,
 	FieldNextRetryAt,
@@ -79,10 +79,10 @@ var (
 	DefaultJobType string
 	// JobTypeValidator is a validator for the "job_type" field. It is called by the builders before save.
 	JobTypeValidator func(string) error
-	// DefaultStatus holds the default value on creation for the "status" field.
-	DefaultStatus string
-	// StatusValidator is a validator for the "status" field. It is called by the builders before save.
-	StatusValidator func(string) error
+	// DefaultJobStatus holds the default value on creation for the "job_status" field.
+	DefaultJobStatus string
+	// JobStatusValidator is a validator for the "job_status" field. It is called by the builders before save.
+	JobStatusValidator func(string) error
 	// DefaultAttemptCount holds the default value on creation for the "attempt_count" field.
 	DefaultAttemptCount int
 	// AttemptCountValidator is a validator for the "attempt_count" field. It is called by the builders before save.
@@ -131,9 +131,9 @@ func ByJobType(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldJobType, opts...).ToFunc()
 }
 
-// ByStatus orders the results by the status field.
-func ByStatus(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldStatus, opts...).ToFunc()
+// ByJobStatus orders the results by the job_status field.
+func ByJobStatus(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldJobStatus, opts...).ToFunc()
 }
 
 // ByAttemptCount orders the results by the attempt_count field.

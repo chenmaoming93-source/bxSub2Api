@@ -106,7 +106,7 @@ func (s *CompletionService) Complete(ctx context.Context, command CompletionComm
 	}
 
 	task, err := s.client.GrowthTask.Query().
-		Where(growthtask.ID(command.TaskID), growthtask.StatusEQ("ACTIVE")).
+		Where(growthtask.ID(command.TaskID), growthtask.TaskStatusEQ("ACTIVE")).
 		Only(ctx)
 	if ent.IsNotFound(err) {
 		return s.persistNonAward(ctx, command, result, now)
@@ -178,7 +178,7 @@ func (s *CompletionService) Complete(ctx context.Context, command CompletionComm
 					SetProgress(nextProgress).
 					SetTarget(rule.Target).
 					SetCompletedCount(completed).
-					SetStatus("REWARDED").
+					SetProgressStatus("REWARDED").
 					SetCompletedAt(now).
 					SetRewardedAt(now).
 					Save(callbackCtx)
@@ -191,7 +191,7 @@ func (s *CompletionService) Complete(ctx context.Context, command CompletionComm
 				_, err = tx.GrowthUserTask.UpdateOneID(userTask.ID).
 					SetProgress(nextProgress).
 					SetCompletedCount(completed).
-					SetStatus("REWARDED").
+					SetProgressStatus("REWARDED").
 					SetCompletedAt(now).
 					SetRewardedAt(now).
 					Save(callbackCtx)
@@ -208,7 +208,7 @@ func (s *CompletionService) Complete(ctx context.Context, command CompletionComm
 				SetIdempotencyKey(command.IdempotencyKey).
 				SetTransferID(transfer.ID).
 				SetPoints(rule.RewardPoints).
-				SetStatus("SUCCEEDED").
+				SetClaimStatus("SUCCEEDED").
 				SetClaimedAt(now).
 				Save(callbackCtx)
 			if err != nil {
@@ -281,7 +281,7 @@ func completionSequence(
 			growthrewardclaim.UserIDEQ(userID),
 			growthrewardclaim.TaskIDEQ(taskID),
 			growthrewardclaim.CycleKeyEQ(cycleKey),
-			growthrewardclaim.StatusEQ("SUCCEEDED"),
+			growthrewardclaim.ClaimStatusEQ("SUCCEEDED"),
 		).
 		Count(ctx)
 	if err != nil {
@@ -292,7 +292,7 @@ func completionSequence(
 			growthrewardclaim.UserIDEQ(userID),
 			growthrewardclaim.TaskIDEQ(taskID),
 			growthrewardclaim.ClaimedAtGTE(dayStart),
-			growthrewardclaim.StatusEQ("SUCCEEDED"),
+			growthrewardclaim.ClaimStatusEQ("SUCCEEDED"),
 		).
 		Count(ctx)
 	if err != nil {
@@ -305,7 +305,7 @@ func completionSequence(
 		Where(
 			growthrewardclaim.UserIDEQ(userID),
 			growthrewardclaim.TaskIDEQ(taskID),
-			growthrewardclaim.StatusEQ("SUCCEEDED"),
+			growthrewardclaim.ClaimStatusEQ("SUCCEEDED"),
 		).
 		Count(ctx)
 	if err != nil {

@@ -35,7 +35,7 @@ func (GrowthTransfer) Fields() []ent.Field {
 		field.Int64("task_id").Optional().Nillable(),
 		field.Int64("order_id").Optional().Nillable(),
 		field.Int64("points").Validate(growthPositive("points")),
-		field.String("status").MaxLen(20).Default("PENDING").Validate(growthEnum("status", "PENDING", "SUCCEEDED", "FAILED", "REVERSED")),
+		field.String("transfer_status").MaxLen(20).Default("PENDING").Validate(growthEnum("transfer_status", "PENDING", "SUCCEEDED", "FAILED", "REVERSED")),
 		field.String("failure_reason").MaxLen(512).Default(""),
 		field.Time("completed_at").
 			Optional().
@@ -51,6 +51,6 @@ func (GrowthTransfer) Indexes() []ent.Index {
 		index.Fields("to_user_id", "created_at"),
 		index.Fields("task_id"),
 		index.Fields("order_id"),
-		index.Fields("status"),
+		index.Fields("transfer_status"),
 	}
 }

@@ -38,8 +38,8 @@ type GrowthRewardClaim struct {
 	TransferID int64 `json:"transfer_id,omitempty"`
 	// Points holds the value of the "points" field.
 	Points int64 `json:"points,omitempty"`
-	// Status holds the value of the "status" field.
-	Status string `json:"status,omitempty"`
+	// ClaimStatus holds the value of the "claim_status" field.
+	ClaimStatus string `json:"claim_status,omitempty"`
 	// ClaimedAt holds the value of the "claimed_at" field.
 	ClaimedAt time.Time `json:"claimed_at,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
@@ -75,7 +75,7 @@ func (*GrowthRewardClaim) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case growthrewardclaim.FieldID, growthrewardclaim.FieldUserID, growthrewardclaim.FieldTaskID, growthrewardclaim.FieldRuleID, growthrewardclaim.FieldSequence, growthrewardclaim.FieldTransferID, growthrewardclaim.FieldPoints:
 			values[i] = new(sql.NullInt64)
-		case growthrewardclaim.FieldCycleKey, growthrewardclaim.FieldIdempotencyKey, growthrewardclaim.FieldStatus:
+		case growthrewardclaim.FieldCycleKey, growthrewardclaim.FieldIdempotencyKey, growthrewardclaim.FieldClaimStatus:
 			values[i] = new(sql.NullString)
 		case growthrewardclaim.FieldCreatedAt, growthrewardclaim.FieldUpdatedAt, growthrewardclaim.FieldClaimedAt:
 			values[i] = new(sql.NullTime)
@@ -160,11 +160,11 @@ func (_m *GrowthRewardClaim) assignValues(columns []string, values []any) error 
 			} else if value.Valid {
 				_m.Points = value.Int64
 			}
-		case growthrewardclaim.FieldStatus:
+		case growthrewardclaim.FieldClaimStatus:
 			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field status", values[i])
+				return fmt.Errorf("unexpected type %T for field claim_status", values[i])
 			} else if value.Valid {
-				_m.Status = value.String
+				_m.ClaimStatus = value.String
 			}
 		case growthrewardclaim.FieldClaimedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -243,8 +243,8 @@ func (_m *GrowthRewardClaim) String() string {
 	builder.WriteString("points=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Points))
 	builder.WriteString(", ")
-	builder.WriteString("status=")
-	builder.WriteString(_m.Status)
+	builder.WriteString("claim_status=")
+	builder.WriteString(_m.ClaimStatus)
 	builder.WriteString(", ")
 	builder.WriteString("claimed_at=")
 	builder.WriteString(_m.ClaimedAt.Format(time.ANSIC))

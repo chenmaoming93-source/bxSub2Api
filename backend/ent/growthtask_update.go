@@ -62,16 +62,16 @@ func (_u *GrowthTaskUpdate) SetNillableTitle(v *string) *GrowthTaskUpdate {
 	return _u
 }
 
-// SetDescription sets the "description" field.
-func (_u *GrowthTaskUpdate) SetDescription(v string) *GrowthTaskUpdate {
-	_u.mutation.SetDescription(v)
+// SetRemark sets the "remark" field.
+func (_u *GrowthTaskUpdate) SetRemark(v string) *GrowthTaskUpdate {
+	_u.mutation.SetRemark(v)
 	return _u
 }
 
-// SetNillableDescription sets the "description" field if the given value is not nil.
-func (_u *GrowthTaskUpdate) SetNillableDescription(v *string) *GrowthTaskUpdate {
+// SetNillableRemark sets the "remark" field if the given value is not nil.
+func (_u *GrowthTaskUpdate) SetNillableRemark(v *string) *GrowthTaskUpdate {
 	if v != nil {
-		_u.SetDescription(*v)
+		_u.SetRemark(*v)
 	}
 	return _u
 }
@@ -139,16 +139,16 @@ func (_u *GrowthTaskUpdate) AddSortOrder(v int) *GrowthTaskUpdate {
 	return _u
 }
 
-// SetStatus sets the "status" field.
-func (_u *GrowthTaskUpdate) SetStatus(v string) *GrowthTaskUpdate {
-	_u.mutation.SetStatus(v)
+// SetTaskStatus sets the "task_status" field.
+func (_u *GrowthTaskUpdate) SetTaskStatus(v string) *GrowthTaskUpdate {
+	_u.mutation.SetTaskStatus(v)
 	return _u
 }
 
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (_u *GrowthTaskUpdate) SetNillableStatus(v *string) *GrowthTaskUpdate {
+// SetNillableTaskStatus sets the "task_status" field if the given value is not nil.
+func (_u *GrowthTaskUpdate) SetNillableTaskStatus(v *string) *GrowthTaskUpdate {
 	if v != nil {
-		_u.SetStatus(*v)
+		_u.SetTaskStatus(*v)
 	}
 	return _u
 }
@@ -288,9 +288,9 @@ func (_u *GrowthTaskUpdate) check() error {
 			return &ValidationError{Name: "title", err: fmt.Errorf(`ent: validator failed for field "GrowthTask.title": %w`, err)}
 		}
 	}
-	if v, ok := _u.mutation.Description(); ok {
-		if err := growthtask.DescriptionValidator(v); err != nil {
-			return &ValidationError{Name: "description", err: fmt.Errorf(`ent: validator failed for field "GrowthTask.description": %w`, err)}
+	if v, ok := _u.mutation.Remark(); ok {
+		if err := growthtask.RemarkValidator(v); err != nil {
+			return &ValidationError{Name: "remark", err: fmt.Errorf(`ent: validator failed for field "GrowthTask.remark": %w`, err)}
 		}
 	}
 	if v, ok := _u.mutation.Category(); ok {
@@ -308,9 +308,9 @@ func (_u *GrowthTaskUpdate) check() error {
 			return &ValidationError{Name: "icon", err: fmt.Errorf(`ent: validator failed for field "GrowthTask.icon": %w`, err)}
 		}
 	}
-	if v, ok := _u.mutation.Status(); ok {
-		if err := growthtask.StatusValidator(v); err != nil {
-			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "GrowthTask.status": %w`, err)}
+	if v, ok := _u.mutation.TaskStatus(); ok {
+		if err := growthtask.TaskStatusValidator(v); err != nil {
+			return &ValidationError{Name: "task_status", err: fmt.Errorf(`ent: validator failed for field "GrowthTask.task_status": %w`, err)}
 		}
 	}
 	if v, ok := _u.mutation.AllocatedPoints(); ok {
@@ -347,8 +347,8 @@ func (_u *GrowthTaskUpdate) sqlSave(ctx context.Context) (_node int, err error) 
 	if value, ok := _u.mutation.Title(); ok {
 		_spec.SetField(growthtask.FieldTitle, field.TypeString, value)
 	}
-	if value, ok := _u.mutation.Description(); ok {
-		_spec.SetField(growthtask.FieldDescription, field.TypeString, value)
+	if value, ok := _u.mutation.Remark(); ok {
+		_spec.SetField(growthtask.FieldRemark, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.Category(); ok {
 		_spec.SetField(growthtask.FieldCategory, field.TypeString, value)
@@ -365,8 +365,8 @@ func (_u *GrowthTaskUpdate) sqlSave(ctx context.Context) (_node int, err error) 
 	if value, ok := _u.mutation.AddedSortOrder(); ok {
 		_spec.AddField(growthtask.FieldSortOrder, field.TypeInt, value)
 	}
-	if value, ok := _u.mutation.Status(); ok {
-		_spec.SetField(growthtask.FieldStatus, field.TypeString, value)
+	if value, ok := _u.mutation.TaskStatus(); ok {
+		_spec.SetField(growthtask.FieldTaskStatus, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.EffectiveFrom(); ok {
 		_spec.SetField(growthtask.FieldEffectiveFrom, field.TypeTime, value)
@@ -446,16 +446,16 @@ func (_u *GrowthTaskUpdateOne) SetNillableTitle(v *string) *GrowthTaskUpdateOne 
 	return _u
 }
 
-// SetDescription sets the "description" field.
-func (_u *GrowthTaskUpdateOne) SetDescription(v string) *GrowthTaskUpdateOne {
-	_u.mutation.SetDescription(v)
+// SetRemark sets the "remark" field.
+func (_u *GrowthTaskUpdateOne) SetRemark(v string) *GrowthTaskUpdateOne {
+	_u.mutation.SetRemark(v)
 	return _u
 }
 
-// SetNillableDescription sets the "description" field if the given value is not nil.
-func (_u *GrowthTaskUpdateOne) SetNillableDescription(v *string) *GrowthTaskUpdateOne {
+// SetNillableRemark sets the "remark" field if the given value is not nil.
+func (_u *GrowthTaskUpdateOne) SetNillableRemark(v *string) *GrowthTaskUpdateOne {
 	if v != nil {
-		_u.SetDescription(*v)
+		_u.SetRemark(*v)
 	}
 	return _u
 }
@@ -523,16 +523,16 @@ func (_u *GrowthTaskUpdateOne) AddSortOrder(v int) *GrowthTaskUpdateOne {
 	return _u
 }
 
-// SetStatus sets the "status" field.
-func (_u *GrowthTaskUpdateOne) SetStatus(v string) *GrowthTaskUpdateOne {
-	_u.mutation.SetStatus(v)
+// SetTaskStatus sets the "task_status" field.
+func (_u *GrowthTaskUpdateOne) SetTaskStatus(v string) *GrowthTaskUpdateOne {
+	_u.mutation.SetTaskStatus(v)
 	return _u
 }
 
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (_u *GrowthTaskUpdateOne) SetNillableStatus(v *string) *GrowthTaskUpdateOne {
+// SetNillableTaskStatus sets the "task_status" field if the given value is not nil.
+func (_u *GrowthTaskUpdateOne) SetNillableTaskStatus(v *string) *GrowthTaskUpdateOne {
 	if v != nil {
-		_u.SetStatus(*v)
+		_u.SetTaskStatus(*v)
 	}
 	return _u
 }
@@ -685,9 +685,9 @@ func (_u *GrowthTaskUpdateOne) check() error {
 			return &ValidationError{Name: "title", err: fmt.Errorf(`ent: validator failed for field "GrowthTask.title": %w`, err)}
 		}
 	}
-	if v, ok := _u.mutation.Description(); ok {
-		if err := growthtask.DescriptionValidator(v); err != nil {
-			return &ValidationError{Name: "description", err: fmt.Errorf(`ent: validator failed for field "GrowthTask.description": %w`, err)}
+	if v, ok := _u.mutation.Remark(); ok {
+		if err := growthtask.RemarkValidator(v); err != nil {
+			return &ValidationError{Name: "remark", err: fmt.Errorf(`ent: validator failed for field "GrowthTask.remark": %w`, err)}
 		}
 	}
 	if v, ok := _u.mutation.Category(); ok {
@@ -705,9 +705,9 @@ func (_u *GrowthTaskUpdateOne) check() error {
 			return &ValidationError{Name: "icon", err: fmt.Errorf(`ent: validator failed for field "GrowthTask.icon": %w`, err)}
 		}
 	}
-	if v, ok := _u.mutation.Status(); ok {
-		if err := growthtask.StatusValidator(v); err != nil {
-			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "GrowthTask.status": %w`, err)}
+	if v, ok := _u.mutation.TaskStatus(); ok {
+		if err := growthtask.TaskStatusValidator(v); err != nil {
+			return &ValidationError{Name: "task_status", err: fmt.Errorf(`ent: validator failed for field "GrowthTask.task_status": %w`, err)}
 		}
 	}
 	if v, ok := _u.mutation.AllocatedPoints(); ok {
@@ -761,8 +761,8 @@ func (_u *GrowthTaskUpdateOne) sqlSave(ctx context.Context) (_node *GrowthTask, 
 	if value, ok := _u.mutation.Title(); ok {
 		_spec.SetField(growthtask.FieldTitle, field.TypeString, value)
 	}
-	if value, ok := _u.mutation.Description(); ok {
-		_spec.SetField(growthtask.FieldDescription, field.TypeString, value)
+	if value, ok := _u.mutation.Remark(); ok {
+		_spec.SetField(growthtask.FieldRemark, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.Category(); ok {
 		_spec.SetField(growthtask.FieldCategory, field.TypeString, value)
@@ -779,8 +779,8 @@ func (_u *GrowthTaskUpdateOne) sqlSave(ctx context.Context) (_node *GrowthTask, 
 	if value, ok := _u.mutation.AddedSortOrder(); ok {
 		_spec.AddField(growthtask.FieldSortOrder, field.TypeInt, value)
 	}
-	if value, ok := _u.mutation.Status(); ok {
-		_spec.SetField(growthtask.FieldStatus, field.TypeString, value)
+	if value, ok := _u.mutation.TaskStatus(); ok {
+		_spec.SetField(growthtask.FieldTaskStatus, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.EffectiveFrom(); ok {
 		_spec.SetField(growthtask.FieldEffectiveFrom, field.TypeTime, value)

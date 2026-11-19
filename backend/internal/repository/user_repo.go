@@ -653,8 +653,7 @@ func excludeSuperAdminUsersPredicate() predicate.User {
 				 AND wildcard_permission.deleted_at IS NULL
 				WHERE wildcard_user_role.user_id = `).
 				Ident(s.C(dbuser.FieldID)).
-				WriteString(`)
-			)`)
+				WriteString(`)`)
 		}))
 	})
 }

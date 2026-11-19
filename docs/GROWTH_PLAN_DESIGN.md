@@ -279,7 +279,7 @@ AIWork 判定完成 + 不做服务间身份校验 ⇒ **sub2api 无法独立证�
 | 分页 | 「游标分页」，无组件 | 仅 `response.Paginated` (page/page_size) | 流水用**轻量游标** `before_entry_id + limit`（append-only 避免 offset 漂移），不新增分页包；其他列表用 `page/page_size` |
 | 主键 | 应用生成分布式唯一 ID | Ent + `AUTO_INCREMENT BIGINT` | 沿用 Ent 自动生成；确需全局唯一 ID 时单独评估，避免与 Ent 冲突 |
 | DDL | 未指定 | 必须放 `backend/sqlArchiving/NNN_*.sql`，当前最大 `181` → 下一个 `182`；**禁止**改 `backend/migrations/` | 新建 `182_create_growth_tables.sql` 等，方言固定「MySQL 8 / GoldenDB（MySQL 兼容模式）」 |
-| JSON 字段 | 允许 JSONB/UUID | 禁 PG 专属语法；`JSON` 或 `LONGTEXT` | 规则条件用 `JSON`，兼容不确定时 `LONGTEXT` + 应用层 schema 校验（禁止任意脚本） |
+| JSON 字段 | 允许 JSONB/UUID | 禁 PG 专属语法；Growth 表使用 `LONGTEXT NULL` | 规则条件、权益详情、订单快照、审计前后值由应用层序列化；空对象写 `{}`，禁止任意脚本 |
 | RBAC | 未提 | 新路由须登记 `RBAC_ENDPOINT_INVENTORY.md` 与 `rbac/coverage.go`，否则启动 `ValidateRouteCoverage` panic | M 面逐路由登记 permission；U 面按 known exclusion 登记（理由：内部系统加密报文互信边界）；I 面已删除 |
 | 配置 | 未提 | 配置项变更必须同步 `backend/config/config.yaml` | 新增 `growth.*`（时区、开关、限流、时间窗）时同步三处配置；SM2 密钥对写死为代码常量，**不进配置**（**无令牌 TTL、无私钥密文配置**） |
 | 表名 | `growth_*` | 无全局前缀，按模块语义分组 | 保留 `growth_*` 前缀，符合规约；`user_id` 一律外键语义指向 `users.id` |

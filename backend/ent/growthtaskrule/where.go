@@ -79,6 +79,11 @@ func TriggerEvent(v string) predicate.GrowthTaskRule {
 	return predicate.GrowthTaskRule(sql.FieldEQ(FieldTriggerEvent, v))
 }
 
+// Conditions applies equality check predicate on the "conditions" field. It's identical to ConditionsEQ.
+func Conditions(v string) predicate.GrowthTaskRule {
+	return predicate.GrowthTaskRule(sql.FieldEQ(FieldConditions, v))
+}
+
 // Target applies equality check predicate on the "target" field. It's identical to TargetEQ.
 func Target(v int64) predicate.GrowthTaskRule {
 	return predicate.GrowthTaskRule(sql.FieldEQ(FieldTarget, v))
@@ -349,6 +354,61 @@ func TriggerEventContainsFold(v string) predicate.GrowthTaskRule {
 	return predicate.GrowthTaskRule(sql.FieldContainsFold(FieldTriggerEvent, v))
 }
 
+// ConditionsEQ applies the EQ predicate on the "conditions" field.
+func ConditionsEQ(v string) predicate.GrowthTaskRule {
+	return predicate.GrowthTaskRule(sql.FieldEQ(FieldConditions, v))
+}
+
+// ConditionsNEQ applies the NEQ predicate on the "conditions" field.
+func ConditionsNEQ(v string) predicate.GrowthTaskRule {
+	return predicate.GrowthTaskRule(sql.FieldNEQ(FieldConditions, v))
+}
+
+// ConditionsIn applies the In predicate on the "conditions" field.
+func ConditionsIn(vs ...string) predicate.GrowthTaskRule {
+	return predicate.GrowthTaskRule(sql.FieldIn(FieldConditions, vs...))
+}
+
+// ConditionsNotIn applies the NotIn predicate on the "conditions" field.
+func ConditionsNotIn(vs ...string) predicate.GrowthTaskRule {
+	return predicate.GrowthTaskRule(sql.FieldNotIn(FieldConditions, vs...))
+}
+
+// ConditionsGT applies the GT predicate on the "conditions" field.
+func ConditionsGT(v string) predicate.GrowthTaskRule {
+	return predicate.GrowthTaskRule(sql.FieldGT(FieldConditions, v))
+}
+
+// ConditionsGTE applies the GTE predicate on the "conditions" field.
+func ConditionsGTE(v string) predicate.GrowthTaskRule {
+	return predicate.GrowthTaskRule(sql.FieldGTE(FieldConditions, v))
+}
+
+// ConditionsLT applies the LT predicate on the "conditions" field.
+func ConditionsLT(v string) predicate.GrowthTaskRule {
+	return predicate.GrowthTaskRule(sql.FieldLT(FieldConditions, v))
+}
+
+// ConditionsLTE applies the LTE predicate on the "conditions" field.
+func ConditionsLTE(v string) predicate.GrowthTaskRule {
+	return predicate.GrowthTaskRule(sql.FieldLTE(FieldConditions, v))
+}
+
+// ConditionsContains applies the Contains predicate on the "conditions" field.
+func ConditionsContains(v string) predicate.GrowthTaskRule {
+	return predicate.GrowthTaskRule(sql.FieldContains(FieldConditions, v))
+}
+
+// ConditionsHasPrefix applies the HasPrefix predicate on the "conditions" field.
+func ConditionsHasPrefix(v string) predicate.GrowthTaskRule {
+	return predicate.GrowthTaskRule(sql.FieldHasPrefix(FieldConditions, v))
+}
+
+// ConditionsHasSuffix applies the HasSuffix predicate on the "conditions" field.
+func ConditionsHasSuffix(v string) predicate.GrowthTaskRule {
+	return predicate.GrowthTaskRule(sql.FieldHasSuffix(FieldConditions, v))
+}
+
 // ConditionsIsNil applies the IsNil predicate on the "conditions" field.
 func ConditionsIsNil() predicate.GrowthTaskRule {
 	return predicate.GrowthTaskRule(sql.FieldIsNull(FieldConditions))
@@ -357,6 +417,16 @@ func ConditionsIsNil() predicate.GrowthTaskRule {
 // ConditionsNotNil applies the NotNil predicate on the "conditions" field.
 func ConditionsNotNil() predicate.GrowthTaskRule {
 	return predicate.GrowthTaskRule(sql.FieldNotNull(FieldConditions))
+}
+
+// ConditionsEqualFold applies the EqualFold predicate on the "conditions" field.
+func ConditionsEqualFold(v string) predicate.GrowthTaskRule {
+	return predicate.GrowthTaskRule(sql.FieldEqualFold(FieldConditions, v))
+}
+
+// ConditionsContainsFold applies the ContainsFold predicate on the "conditions" field.
+func ConditionsContainsFold(v string) predicate.GrowthTaskRule {
+	return predicate.GrowthTaskRule(sql.FieldContainsFold(FieldConditions, v))
 }
 
 // TargetEQ applies the EQ predicate on the "target" field.

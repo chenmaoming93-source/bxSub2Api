@@ -77,8 +77,16 @@ func (_c *GrowthTaskRuleCreate) SetNillableTriggerEvent(v *string) *GrowthTaskRu
 }
 
 // SetConditions sets the "conditions" field.
-func (_c *GrowthTaskRuleCreate) SetConditions(v map[string]interface{}) *GrowthTaskRuleCreate {
+func (_c *GrowthTaskRuleCreate) SetConditions(v string) *GrowthTaskRuleCreate {
 	_c.mutation.SetConditions(v)
+	return _c
+}
+
+// SetNillableConditions sets the "conditions" field if the given value is not nil.
+func (_c *GrowthTaskRuleCreate) SetNillableConditions(v *string) *GrowthTaskRuleCreate {
+	if v != nil {
+		_c.SetConditions(*v)
+	}
 	return _c
 }
 
@@ -358,7 +366,7 @@ func (_c *GrowthTaskRuleCreate) createSpec() (*GrowthTaskRule, *sqlgraph.CreateS
 		_node.TriggerEvent = value
 	}
 	if value, ok := _c.mutation.Conditions(); ok {
-		_spec.SetField(growthtaskrule.FieldConditions, field.TypeJSON, value)
+		_spec.SetField(growthtaskrule.FieldConditions, field.TypeString, value)
 		_node.Conditions = value
 	}
 	if value, ok := _c.mutation.Target(); ok {
@@ -510,7 +518,7 @@ func (u *GrowthTaskRuleUpsert) UpdateTriggerEvent() *GrowthTaskRuleUpsert {
 }
 
 // SetConditions sets the "conditions" field.
-func (u *GrowthTaskRuleUpsert) SetConditions(v map[string]interface{}) *GrowthTaskRuleUpsert {
+func (u *GrowthTaskRuleUpsert) SetConditions(v string) *GrowthTaskRuleUpsert {
 	u.Set(growthtaskrule.FieldConditions, v)
 	return u
 }
@@ -793,7 +801,7 @@ func (u *GrowthTaskRuleUpsertOne) UpdateTriggerEvent() *GrowthTaskRuleUpsertOne 
 }
 
 // SetConditions sets the "conditions" field.
-func (u *GrowthTaskRuleUpsertOne) SetConditions(v map[string]interface{}) *GrowthTaskRuleUpsertOne {
+func (u *GrowthTaskRuleUpsertOne) SetConditions(v string) *GrowthTaskRuleUpsertOne {
 	return u.Update(func(s *GrowthTaskRuleUpsert) {
 		s.SetConditions(v)
 	})
@@ -1270,7 +1278,7 @@ func (u *GrowthTaskRuleUpsertBulk) UpdateTriggerEvent() *GrowthTaskRuleUpsertBul
 }
 
 // SetConditions sets the "conditions" field.
-func (u *GrowthTaskRuleUpsertBulk) SetConditions(v map[string]interface{}) *GrowthTaskRuleUpsertBulk {
+func (u *GrowthTaskRuleUpsertBulk) SetConditions(v string) *GrowthTaskRuleUpsertBulk {
 	return u.Update(func(s *GrowthTaskRuleUpsert) {
 		s.SetConditions(v)
 	})

@@ -32,8 +32,8 @@ const (
 	FieldTarget = "target"
 	// FieldCompletedCount holds the string denoting the completed_count field in the database.
 	FieldCompletedCount = "completed_count"
-	// FieldStatus holds the string denoting the status field in the database.
-	FieldStatus = "status"
+	// FieldProgressStatus holds the string denoting the progress_status field in the database.
+	FieldProgressStatus = "progress_status"
 	// FieldCompletedAt holds the string denoting the completed_at field in the database.
 	FieldCompletedAt = "completed_at"
 	// FieldRewardedAt holds the string denoting the rewarded_at field in the database.
@@ -63,7 +63,7 @@ var Columns = []string{
 	FieldProgress,
 	FieldTarget,
 	FieldCompletedCount,
-	FieldStatus,
+	FieldProgressStatus,
 	FieldCompletedAt,
 	FieldRewardedAt,
 }
@@ -99,10 +99,10 @@ var (
 	DefaultCompletedCount int64
 	// CompletedCountValidator is a validator for the "completed_count" field. It is called by the builders before save.
 	CompletedCountValidator func(int64) error
-	// DefaultStatus holds the default value on creation for the "status" field.
-	DefaultStatus string
-	// StatusValidator is a validator for the "status" field. It is called by the builders before save.
-	StatusValidator func(string) error
+	// DefaultProgressStatus holds the default value on creation for the "progress_status" field.
+	DefaultProgressStatus string
+	// ProgressStatusValidator is a validator for the "progress_status" field. It is called by the builders before save.
+	ProgressStatusValidator func(string) error
 )
 
 // OrderOption defines the ordering options for the GrowthUserTask queries.
@@ -158,9 +158,9 @@ func ByCompletedCount(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldCompletedCount, opts...).ToFunc()
 }
 
-// ByStatus orders the results by the status field.
-func ByStatus(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldStatus, opts...).ToFunc()
+// ByProgressStatus orders the results by the progress_status field.
+func ByProgressStatus(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldProgressStatus, opts...).ToFunc()
 }
 
 // ByCompletedAt orders the results by the completed_at field.

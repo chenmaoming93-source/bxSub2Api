@@ -182,16 +182,16 @@ func (_u *GrowthRewardClaimUpdate) AddPoints(v int64) *GrowthRewardClaimUpdate {
 	return _u
 }
 
-// SetStatus sets the "status" field.
-func (_u *GrowthRewardClaimUpdate) SetStatus(v string) *GrowthRewardClaimUpdate {
-	_u.mutation.SetStatus(v)
+// SetClaimStatus sets the "claim_status" field.
+func (_u *GrowthRewardClaimUpdate) SetClaimStatus(v string) *GrowthRewardClaimUpdate {
+	_u.mutation.SetClaimStatus(v)
 	return _u
 }
 
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (_u *GrowthRewardClaimUpdate) SetNillableStatus(v *string) *GrowthRewardClaimUpdate {
+// SetNillableClaimStatus sets the "claim_status" field if the given value is not nil.
+func (_u *GrowthRewardClaimUpdate) SetNillableClaimStatus(v *string) *GrowthRewardClaimUpdate {
 	if v != nil {
-		_u.SetStatus(*v)
+		_u.SetClaimStatus(*v)
 	}
 	return _u
 }
@@ -284,9 +284,9 @@ func (_u *GrowthRewardClaimUpdate) check() error {
 			return &ValidationError{Name: "points", err: fmt.Errorf(`ent: validator failed for field "GrowthRewardClaim.points": %w`, err)}
 		}
 	}
-	if v, ok := _u.mutation.Status(); ok {
-		if err := growthrewardclaim.StatusValidator(v); err != nil {
-			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "GrowthRewardClaim.status": %w`, err)}
+	if v, ok := _u.mutation.ClaimStatus(); ok {
+		if err := growthrewardclaim.ClaimStatusValidator(v); err != nil {
+			return &ValidationError{Name: "claim_status", err: fmt.Errorf(`ent: validator failed for field "GrowthRewardClaim.claim_status": %w`, err)}
 		}
 	}
 	if _u.mutation.UserCleared() && len(_u.mutation.UserIDs()) > 0 {
@@ -346,8 +346,8 @@ func (_u *GrowthRewardClaimUpdate) sqlSave(ctx context.Context) (_node int, err 
 	if value, ok := _u.mutation.AddedPoints(); ok {
 		_spec.AddField(growthrewardclaim.FieldPoints, field.TypeInt64, value)
 	}
-	if value, ok := _u.mutation.Status(); ok {
-		_spec.SetField(growthrewardclaim.FieldStatus, field.TypeString, value)
+	if value, ok := _u.mutation.ClaimStatus(); ok {
+		_spec.SetField(growthrewardclaim.FieldClaimStatus, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.ClaimedAt(); ok {
 		_spec.SetField(growthrewardclaim.FieldClaimedAt, field.TypeTime, value)
@@ -554,16 +554,16 @@ func (_u *GrowthRewardClaimUpdateOne) AddPoints(v int64) *GrowthRewardClaimUpdat
 	return _u
 }
 
-// SetStatus sets the "status" field.
-func (_u *GrowthRewardClaimUpdateOne) SetStatus(v string) *GrowthRewardClaimUpdateOne {
-	_u.mutation.SetStatus(v)
+// SetClaimStatus sets the "claim_status" field.
+func (_u *GrowthRewardClaimUpdateOne) SetClaimStatus(v string) *GrowthRewardClaimUpdateOne {
+	_u.mutation.SetClaimStatus(v)
 	return _u
 }
 
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (_u *GrowthRewardClaimUpdateOne) SetNillableStatus(v *string) *GrowthRewardClaimUpdateOne {
+// SetNillableClaimStatus sets the "claim_status" field if the given value is not nil.
+func (_u *GrowthRewardClaimUpdateOne) SetNillableClaimStatus(v *string) *GrowthRewardClaimUpdateOne {
 	if v != nil {
-		_u.SetStatus(*v)
+		_u.SetClaimStatus(*v)
 	}
 	return _u
 }
@@ -669,9 +669,9 @@ func (_u *GrowthRewardClaimUpdateOne) check() error {
 			return &ValidationError{Name: "points", err: fmt.Errorf(`ent: validator failed for field "GrowthRewardClaim.points": %w`, err)}
 		}
 	}
-	if v, ok := _u.mutation.Status(); ok {
-		if err := growthrewardclaim.StatusValidator(v); err != nil {
-			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "GrowthRewardClaim.status": %w`, err)}
+	if v, ok := _u.mutation.ClaimStatus(); ok {
+		if err := growthrewardclaim.ClaimStatusValidator(v); err != nil {
+			return &ValidationError{Name: "claim_status", err: fmt.Errorf(`ent: validator failed for field "GrowthRewardClaim.claim_status": %w`, err)}
 		}
 	}
 	if _u.mutation.UserCleared() && len(_u.mutation.UserIDs()) > 0 {
@@ -748,8 +748,8 @@ func (_u *GrowthRewardClaimUpdateOne) sqlSave(ctx context.Context) (_node *Growt
 	if value, ok := _u.mutation.AddedPoints(); ok {
 		_spec.AddField(growthrewardclaim.FieldPoints, field.TypeInt64, value)
 	}
-	if value, ok := _u.mutation.Status(); ok {
-		_spec.SetField(growthrewardclaim.FieldStatus, field.TypeString, value)
+	if value, ok := _u.mutation.ClaimStatus(); ok {
+		_spec.SetField(growthrewardclaim.FieldClaimStatus, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.ClaimedAt(); ok {
 		_spec.SetField(growthrewardclaim.FieldClaimedAt, field.TypeTime, value)

@@ -109,7 +109,7 @@ func (s *OrderService) Create(ctx context.Context, command ExchangeCommand) (Exc
 	if err != nil {
 		return ExchangeCreateResult{}, err
 	}
-	if product.Status != "ACTIVE" {
+	if product.ProductStatus != "ACTIVE" {
 		return ExchangeCreateResult{}, ErrProductOffline
 	}
 	if command.ExpectedVersion != nil && *command.ExpectedVersion != product.CurrentVersion {
@@ -146,7 +146,7 @@ func (s *OrderService) Create(ctx context.Context, command ExchangeCommand) (Exc
 			Where(
 				growthexchangeorder.UserIDEQ(command.UserID),
 				growthexchangeorder.ProductIDEQ(product.ID),
-				growthexchangeorder.StatusIn("CREATED", "FULFILLING", "SUCCEEDED"),
+				growthexchangeorder.OrderStatusIn("CREATED", "FULFILLING", "SUCCEEDED"),
 			).
 			Count(ctx)
 		if err != nil {
@@ -204,7 +204,7 @@ func (s *OrderService) Create(ctx context.Context, command ExchangeCommand) (Exc
 		"version":         version.Version,
 		"points_cost":     version.PointsCost,
 		"benefit_summary": version.BenefitSummary,
-		"benefit_detail":  version.BenefitDetail,
+		"benefit_detail":  decodeJSONText(version.BenefitDetail),
 		"token_amount":    version.TokenAmount,
 		"per_user_limit":  version.PerUserLimit,
 	}
@@ -226,9 +226,9 @@ func (s *OrderService) Create(ctx context.Context, command ExchangeCommand) (Exc
 				SetUserID(command.UserID).
 				SetProductID(product.ID).
 				SetProductVersion(version.Version).
-				SetProductSnapshot(snapshot).
+				SetProductSnapshot(encodeJSONText(snapshot)).
 				SetPointsCost(version.PointsCost).
-				SetStatus("FULFILLING").
+				SetOrderStatus("FULFILLING").
 				SetIdempotencyKey(command.IdempotencyKey).
 				SetTransferID(transfer.ID).
 				Save(callbackCtx)
@@ -305,7 +305,7 @@ func (s *OrderService) createResult(ctx context.Context, order *ent.GrowthExchan
 	job, err := s.client.GrowthFulfillmentJob.Query().Where(growthfulfillmentjob.OrderIDEQ(order.ID)).Only(ctx)
 	status := "PENDING"
 	if err == nil {
-		status = job.Status
+		status = job.JobStatus
 	}
 	var transferID *int64
 	if order.TransferID != nil {
@@ -313,7 +313,7 @@ func (s *OrderService) createResult(ctx context.Context, order *ent.GrowthExchan
 		transferID = &value
 	}
 	return ExchangeCreateResult{
-		OrderID: order.ID, OrderNo: order.OrderNo, Status: order.Status,
+		OrderID: order.ID, OrderNo: order.OrderNo, Status: order.OrderStatus,
 		ProductVersion: order.ProductVersion, PointsCost: order.PointsCost,
 		TransferID: transferID, CurrentBalance: balance, FulfillmentStatus: status,
 		ServerTime: s.now().UTC().Format(time.RFC3339Nano),
@@ -324,7 +324,7 @@ func (s *OrderService) detail(ctx context.Context, order *ent.GrowthExchangeOrde
 	job, err := s.client.GrowthFulfillmentJob.Query().Where(growthfulfillmentjob.OrderIDEQ(order.ID)).Only(ctx)
 	status := "PENDING"
 	if err == nil {
-		status = job.Status
+		status = job.JobStatus
 	}
 	var transferID, refundID *int64
 	if order.TransferID != nil {
@@ -336,8 +336,8 @@ func (s *OrderService) detail(ctx context.Context, order *ent.GrowthExchangeOrde
 		refundID = &value
 	}
 	return ExchangeOrderDetail{
-		OrderID: order.ID, OrderNo: order.OrderNo, Status: order.Status,
-		ProductSnapshot: order.ProductSnapshot, PointsCost: order.PointsCost,
+		OrderID: order.ID, OrderNo: order.OrderNo, Status: order.OrderStatus,
+		ProductSnapshot: decodeJSONText(order.ProductSnapshot), PointsCost: order.PointsCost,
 		TransferID: transferID, FulfillmentStatus: status,
 		FailureReason: order.FailureReason, RefundTransferID: refundID,
 		CreatedAt: order.CreatedAt, FulfilledAt: order.FulfilledAt,

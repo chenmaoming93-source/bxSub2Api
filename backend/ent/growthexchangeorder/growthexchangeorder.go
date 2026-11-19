@@ -30,8 +30,8 @@ const (
 	FieldProductSnapshot = "product_snapshot"
 	// FieldPointsCost holds the string denoting the points_cost field in the database.
 	FieldPointsCost = "points_cost"
-	// FieldStatus holds the string denoting the status field in the database.
-	FieldStatus = "status"
+	// FieldOrderStatus holds the string denoting the order_status field in the database.
+	FieldOrderStatus = "order_status"
 	// FieldIdempotencyKey holds the string denoting the idempotency_key field in the database.
 	FieldIdempotencyKey = "idempotency_key"
 	// FieldExpectedVersion holds the string denoting the expected_version field in the database.
@@ -70,7 +70,7 @@ var Columns = []string{
 	FieldProductVersion,
 	FieldProductSnapshot,
 	FieldPointsCost,
-	FieldStatus,
+	FieldOrderStatus,
 	FieldIdempotencyKey,
 	FieldExpectedVersion,
 	FieldTransferID,
@@ -103,10 +103,10 @@ var (
 	ProductVersionValidator func(int) error
 	// PointsCostValidator is a validator for the "points_cost" field. It is called by the builders before save.
 	PointsCostValidator func(int64) error
-	// DefaultStatus holds the default value on creation for the "status" field.
-	DefaultStatus string
-	// StatusValidator is a validator for the "status" field. It is called by the builders before save.
-	StatusValidator func(string) error
+	// DefaultOrderStatus holds the default value on creation for the "order_status" field.
+	DefaultOrderStatus string
+	// OrderStatusValidator is a validator for the "order_status" field. It is called by the builders before save.
+	OrderStatusValidator func(string) error
 	// IdempotencyKeyValidator is a validator for the "idempotency_key" field. It is called by the builders before save.
 	IdempotencyKeyValidator func(string) error
 	// DefaultFailureReason holds the default value on creation for the "failure_reason" field.
@@ -153,14 +153,19 @@ func ByProductVersion(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldProductVersion, opts...).ToFunc()
 }
 
+// ByProductSnapshot orders the results by the product_snapshot field.
+func ByProductSnapshot(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldProductSnapshot, opts...).ToFunc()
+}
+
 // ByPointsCost orders the results by the points_cost field.
 func ByPointsCost(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldPointsCost, opts...).ToFunc()
 }
 
-// ByStatus orders the results by the status field.
-func ByStatus(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldStatus, opts...).ToFunc()
+// ByOrderStatus orders the results by the order_status field.
+func ByOrderStatus(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldOrderStatus, opts...).ToFunc()
 }
 
 // ByIdempotencyKey orders the results by the idempotency_key field.

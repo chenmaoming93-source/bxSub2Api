@@ -30,7 +30,7 @@ func (GrowthProductVersion) Fields() []ent.Field {
 		field.Int("version").Validate(growthPositiveInt("version")),
 		field.Int64("points_cost").Validate(growthPositive("points_cost")),
 		field.String("benefit_summary").MaxLen(512).Default(""),
-		field.JSON("benefit_detail", map[string]any{}).Optional(),
+		field.Text("benefit_detail").Optional(),
 		field.Int64("token_amount").Default(0).Validate(growthNonNegative("token_amount")),
 		field.Int("per_user_limit").Default(0).Validate(growthNonNegativeInt("per_user_limit")),
 		field.Int64("created_by"),

@@ -1040,18 +1040,18 @@ func init() {
 	growthadminaudit.DefaultUpdatedAt = growthadminauditDescUpdatedAt.Default.(func() time.Time)
 	// growthadminaudit.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
 	growthadminaudit.UpdateDefaultUpdatedAt = growthadminauditDescUpdatedAt.UpdateDefault.(func() time.Time)
-	// growthadminauditDescAction is the schema descriptor for action field.
-	growthadminauditDescAction := growthadminauditFields[1].Descriptor()
-	// growthadminaudit.ActionValidator is a validator for the "action" field. It is called by the builders before save.
-	growthadminaudit.ActionValidator = func() func(string) error {
-		validators := growthadminauditDescAction.Validators
+	// growthadminauditDescActionType is the schema descriptor for action_type field.
+	growthadminauditDescActionType := growthadminauditFields[1].Descriptor()
+	// growthadminaudit.ActionTypeValidator is a validator for the "action_type" field. It is called by the builders before save.
+	growthadminaudit.ActionTypeValidator = func() func(string) error {
+		validators := growthadminauditDescActionType.Validators
 		fns := [...]func(string) error{
 			validators[0].(func(string) error),
 			validators[1].(func(string) error),
 		}
-		return func(action string) error {
+		return func(action_type string) error {
 			for _, fn := range fns {
-				if err := fn(action); err != nil {
+				if err := fn(action_type); err != nil {
 					return err
 				}
 			}
@@ -1314,20 +1314,20 @@ func init() {
 	growthexchangeorderDescPointsCost := growthexchangeorderFields[5].Descriptor()
 	// growthexchangeorder.PointsCostValidator is a validator for the "points_cost" field. It is called by the builders before save.
 	growthexchangeorder.PointsCostValidator = growthexchangeorderDescPointsCost.Validators[0].(func(int64) error)
-	// growthexchangeorderDescStatus is the schema descriptor for status field.
-	growthexchangeorderDescStatus := growthexchangeorderFields[6].Descriptor()
-	// growthexchangeorder.DefaultStatus holds the default value on creation for the status field.
-	growthexchangeorder.DefaultStatus = growthexchangeorderDescStatus.Default.(string)
-	// growthexchangeorder.StatusValidator is a validator for the "status" field. It is called by the builders before save.
-	growthexchangeorder.StatusValidator = func() func(string) error {
-		validators := growthexchangeorderDescStatus.Validators
+	// growthexchangeorderDescOrderStatus is the schema descriptor for order_status field.
+	growthexchangeorderDescOrderStatus := growthexchangeorderFields[6].Descriptor()
+	// growthexchangeorder.DefaultOrderStatus holds the default value on creation for the order_status field.
+	growthexchangeorder.DefaultOrderStatus = growthexchangeorderDescOrderStatus.Default.(string)
+	// growthexchangeorder.OrderStatusValidator is a validator for the "order_status" field. It is called by the builders before save.
+	growthexchangeorder.OrderStatusValidator = func() func(string) error {
+		validators := growthexchangeorderDescOrderStatus.Validators
 		fns := [...]func(string) error{
 			validators[0].(func(string) error),
 			validators[1].(func(string) error),
 		}
-		return func(status string) error {
+		return func(order_status string) error {
 			for _, fn := range fns {
-				if err := fn(status); err != nil {
+				if err := fn(order_status); err != nil {
 					return err
 				}
 			}
@@ -1379,20 +1379,20 @@ func init() {
 	growthfulfillmentjob.DefaultJobType = growthfulfillmentjobDescJobType.Default.(string)
 	// growthfulfillmentjob.JobTypeValidator is a validator for the "job_type" field. It is called by the builders before save.
 	growthfulfillmentjob.JobTypeValidator = growthfulfillmentjobDescJobType.Validators[0].(func(string) error)
-	// growthfulfillmentjobDescStatus is the schema descriptor for status field.
-	growthfulfillmentjobDescStatus := growthfulfillmentjobFields[2].Descriptor()
-	// growthfulfillmentjob.DefaultStatus holds the default value on creation for the status field.
-	growthfulfillmentjob.DefaultStatus = growthfulfillmentjobDescStatus.Default.(string)
-	// growthfulfillmentjob.StatusValidator is a validator for the "status" field. It is called by the builders before save.
-	growthfulfillmentjob.StatusValidator = func() func(string) error {
-		validators := growthfulfillmentjobDescStatus.Validators
+	// growthfulfillmentjobDescJobStatus is the schema descriptor for job_status field.
+	growthfulfillmentjobDescJobStatus := growthfulfillmentjobFields[2].Descriptor()
+	// growthfulfillmentjob.DefaultJobStatus holds the default value on creation for the job_status field.
+	growthfulfillmentjob.DefaultJobStatus = growthfulfillmentjobDescJobStatus.Default.(string)
+	// growthfulfillmentjob.JobStatusValidator is a validator for the "job_status" field. It is called by the builders before save.
+	growthfulfillmentjob.JobStatusValidator = func() func(string) error {
+		validators := growthfulfillmentjobDescJobStatus.Validators
 		fns := [...]func(string) error{
 			validators[0].(func(string) error),
 			validators[1].(func(string) error),
 		}
-		return func(status string) error {
+		return func(job_status string) error {
 			for _, fn := range fns {
-				if err := fn(status); err != nil {
+				if err := fn(job_status); err != nil {
 					return err
 				}
 			}
@@ -1605,20 +1605,20 @@ func init() {
 	growthproductDescSortOrder := growthproductFields[5].Descriptor()
 	// growthproduct.DefaultSortOrder holds the default value on creation for the sort_order field.
 	growthproduct.DefaultSortOrder = growthproductDescSortOrder.Default.(int)
-	// growthproductDescStatus is the schema descriptor for status field.
-	growthproductDescStatus := growthproductFields[6].Descriptor()
-	// growthproduct.DefaultStatus holds the default value on creation for the status field.
-	growthproduct.DefaultStatus = growthproductDescStatus.Default.(string)
-	// growthproduct.StatusValidator is a validator for the "status" field. It is called by the builders before save.
-	growthproduct.StatusValidator = func() func(string) error {
-		validators := growthproductDescStatus.Validators
+	// growthproductDescProductStatus is the schema descriptor for product_status field.
+	growthproductDescProductStatus := growthproductFields[6].Descriptor()
+	// growthproduct.DefaultProductStatus holds the default value on creation for the product_status field.
+	growthproduct.DefaultProductStatus = growthproductDescProductStatus.Default.(string)
+	// growthproduct.ProductStatusValidator is a validator for the "product_status" field. It is called by the builders before save.
+	growthproduct.ProductStatusValidator = func() func(string) error {
+		validators := growthproductDescProductStatus.Validators
 		fns := [...]func(string) error{
 			validators[0].(func(string) error),
 			validators[1].(func(string) error),
 		}
-		return func(status string) error {
+		return func(product_status string) error {
 			for _, fn := range fns {
-				if err := fn(status); err != nil {
+				if err := fn(product_status); err != nil {
 					return err
 				}
 			}
@@ -1790,12 +1790,12 @@ func init() {
 	growthrewardclaimDescPoints := growthrewardclaimFields[7].Descriptor()
 	// growthrewardclaim.PointsValidator is a validator for the "points" field. It is called by the builders before save.
 	growthrewardclaim.PointsValidator = growthrewardclaimDescPoints.Validators[0].(func(int64) error)
-	// growthrewardclaimDescStatus is the schema descriptor for status field.
-	growthrewardclaimDescStatus := growthrewardclaimFields[8].Descriptor()
-	// growthrewardclaim.DefaultStatus holds the default value on creation for the status field.
-	growthrewardclaim.DefaultStatus = growthrewardclaimDescStatus.Default.(string)
-	// growthrewardclaim.StatusValidator is a validator for the "status" field. It is called by the builders before save.
-	growthrewardclaim.StatusValidator = growthrewardclaimDescStatus.Validators[0].(func(string) error)
+	// growthrewardclaimDescClaimStatus is the schema descriptor for claim_status field.
+	growthrewardclaimDescClaimStatus := growthrewardclaimFields[8].Descriptor()
+	// growthrewardclaim.DefaultClaimStatus holds the default value on creation for the claim_status field.
+	growthrewardclaim.DefaultClaimStatus = growthrewardclaimDescClaimStatus.Default.(string)
+	// growthrewardclaim.ClaimStatusValidator is a validator for the "claim_status" field. It is called by the builders before save.
+	growthrewardclaim.ClaimStatusValidator = growthrewardclaimDescClaimStatus.Validators[0].(func(string) error)
 	growthtaskMixin := schema.GrowthTask{}.Mixin()
 	growthtaskMixinFields0 := growthtaskMixin[0].Fields()
 	_ = growthtaskMixinFields0
@@ -1847,12 +1847,12 @@ func init() {
 			return nil
 		}
 	}()
-	// growthtaskDescDescription is the schema descriptor for description field.
-	growthtaskDescDescription := growthtaskFields[2].Descriptor()
-	// growthtask.DefaultDescription holds the default value on creation for the description field.
-	growthtask.DefaultDescription = growthtaskDescDescription.Default.(string)
-	// growthtask.DescriptionValidator is a validator for the "description" field. It is called by the builders before save.
-	growthtask.DescriptionValidator = growthtaskDescDescription.Validators[0].(func(string) error)
+	// growthtaskDescRemark is the schema descriptor for remark field.
+	growthtaskDescRemark := growthtaskFields[2].Descriptor()
+	// growthtask.DefaultRemark holds the default value on creation for the remark field.
+	growthtask.DefaultRemark = growthtaskDescRemark.Default.(string)
+	// growthtask.RemarkValidator is a validator for the "remark" field. It is called by the builders before save.
+	growthtask.RemarkValidator = growthtaskDescRemark.Validators[0].(func(string) error)
 	// growthtaskDescCategory is the schema descriptor for category field.
 	growthtaskDescCategory := growthtaskFields[3].Descriptor()
 	// growthtask.CategoryValidator is a validator for the "category" field. It is called by the builders before save.
@@ -1899,20 +1899,20 @@ func init() {
 	growthtaskDescSortOrder := growthtaskFields[6].Descriptor()
 	// growthtask.DefaultSortOrder holds the default value on creation for the sort_order field.
 	growthtask.DefaultSortOrder = growthtaskDescSortOrder.Default.(int)
-	// growthtaskDescStatus is the schema descriptor for status field.
-	growthtaskDescStatus := growthtaskFields[7].Descriptor()
-	// growthtask.DefaultStatus holds the default value on creation for the status field.
-	growthtask.DefaultStatus = growthtaskDescStatus.Default.(string)
-	// growthtask.StatusValidator is a validator for the "status" field. It is called by the builders before save.
-	growthtask.StatusValidator = func() func(string) error {
-		validators := growthtaskDescStatus.Validators
+	// growthtaskDescTaskStatus is the schema descriptor for task_status field.
+	growthtaskDescTaskStatus := growthtaskFields[7].Descriptor()
+	// growthtask.DefaultTaskStatus holds the default value on creation for the task_status field.
+	growthtask.DefaultTaskStatus = growthtaskDescTaskStatus.Default.(string)
+	// growthtask.TaskStatusValidator is a validator for the "task_status" field. It is called by the builders before save.
+	growthtask.TaskStatusValidator = func() func(string) error {
+		validators := growthtaskDescTaskStatus.Validators
 		fns := [...]func(string) error{
 			validators[0].(func(string) error),
 			validators[1].(func(string) error),
 		}
-		return func(status string) error {
+		return func(task_status string) error {
 			for _, fn := range fns {
-				if err := fn(status); err != nil {
+				if err := fn(task_status); err != nil {
 					return err
 				}
 			}
@@ -2087,20 +2087,20 @@ func init() {
 	growthtransferDescPoints := growthtransferFields[8].Descriptor()
 	// growthtransfer.PointsValidator is a validator for the "points" field. It is called by the builders before save.
 	growthtransfer.PointsValidator = growthtransferDescPoints.Validators[0].(func(int64) error)
-	// growthtransferDescStatus is the schema descriptor for status field.
-	growthtransferDescStatus := growthtransferFields[9].Descriptor()
-	// growthtransfer.DefaultStatus holds the default value on creation for the status field.
-	growthtransfer.DefaultStatus = growthtransferDescStatus.Default.(string)
-	// growthtransfer.StatusValidator is a validator for the "status" field. It is called by the builders before save.
-	growthtransfer.StatusValidator = func() func(string) error {
-		validators := growthtransferDescStatus.Validators
+	// growthtransferDescTransferStatus is the schema descriptor for transfer_status field.
+	growthtransferDescTransferStatus := growthtransferFields[9].Descriptor()
+	// growthtransfer.DefaultTransferStatus holds the default value on creation for the transfer_status field.
+	growthtransfer.DefaultTransferStatus = growthtransferDescTransferStatus.Default.(string)
+	// growthtransfer.TransferStatusValidator is a validator for the "transfer_status" field. It is called by the builders before save.
+	growthtransfer.TransferStatusValidator = func() func(string) error {
+		validators := growthtransferDescTransferStatus.Validators
 		fns := [...]func(string) error{
 			validators[0].(func(string) error),
 			validators[1].(func(string) error),
 		}
-		return func(status string) error {
+		return func(transfer_status string) error {
 			for _, fn := range fns {
-				if err := fn(status); err != nil {
+				if err := fn(transfer_status); err != nil {
 					return err
 				}
 			}
@@ -2150,12 +2150,12 @@ func init() {
 	growthusertask.DefaultCompletedCount = growthusertaskDescCompletedCount.Default.(int64)
 	// growthusertask.CompletedCountValidator is a validator for the "completed_count" field. It is called by the builders before save.
 	growthusertask.CompletedCountValidator = growthusertaskDescCompletedCount.Validators[0].(func(int64) error)
-	// growthusertaskDescStatus is the schema descriptor for status field.
-	growthusertaskDescStatus := growthusertaskFields[7].Descriptor()
-	// growthusertask.DefaultStatus holds the default value on creation for the status field.
-	growthusertask.DefaultStatus = growthusertaskDescStatus.Default.(string)
-	// growthusertask.StatusValidator is a validator for the "status" field. It is called by the builders before save.
-	growthusertask.StatusValidator = growthusertaskDescStatus.Validators[0].(func(string) error)
+	// growthusertaskDescProgressStatus is the schema descriptor for progress_status field.
+	growthusertaskDescProgressStatus := growthusertaskFields[7].Descriptor()
+	// growthusertask.DefaultProgressStatus holds the default value on creation for the progress_status field.
+	growthusertask.DefaultProgressStatus = growthusertaskDescProgressStatus.Default.(string)
+	// growthusertask.ProgressStatusValidator is a validator for the "progress_status" field. It is called by the builders before save.
+	growthusertask.ProgressStatusValidator = growthusertaskDescProgressStatus.Validators[0].(func(string) error)
 	growthwalletMixin := schema.GrowthWallet{}.Mixin()
 	growthwalletMixinFields0 := growthwalletMixin[0].Fields()
 	_ = growthwalletMixinFields0

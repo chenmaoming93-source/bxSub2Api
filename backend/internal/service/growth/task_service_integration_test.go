@@ -125,7 +125,7 @@ func TestTaskLifecycleWithQuota(t *testing.T) {
 	require.Zero(t, offline.AllocatedPoints)
 	require.Zero(t, mustBudget(t, budget).AllocatedAmount)
 	offlineAudit, err := client.GrowthAdminAudit.Query().
-		Where(growthadminaudit.ActionEQ("task.offline")).
+		Where(growthadminaudit.ActionTypeEQ("task.offline")).
 		Only(ctx)
 	require.NoError(t, err)
 	require.Equal(t, "活动结束后下线", offlineAudit.Reason)

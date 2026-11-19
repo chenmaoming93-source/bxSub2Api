@@ -106,8 +106,22 @@ func (_u *GrowthExchangeOrderUpdate) AddProductVersion(v int) *GrowthExchangeOrd
 }
 
 // SetProductSnapshot sets the "product_snapshot" field.
-func (_u *GrowthExchangeOrderUpdate) SetProductSnapshot(v map[string]interface{}) *GrowthExchangeOrderUpdate {
+func (_u *GrowthExchangeOrderUpdate) SetProductSnapshot(v string) *GrowthExchangeOrderUpdate {
 	_u.mutation.SetProductSnapshot(v)
+	return _u
+}
+
+// SetNillableProductSnapshot sets the "product_snapshot" field if the given value is not nil.
+func (_u *GrowthExchangeOrderUpdate) SetNillableProductSnapshot(v *string) *GrowthExchangeOrderUpdate {
+	if v != nil {
+		_u.SetProductSnapshot(*v)
+	}
+	return _u
+}
+
+// ClearProductSnapshot clears the value of the "product_snapshot" field.
+func (_u *GrowthExchangeOrderUpdate) ClearProductSnapshot() *GrowthExchangeOrderUpdate {
+	_u.mutation.ClearProductSnapshot()
 	return _u
 }
 
@@ -132,16 +146,16 @@ func (_u *GrowthExchangeOrderUpdate) AddPointsCost(v int64) *GrowthExchangeOrder
 	return _u
 }
 
-// SetStatus sets the "status" field.
-func (_u *GrowthExchangeOrderUpdate) SetStatus(v string) *GrowthExchangeOrderUpdate {
-	_u.mutation.SetStatus(v)
+// SetOrderStatus sets the "order_status" field.
+func (_u *GrowthExchangeOrderUpdate) SetOrderStatus(v string) *GrowthExchangeOrderUpdate {
+	_u.mutation.SetOrderStatus(v)
 	return _u
 }
 
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (_u *GrowthExchangeOrderUpdate) SetNillableStatus(v *string) *GrowthExchangeOrderUpdate {
+// SetNillableOrderStatus sets the "order_status" field if the given value is not nil.
+func (_u *GrowthExchangeOrderUpdate) SetNillableOrderStatus(v *string) *GrowthExchangeOrderUpdate {
 	if v != nil {
-		_u.SetStatus(*v)
+		_u.SetOrderStatus(*v)
 	}
 	return _u
 }
@@ -364,9 +378,9 @@ func (_u *GrowthExchangeOrderUpdate) check() error {
 			return &ValidationError{Name: "points_cost", err: fmt.Errorf(`ent: validator failed for field "GrowthExchangeOrder.points_cost": %w`, err)}
 		}
 	}
-	if v, ok := _u.mutation.Status(); ok {
-		if err := growthexchangeorder.StatusValidator(v); err != nil {
-			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "GrowthExchangeOrder.status": %w`, err)}
+	if v, ok := _u.mutation.OrderStatus(); ok {
+		if err := growthexchangeorder.OrderStatusValidator(v); err != nil {
+			return &ValidationError{Name: "order_status", err: fmt.Errorf(`ent: validator failed for field "GrowthExchangeOrder.order_status": %w`, err)}
 		}
 	}
 	if v, ok := _u.mutation.IdempotencyKey(); ok {
@@ -416,7 +430,10 @@ func (_u *GrowthExchangeOrderUpdate) sqlSave(ctx context.Context) (_node int, er
 		_spec.AddField(growthexchangeorder.FieldProductVersion, field.TypeInt, value)
 	}
 	if value, ok := _u.mutation.ProductSnapshot(); ok {
-		_spec.SetField(growthexchangeorder.FieldProductSnapshot, field.TypeJSON, value)
+		_spec.SetField(growthexchangeorder.FieldProductSnapshot, field.TypeString, value)
+	}
+	if _u.mutation.ProductSnapshotCleared() {
+		_spec.ClearField(growthexchangeorder.FieldProductSnapshot, field.TypeString)
 	}
 	if value, ok := _u.mutation.PointsCost(); ok {
 		_spec.SetField(growthexchangeorder.FieldPointsCost, field.TypeInt64, value)
@@ -424,8 +441,8 @@ func (_u *GrowthExchangeOrderUpdate) sqlSave(ctx context.Context) (_node int, er
 	if value, ok := _u.mutation.AddedPointsCost(); ok {
 		_spec.AddField(growthexchangeorder.FieldPointsCost, field.TypeInt64, value)
 	}
-	if value, ok := _u.mutation.Status(); ok {
-		_spec.SetField(growthexchangeorder.FieldStatus, field.TypeString, value)
+	if value, ok := _u.mutation.OrderStatus(); ok {
+		_spec.SetField(growthexchangeorder.FieldOrderStatus, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.IdempotencyKey(); ok {
 		_spec.SetField(growthexchangeorder.FieldIdempotencyKey, field.TypeString, value)
@@ -598,8 +615,22 @@ func (_u *GrowthExchangeOrderUpdateOne) AddProductVersion(v int) *GrowthExchange
 }
 
 // SetProductSnapshot sets the "product_snapshot" field.
-func (_u *GrowthExchangeOrderUpdateOne) SetProductSnapshot(v map[string]interface{}) *GrowthExchangeOrderUpdateOne {
+func (_u *GrowthExchangeOrderUpdateOne) SetProductSnapshot(v string) *GrowthExchangeOrderUpdateOne {
 	_u.mutation.SetProductSnapshot(v)
+	return _u
+}
+
+// SetNillableProductSnapshot sets the "product_snapshot" field if the given value is not nil.
+func (_u *GrowthExchangeOrderUpdateOne) SetNillableProductSnapshot(v *string) *GrowthExchangeOrderUpdateOne {
+	if v != nil {
+		_u.SetProductSnapshot(*v)
+	}
+	return _u
+}
+
+// ClearProductSnapshot clears the value of the "product_snapshot" field.
+func (_u *GrowthExchangeOrderUpdateOne) ClearProductSnapshot() *GrowthExchangeOrderUpdateOne {
+	_u.mutation.ClearProductSnapshot()
 	return _u
 }
 
@@ -624,16 +655,16 @@ func (_u *GrowthExchangeOrderUpdateOne) AddPointsCost(v int64) *GrowthExchangeOr
 	return _u
 }
 
-// SetStatus sets the "status" field.
-func (_u *GrowthExchangeOrderUpdateOne) SetStatus(v string) *GrowthExchangeOrderUpdateOne {
-	_u.mutation.SetStatus(v)
+// SetOrderStatus sets the "order_status" field.
+func (_u *GrowthExchangeOrderUpdateOne) SetOrderStatus(v string) *GrowthExchangeOrderUpdateOne {
+	_u.mutation.SetOrderStatus(v)
 	return _u
 }
 
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (_u *GrowthExchangeOrderUpdateOne) SetNillableStatus(v *string) *GrowthExchangeOrderUpdateOne {
+// SetNillableOrderStatus sets the "order_status" field if the given value is not nil.
+func (_u *GrowthExchangeOrderUpdateOne) SetNillableOrderStatus(v *string) *GrowthExchangeOrderUpdateOne {
 	if v != nil {
-		_u.SetStatus(*v)
+		_u.SetOrderStatus(*v)
 	}
 	return _u
 }
@@ -869,9 +900,9 @@ func (_u *GrowthExchangeOrderUpdateOne) check() error {
 			return &ValidationError{Name: "points_cost", err: fmt.Errorf(`ent: validator failed for field "GrowthExchangeOrder.points_cost": %w`, err)}
 		}
 	}
-	if v, ok := _u.mutation.Status(); ok {
-		if err := growthexchangeorder.StatusValidator(v); err != nil {
-			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "GrowthExchangeOrder.status": %w`, err)}
+	if v, ok := _u.mutation.OrderStatus(); ok {
+		if err := growthexchangeorder.OrderStatusValidator(v); err != nil {
+			return &ValidationError{Name: "order_status", err: fmt.Errorf(`ent: validator failed for field "GrowthExchangeOrder.order_status": %w`, err)}
 		}
 	}
 	if v, ok := _u.mutation.IdempotencyKey(); ok {
@@ -938,7 +969,10 @@ func (_u *GrowthExchangeOrderUpdateOne) sqlSave(ctx context.Context) (_node *Gro
 		_spec.AddField(growthexchangeorder.FieldProductVersion, field.TypeInt, value)
 	}
 	if value, ok := _u.mutation.ProductSnapshot(); ok {
-		_spec.SetField(growthexchangeorder.FieldProductSnapshot, field.TypeJSON, value)
+		_spec.SetField(growthexchangeorder.FieldProductSnapshot, field.TypeString, value)
+	}
+	if _u.mutation.ProductSnapshotCleared() {
+		_spec.ClearField(growthexchangeorder.FieldProductSnapshot, field.TypeString)
 	}
 	if value, ok := _u.mutation.PointsCost(); ok {
 		_spec.SetField(growthexchangeorder.FieldPointsCost, field.TypeInt64, value)
@@ -946,8 +980,8 @@ func (_u *GrowthExchangeOrderUpdateOne) sqlSave(ctx context.Context) (_node *Gro
 	if value, ok := _u.mutation.AddedPointsCost(); ok {
 		_spec.AddField(growthexchangeorder.FieldPointsCost, field.TypeInt64, value)
 	}
-	if value, ok := _u.mutation.Status(); ok {
-		_spec.SetField(growthexchangeorder.FieldStatus, field.TypeString, value)
+	if value, ok := _u.mutation.OrderStatus(); ok {
+		_spec.SetField(growthexchangeorder.FieldOrderStatus, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.IdempotencyKey(); ok {
 		_spec.SetField(growthexchangeorder.FieldIdempotencyKey, field.TypeString, value)

@@ -411,7 +411,7 @@ func createPendingTransfer(
 		SetFromAccountType(fromAccount).
 		SetToAccountType(toAccount).
 		SetPoints(points).
-		SetStatus("PENDING")
+		SetTransferStatus("PENDING")
 	if fromUserID != nil {
 		create.SetFromUserID(*fromUserID)
 	}
@@ -426,7 +426,7 @@ func createPendingTransfer(
 
 func finishTransfer(ctx context.Context, tx *ent.Tx, transferID int64) (*ent.GrowthTransfer, error) {
 	return tx.GrowthTransfer.UpdateOneID(transferID).
-		SetStatus("SUCCEEDED").
+		SetTransferStatus("SUCCEEDED").
 		SetCompletedAt(time.Now()).
 		Save(ctx)
 }
@@ -511,7 +511,7 @@ func (s *TransferService) findExisting(ctx context.Context, userID int64, bizTyp
 	if err != nil {
 		return TransferResult{}, false, err
 	}
-	if transfer.Status != "SUCCEEDED" {
+	if transfer.TransferStatus != "SUCCEEDED" {
 		return TransferResult{}, false, ErrTransferReplay
 	}
 	transferUserID := int64(0)

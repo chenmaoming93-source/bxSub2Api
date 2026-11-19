@@ -33,8 +33,8 @@ type GrowthProduct struct {
 	FulfillmentMode string `json:"fulfillment_mode,omitempty"`
 	// SortOrder holds the value of the "sort_order" field.
 	SortOrder int `json:"sort_order,omitempty"`
-	// Status holds the value of the "status" field.
-	Status string `json:"status,omitempty"`
+	// ProductStatus holds the value of the "product_status" field.
+	ProductStatus string `json:"product_status,omitempty"`
 	// CurrentVersion holds the value of the "current_version" field.
 	CurrentVersion int `json:"current_version,omitempty"`
 	selectValues   sql.SelectValues
@@ -47,7 +47,7 @@ func (*GrowthProduct) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case growthproduct.FieldID, growthproduct.FieldSortOrder, growthproduct.FieldCurrentVersion:
 			values[i] = new(sql.NullInt64)
-		case growthproduct.FieldProductCode, growthproduct.FieldTitle, growthproduct.FieldProductType, growthproduct.FieldIcon, growthproduct.FieldFulfillmentMode, growthproduct.FieldStatus:
+		case growthproduct.FieldProductCode, growthproduct.FieldTitle, growthproduct.FieldProductType, growthproduct.FieldIcon, growthproduct.FieldFulfillmentMode, growthproduct.FieldProductStatus:
 			values[i] = new(sql.NullString)
 		case growthproduct.FieldCreatedAt, growthproduct.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -120,11 +120,11 @@ func (_m *GrowthProduct) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.SortOrder = int(value.Int64)
 			}
-		case growthproduct.FieldStatus:
+		case growthproduct.FieldProductStatus:
 			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field status", values[i])
+				return fmt.Errorf("unexpected type %T for field product_status", values[i])
 			} else if value.Valid {
-				_m.Status = value.String
+				_m.ProductStatus = value.String
 			}
 		case growthproduct.FieldCurrentVersion:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -192,8 +192,8 @@ func (_m *GrowthProduct) String() string {
 	builder.WriteString("sort_order=")
 	builder.WriteString(fmt.Sprintf("%v", _m.SortOrder))
 	builder.WriteString(", ")
-	builder.WriteString("status=")
-	builder.WriteString(_m.Status)
+	builder.WriteString("product_status=")
+	builder.WriteString(_m.ProductStatus)
 	builder.WriteString(", ")
 	builder.WriteString("current_version=")
 	builder.WriteString(fmt.Sprintf("%v", _m.CurrentVersion))

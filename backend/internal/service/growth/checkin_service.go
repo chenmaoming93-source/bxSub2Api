@@ -59,7 +59,7 @@ func (s *CheckinService) Checkin(ctx context.Context, userID int64, idempotencyK
 		return result, nil
 	}
 	task, err := s.client.GrowthTask.Query().
-		Where(growthtask.TaskCodeEQ("daily_checkin"), growthtask.StatusEQ("ACTIVE")).
+		Where(growthtask.TaskCodeEQ("daily_checkin"), growthtask.TaskStatusEQ("ACTIVE")).
 		Only(ctx)
 	if ent.IsNotFound(err) {
 		return result, nil
@@ -164,7 +164,7 @@ func (s *CheckinService) Checkin(ctx context.Context, userID int64, idempotencyK
 					SetProgress(rule.Target).
 					SetTarget(rule.Target).
 					SetCompletedCount(1).
-					SetStatus("REWARDED").
+					SetProgressStatus("REWARDED").
 					SetCompletedAt(now).
 					SetRewardedAt(now).
 					Save(callbackCtx)
@@ -173,7 +173,7 @@ func (s *CheckinService) Checkin(ctx context.Context, userID int64, idempotencyK
 					SetProgress(rule.Target).
 					SetTarget(rule.Target).
 					SetCompletedCount(userTask.CompletedCount + 1).
-					SetStatus("REWARDED").
+					SetProgressStatus("REWARDED").
 					SetCompletedAt(now).
 					SetRewardedAt(now).
 					Save(callbackCtx)
@@ -190,7 +190,7 @@ func (s *CheckinService) Checkin(ctx context.Context, userID int64, idempotencyK
 				SetIdempotencyKey(idempotencyKey).
 				SetTransferID(transfer.ID).
 				SetPoints(rule.RewardPoints).
-				SetStatus("SUCCEEDED").
+				SetClaimStatus("SUCCEEDED").
 				SetClaimedAt(now).
 				Save(callbackCtx)
 			if err != nil {

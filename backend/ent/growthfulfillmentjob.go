@@ -25,8 +25,8 @@ type GrowthFulfillmentJob struct {
 	OrderID int64 `json:"order_id,omitempty"`
 	// JobType holds the value of the "job_type" field.
 	JobType string `json:"job_type,omitempty"`
-	// Status holds the value of the "status" field.
-	Status string `json:"status,omitempty"`
+	// JobStatus holds the value of the "job_status" field.
+	JobStatus string `json:"job_status,omitempty"`
 	// AttemptCount holds the value of the "attempt_count" field.
 	AttemptCount int `json:"attempt_count,omitempty"`
 	// MaxAttempts holds the value of the "max_attempts" field.
@@ -51,7 +51,7 @@ func (*GrowthFulfillmentJob) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case growthfulfillmentjob.FieldID, growthfulfillmentjob.FieldOrderID, growthfulfillmentjob.FieldAttemptCount, growthfulfillmentjob.FieldMaxAttempts:
 			values[i] = new(sql.NullInt64)
-		case growthfulfillmentjob.FieldJobType, growthfulfillmentjob.FieldStatus, growthfulfillmentjob.FieldLastError, growthfulfillmentjob.FieldProviderReference:
+		case growthfulfillmentjob.FieldJobType, growthfulfillmentjob.FieldJobStatus, growthfulfillmentjob.FieldLastError, growthfulfillmentjob.FieldProviderReference:
 			values[i] = new(sql.NullString)
 		case growthfulfillmentjob.FieldCreatedAt, growthfulfillmentjob.FieldUpdatedAt, growthfulfillmentjob.FieldNextRetryAt, growthfulfillmentjob.FieldLockedUntil, growthfulfillmentjob.FieldCompletedAt:
 			values[i] = new(sql.NullTime)
@@ -100,11 +100,11 @@ func (_m *GrowthFulfillmentJob) assignValues(columns []string, values []any) err
 			} else if value.Valid {
 				_m.JobType = value.String
 			}
-		case growthfulfillmentjob.FieldStatus:
+		case growthfulfillmentjob.FieldJobStatus:
 			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field status", values[i])
+				return fmt.Errorf("unexpected type %T for field job_status", values[i])
 			} else if value.Valid {
-				_m.Status = value.String
+				_m.JobStatus = value.String
 			}
 		case growthfulfillmentjob.FieldAttemptCount:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -198,8 +198,8 @@ func (_m *GrowthFulfillmentJob) String() string {
 	builder.WriteString("job_type=")
 	builder.WriteString(_m.JobType)
 	builder.WriteString(", ")
-	builder.WriteString("status=")
-	builder.WriteString(_m.Status)
+	builder.WriteString("job_status=")
+	builder.WriteString(_m.JobStatus)
 	builder.WriteString(", ")
 	builder.WriteString("attempt_count=")
 	builder.WriteString(fmt.Sprintf("%v", _m.AttemptCount))

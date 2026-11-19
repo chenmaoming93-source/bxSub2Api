@@ -35,8 +35,8 @@ const (
 	FieldOrderID = "order_id"
 	// FieldPoints holds the string denoting the points field in the database.
 	FieldPoints = "points"
-	// FieldStatus holds the string denoting the status field in the database.
-	FieldStatus = "status"
+	// FieldTransferStatus holds the string denoting the transfer_status field in the database.
+	FieldTransferStatus = "transfer_status"
 	// FieldFailureReason holds the string denoting the failure_reason field in the database.
 	FieldFailureReason = "failure_reason"
 	// FieldCompletedAt holds the string denoting the completed_at field in the database.
@@ -59,7 +59,7 @@ var Columns = []string{
 	FieldTaskID,
 	FieldOrderID,
 	FieldPoints,
-	FieldStatus,
+	FieldTransferStatus,
 	FieldFailureReason,
 	FieldCompletedAt,
 }
@@ -91,10 +91,10 @@ var (
 	ToAccountTypeValidator func(string) error
 	// PointsValidator is a validator for the "points" field. It is called by the builders before save.
 	PointsValidator func(int64) error
-	// DefaultStatus holds the default value on creation for the "status" field.
-	DefaultStatus string
-	// StatusValidator is a validator for the "status" field. It is called by the builders before save.
-	StatusValidator func(string) error
+	// DefaultTransferStatus holds the default value on creation for the "transfer_status" field.
+	DefaultTransferStatus string
+	// TransferStatusValidator is a validator for the "transfer_status" field. It is called by the builders before save.
+	TransferStatusValidator func(string) error
 	// DefaultFailureReason holds the default value on creation for the "failure_reason" field.
 	DefaultFailureReason string
 	// FailureReasonValidator is a validator for the "failure_reason" field. It is called by the builders before save.
@@ -164,9 +164,9 @@ func ByPoints(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldPoints, opts...).ToFunc()
 }
 
-// ByStatus orders the results by the status field.
-func ByStatus(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldStatus, opts...).ToFunc()
+// ByTransferStatus orders the results by the transfer_status field.
+func ByTransferStatus(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldTransferStatus, opts...).ToFunc()
 }
 
 // ByFailureReason orders the results by the failure_reason field.

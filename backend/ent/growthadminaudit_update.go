@@ -49,16 +49,16 @@ func (_u *GrowthAdminAuditUpdate) SetNillableOperatorID(v *int64) *GrowthAdminAu
 	return _u
 }
 
-// SetAction sets the "action" field.
-func (_u *GrowthAdminAuditUpdate) SetAction(v string) *GrowthAdminAuditUpdate {
-	_u.mutation.SetAction(v)
+// SetActionType sets the "action_type" field.
+func (_u *GrowthAdminAuditUpdate) SetActionType(v string) *GrowthAdminAuditUpdate {
+	_u.mutation.SetActionType(v)
 	return _u
 }
 
-// SetNillableAction sets the "action" field if the given value is not nil.
-func (_u *GrowthAdminAuditUpdate) SetNillableAction(v *string) *GrowthAdminAuditUpdate {
+// SetNillableActionType sets the "action_type" field if the given value is not nil.
+func (_u *GrowthAdminAuditUpdate) SetNillableActionType(v *string) *GrowthAdminAuditUpdate {
 	if v != nil {
-		_u.SetAction(*v)
+		_u.SetActionType(*v)
 	}
 	return _u
 }
@@ -105,8 +105,16 @@ func (_u *GrowthAdminAuditUpdate) ClearResourceID() *GrowthAdminAuditUpdate {
 }
 
 // SetBeforeJSON sets the "before_json" field.
-func (_u *GrowthAdminAuditUpdate) SetBeforeJSON(v map[string]interface{}) *GrowthAdminAuditUpdate {
+func (_u *GrowthAdminAuditUpdate) SetBeforeJSON(v string) *GrowthAdminAuditUpdate {
 	_u.mutation.SetBeforeJSON(v)
+	return _u
+}
+
+// SetNillableBeforeJSON sets the "before_json" field if the given value is not nil.
+func (_u *GrowthAdminAuditUpdate) SetNillableBeforeJSON(v *string) *GrowthAdminAuditUpdate {
+	if v != nil {
+		_u.SetBeforeJSON(*v)
+	}
 	return _u
 }
 
@@ -117,8 +125,16 @@ func (_u *GrowthAdminAuditUpdate) ClearBeforeJSON() *GrowthAdminAuditUpdate {
 }
 
 // SetAfterJSON sets the "after_json" field.
-func (_u *GrowthAdminAuditUpdate) SetAfterJSON(v map[string]interface{}) *GrowthAdminAuditUpdate {
+func (_u *GrowthAdminAuditUpdate) SetAfterJSON(v string) *GrowthAdminAuditUpdate {
 	_u.mutation.SetAfterJSON(v)
+	return _u
+}
+
+// SetNillableAfterJSON sets the "after_json" field if the given value is not nil.
+func (_u *GrowthAdminAuditUpdate) SetNillableAfterJSON(v *string) *GrowthAdminAuditUpdate {
+	if v != nil {
+		_u.SetAfterJSON(*v)
+	}
 	return _u
 }
 
@@ -210,9 +226,9 @@ func (_u *GrowthAdminAuditUpdate) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (_u *GrowthAdminAuditUpdate) check() error {
-	if v, ok := _u.mutation.Action(); ok {
-		if err := growthadminaudit.ActionValidator(v); err != nil {
-			return &ValidationError{Name: "action", err: fmt.Errorf(`ent: validator failed for field "GrowthAdminAudit.action": %w`, err)}
+	if v, ok := _u.mutation.ActionType(); ok {
+		if err := growthadminaudit.ActionTypeValidator(v); err != nil {
+			return &ValidationError{Name: "action_type", err: fmt.Errorf(`ent: validator failed for field "GrowthAdminAudit.action_type": %w`, err)}
 		}
 	}
 	if v, ok := _u.mutation.ResourceType(); ok {
@@ -251,8 +267,8 @@ func (_u *GrowthAdminAuditUpdate) sqlSave(ctx context.Context) (_node int, err e
 	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(growthadminaudit.FieldUpdatedAt, field.TypeTime, value)
 	}
-	if value, ok := _u.mutation.Action(); ok {
-		_spec.SetField(growthadminaudit.FieldAction, field.TypeString, value)
+	if value, ok := _u.mutation.ActionType(); ok {
+		_spec.SetField(growthadminaudit.FieldActionType, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.ResourceType(); ok {
 		_spec.SetField(growthadminaudit.FieldResourceType, field.TypeString, value)
@@ -267,16 +283,16 @@ func (_u *GrowthAdminAuditUpdate) sqlSave(ctx context.Context) (_node int, err e
 		_spec.ClearField(growthadminaudit.FieldResourceID, field.TypeInt64)
 	}
 	if value, ok := _u.mutation.BeforeJSON(); ok {
-		_spec.SetField(growthadminaudit.FieldBeforeJSON, field.TypeJSON, value)
+		_spec.SetField(growthadminaudit.FieldBeforeJSON, field.TypeString, value)
 	}
 	if _u.mutation.BeforeJSONCleared() {
-		_spec.ClearField(growthadminaudit.FieldBeforeJSON, field.TypeJSON)
+		_spec.ClearField(growthadminaudit.FieldBeforeJSON, field.TypeString)
 	}
 	if value, ok := _u.mutation.AfterJSON(); ok {
-		_spec.SetField(growthadminaudit.FieldAfterJSON, field.TypeJSON, value)
+		_spec.SetField(growthadminaudit.FieldAfterJSON, field.TypeString, value)
 	}
 	if _u.mutation.AfterJSONCleared() {
-		_spec.ClearField(growthadminaudit.FieldAfterJSON, field.TypeJSON)
+		_spec.ClearField(growthadminaudit.FieldAfterJSON, field.TypeString)
 	}
 	if value, ok := _u.mutation.Reason(); ok {
 		_spec.SetField(growthadminaudit.FieldReason, field.TypeString, value)
@@ -353,16 +369,16 @@ func (_u *GrowthAdminAuditUpdateOne) SetNillableOperatorID(v *int64) *GrowthAdmi
 	return _u
 }
 
-// SetAction sets the "action" field.
-func (_u *GrowthAdminAuditUpdateOne) SetAction(v string) *GrowthAdminAuditUpdateOne {
-	_u.mutation.SetAction(v)
+// SetActionType sets the "action_type" field.
+func (_u *GrowthAdminAuditUpdateOne) SetActionType(v string) *GrowthAdminAuditUpdateOne {
+	_u.mutation.SetActionType(v)
 	return _u
 }
 
-// SetNillableAction sets the "action" field if the given value is not nil.
-func (_u *GrowthAdminAuditUpdateOne) SetNillableAction(v *string) *GrowthAdminAuditUpdateOne {
+// SetNillableActionType sets the "action_type" field if the given value is not nil.
+func (_u *GrowthAdminAuditUpdateOne) SetNillableActionType(v *string) *GrowthAdminAuditUpdateOne {
 	if v != nil {
-		_u.SetAction(*v)
+		_u.SetActionType(*v)
 	}
 	return _u
 }
@@ -409,8 +425,16 @@ func (_u *GrowthAdminAuditUpdateOne) ClearResourceID() *GrowthAdminAuditUpdateOn
 }
 
 // SetBeforeJSON sets the "before_json" field.
-func (_u *GrowthAdminAuditUpdateOne) SetBeforeJSON(v map[string]interface{}) *GrowthAdminAuditUpdateOne {
+func (_u *GrowthAdminAuditUpdateOne) SetBeforeJSON(v string) *GrowthAdminAuditUpdateOne {
 	_u.mutation.SetBeforeJSON(v)
+	return _u
+}
+
+// SetNillableBeforeJSON sets the "before_json" field if the given value is not nil.
+func (_u *GrowthAdminAuditUpdateOne) SetNillableBeforeJSON(v *string) *GrowthAdminAuditUpdateOne {
+	if v != nil {
+		_u.SetBeforeJSON(*v)
+	}
 	return _u
 }
 
@@ -421,8 +445,16 @@ func (_u *GrowthAdminAuditUpdateOne) ClearBeforeJSON() *GrowthAdminAuditUpdateOn
 }
 
 // SetAfterJSON sets the "after_json" field.
-func (_u *GrowthAdminAuditUpdateOne) SetAfterJSON(v map[string]interface{}) *GrowthAdminAuditUpdateOne {
+func (_u *GrowthAdminAuditUpdateOne) SetAfterJSON(v string) *GrowthAdminAuditUpdateOne {
 	_u.mutation.SetAfterJSON(v)
+	return _u
+}
+
+// SetNillableAfterJSON sets the "after_json" field if the given value is not nil.
+func (_u *GrowthAdminAuditUpdateOne) SetNillableAfterJSON(v *string) *GrowthAdminAuditUpdateOne {
+	if v != nil {
+		_u.SetAfterJSON(*v)
+	}
 	return _u
 }
 
@@ -527,9 +559,9 @@ func (_u *GrowthAdminAuditUpdateOne) defaults() {
 
 // check runs all checks and user-defined validators on the builder.
 func (_u *GrowthAdminAuditUpdateOne) check() error {
-	if v, ok := _u.mutation.Action(); ok {
-		if err := growthadminaudit.ActionValidator(v); err != nil {
-			return &ValidationError{Name: "action", err: fmt.Errorf(`ent: validator failed for field "GrowthAdminAudit.action": %w`, err)}
+	if v, ok := _u.mutation.ActionType(); ok {
+		if err := growthadminaudit.ActionTypeValidator(v); err != nil {
+			return &ValidationError{Name: "action_type", err: fmt.Errorf(`ent: validator failed for field "GrowthAdminAudit.action_type": %w`, err)}
 		}
 	}
 	if v, ok := _u.mutation.ResourceType(); ok {
@@ -585,8 +617,8 @@ func (_u *GrowthAdminAuditUpdateOne) sqlSave(ctx context.Context) (_node *Growth
 	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(growthadminaudit.FieldUpdatedAt, field.TypeTime, value)
 	}
-	if value, ok := _u.mutation.Action(); ok {
-		_spec.SetField(growthadminaudit.FieldAction, field.TypeString, value)
+	if value, ok := _u.mutation.ActionType(); ok {
+		_spec.SetField(growthadminaudit.FieldActionType, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.ResourceType(); ok {
 		_spec.SetField(growthadminaudit.FieldResourceType, field.TypeString, value)
@@ -601,16 +633,16 @@ func (_u *GrowthAdminAuditUpdateOne) sqlSave(ctx context.Context) (_node *Growth
 		_spec.ClearField(growthadminaudit.FieldResourceID, field.TypeInt64)
 	}
 	if value, ok := _u.mutation.BeforeJSON(); ok {
-		_spec.SetField(growthadminaudit.FieldBeforeJSON, field.TypeJSON, value)
+		_spec.SetField(growthadminaudit.FieldBeforeJSON, field.TypeString, value)
 	}
 	if _u.mutation.BeforeJSONCleared() {
-		_spec.ClearField(growthadminaudit.FieldBeforeJSON, field.TypeJSON)
+		_spec.ClearField(growthadminaudit.FieldBeforeJSON, field.TypeString)
 	}
 	if value, ok := _u.mutation.AfterJSON(); ok {
-		_spec.SetField(growthadminaudit.FieldAfterJSON, field.TypeJSON, value)
+		_spec.SetField(growthadminaudit.FieldAfterJSON, field.TypeString, value)
 	}
 	if _u.mutation.AfterJSONCleared() {
-		_spec.ClearField(growthadminaudit.FieldAfterJSON, field.TypeJSON)
+		_spec.ClearField(growthadminaudit.FieldAfterJSON, field.TypeString)
 	}
 	if value, ok := _u.mutation.Reason(); ok {
 		_spec.SetField(growthadminaudit.FieldReason, field.TypeString, value)

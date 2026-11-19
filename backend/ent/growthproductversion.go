@@ -3,7 +3,6 @@
 package ent
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -31,7 +30,7 @@ type GrowthProductVersion struct {
 	// BenefitSummary holds the value of the "benefit_summary" field.
 	BenefitSummary string `json:"benefit_summary,omitempty"`
 	// BenefitDetail holds the value of the "benefit_detail" field.
-	BenefitDetail map[string]interface{} `json:"benefit_detail,omitempty"`
+	BenefitDetail string `json:"benefit_detail,omitempty"`
 	// TokenAmount holds the value of the "token_amount" field.
 	TokenAmount int64 `json:"token_amount,omitempty"`
 	// PerUserLimit holds the value of the "per_user_limit" field.
@@ -52,11 +51,9 @@ func (*GrowthProductVersion) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case growthproductversion.FieldBenefitDetail:
-			values[i] = new([]byte)
 		case growthproductversion.FieldID, growthproductversion.FieldProductID, growthproductversion.FieldVersion, growthproductversion.FieldPointsCost, growthproductversion.FieldTokenAmount, growthproductversion.FieldPerUserLimit, growthproductversion.FieldCreatedBy:
 			values[i] = new(sql.NullInt64)
-		case growthproductversion.FieldBenefitSummary:
+		case growthproductversion.FieldBenefitSummary, growthproductversion.FieldBenefitDetail:
 			values[i] = new(sql.NullString)
 		case growthproductversion.FieldCreatedAt, growthproductversion.FieldUpdatedAt, growthproductversion.FieldPublishedAt, growthproductversion.FieldEffectiveFrom, growthproductversion.FieldEffectiveTo:
 			values[i] = new(sql.NullTime)
@@ -118,12 +115,10 @@ func (_m *GrowthProductVersion) assignValues(columns []string, values []any) err
 				_m.BenefitSummary = value.String
 			}
 		case growthproductversion.FieldBenefitDetail:
-			if value, ok := values[i].(*[]byte); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field benefit_detail", values[i])
-			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &_m.BenefitDetail); err != nil {
-					return fmt.Errorf("unmarshal field benefit_detail: %w", err)
-				}
+			} else if value.Valid {
+				_m.BenefitDetail = value.String
 			}
 		case growthproductversion.FieldTokenAmount:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -219,7 +214,7 @@ func (_m *GrowthProductVersion) String() string {
 	builder.WriteString(_m.BenefitSummary)
 	builder.WriteString(", ")
 	builder.WriteString("benefit_detail=")
-	builder.WriteString(fmt.Sprintf("%v", _m.BenefitDetail))
+	builder.WriteString(_m.BenefitDetail)
 	builder.WriteString(", ")
 	builder.WriteString("token_amount=")
 	builder.WriteString(fmt.Sprintf("%v", _m.TokenAmount))

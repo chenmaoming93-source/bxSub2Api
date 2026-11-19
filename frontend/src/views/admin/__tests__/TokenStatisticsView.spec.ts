@@ -91,6 +91,14 @@ describe('configurable token statistics admin view', () => {
     expect(selector).toContain('key.masked_key')
   })
 
+  it('searches quota users on the server while excluding super administrators', () => {
+    expect(selector).toContain("code === 'user_id'")
+    expect(selector).toContain('usersAPI.list(')
+    expect(selector).toContain('search: keyword, exclude_super_admins: true')
+    expect(selector).toContain('userSearchController?.abort()')
+    expect(selector).toContain("emit('update:modelValue', user.id)")
+  })
+
   it('provides a permission-gated, registry-driven quota reset form and confirmation', () => {
     expect(source).toContain('data-test="quota-reset-form"')
     expect(source).toContain("v-if=\"can('token_quota.update')\"")

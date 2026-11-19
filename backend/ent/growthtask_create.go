@@ -62,16 +62,16 @@ func (_c *GrowthTaskCreate) SetTitle(v string) *GrowthTaskCreate {
 	return _c
 }
 
-// SetDescription sets the "description" field.
-func (_c *GrowthTaskCreate) SetDescription(v string) *GrowthTaskCreate {
-	_c.mutation.SetDescription(v)
+// SetRemark sets the "remark" field.
+func (_c *GrowthTaskCreate) SetRemark(v string) *GrowthTaskCreate {
+	_c.mutation.SetRemark(v)
 	return _c
 }
 
-// SetNillableDescription sets the "description" field if the given value is not nil.
-func (_c *GrowthTaskCreate) SetNillableDescription(v *string) *GrowthTaskCreate {
+// SetNillableRemark sets the "remark" field if the given value is not nil.
+func (_c *GrowthTaskCreate) SetNillableRemark(v *string) *GrowthTaskCreate {
 	if v != nil {
-		_c.SetDescription(*v)
+		_c.SetRemark(*v)
 	}
 	return _c
 }
@@ -116,16 +116,16 @@ func (_c *GrowthTaskCreate) SetNillableSortOrder(v *int) *GrowthTaskCreate {
 	return _c
 }
 
-// SetStatus sets the "status" field.
-func (_c *GrowthTaskCreate) SetStatus(v string) *GrowthTaskCreate {
-	_c.mutation.SetStatus(v)
+// SetTaskStatus sets the "task_status" field.
+func (_c *GrowthTaskCreate) SetTaskStatus(v string) *GrowthTaskCreate {
+	_c.mutation.SetTaskStatus(v)
 	return _c
 }
 
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (_c *GrowthTaskCreate) SetNillableStatus(v *string) *GrowthTaskCreate {
+// SetNillableTaskStatus sets the "task_status" field if the given value is not nil.
+func (_c *GrowthTaskCreate) SetNillableTaskStatus(v *string) *GrowthTaskCreate {
 	if v != nil {
-		_c.SetStatus(*v)
+		_c.SetTaskStatus(*v)
 	}
 	return _c
 }
@@ -229,9 +229,9 @@ func (_c *GrowthTaskCreate) defaults() {
 		v := growthtask.DefaultUpdatedAt()
 		_c.mutation.SetUpdatedAt(v)
 	}
-	if _, ok := _c.mutation.Description(); !ok {
-		v := growthtask.DefaultDescription
-		_c.mutation.SetDescription(v)
+	if _, ok := _c.mutation.Remark(); !ok {
+		v := growthtask.DefaultRemark
+		_c.mutation.SetRemark(v)
 	}
 	if _, ok := _c.mutation.Icon(); !ok {
 		v := growthtask.DefaultIcon
@@ -241,9 +241,9 @@ func (_c *GrowthTaskCreate) defaults() {
 		v := growthtask.DefaultSortOrder
 		_c.mutation.SetSortOrder(v)
 	}
-	if _, ok := _c.mutation.Status(); !ok {
-		v := growthtask.DefaultStatus
-		_c.mutation.SetStatus(v)
+	if _, ok := _c.mutation.TaskStatus(); !ok {
+		v := growthtask.DefaultTaskStatus
+		_c.mutation.SetTaskStatus(v)
 	}
 	if _, ok := _c.mutation.AllocatedPoints(); !ok {
 		v := growthtask.DefaultAllocatedPoints
@@ -279,12 +279,12 @@ func (_c *GrowthTaskCreate) check() error {
 			return &ValidationError{Name: "title", err: fmt.Errorf(`ent: validator failed for field "GrowthTask.title": %w`, err)}
 		}
 	}
-	if _, ok := _c.mutation.Description(); !ok {
-		return &ValidationError{Name: "description", err: errors.New(`ent: missing required field "GrowthTask.description"`)}
+	if _, ok := _c.mutation.Remark(); !ok {
+		return &ValidationError{Name: "remark", err: errors.New(`ent: missing required field "GrowthTask.remark"`)}
 	}
-	if v, ok := _c.mutation.Description(); ok {
-		if err := growthtask.DescriptionValidator(v); err != nil {
-			return &ValidationError{Name: "description", err: fmt.Errorf(`ent: validator failed for field "GrowthTask.description": %w`, err)}
+	if v, ok := _c.mutation.Remark(); ok {
+		if err := growthtask.RemarkValidator(v); err != nil {
+			return &ValidationError{Name: "remark", err: fmt.Errorf(`ent: validator failed for field "GrowthTask.remark": %w`, err)}
 		}
 	}
 	if _, ok := _c.mutation.Category(); !ok {
@@ -314,12 +314,12 @@ func (_c *GrowthTaskCreate) check() error {
 	if _, ok := _c.mutation.SortOrder(); !ok {
 		return &ValidationError{Name: "sort_order", err: errors.New(`ent: missing required field "GrowthTask.sort_order"`)}
 	}
-	if _, ok := _c.mutation.Status(); !ok {
-		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "GrowthTask.status"`)}
+	if _, ok := _c.mutation.TaskStatus(); !ok {
+		return &ValidationError{Name: "task_status", err: errors.New(`ent: missing required field "GrowthTask.task_status"`)}
 	}
-	if v, ok := _c.mutation.Status(); ok {
-		if err := growthtask.StatusValidator(v); err != nil {
-			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "GrowthTask.status": %w`, err)}
+	if v, ok := _c.mutation.TaskStatus(); ok {
+		if err := growthtask.TaskStatusValidator(v); err != nil {
+			return &ValidationError{Name: "task_status", err: fmt.Errorf(`ent: validator failed for field "GrowthTask.task_status": %w`, err)}
 		}
 	}
 	if _, ok := _c.mutation.AllocatedPoints(); !ok {
@@ -381,9 +381,9 @@ func (_c *GrowthTaskCreate) createSpec() (*GrowthTask, *sqlgraph.CreateSpec) {
 		_spec.SetField(growthtask.FieldTitle, field.TypeString, value)
 		_node.Title = value
 	}
-	if value, ok := _c.mutation.Description(); ok {
-		_spec.SetField(growthtask.FieldDescription, field.TypeString, value)
-		_node.Description = value
+	if value, ok := _c.mutation.Remark(); ok {
+		_spec.SetField(growthtask.FieldRemark, field.TypeString, value)
+		_node.Remark = value
 	}
 	if value, ok := _c.mutation.Category(); ok {
 		_spec.SetField(growthtask.FieldCategory, field.TypeString, value)
@@ -401,9 +401,9 @@ func (_c *GrowthTaskCreate) createSpec() (*GrowthTask, *sqlgraph.CreateSpec) {
 		_spec.SetField(growthtask.FieldSortOrder, field.TypeInt, value)
 		_node.SortOrder = value
 	}
-	if value, ok := _c.mutation.Status(); ok {
-		_spec.SetField(growthtask.FieldStatus, field.TypeString, value)
-		_node.Status = value
+	if value, ok := _c.mutation.TaskStatus(); ok {
+		_spec.SetField(growthtask.FieldTaskStatus, field.TypeString, value)
+		_node.TaskStatus = value
 	}
 	if value, ok := _c.mutation.EffectiveFrom(); ok {
 		_spec.SetField(growthtask.FieldEffectiveFrom, field.TypeTime, value)
@@ -509,15 +509,15 @@ func (u *GrowthTaskUpsert) UpdateTitle() *GrowthTaskUpsert {
 	return u
 }
 
-// SetDescription sets the "description" field.
-func (u *GrowthTaskUpsert) SetDescription(v string) *GrowthTaskUpsert {
-	u.Set(growthtask.FieldDescription, v)
+// SetRemark sets the "remark" field.
+func (u *GrowthTaskUpsert) SetRemark(v string) *GrowthTaskUpsert {
+	u.Set(growthtask.FieldRemark, v)
 	return u
 }
 
-// UpdateDescription sets the "description" field to the value that was provided on create.
-func (u *GrowthTaskUpsert) UpdateDescription() *GrowthTaskUpsert {
-	u.SetExcluded(growthtask.FieldDescription)
+// UpdateRemark sets the "remark" field to the value that was provided on create.
+func (u *GrowthTaskUpsert) UpdateRemark() *GrowthTaskUpsert {
+	u.SetExcluded(growthtask.FieldRemark)
 	return u
 }
 
@@ -575,15 +575,15 @@ func (u *GrowthTaskUpsert) AddSortOrder(v int) *GrowthTaskUpsert {
 	return u
 }
 
-// SetStatus sets the "status" field.
-func (u *GrowthTaskUpsert) SetStatus(v string) *GrowthTaskUpsert {
-	u.Set(growthtask.FieldStatus, v)
+// SetTaskStatus sets the "task_status" field.
+func (u *GrowthTaskUpsert) SetTaskStatus(v string) *GrowthTaskUpsert {
+	u.Set(growthtask.FieldTaskStatus, v)
 	return u
 }
 
-// UpdateStatus sets the "status" field to the value that was provided on create.
-func (u *GrowthTaskUpsert) UpdateStatus() *GrowthTaskUpsert {
-	u.SetExcluded(growthtask.FieldStatus)
+// UpdateTaskStatus sets the "task_status" field to the value that was provided on create.
+func (u *GrowthTaskUpsert) UpdateTaskStatus() *GrowthTaskUpsert {
+	u.SetExcluded(growthtask.FieldTaskStatus)
 	return u
 }
 
@@ -746,17 +746,17 @@ func (u *GrowthTaskUpsertOne) UpdateTitle() *GrowthTaskUpsertOne {
 	})
 }
 
-// SetDescription sets the "description" field.
-func (u *GrowthTaskUpsertOne) SetDescription(v string) *GrowthTaskUpsertOne {
+// SetRemark sets the "remark" field.
+func (u *GrowthTaskUpsertOne) SetRemark(v string) *GrowthTaskUpsertOne {
 	return u.Update(func(s *GrowthTaskUpsert) {
-		s.SetDescription(v)
+		s.SetRemark(v)
 	})
 }
 
-// UpdateDescription sets the "description" field to the value that was provided on create.
-func (u *GrowthTaskUpsertOne) UpdateDescription() *GrowthTaskUpsertOne {
+// UpdateRemark sets the "remark" field to the value that was provided on create.
+func (u *GrowthTaskUpsertOne) UpdateRemark() *GrowthTaskUpsertOne {
 	return u.Update(func(s *GrowthTaskUpsert) {
-		s.UpdateDescription()
+		s.UpdateRemark()
 	})
 }
 
@@ -823,17 +823,17 @@ func (u *GrowthTaskUpsertOne) UpdateSortOrder() *GrowthTaskUpsertOne {
 	})
 }
 
-// SetStatus sets the "status" field.
-func (u *GrowthTaskUpsertOne) SetStatus(v string) *GrowthTaskUpsertOne {
+// SetTaskStatus sets the "task_status" field.
+func (u *GrowthTaskUpsertOne) SetTaskStatus(v string) *GrowthTaskUpsertOne {
 	return u.Update(func(s *GrowthTaskUpsert) {
-		s.SetStatus(v)
+		s.SetTaskStatus(v)
 	})
 }
 
-// UpdateStatus sets the "status" field to the value that was provided on create.
-func (u *GrowthTaskUpsertOne) UpdateStatus() *GrowthTaskUpsertOne {
+// UpdateTaskStatus sets the "task_status" field to the value that was provided on create.
+func (u *GrowthTaskUpsertOne) UpdateTaskStatus() *GrowthTaskUpsertOne {
 	return u.Update(func(s *GrowthTaskUpsert) {
-		s.UpdateStatus()
+		s.UpdateTaskStatus()
 	})
 }
 
@@ -1174,17 +1174,17 @@ func (u *GrowthTaskUpsertBulk) UpdateTitle() *GrowthTaskUpsertBulk {
 	})
 }
 
-// SetDescription sets the "description" field.
-func (u *GrowthTaskUpsertBulk) SetDescription(v string) *GrowthTaskUpsertBulk {
+// SetRemark sets the "remark" field.
+func (u *GrowthTaskUpsertBulk) SetRemark(v string) *GrowthTaskUpsertBulk {
 	return u.Update(func(s *GrowthTaskUpsert) {
-		s.SetDescription(v)
+		s.SetRemark(v)
 	})
 }
 
-// UpdateDescription sets the "description" field to the value that was provided on create.
-func (u *GrowthTaskUpsertBulk) UpdateDescription() *GrowthTaskUpsertBulk {
+// UpdateRemark sets the "remark" field to the value that was provided on create.
+func (u *GrowthTaskUpsertBulk) UpdateRemark() *GrowthTaskUpsertBulk {
 	return u.Update(func(s *GrowthTaskUpsert) {
-		s.UpdateDescription()
+		s.UpdateRemark()
 	})
 }
 
@@ -1251,17 +1251,17 @@ func (u *GrowthTaskUpsertBulk) UpdateSortOrder() *GrowthTaskUpsertBulk {
 	})
 }
 
-// SetStatus sets the "status" field.
-func (u *GrowthTaskUpsertBulk) SetStatus(v string) *GrowthTaskUpsertBulk {
+// SetTaskStatus sets the "task_status" field.
+func (u *GrowthTaskUpsertBulk) SetTaskStatus(v string) *GrowthTaskUpsertBulk {
 	return u.Update(func(s *GrowthTaskUpsert) {
-		s.SetStatus(v)
+		s.SetTaskStatus(v)
 	})
 }
 
-// UpdateStatus sets the "status" field to the value that was provided on create.
-func (u *GrowthTaskUpsertBulk) UpdateStatus() *GrowthTaskUpsertBulk {
+// UpdateTaskStatus sets the "task_status" field to the value that was provided on create.
+func (u *GrowthTaskUpsertBulk) UpdateTaskStatus() *GrowthTaskUpsertBulk {
 	return u.Update(func(s *GrowthTaskUpsert) {
-		s.UpdateStatus()
+		s.UpdateTaskStatus()
 	})
 }
 

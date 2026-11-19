@@ -70,16 +70,16 @@ func (_c *GrowthFulfillmentJobCreate) SetNillableJobType(v *string) *GrowthFulfi
 	return _c
 }
 
-// SetStatus sets the "status" field.
-func (_c *GrowthFulfillmentJobCreate) SetStatus(v string) *GrowthFulfillmentJobCreate {
-	_c.mutation.SetStatus(v)
+// SetJobStatus sets the "job_status" field.
+func (_c *GrowthFulfillmentJobCreate) SetJobStatus(v string) *GrowthFulfillmentJobCreate {
+	_c.mutation.SetJobStatus(v)
 	return _c
 }
 
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (_c *GrowthFulfillmentJobCreate) SetNillableStatus(v *string) *GrowthFulfillmentJobCreate {
+// SetNillableJobStatus sets the "job_status" field if the given value is not nil.
+func (_c *GrowthFulfillmentJobCreate) SetNillableJobStatus(v *string) *GrowthFulfillmentJobCreate {
 	if v != nil {
-		_c.SetStatus(*v)
+		_c.SetJobStatus(*v)
 	}
 	return _c
 }
@@ -229,9 +229,9 @@ func (_c *GrowthFulfillmentJobCreate) defaults() {
 		v := growthfulfillmentjob.DefaultJobType
 		_c.mutation.SetJobType(v)
 	}
-	if _, ok := _c.mutation.Status(); !ok {
-		v := growthfulfillmentjob.DefaultStatus
-		_c.mutation.SetStatus(v)
+	if _, ok := _c.mutation.JobStatus(); !ok {
+		v := growthfulfillmentjob.DefaultJobStatus
+		_c.mutation.SetJobStatus(v)
 	}
 	if _, ok := _c.mutation.AttemptCount(); !ok {
 		v := growthfulfillmentjob.DefaultAttemptCount
@@ -274,12 +274,12 @@ func (_c *GrowthFulfillmentJobCreate) check() error {
 			return &ValidationError{Name: "job_type", err: fmt.Errorf(`ent: validator failed for field "GrowthFulfillmentJob.job_type": %w`, err)}
 		}
 	}
-	if _, ok := _c.mutation.Status(); !ok {
-		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "GrowthFulfillmentJob.status"`)}
+	if _, ok := _c.mutation.JobStatus(); !ok {
+		return &ValidationError{Name: "job_status", err: errors.New(`ent: missing required field "GrowthFulfillmentJob.job_status"`)}
 	}
-	if v, ok := _c.mutation.Status(); ok {
-		if err := growthfulfillmentjob.StatusValidator(v); err != nil {
-			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "GrowthFulfillmentJob.status": %w`, err)}
+	if v, ok := _c.mutation.JobStatus(); ok {
+		if err := growthfulfillmentjob.JobStatusValidator(v); err != nil {
+			return &ValidationError{Name: "job_status", err: fmt.Errorf(`ent: validator failed for field "GrowthFulfillmentJob.job_status": %w`, err)}
 		}
 	}
 	if _, ok := _c.mutation.AttemptCount(); !ok {
@@ -360,9 +360,9 @@ func (_c *GrowthFulfillmentJobCreate) createSpec() (*GrowthFulfillmentJob, *sqlg
 		_spec.SetField(growthfulfillmentjob.FieldJobType, field.TypeString, value)
 		_node.JobType = value
 	}
-	if value, ok := _c.mutation.Status(); ok {
-		_spec.SetField(growthfulfillmentjob.FieldStatus, field.TypeString, value)
-		_node.Status = value
+	if value, ok := _c.mutation.JobStatus(); ok {
+		_spec.SetField(growthfulfillmentjob.FieldJobStatus, field.TypeString, value)
+		_node.JobStatus = value
 	}
 	if value, ok := _c.mutation.AttemptCount(); ok {
 		_spec.SetField(growthfulfillmentjob.FieldAttemptCount, field.TypeInt, value)
@@ -486,15 +486,15 @@ func (u *GrowthFulfillmentJobUpsert) UpdateJobType() *GrowthFulfillmentJobUpsert
 	return u
 }
 
-// SetStatus sets the "status" field.
-func (u *GrowthFulfillmentJobUpsert) SetStatus(v string) *GrowthFulfillmentJobUpsert {
-	u.Set(growthfulfillmentjob.FieldStatus, v)
+// SetJobStatus sets the "job_status" field.
+func (u *GrowthFulfillmentJobUpsert) SetJobStatus(v string) *GrowthFulfillmentJobUpsert {
+	u.Set(growthfulfillmentjob.FieldJobStatus, v)
 	return u
 }
 
-// UpdateStatus sets the "status" field to the value that was provided on create.
-func (u *GrowthFulfillmentJobUpsert) UpdateStatus() *GrowthFulfillmentJobUpsert {
-	u.SetExcluded(growthfulfillmentjob.FieldStatus)
+// UpdateJobStatus sets the "job_status" field to the value that was provided on create.
+func (u *GrowthFulfillmentJobUpsert) UpdateJobStatus() *GrowthFulfillmentJobUpsert {
+	u.SetExcluded(growthfulfillmentjob.FieldJobStatus)
 	return u
 }
 
@@ -700,17 +700,17 @@ func (u *GrowthFulfillmentJobUpsertOne) UpdateJobType() *GrowthFulfillmentJobUps
 	})
 }
 
-// SetStatus sets the "status" field.
-func (u *GrowthFulfillmentJobUpsertOne) SetStatus(v string) *GrowthFulfillmentJobUpsertOne {
+// SetJobStatus sets the "job_status" field.
+func (u *GrowthFulfillmentJobUpsertOne) SetJobStatus(v string) *GrowthFulfillmentJobUpsertOne {
 	return u.Update(func(s *GrowthFulfillmentJobUpsert) {
-		s.SetStatus(v)
+		s.SetJobStatus(v)
 	})
 }
 
-// UpdateStatus sets the "status" field to the value that was provided on create.
-func (u *GrowthFulfillmentJobUpsertOne) UpdateStatus() *GrowthFulfillmentJobUpsertOne {
+// UpdateJobStatus sets the "job_status" field to the value that was provided on create.
+func (u *GrowthFulfillmentJobUpsertOne) UpdateJobStatus() *GrowthFulfillmentJobUpsertOne {
 	return u.Update(func(s *GrowthFulfillmentJobUpsert) {
-		s.UpdateStatus()
+		s.UpdateJobStatus()
 	})
 }
 
@@ -1100,17 +1100,17 @@ func (u *GrowthFulfillmentJobUpsertBulk) UpdateJobType() *GrowthFulfillmentJobUp
 	})
 }
 
-// SetStatus sets the "status" field.
-func (u *GrowthFulfillmentJobUpsertBulk) SetStatus(v string) *GrowthFulfillmentJobUpsertBulk {
+// SetJobStatus sets the "job_status" field.
+func (u *GrowthFulfillmentJobUpsertBulk) SetJobStatus(v string) *GrowthFulfillmentJobUpsertBulk {
 	return u.Update(func(s *GrowthFulfillmentJobUpsert) {
-		s.SetStatus(v)
+		s.SetJobStatus(v)
 	})
 }
 
-// UpdateStatus sets the "status" field to the value that was provided on create.
-func (u *GrowthFulfillmentJobUpsertBulk) UpdateStatus() *GrowthFulfillmentJobUpsertBulk {
+// UpdateJobStatus sets the "job_status" field to the value that was provided on create.
+func (u *GrowthFulfillmentJobUpsertBulk) UpdateJobStatus() *GrowthFulfillmentJobUpsertBulk {
 	return u.Update(func(s *GrowthFulfillmentJobUpsert) {
-		s.UpdateStatus()
+		s.UpdateJobStatus()
 	})
 }
 

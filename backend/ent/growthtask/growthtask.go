@@ -21,8 +21,8 @@ const (
 	FieldTaskCode = "task_code"
 	// FieldTitle holds the string denoting the title field in the database.
 	FieldTitle = "title"
-	// FieldDescription holds the string denoting the description field in the database.
-	FieldDescription = "description"
+	// FieldRemark holds the string denoting the remark field in the database.
+	FieldRemark = "remark"
 	// FieldCategory holds the string denoting the category field in the database.
 	FieldCategory = "category"
 	// FieldTaskType holds the string denoting the task_type field in the database.
@@ -31,8 +31,8 @@ const (
 	FieldIcon = "icon"
 	// FieldSortOrder holds the string denoting the sort_order field in the database.
 	FieldSortOrder = "sort_order"
-	// FieldStatus holds the string denoting the status field in the database.
-	FieldStatus = "status"
+	// FieldTaskStatus holds the string denoting the task_status field in the database.
+	FieldTaskStatus = "task_status"
 	// FieldEffectiveFrom holds the string denoting the effective_from field in the database.
 	FieldEffectiveFrom = "effective_from"
 	// FieldEffectiveTo holds the string denoting the effective_to field in the database.
@@ -52,12 +52,12 @@ var Columns = []string{
 	FieldUpdatedAt,
 	FieldTaskCode,
 	FieldTitle,
-	FieldDescription,
+	FieldRemark,
 	FieldCategory,
 	FieldTaskType,
 	FieldIcon,
 	FieldSortOrder,
-	FieldStatus,
+	FieldTaskStatus,
 	FieldEffectiveFrom,
 	FieldEffectiveTo,
 	FieldAllocatedPoints,
@@ -85,10 +85,10 @@ var (
 	TaskCodeValidator func(string) error
 	// TitleValidator is a validator for the "title" field. It is called by the builders before save.
 	TitleValidator func(string) error
-	// DefaultDescription holds the default value on creation for the "description" field.
-	DefaultDescription string
-	// DescriptionValidator is a validator for the "description" field. It is called by the builders before save.
-	DescriptionValidator func(string) error
+	// DefaultRemark holds the default value on creation for the "remark" field.
+	DefaultRemark string
+	// RemarkValidator is a validator for the "remark" field. It is called by the builders before save.
+	RemarkValidator func(string) error
 	// CategoryValidator is a validator for the "category" field. It is called by the builders before save.
 	CategoryValidator func(string) error
 	// TaskTypeValidator is a validator for the "task_type" field. It is called by the builders before save.
@@ -99,10 +99,10 @@ var (
 	IconValidator func(string) error
 	// DefaultSortOrder holds the default value on creation for the "sort_order" field.
 	DefaultSortOrder int
-	// DefaultStatus holds the default value on creation for the "status" field.
-	DefaultStatus string
-	// StatusValidator is a validator for the "status" field. It is called by the builders before save.
-	StatusValidator func(string) error
+	// DefaultTaskStatus holds the default value on creation for the "task_status" field.
+	DefaultTaskStatus string
+	// TaskStatusValidator is a validator for the "task_status" field. It is called by the builders before save.
+	TaskStatusValidator func(string) error
 	// DefaultAllocatedPoints holds the default value on creation for the "allocated_points" field.
 	DefaultAllocatedPoints int64
 	// AllocatedPointsValidator is a validator for the "allocated_points" field. It is called by the builders before save.
@@ -141,9 +141,9 @@ func ByTitle(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldTitle, opts...).ToFunc()
 }
 
-// ByDescription orders the results by the description field.
-func ByDescription(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldDescription, opts...).ToFunc()
+// ByRemark orders the results by the remark field.
+func ByRemark(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRemark, opts...).ToFunc()
 }
 
 // ByCategory orders the results by the category field.
@@ -166,9 +166,9 @@ func BySortOrder(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldSortOrder, opts...).ToFunc()
 }
 
-// ByStatus orders the results by the status field.
-func ByStatus(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldStatus, opts...).ToFunc()
+// ByTaskStatus orders the results by the task_status field.
+func ByTaskStatus(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldTaskStatus, opts...).ToFunc()
 }
 
 // ByEffectiveFrom orders the results by the effective_from field.

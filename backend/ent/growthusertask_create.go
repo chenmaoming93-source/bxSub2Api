@@ -117,16 +117,16 @@ func (_c *GrowthUserTaskCreate) SetNillableCompletedCount(v *int64) *GrowthUserT
 	return _c
 }
 
-// SetStatus sets the "status" field.
-func (_c *GrowthUserTaskCreate) SetStatus(v string) *GrowthUserTaskCreate {
-	_c.mutation.SetStatus(v)
+// SetProgressStatus sets the "progress_status" field.
+func (_c *GrowthUserTaskCreate) SetProgressStatus(v string) *GrowthUserTaskCreate {
+	_c.mutation.SetProgressStatus(v)
 	return _c
 }
 
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (_c *GrowthUserTaskCreate) SetNillableStatus(v *string) *GrowthUserTaskCreate {
+// SetNillableProgressStatus sets the "progress_status" field if the given value is not nil.
+func (_c *GrowthUserTaskCreate) SetNillableProgressStatus(v *string) *GrowthUserTaskCreate {
 	if v != nil {
-		_c.SetStatus(*v)
+		_c.SetProgressStatus(*v)
 	}
 	return _c
 }
@@ -219,9 +219,9 @@ func (_c *GrowthUserTaskCreate) defaults() {
 		v := growthusertask.DefaultCompletedCount
 		_c.mutation.SetCompletedCount(v)
 	}
-	if _, ok := _c.mutation.Status(); !ok {
-		v := growthusertask.DefaultStatus
-		_c.mutation.SetStatus(v)
+	if _, ok := _c.mutation.ProgressStatus(); !ok {
+		v := growthusertask.DefaultProgressStatus
+		_c.mutation.SetProgressStatus(v)
 	}
 }
 
@@ -274,12 +274,12 @@ func (_c *GrowthUserTaskCreate) check() error {
 			return &ValidationError{Name: "completed_count", err: fmt.Errorf(`ent: validator failed for field "GrowthUserTask.completed_count": %w`, err)}
 		}
 	}
-	if _, ok := _c.mutation.Status(); !ok {
-		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "GrowthUserTask.status"`)}
+	if _, ok := _c.mutation.ProgressStatus(); !ok {
+		return &ValidationError{Name: "progress_status", err: errors.New(`ent: missing required field "GrowthUserTask.progress_status"`)}
 	}
-	if v, ok := _c.mutation.Status(); ok {
-		if err := growthusertask.StatusValidator(v); err != nil {
-			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "GrowthUserTask.status": %w`, err)}
+	if v, ok := _c.mutation.ProgressStatus(); ok {
+		if err := growthusertask.ProgressStatusValidator(v); err != nil {
+			return &ValidationError{Name: "progress_status", err: fmt.Errorf(`ent: validator failed for field "GrowthUserTask.progress_status": %w`, err)}
 		}
 	}
 	if len(_c.mutation.UserIDs()) == 0 {
@@ -344,9 +344,9 @@ func (_c *GrowthUserTaskCreate) createSpec() (*GrowthUserTask, *sqlgraph.CreateS
 		_spec.SetField(growthusertask.FieldCompletedCount, field.TypeInt64, value)
 		_node.CompletedCount = value
 	}
-	if value, ok := _c.mutation.Status(); ok {
-		_spec.SetField(growthusertask.FieldStatus, field.TypeString, value)
-		_node.Status = value
+	if value, ok := _c.mutation.ProgressStatus(); ok {
+		_spec.SetField(growthusertask.FieldProgressStatus, field.TypeString, value)
+		_node.ProgressStatus = value
 	}
 	if value, ok := _c.mutation.CompletedAt(); ok {
 		_spec.SetField(growthusertask.FieldCompletedAt, field.TypeTime, value)
@@ -551,15 +551,15 @@ func (u *GrowthUserTaskUpsert) AddCompletedCount(v int64) *GrowthUserTaskUpsert 
 	return u
 }
 
-// SetStatus sets the "status" field.
-func (u *GrowthUserTaskUpsert) SetStatus(v string) *GrowthUserTaskUpsert {
-	u.Set(growthusertask.FieldStatus, v)
+// SetProgressStatus sets the "progress_status" field.
+func (u *GrowthUserTaskUpsert) SetProgressStatus(v string) *GrowthUserTaskUpsert {
+	u.Set(growthusertask.FieldProgressStatus, v)
 	return u
 }
 
-// UpdateStatus sets the "status" field to the value that was provided on create.
-func (u *GrowthUserTaskUpsert) UpdateStatus() *GrowthUserTaskUpsert {
-	u.SetExcluded(growthusertask.FieldStatus)
+// UpdateProgressStatus sets the "progress_status" field to the value that was provided on create.
+func (u *GrowthUserTaskUpsert) UpdateProgressStatus() *GrowthUserTaskUpsert {
+	u.SetExcluded(growthusertask.FieldProgressStatus)
 	return u
 }
 
@@ -791,17 +791,17 @@ func (u *GrowthUserTaskUpsertOne) UpdateCompletedCount() *GrowthUserTaskUpsertOn
 	})
 }
 
-// SetStatus sets the "status" field.
-func (u *GrowthUserTaskUpsertOne) SetStatus(v string) *GrowthUserTaskUpsertOne {
+// SetProgressStatus sets the "progress_status" field.
+func (u *GrowthUserTaskUpsertOne) SetProgressStatus(v string) *GrowthUserTaskUpsertOne {
 	return u.Update(func(s *GrowthUserTaskUpsert) {
-		s.SetStatus(v)
+		s.SetProgressStatus(v)
 	})
 }
 
-// UpdateStatus sets the "status" field to the value that was provided on create.
-func (u *GrowthUserTaskUpsertOne) UpdateStatus() *GrowthUserTaskUpsertOne {
+// UpdateProgressStatus sets the "progress_status" field to the value that was provided on create.
+func (u *GrowthUserTaskUpsertOne) UpdateProgressStatus() *GrowthUserTaskUpsertOne {
 	return u.Update(func(s *GrowthUserTaskUpsert) {
-		s.UpdateStatus()
+		s.UpdateProgressStatus()
 	})
 }
 
@@ -1205,17 +1205,17 @@ func (u *GrowthUserTaskUpsertBulk) UpdateCompletedCount() *GrowthUserTaskUpsertB
 	})
 }
 
-// SetStatus sets the "status" field.
-func (u *GrowthUserTaskUpsertBulk) SetStatus(v string) *GrowthUserTaskUpsertBulk {
+// SetProgressStatus sets the "progress_status" field.
+func (u *GrowthUserTaskUpsertBulk) SetProgressStatus(v string) *GrowthUserTaskUpsertBulk {
 	return u.Update(func(s *GrowthUserTaskUpsert) {
-		s.SetStatus(v)
+		s.SetProgressStatus(v)
 	})
 }
 
-// UpdateStatus sets the "status" field to the value that was provided on create.
-func (u *GrowthUserTaskUpsertBulk) UpdateStatus() *GrowthUserTaskUpsertBulk {
+// UpdateProgressStatus sets the "progress_status" field to the value that was provided on create.
+func (u *GrowthUserTaskUpsertBulk) UpdateProgressStatus() *GrowthUserTaskUpsertBulk {
 	return u.Update(func(s *GrowthUserTaskUpsert) {
-		s.UpdateStatus()
+		s.UpdateProgressStatus()
 	})
 }
 

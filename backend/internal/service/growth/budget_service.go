@@ -273,7 +273,7 @@ func (s *BudgetService) Revoke(ctx context.Context, taskID int64, mutation Budge
 		return BudgetAccount{}, err
 	}
 	remaining := task.AllocatedPoints - task.DistributedPoints
-	if task.Status != "OFFLINE" {
+	if task.TaskStatus != "OFFLINE" {
 		return BudgetAccount{}, ErrTaskStateInvalid
 	}
 	if mutation.Points > remaining {
@@ -363,7 +363,7 @@ func (s *BudgetService) ListAllocations(ctx context.Context, filter BudgetListFi
 	filter = normalizeBudgetFilter(filter)
 	query := s.client.GrowthTask.Query()
 	if filter.Status != "" {
-		query = query.Where(growthtask.StatusEQ(filter.Status))
+		query = query.Where(growthtask.TaskStatusEQ(filter.Status))
 	}
 	if filter.Search != "" {
 		query = query.Where(growthtask.Or(
@@ -455,11 +455,11 @@ func appendBudgetAudit(
 	}
 	_, err := tx.GrowthAdminAudit.Create().
 		SetOperatorID(mutation.OperatorID).
-		SetAction(action).
+		SetActionType(action).
 		SetResourceType(resourceType).
 		SetResourceID(resourceID).
-		SetBeforeJSON(beforeJSON).
-		SetAfterJSON(afterJSON).
+		SetBeforeJSON(encodeJSONText(beforeJSON)).
+		SetAfterJSON(encodeJSONText(afterJSON)).
 		SetReason(strings.TrimSpace(mutation.Reason)).
 		SetRequestID(strings.TrimSpace(mutation.RequestID)).
 		Save(ctx)
@@ -522,7 +522,7 @@ func taskAllocationFromEntity(entity *ent.GrowthTask) TaskAllocation {
 		TaskID:            entity.ID,
 		TaskCode:          entity.TaskCode,
 		Title:             entity.Title,
-		Status:            entity.Status,
+		Status:            entity.TaskStatus,
 		AllocatedPoints:   entity.AllocatedPoints,
 		DistributedPoints: entity.DistributedPoints,
 		RemainingPoints:   remaining,

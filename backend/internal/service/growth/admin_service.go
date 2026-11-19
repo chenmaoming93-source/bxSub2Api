@@ -290,11 +290,11 @@ func (s *AdminGrowthService) decrease(ctx context.Context, command AdjustmentCom
 func appendAdjustmentAudit(ctx context.Context, tx *ent.Tx, command AdjustmentCommand, before, after int64) error {
 	_, err := tx.GrowthAdminAudit.Create().
 		SetOperatorID(command.OperatorID).
-		SetAction("points.adjust." + strings.ToLower(command.Direction)).
+		SetActionType("points.adjust." + strings.ToLower(command.Direction)).
 		SetResourceType("growth_wallet").
 		SetResourceID(command.UserID).
-		SetBeforeJSON(map[string]any{"available_points": before}).
-		SetAfterJSON(map[string]any{"available_points": after}).
+		SetBeforeJSON(encodeJSONText(map[string]any{"available_points": before})).
+		SetAfterJSON(encodeJSONText(map[string]any{"available_points": after})).
 		SetReason(strings.TrimSpace(command.Reason)).
 		SetRequestID(strings.TrimSpace(command.RequestID)).
 		Save(ctx)
@@ -353,7 +353,7 @@ FROM growth_tasks`)
 	}
 	adjustRows, err := s.client.QueryContext(ctx, `SELECT COALESCE(SUM(points),0)
 FROM growth_transfers
-WHERE biz_type='ADJUST' AND from_account_type='SYSTEM' AND to_account_type='WALLET' AND status='SUCCEEDED'`)
+WHERE biz_type='ADJUST' AND from_account_type='SYSTEM' AND to_account_type='WALLET' AND transfer_status='SUCCEEDED'`)
 	if err != nil {
 		return report, err
 	}
@@ -369,7 +369,7 @@ WHERE biz_type='ADJUST' AND from_account_type='SYSTEM' AND to_account_type='WALL
 	}
 	adjustOutRows, err := s.client.QueryContext(ctx, `SELECT COALESCE(SUM(points),0)
 FROM growth_transfers
-WHERE biz_type='ADJUST' AND from_account_type='WALLET' AND to_account_type='ADJUST' AND status='SUCCEEDED'`)
+WHERE biz_type='ADJUST' AND from_account_type='WALLET' AND to_account_type='ADJUST' AND transfer_status='SUCCEEDED'`)
 	if err != nil {
 		return report, err
 	}
@@ -429,7 +429,7 @@ func (s *AdminGrowthService) AuditLogs(ctx context.Context, page, pageSize int, 
 	}
 	query := s.client.GrowthAdminAudit.Query()
 	if strings.TrimSpace(action) != "" {
-		query = query.Where(growthadminaudit.ActionEQ(strings.TrimSpace(action)))
+		query = query.Where(growthadminaudit.ActionTypeEQ(strings.TrimSpace(action)))
 	}
 	total, err := query.Clone().Count(ctx)
 	if err != nil {

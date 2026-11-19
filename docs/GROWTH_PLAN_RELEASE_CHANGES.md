@@ -13,11 +13,28 @@
 |---|---|---|---|
 | DDL | `backend/sqlArchiving/182_create_growth_tables.sql` | 新增 17 张成长计划表：总预算、预算流水、钱包、转账、双边账务、任务、任务规则、用户任务进度、完成请求、奖励领取、商品、商品版本、库存、兑换订单、履约任务、库存流水、管理员审计 | 上线前执行 |
 | DDL | `backend/sqlArchiving/184_growth_adjustment_account.sql` | 为转账和账务流水增加独立 `ADJUST` 账户枚举；修正预算检查为 `distributed_amount <= total_amount` | 在 182 后执行；存量环境必须执行 |
-| DDL | `backend/sqlArchiving/185_growth_multi_reward_claims.sql` | 奖励领取增加周期内 `sequence`，唯一键改为 `(user_id, task_id, cycle_key, sequence)`，支持同周期多次发分 | 在 184 后执行；兼容新旧表结构 |
+| DDL | `backend/sqlArchiving/185_growth_multi_reward_claims.sql` | 奖励领取增加周期内 `sequence`，唯一键改为 `(user_id, task_id, cycle_key, sequence)` | 仅旧版单次领取表需要 |
+| DDL | `backend/sqlArchiving/186_growth_goldendb_schema_compat.sql` | `status/description/action` 改为非保留字列名；5 个 JSON 字段降级为 `LONGTEXT NULL` | 仅旧版 Growth 表需要 |
 | DML | `backend/sqlArchiving/183_add_growth_rbac_permissions.sql` | 新增 5 个权限码；为普通用户角色授权 `growth.self.read`、`growth.self.exchange` | 在 182 后执行，可重复执行 |
 | DML | `backend/sqlArchiving/163_seed_rbac_compatibility.sql` | 兼容 seed 同步加入 5 个 growth 权限及普通用户授权 | 在 182 后执行 |
 | Ent 元数据 | `backend/ent/schema/user.go` | 用户增加成长钱包关联关系 | 随代码发布 |
 | ORM 生成物 | `backend/ent/growth*`、`backend/ent/growth*/`、17 个 `backend/ent/schema/growth_*.go` | 17 个 Growth Entity、查询条件与 CRUD 生成代码，共 138 个文件 | 随代码发布，不单独执行 |
+
+GoldenDB 兼容列名：
+
+| 原列名 | 新列名 |
+|---|---|
+| `growth_transfers.status` | `transfer_status` |
+| `growth_tasks.status` | `task_status` |
+| `growth_tasks.description` | `remark` |
+| `growth_user_tasks.status` | `progress_status` |
+| `growth_reward_claims.status` | `claim_status` |
+| `growth_products.status` | `product_status` |
+| `growth_exchange_orders.status` | `order_status` |
+| `growth_fulfillment_jobs.status` | `job_status` |
+| `growth_admin_audit.action` | `action_type` |
+
+JSON 字段统一改为可空 `LONGTEXT`，由应用层写入 JSON 文本；空对象写 `{}`。对外 API 的 `status`、`description`、`benefit_detail`、`product_snapshot` 等字段保持不变。
 
 新增权限：
 
@@ -175,17 +192,16 @@
 ## 9. 建议投产顺序
 
 1. 备份数据库，确认 MySQL 8 / GoldenDB 兼容性。
-2. 执行 `182_create_growth_tables.sql`。
-3. 执行 `184_growth_adjustment_account.sql`。
-4. 执行 `185_growth_multi_reward_claims.sql`。
-5. 执行 `163_seed_rbac_compatibility.sql`。
-6. 执行 `183_add_growth_rbac_permissions.sql`。
-7. 发布后端，确认 `/health` 正常。
-8. 发布前端，检查 `/admin/growth`、`/growth` 和权限菜单。
-9. 将固定 SM2 公钥交付 AIWork Main，完成固定向量互操作测试。
-10. 配置并验证 Token/订阅生产履约适配器。
-11. 验证自动兑换、失败退款、库存恢复、对账和告警。
-12. 完成 `MVP-019` 剩余发布门禁后再对外投产。
+2. 新环境执行最新版 `182_create_growth_tables.sql`；该脚本已包含 ADJUST、多发分和 GoldenDB 兼容字段，不再执行 184/185/186。
+3. 存量旧环境按 `184 → 185 → 186` 执行增量升级。
+4. 执行 `163_seed_rbac_compatibility.sql`。
+5. 执行 `183_add_growth_rbac_permissions.sql`。
+6. 发布后端，确认 `/health` 正常。
+7. 发布前端，检查 `/admin/growth`、`/growth` 和权限菜单。
+8. 将固定 SM2 公钥交付 AIWork Main，完成固定向量互操作测试。
+9. 配置并验证 Token/订阅生产履约适配器。
+10. 验证自动兑换、失败退款、库存恢复、对账和告警。
+11. 完成 `MVP-019` 剩余发布门禁后再对外投产。
 
 ## 10. 投产阻塞
 

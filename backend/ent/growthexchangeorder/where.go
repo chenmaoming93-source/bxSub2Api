@@ -85,14 +85,19 @@ func ProductVersion(v int) predicate.GrowthExchangeOrder {
 	return predicate.GrowthExchangeOrder(sql.FieldEQ(FieldProductVersion, v))
 }
 
+// ProductSnapshot applies equality check predicate on the "product_snapshot" field. It's identical to ProductSnapshotEQ.
+func ProductSnapshot(v string) predicate.GrowthExchangeOrder {
+	return predicate.GrowthExchangeOrder(sql.FieldEQ(FieldProductSnapshot, v))
+}
+
 // PointsCost applies equality check predicate on the "points_cost" field. It's identical to PointsCostEQ.
 func PointsCost(v int64) predicate.GrowthExchangeOrder {
 	return predicate.GrowthExchangeOrder(sql.FieldEQ(FieldPointsCost, v))
 }
 
-// Status applies equality check predicate on the "status" field. It's identical to StatusEQ.
-func Status(v string) predicate.GrowthExchangeOrder {
-	return predicate.GrowthExchangeOrder(sql.FieldEQ(FieldStatus, v))
+// OrderStatus applies equality check predicate on the "order_status" field. It's identical to OrderStatusEQ.
+func OrderStatus(v string) predicate.GrowthExchangeOrder {
+	return predicate.GrowthExchangeOrder(sql.FieldEQ(FieldOrderStatus, v))
 }
 
 // IdempotencyKey applies equality check predicate on the "idempotency_key" field. It's identical to IdempotencyKeyEQ.
@@ -375,6 +380,81 @@ func ProductVersionLTE(v int) predicate.GrowthExchangeOrder {
 	return predicate.GrowthExchangeOrder(sql.FieldLTE(FieldProductVersion, v))
 }
 
+// ProductSnapshotEQ applies the EQ predicate on the "product_snapshot" field.
+func ProductSnapshotEQ(v string) predicate.GrowthExchangeOrder {
+	return predicate.GrowthExchangeOrder(sql.FieldEQ(FieldProductSnapshot, v))
+}
+
+// ProductSnapshotNEQ applies the NEQ predicate on the "product_snapshot" field.
+func ProductSnapshotNEQ(v string) predicate.GrowthExchangeOrder {
+	return predicate.GrowthExchangeOrder(sql.FieldNEQ(FieldProductSnapshot, v))
+}
+
+// ProductSnapshotIn applies the In predicate on the "product_snapshot" field.
+func ProductSnapshotIn(vs ...string) predicate.GrowthExchangeOrder {
+	return predicate.GrowthExchangeOrder(sql.FieldIn(FieldProductSnapshot, vs...))
+}
+
+// ProductSnapshotNotIn applies the NotIn predicate on the "product_snapshot" field.
+func ProductSnapshotNotIn(vs ...string) predicate.GrowthExchangeOrder {
+	return predicate.GrowthExchangeOrder(sql.FieldNotIn(FieldProductSnapshot, vs...))
+}
+
+// ProductSnapshotGT applies the GT predicate on the "product_snapshot" field.
+func ProductSnapshotGT(v string) predicate.GrowthExchangeOrder {
+	return predicate.GrowthExchangeOrder(sql.FieldGT(FieldProductSnapshot, v))
+}
+
+// ProductSnapshotGTE applies the GTE predicate on the "product_snapshot" field.
+func ProductSnapshotGTE(v string) predicate.GrowthExchangeOrder {
+	return predicate.GrowthExchangeOrder(sql.FieldGTE(FieldProductSnapshot, v))
+}
+
+// ProductSnapshotLT applies the LT predicate on the "product_snapshot" field.
+func ProductSnapshotLT(v string) predicate.GrowthExchangeOrder {
+	return predicate.GrowthExchangeOrder(sql.FieldLT(FieldProductSnapshot, v))
+}
+
+// ProductSnapshotLTE applies the LTE predicate on the "product_snapshot" field.
+func ProductSnapshotLTE(v string) predicate.GrowthExchangeOrder {
+	return predicate.GrowthExchangeOrder(sql.FieldLTE(FieldProductSnapshot, v))
+}
+
+// ProductSnapshotContains applies the Contains predicate on the "product_snapshot" field.
+func ProductSnapshotContains(v string) predicate.GrowthExchangeOrder {
+	return predicate.GrowthExchangeOrder(sql.FieldContains(FieldProductSnapshot, v))
+}
+
+// ProductSnapshotHasPrefix applies the HasPrefix predicate on the "product_snapshot" field.
+func ProductSnapshotHasPrefix(v string) predicate.GrowthExchangeOrder {
+	return predicate.GrowthExchangeOrder(sql.FieldHasPrefix(FieldProductSnapshot, v))
+}
+
+// ProductSnapshotHasSuffix applies the HasSuffix predicate on the "product_snapshot" field.
+func ProductSnapshotHasSuffix(v string) predicate.GrowthExchangeOrder {
+	return predicate.GrowthExchangeOrder(sql.FieldHasSuffix(FieldProductSnapshot, v))
+}
+
+// ProductSnapshotIsNil applies the IsNil predicate on the "product_snapshot" field.
+func ProductSnapshotIsNil() predicate.GrowthExchangeOrder {
+	return predicate.GrowthExchangeOrder(sql.FieldIsNull(FieldProductSnapshot))
+}
+
+// ProductSnapshotNotNil applies the NotNil predicate on the "product_snapshot" field.
+func ProductSnapshotNotNil() predicate.GrowthExchangeOrder {
+	return predicate.GrowthExchangeOrder(sql.FieldNotNull(FieldProductSnapshot))
+}
+
+// ProductSnapshotEqualFold applies the EqualFold predicate on the "product_snapshot" field.
+func ProductSnapshotEqualFold(v string) predicate.GrowthExchangeOrder {
+	return predicate.GrowthExchangeOrder(sql.FieldEqualFold(FieldProductSnapshot, v))
+}
+
+// ProductSnapshotContainsFold applies the ContainsFold predicate on the "product_snapshot" field.
+func ProductSnapshotContainsFold(v string) predicate.GrowthExchangeOrder {
+	return predicate.GrowthExchangeOrder(sql.FieldContainsFold(FieldProductSnapshot, v))
+}
+
 // PointsCostEQ applies the EQ predicate on the "points_cost" field.
 func PointsCostEQ(v int64) predicate.GrowthExchangeOrder {
 	return predicate.GrowthExchangeOrder(sql.FieldEQ(FieldPointsCost, v))
@@ -415,69 +495,69 @@ func PointsCostLTE(v int64) predicate.GrowthExchangeOrder {
 	return predicate.GrowthExchangeOrder(sql.FieldLTE(FieldPointsCost, v))
 }
 
-// StatusEQ applies the EQ predicate on the "status" field.
-func StatusEQ(v string) predicate.GrowthExchangeOrder {
-	return predicate.GrowthExchangeOrder(sql.FieldEQ(FieldStatus, v))
+// OrderStatusEQ applies the EQ predicate on the "order_status" field.
+func OrderStatusEQ(v string) predicate.GrowthExchangeOrder {
+	return predicate.GrowthExchangeOrder(sql.FieldEQ(FieldOrderStatus, v))
 }
 
-// StatusNEQ applies the NEQ predicate on the "status" field.
-func StatusNEQ(v string) predicate.GrowthExchangeOrder {
-	return predicate.GrowthExchangeOrder(sql.FieldNEQ(FieldStatus, v))
+// OrderStatusNEQ applies the NEQ predicate on the "order_status" field.
+func OrderStatusNEQ(v string) predicate.GrowthExchangeOrder {
+	return predicate.GrowthExchangeOrder(sql.FieldNEQ(FieldOrderStatus, v))
 }
 
-// StatusIn applies the In predicate on the "status" field.
-func StatusIn(vs ...string) predicate.GrowthExchangeOrder {
-	return predicate.GrowthExchangeOrder(sql.FieldIn(FieldStatus, vs...))
+// OrderStatusIn applies the In predicate on the "order_status" field.
+func OrderStatusIn(vs ...string) predicate.GrowthExchangeOrder {
+	return predicate.GrowthExchangeOrder(sql.FieldIn(FieldOrderStatus, vs...))
 }
 
-// StatusNotIn applies the NotIn predicate on the "status" field.
-func StatusNotIn(vs ...string) predicate.GrowthExchangeOrder {
-	return predicate.GrowthExchangeOrder(sql.FieldNotIn(FieldStatus, vs...))
+// OrderStatusNotIn applies the NotIn predicate on the "order_status" field.
+func OrderStatusNotIn(vs ...string) predicate.GrowthExchangeOrder {
+	return predicate.GrowthExchangeOrder(sql.FieldNotIn(FieldOrderStatus, vs...))
 }
 
-// StatusGT applies the GT predicate on the "status" field.
-func StatusGT(v string) predicate.GrowthExchangeOrder {
-	return predicate.GrowthExchangeOrder(sql.FieldGT(FieldStatus, v))
+// OrderStatusGT applies the GT predicate on the "order_status" field.
+func OrderStatusGT(v string) predicate.GrowthExchangeOrder {
+	return predicate.GrowthExchangeOrder(sql.FieldGT(FieldOrderStatus, v))
 }
 
-// StatusGTE applies the GTE predicate on the "status" field.
-func StatusGTE(v string) predicate.GrowthExchangeOrder {
-	return predicate.GrowthExchangeOrder(sql.FieldGTE(FieldStatus, v))
+// OrderStatusGTE applies the GTE predicate on the "order_status" field.
+func OrderStatusGTE(v string) predicate.GrowthExchangeOrder {
+	return predicate.GrowthExchangeOrder(sql.FieldGTE(FieldOrderStatus, v))
 }
 
-// StatusLT applies the LT predicate on the "status" field.
-func StatusLT(v string) predicate.GrowthExchangeOrder {
-	return predicate.GrowthExchangeOrder(sql.FieldLT(FieldStatus, v))
+// OrderStatusLT applies the LT predicate on the "order_status" field.
+func OrderStatusLT(v string) predicate.GrowthExchangeOrder {
+	return predicate.GrowthExchangeOrder(sql.FieldLT(FieldOrderStatus, v))
 }
 
-// StatusLTE applies the LTE predicate on the "status" field.
-func StatusLTE(v string) predicate.GrowthExchangeOrder {
-	return predicate.GrowthExchangeOrder(sql.FieldLTE(FieldStatus, v))
+// OrderStatusLTE applies the LTE predicate on the "order_status" field.
+func OrderStatusLTE(v string) predicate.GrowthExchangeOrder {
+	return predicate.GrowthExchangeOrder(sql.FieldLTE(FieldOrderStatus, v))
 }
 
-// StatusContains applies the Contains predicate on the "status" field.
-func StatusContains(v string) predicate.GrowthExchangeOrder {
-	return predicate.GrowthExchangeOrder(sql.FieldContains(FieldStatus, v))
+// OrderStatusContains applies the Contains predicate on the "order_status" field.
+func OrderStatusContains(v string) predicate.GrowthExchangeOrder {
+	return predicate.GrowthExchangeOrder(sql.FieldContains(FieldOrderStatus, v))
 }
 
-// StatusHasPrefix applies the HasPrefix predicate on the "status" field.
-func StatusHasPrefix(v string) predicate.GrowthExchangeOrder {
-	return predicate.GrowthExchangeOrder(sql.FieldHasPrefix(FieldStatus, v))
+// OrderStatusHasPrefix applies the HasPrefix predicate on the "order_status" field.
+func OrderStatusHasPrefix(v string) predicate.GrowthExchangeOrder {
+	return predicate.GrowthExchangeOrder(sql.FieldHasPrefix(FieldOrderStatus, v))
 }
 
-// StatusHasSuffix applies the HasSuffix predicate on the "status" field.
-func StatusHasSuffix(v string) predicate.GrowthExchangeOrder {
-	return predicate.GrowthExchangeOrder(sql.FieldHasSuffix(FieldStatus, v))
+// OrderStatusHasSuffix applies the HasSuffix predicate on the "order_status" field.
+func OrderStatusHasSuffix(v string) predicate.GrowthExchangeOrder {
+	return predicate.GrowthExchangeOrder(sql.FieldHasSuffix(FieldOrderStatus, v))
 }
 
-// StatusEqualFold applies the EqualFold predicate on the "status" field.
-func StatusEqualFold(v string) predicate.GrowthExchangeOrder {
-	return predicate.GrowthExchangeOrder(sql.FieldEqualFold(FieldStatus, v))
+// OrderStatusEqualFold applies the EqualFold predicate on the "order_status" field.
+func OrderStatusEqualFold(v string) predicate.GrowthExchangeOrder {
+	return predicate.GrowthExchangeOrder(sql.FieldEqualFold(FieldOrderStatus, v))
 }
 
-// StatusContainsFold applies the ContainsFold predicate on the "status" field.
-func StatusContainsFold(v string) predicate.GrowthExchangeOrder {
-	return predicate.GrowthExchangeOrder(sql.FieldContainsFold(FieldStatus, v))
+// OrderStatusContainsFold applies the ContainsFold predicate on the "order_status" field.
+func OrderStatusContainsFold(v string) predicate.GrowthExchangeOrder {
+	return predicate.GrowthExchangeOrder(sql.FieldContainsFold(FieldOrderStatus, v))
 }
 
 // IdempotencyKeyEQ applies the EQ predicate on the "idempotency_key" field.

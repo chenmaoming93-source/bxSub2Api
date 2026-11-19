@@ -44,7 +44,7 @@ func TestTaskAllocationUsage(t *testing.T) {
 		ID:                7,
 		TaskCode:          "daily_checkin",
 		Title:             "每日签到",
-		Status:            "ACTIVE",
+		TaskStatus:        "ACTIVE",
 		AllocatedPoints:   200,
 		DistributedPoints: 50,
 		UpdatedAt:         time.Now(),

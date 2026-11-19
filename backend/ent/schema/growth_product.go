@@ -31,7 +31,7 @@ func (GrowthProduct) Fields() []ent.Field {
 		field.String("icon").MaxLen(128).Default(""),
 		field.String("fulfillment_mode").MaxLen(32).Validate(growthEnum("fulfillment_mode", "AUTOMATIC", "MANUAL")),
 		field.Int("sort_order").Default(0),
-		field.String("status").MaxLen(20).Default("DRAFT").Validate(growthEnum("status", "DRAFT", "ACTIVE", "PAUSED", "OFFLINE")),
+		field.String("product_status").MaxLen(20).Default("DRAFT").Validate(growthEnum("product_status", "DRAFT", "ACTIVE", "PAUSED", "OFFLINE")),
 		field.Int("current_version").Default(0).Validate(growthNonNegativeInt("current_version")),
 	}
 }
@@ -39,7 +39,7 @@ func (GrowthProduct) Fields() []ent.Field {
 func (GrowthProduct) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Fields("product_code").Unique(),
-		index.Fields("status", "sort_order"),
-		index.Fields("product_type", "status"),
+		index.Fields("product_status", "sort_order"),
+		index.Fields("product_type", "product_status"),
 	}
 }

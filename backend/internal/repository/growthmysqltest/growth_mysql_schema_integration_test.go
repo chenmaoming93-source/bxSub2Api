@@ -72,18 +72,6 @@ func TestGrowthMySQLArchiveAndConstraints(t *testing.T) {
 			require.NoErrorf(t, err, "growth archive pass %d failed: %s", pass, statement)
 		}
 	}
-	for _, upgradeFile := range []string{"184_growth_adjustment_account.sql", "185_growth_multi_reward_claims.sql"} {
-		upgradePath := filepath.Join(filepath.Dir(sourceFile), "..", "..", "..", "sqlArchiving", upgradeFile)
-		raw, err := os.ReadFile(upgradePath)
-		require.NoError(t, err)
-		for pass := 1; pass <= 2; pass++ {
-			for _, statement := range growthSQLStatements(string(raw)) {
-				_, err := db.ExecContext(ctx, statement)
-				require.NoErrorf(t, err, "%s pass %d failed: %s", upgradeFile, pass, statement)
-			}
-		}
-	}
-
 	tables := []string{
 		"growth_budgets", "growth_budget_entries", "growth_wallets", "growth_transfers",
 		"growth_account_ledger", "growth_tasks", "growth_task_rules", "growth_user_tasks",
@@ -114,29 +102,40 @@ func TestGrowthMySQLArchiveAndConstraints(t *testing.T) {
 		WHERE table_schema = DATABASE() AND table_name = 'growth_reward_claims'
 		  AND index_name = 'uq_growth_reward_claims_cycle'`).Scan(&rewardCycleIndexColumns))
 	require.Equal(t, 4, rewardCycleIndexColumns)
-	_, err = db.ExecContext(ctx, `ALTER TABLE growth_reward_claims
-		DROP INDEX uq_growth_reward_claims_cycle,
-		ADD UNIQUE KEY uq_growth_reward_claims_cycle (user_id, task_id, cycle_key)`)
-	require.NoError(t, err)
-	multiRewardPath := filepath.Join(filepath.Dir(sourceFile), "..", "..", "..", "sqlArchiving", "185_growth_multi_reward_claims.sql")
-	raw, err = os.ReadFile(multiRewardPath)
-	require.NoError(t, err)
-	for _, statement := range growthSQLStatements(string(raw)) {
-		_, err := db.ExecContext(ctx, statement)
-		require.NoErrorf(t, err, "legacy-shape multi-reward upgrade failed: %s", statement)
-	}
+	var reservedColumns int
 	require.NoError(t, db.QueryRowContext(ctx, `
-		SELECT COUNT(*) FROM information_schema.statistics
-		WHERE table_schema = DATABASE() AND table_name = 'growth_reward_claims'
-		  AND index_name = 'uq_growth_reward_claims_cycle'`).Scan(&rewardCycleIndexColumns))
-	require.Equal(t, 4, rewardCycleIndexColumns)
+		SELECT COUNT(*) FROM information_schema.columns
+		WHERE table_schema = DATABASE()
+		  AND table_name LIKE 'growth_%'
+		  AND column_name IN ('status', 'description', 'action')`).Scan(&reservedColumns))
+	require.Zero(t, reservedColumns)
+	var jsonColumns int
+	require.NoError(t, db.QueryRowContext(ctx, `
+		SELECT COUNT(*) FROM information_schema.columns
+		WHERE table_schema = DATABASE()
+		  AND table_name LIKE 'growth_%'
+		  AND data_type = 'json'`).Scan(&jsonColumns))
+	require.Zero(t, jsonColumns)
+	var longTextFields int
+	require.NoError(t, db.QueryRowContext(ctx, `
+		SELECT COUNT(*) FROM information_schema.columns
+		WHERE table_schema = DATABASE()
+		  AND data_type = 'longtext'
+		  AND is_nullable = 'YES'
+		  AND (
+		    (table_name = 'growth_task_rules' AND column_name = 'conditions')
+		    OR (table_name = 'growth_product_versions' AND column_name = 'benefit_detail')
+		    OR (table_name = 'growth_exchange_orders' AND column_name = 'product_snapshot')
+		    OR (table_name = 'growth_admin_audit' AND column_name IN ('before_json', 'after_json'))
+		  )`).Scan(&longTextFields))
+	require.Equal(t, 5, longTextFields)
 
 	_, err = db.ExecContext(ctx, `INSERT INTO growth_tasks
-		(task_code, title, category, task_type, status, allocated_points)
+		(task_code, title, category, task_type, task_status, allocated_points)
 		VALUES ('dup_task', 'Dup', 'DAILY', 'DAILY', 'ACTIVE', 10)`)
 	require.NoError(t, err)
 	_, err = db.ExecContext(ctx, `INSERT INTO growth_tasks
-		(task_code, title, category, task_type, status, allocated_points)
+		(task_code, title, category, task_type, task_status, allocated_points)
 		VALUES ('dup_task', 'Dup 2', 'DAILY', 'DAILY', 'ACTIVE', 10)`)
 	requireMySQLError(t, err, 1062)
 
@@ -180,12 +179,16 @@ func TestGrowthMySQLArchiveAndConstraints(t *testing.T) {
 
 	_, err = db.ExecContext(ctx, `INSERT INTO growth_exchange_orders
 		(order_no, user_id, product_id, product_version, product_snapshot, points_cost, idempotency_key)
-		VALUES ('ORDER-1', 1, 1, 1, JSON_OBJECT('title', 'Product'), 10, 'order-key-1')`)
+		VALUES ('ORDER-1', 1, 1, 1, '{"title":"Product"}', 10, 'order-key-1')`)
 	require.NoError(t, err)
 	_, err = db.ExecContext(ctx, `INSERT INTO growth_exchange_orders
 		(order_no, user_id, product_id, product_version, product_snapshot, points_cost, idempotency_key)
-		VALUES ('ORDER-2', 1, 1, 1, JSON_OBJECT('title', 'Product'), 10, 'order-key-1')`)
+		VALUES ('ORDER-2', 1, 1, 1, '{"title":"Product"}', 10, 'order-key-1')`)
 	requireMySQLError(t, err, 1062)
+	_, err = db.ExecContext(ctx, `INSERT INTO growth_exchange_orders
+		(order_no, user_id, product_id, product_version, product_snapshot, points_cost, idempotency_key)
+		VALUES ('ORDER-3', 1, 1, 1, NULL, 10, 'order-key-3')`)
+	require.NoError(t, err)
 
 	_, err = db.ExecContext(ctx, `INSERT INTO growth_fulfillment_jobs (order_id) VALUES (1)`)
 	require.NoError(t, err)

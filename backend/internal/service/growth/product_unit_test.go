@@ -51,7 +51,7 @@ func TestBuildProductViewUnlimitedStock(t *testing.T) {
 		Title:           "Pro 7 天",
 		ProductType:     "SUBSCRIPTION",
 		FulfillmentMode: "AUTOMATIC",
-		Status:          "ACTIVE",
+		ProductStatus:   "ACTIVE",
 		CurrentVersion:  2,
 	}
 	version := &ent.GrowthProductVersion{

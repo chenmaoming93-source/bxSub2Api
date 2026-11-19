@@ -148,7 +148,7 @@ func TestBudgetReduceHonorsDistributedAndAllocationLockOrderIsStable(t *testing.
 		IdempotencyKey: "invariant-award", Title: "不变量奖励",
 	})
 	require.NoError(t, err)
-	_, err = client.GrowthTask.UpdateOneID(task.ID).SetStatus("OFFLINE").Save(ctx)
+	_, err = client.GrowthTask.UpdateOneID(task.ID).SetTaskStatus("OFFLINE").Save(ctx)
 	require.NoError(t, err)
 	_, err = budget.Revoke(ctx, task.ID, BudgetMutation{
 		OperatorID: 1, Points: 40, Reason: "回收未发放额度", RequestID: "invariant-revoke",
@@ -218,7 +218,7 @@ func createIntegrationTask(t *testing.T, client *ent.Client, code, status string
 		SetTitle(code).
 		SetCategory("DAILY").
 		SetTaskType("DAILY").
-		SetStatus(status).
+		SetTaskStatus(status).
 		Save(context.Background())
 	require.NoError(t, err)
 	return task
@@ -274,21 +274,6 @@ func openGrowthIntegrationClient(t *testing.T) *ent.Client {
 		_, err := db.ExecContext(ctx, statement)
 		require.NoErrorf(t, err, "execute statement: %s", statement)
 	}
-	upgradePath := filepath.Join(filepath.Dir(sourceFile), "..", "..", "..", "sqlArchiving", "184_growth_adjustment_account.sql")
-	raw, err = os.ReadFile(upgradePath)
-	require.NoError(t, err)
-	for _, statement := range budgetSQLStatements(string(raw)) {
-		_, err := db.ExecContext(ctx, statement)
-		require.NoErrorf(t, err, "execute upgrade statement: %s", statement)
-	}
-	multiRewardPath := filepath.Join(filepath.Dir(sourceFile), "..", "..", "..", "sqlArchiving", "185_growth_multi_reward_claims.sql")
-	raw, err = os.ReadFile(multiRewardPath)
-	require.NoError(t, err)
-	for _, statement := range budgetSQLStatements(string(raw)) {
-		_, err := db.ExecContext(ctx, statement)
-		require.NoErrorf(t, err, "execute multi-reward upgrade statement: %s", statement)
-	}
-
 	client, err := ent.Open("mysql", cfg.FormatDSN())
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = client.Close() })

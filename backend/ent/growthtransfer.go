@@ -39,8 +39,8 @@ type GrowthTransfer struct {
 	OrderID *int64 `json:"order_id,omitempty"`
 	// Points holds the value of the "points" field.
 	Points int64 `json:"points,omitempty"`
-	// Status holds the value of the "status" field.
-	Status string `json:"status,omitempty"`
+	// TransferStatus holds the value of the "transfer_status" field.
+	TransferStatus string `json:"transfer_status,omitempty"`
 	// FailureReason holds the value of the "failure_reason" field.
 	FailureReason string `json:"failure_reason,omitempty"`
 	// CompletedAt holds the value of the "completed_at" field.
@@ -55,7 +55,7 @@ func (*GrowthTransfer) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case growthtransfer.FieldID, growthtransfer.FieldFromUserID, growthtransfer.FieldToUserID, growthtransfer.FieldTaskID, growthtransfer.FieldOrderID, growthtransfer.FieldPoints:
 			values[i] = new(sql.NullInt64)
-		case growthtransfer.FieldBizType, growthtransfer.FieldIdempotencyKey, growthtransfer.FieldFromAccountType, growthtransfer.FieldToAccountType, growthtransfer.FieldStatus, growthtransfer.FieldFailureReason:
+		case growthtransfer.FieldBizType, growthtransfer.FieldIdempotencyKey, growthtransfer.FieldFromAccountType, growthtransfer.FieldToAccountType, growthtransfer.FieldTransferStatus, growthtransfer.FieldFailureReason:
 			values[i] = new(sql.NullString)
 		case growthtransfer.FieldCreatedAt, growthtransfer.FieldUpdatedAt, growthtransfer.FieldCompletedAt:
 			values[i] = new(sql.NullTime)
@@ -150,11 +150,11 @@ func (_m *GrowthTransfer) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.Points = value.Int64
 			}
-		case growthtransfer.FieldStatus:
+		case growthtransfer.FieldTransferStatus:
 			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field status", values[i])
+				return fmt.Errorf("unexpected type %T for field transfer_status", values[i])
 			} else if value.Valid {
-				_m.Status = value.String
+				_m.TransferStatus = value.String
 			}
 		case growthtransfer.FieldFailureReason:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -246,8 +246,8 @@ func (_m *GrowthTransfer) String() string {
 	builder.WriteString("points=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Points))
 	builder.WriteString(", ")
-	builder.WriteString("status=")
-	builder.WriteString(_m.Status)
+	builder.WriteString("transfer_status=")
+	builder.WriteString(_m.TransferStatus)
 	builder.WriteString(", ")
 	builder.WriteString("failure_reason=")
 	builder.WriteString(_m.FailureReason)

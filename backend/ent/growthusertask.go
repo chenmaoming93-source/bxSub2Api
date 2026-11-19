@@ -36,8 +36,8 @@ type GrowthUserTask struct {
 	Target int64 `json:"target,omitempty"`
 	// CompletedCount holds the value of the "completed_count" field.
 	CompletedCount int64 `json:"completed_count,omitempty"`
-	// Status holds the value of the "status" field.
-	Status string `json:"status,omitempty"`
+	// ProgressStatus holds the value of the "progress_status" field.
+	ProgressStatus string `json:"progress_status,omitempty"`
 	// CompletedAt holds the value of the "completed_at" field.
 	CompletedAt *time.Time `json:"completed_at,omitempty"`
 	// RewardedAt holds the value of the "rewarded_at" field.
@@ -75,7 +75,7 @@ func (*GrowthUserTask) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case growthusertask.FieldID, growthusertask.FieldUserID, growthusertask.FieldTaskID, growthusertask.FieldRuleID, growthusertask.FieldProgress, growthusertask.FieldTarget, growthusertask.FieldCompletedCount:
 			values[i] = new(sql.NullInt64)
-		case growthusertask.FieldCycleKey, growthusertask.FieldStatus:
+		case growthusertask.FieldCycleKey, growthusertask.FieldProgressStatus:
 			values[i] = new(sql.NullString)
 		case growthusertask.FieldCreatedAt, growthusertask.FieldUpdatedAt, growthusertask.FieldCompletedAt, growthusertask.FieldRewardedAt:
 			values[i] = new(sql.NullTime)
@@ -154,11 +154,11 @@ func (_m *GrowthUserTask) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.CompletedCount = value.Int64
 			}
-		case growthusertask.FieldStatus:
+		case growthusertask.FieldProgressStatus:
 			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field status", values[i])
+				return fmt.Errorf("unexpected type %T for field progress_status", values[i])
 			} else if value.Valid {
-				_m.Status = value.String
+				_m.ProgressStatus = value.String
 			}
 		case growthusertask.FieldCompletedAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -242,8 +242,8 @@ func (_m *GrowthUserTask) String() string {
 	builder.WriteString("completed_count=")
 	builder.WriteString(fmt.Sprintf("%v", _m.CompletedCount))
 	builder.WriteString(", ")
-	builder.WriteString("status=")
-	builder.WriteString(_m.Status)
+	builder.WriteString("progress_status=")
+	builder.WriteString(_m.ProgressStatus)
 	builder.WriteString(", ")
 	if v := _m.CompletedAt; v != nil {
 		builder.WriteString("completed_at=")

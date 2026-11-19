@@ -134,6 +134,11 @@ func ByBenefitSummary(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldBenefitSummary, opts...).ToFunc()
 }
 
+// ByBenefitDetail orders the results by the benefit_detail field.
+func ByBenefitDetail(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldBenefitDetail, opts...).ToFunc()
+}
+
 // ByTokenAmount orders the results by the token_amount field.
 func ByTokenAmount(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldTokenAmount, opts...).ToFunc()

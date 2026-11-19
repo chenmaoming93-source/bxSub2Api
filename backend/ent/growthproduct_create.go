@@ -102,16 +102,16 @@ func (_c *GrowthProductCreate) SetNillableSortOrder(v *int) *GrowthProductCreate
 	return _c
 }
 
-// SetStatus sets the "status" field.
-func (_c *GrowthProductCreate) SetStatus(v string) *GrowthProductCreate {
-	_c.mutation.SetStatus(v)
+// SetProductStatus sets the "product_status" field.
+func (_c *GrowthProductCreate) SetProductStatus(v string) *GrowthProductCreate {
+	_c.mutation.SetProductStatus(v)
 	return _c
 }
 
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (_c *GrowthProductCreate) SetNillableStatus(v *string) *GrowthProductCreate {
+// SetNillableProductStatus sets the "product_status" field if the given value is not nil.
+func (_c *GrowthProductCreate) SetNillableProductStatus(v *string) *GrowthProductCreate {
 	if v != nil {
-		_c.SetStatus(*v)
+		_c.SetProductStatus(*v)
 	}
 	return _c
 }
@@ -181,9 +181,9 @@ func (_c *GrowthProductCreate) defaults() {
 		v := growthproduct.DefaultSortOrder
 		_c.mutation.SetSortOrder(v)
 	}
-	if _, ok := _c.mutation.Status(); !ok {
-		v := growthproduct.DefaultStatus
-		_c.mutation.SetStatus(v)
+	if _, ok := _c.mutation.ProductStatus(); !ok {
+		v := growthproduct.DefaultProductStatus
+		_c.mutation.SetProductStatus(v)
 	}
 	if _, ok := _c.mutation.CurrentVersion(); !ok {
 		v := growthproduct.DefaultCurrentVersion
@@ -242,12 +242,12 @@ func (_c *GrowthProductCreate) check() error {
 	if _, ok := _c.mutation.SortOrder(); !ok {
 		return &ValidationError{Name: "sort_order", err: errors.New(`ent: missing required field "GrowthProduct.sort_order"`)}
 	}
-	if _, ok := _c.mutation.Status(); !ok {
-		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "GrowthProduct.status"`)}
+	if _, ok := _c.mutation.ProductStatus(); !ok {
+		return &ValidationError{Name: "product_status", err: errors.New(`ent: missing required field "GrowthProduct.product_status"`)}
 	}
-	if v, ok := _c.mutation.Status(); ok {
-		if err := growthproduct.StatusValidator(v); err != nil {
-			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "GrowthProduct.status": %w`, err)}
+	if v, ok := _c.mutation.ProductStatus(); ok {
+		if err := growthproduct.ProductStatusValidator(v); err != nil {
+			return &ValidationError{Name: "product_status", err: fmt.Errorf(`ent: validator failed for field "GrowthProduct.product_status": %w`, err)}
 		}
 	}
 	if _, ok := _c.mutation.CurrentVersion(); !ok {
@@ -317,9 +317,9 @@ func (_c *GrowthProductCreate) createSpec() (*GrowthProduct, *sqlgraph.CreateSpe
 		_spec.SetField(growthproduct.FieldSortOrder, field.TypeInt, value)
 		_node.SortOrder = value
 	}
-	if value, ok := _c.mutation.Status(); ok {
-		_spec.SetField(growthproduct.FieldStatus, field.TypeString, value)
-		_node.Status = value
+	if value, ok := _c.mutation.ProductStatus(); ok {
+		_spec.SetField(growthproduct.FieldProductStatus, field.TypeString, value)
+		_node.ProductStatus = value
 	}
 	if value, ok := _c.mutation.CurrentVersion(); ok {
 		_spec.SetField(growthproduct.FieldCurrentVersion, field.TypeInt, value)
@@ -467,15 +467,15 @@ func (u *GrowthProductUpsert) AddSortOrder(v int) *GrowthProductUpsert {
 	return u
 }
 
-// SetStatus sets the "status" field.
-func (u *GrowthProductUpsert) SetStatus(v string) *GrowthProductUpsert {
-	u.Set(growthproduct.FieldStatus, v)
+// SetProductStatus sets the "product_status" field.
+func (u *GrowthProductUpsert) SetProductStatus(v string) *GrowthProductUpsert {
+	u.Set(growthproduct.FieldProductStatus, v)
 	return u
 }
 
-// UpdateStatus sets the "status" field to the value that was provided on create.
-func (u *GrowthProductUpsert) UpdateStatus() *GrowthProductUpsert {
-	u.SetExcluded(growthproduct.FieldStatus)
+// UpdateProductStatus sets the "product_status" field to the value that was provided on create.
+func (u *GrowthProductUpsert) UpdateProductStatus() *GrowthProductUpsert {
+	u.SetExcluded(growthproduct.FieldProductStatus)
 	return u
 }
 
@@ -647,17 +647,17 @@ func (u *GrowthProductUpsertOne) UpdateSortOrder() *GrowthProductUpsertOne {
 	})
 }
 
-// SetStatus sets the "status" field.
-func (u *GrowthProductUpsertOne) SetStatus(v string) *GrowthProductUpsertOne {
+// SetProductStatus sets the "product_status" field.
+func (u *GrowthProductUpsertOne) SetProductStatus(v string) *GrowthProductUpsertOne {
 	return u.Update(func(s *GrowthProductUpsert) {
-		s.SetStatus(v)
+		s.SetProductStatus(v)
 	})
 }
 
-// UpdateStatus sets the "status" field to the value that was provided on create.
-func (u *GrowthProductUpsertOne) UpdateStatus() *GrowthProductUpsertOne {
+// UpdateProductStatus sets the "product_status" field to the value that was provided on create.
+func (u *GrowthProductUpsertOne) UpdateProductStatus() *GrowthProductUpsertOne {
 	return u.Update(func(s *GrowthProductUpsert) {
-		s.UpdateStatus()
+		s.UpdateProductStatus()
 	})
 }
 
@@ -998,17 +998,17 @@ func (u *GrowthProductUpsertBulk) UpdateSortOrder() *GrowthProductUpsertBulk {
 	})
 }
 
-// SetStatus sets the "status" field.
-func (u *GrowthProductUpsertBulk) SetStatus(v string) *GrowthProductUpsertBulk {
+// SetProductStatus sets the "product_status" field.
+func (u *GrowthProductUpsertBulk) SetProductStatus(v string) *GrowthProductUpsertBulk {
 	return u.Update(func(s *GrowthProductUpsert) {
-		s.SetStatus(v)
+		s.SetProductStatus(v)
 	})
 }
 
-// UpdateStatus sets the "status" field to the value that was provided on create.
-func (u *GrowthProductUpsertBulk) UpdateStatus() *GrowthProductUpsertBulk {
+// UpdateProductStatus sets the "product_status" field to the value that was provided on create.
+func (u *GrowthProductUpsertBulk) UpdateProductStatus() *GrowthProductUpsertBulk {
 	return u.Update(func(s *GrowthProductUpsert) {
-		s.UpdateStatus()
+		s.UpdateProductStatus()
 	})
 }
 

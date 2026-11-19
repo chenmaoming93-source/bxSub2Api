@@ -25,8 +25,8 @@ type GrowthTask struct {
 	TaskCode string `json:"task_code,omitempty"`
 	// Title holds the value of the "title" field.
 	Title string `json:"title,omitempty"`
-	// Description holds the value of the "description" field.
-	Description string `json:"description,omitempty"`
+	// Remark holds the value of the "remark" field.
+	Remark string `json:"remark,omitempty"`
 	// Category holds the value of the "category" field.
 	Category string `json:"category,omitempty"`
 	// TaskType holds the value of the "task_type" field.
@@ -35,8 +35,8 @@ type GrowthTask struct {
 	Icon string `json:"icon,omitempty"`
 	// SortOrder holds the value of the "sort_order" field.
 	SortOrder int `json:"sort_order,omitempty"`
-	// Status holds the value of the "status" field.
-	Status string `json:"status,omitempty"`
+	// TaskStatus holds the value of the "task_status" field.
+	TaskStatus string `json:"task_status,omitempty"`
 	// EffectiveFrom holds the value of the "effective_from" field.
 	EffectiveFrom *time.Time `json:"effective_from,omitempty"`
 	// EffectiveTo holds the value of the "effective_to" field.
@@ -55,7 +55,7 @@ func (*GrowthTask) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case growthtask.FieldID, growthtask.FieldSortOrder, growthtask.FieldAllocatedPoints, growthtask.FieldDistributedPoints:
 			values[i] = new(sql.NullInt64)
-		case growthtask.FieldTaskCode, growthtask.FieldTitle, growthtask.FieldDescription, growthtask.FieldCategory, growthtask.FieldTaskType, growthtask.FieldIcon, growthtask.FieldStatus:
+		case growthtask.FieldTaskCode, growthtask.FieldTitle, growthtask.FieldRemark, growthtask.FieldCategory, growthtask.FieldTaskType, growthtask.FieldIcon, growthtask.FieldTaskStatus:
 			values[i] = new(sql.NullString)
 		case growthtask.FieldCreatedAt, growthtask.FieldUpdatedAt, growthtask.FieldEffectiveFrom, growthtask.FieldEffectiveTo:
 			values[i] = new(sql.NullTime)
@@ -104,11 +104,11 @@ func (_m *GrowthTask) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.Title = value.String
 			}
-		case growthtask.FieldDescription:
+		case growthtask.FieldRemark:
 			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field description", values[i])
+				return fmt.Errorf("unexpected type %T for field remark", values[i])
 			} else if value.Valid {
-				_m.Description = value.String
+				_m.Remark = value.String
 			}
 		case growthtask.FieldCategory:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -134,11 +134,11 @@ func (_m *GrowthTask) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.SortOrder = int(value.Int64)
 			}
-		case growthtask.FieldStatus:
+		case growthtask.FieldTaskStatus:
 			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field status", values[i])
+				return fmt.Errorf("unexpected type %T for field task_status", values[i])
 			} else if value.Valid {
-				_m.Status = value.String
+				_m.TaskStatus = value.String
 			}
 		case growthtask.FieldEffectiveFrom:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -214,8 +214,8 @@ func (_m *GrowthTask) String() string {
 	builder.WriteString("title=")
 	builder.WriteString(_m.Title)
 	builder.WriteString(", ")
-	builder.WriteString("description=")
-	builder.WriteString(_m.Description)
+	builder.WriteString("remark=")
+	builder.WriteString(_m.Remark)
 	builder.WriteString(", ")
 	builder.WriteString("category=")
 	builder.WriteString(_m.Category)
@@ -229,8 +229,8 @@ func (_m *GrowthTask) String() string {
 	builder.WriteString("sort_order=")
 	builder.WriteString(fmt.Sprintf("%v", _m.SortOrder))
 	builder.WriteString(", ")
-	builder.WriteString("status=")
-	builder.WriteString(_m.Status)
+	builder.WriteString("task_status=")
+	builder.WriteString(_m.TaskStatus)
 	builder.WriteString(", ")
 	if v := _m.EffectiveFrom; v != nil {
 		builder.WriteString("effective_from=")

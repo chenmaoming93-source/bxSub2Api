@@ -94,9 +94,9 @@ func SortOrder(v int) predicate.GrowthProduct {
 	return predicate.GrowthProduct(sql.FieldEQ(FieldSortOrder, v))
 }
 
-// Status applies equality check predicate on the "status" field. It's identical to StatusEQ.
-func Status(v string) predicate.GrowthProduct {
-	return predicate.GrowthProduct(sql.FieldEQ(FieldStatus, v))
+// ProductStatus applies equality check predicate on the "product_status" field. It's identical to ProductStatusEQ.
+func ProductStatus(v string) predicate.GrowthProduct {
+	return predicate.GrowthProduct(sql.FieldEQ(FieldProductStatus, v))
 }
 
 // CurrentVersion applies equality check predicate on the "current_version" field. It's identical to CurrentVersionEQ.
@@ -549,69 +549,69 @@ func SortOrderLTE(v int) predicate.GrowthProduct {
 	return predicate.GrowthProduct(sql.FieldLTE(FieldSortOrder, v))
 }
 
-// StatusEQ applies the EQ predicate on the "status" field.
-func StatusEQ(v string) predicate.GrowthProduct {
-	return predicate.GrowthProduct(sql.FieldEQ(FieldStatus, v))
+// ProductStatusEQ applies the EQ predicate on the "product_status" field.
+func ProductStatusEQ(v string) predicate.GrowthProduct {
+	return predicate.GrowthProduct(sql.FieldEQ(FieldProductStatus, v))
 }
 
-// StatusNEQ applies the NEQ predicate on the "status" field.
-func StatusNEQ(v string) predicate.GrowthProduct {
-	return predicate.GrowthProduct(sql.FieldNEQ(FieldStatus, v))
+// ProductStatusNEQ applies the NEQ predicate on the "product_status" field.
+func ProductStatusNEQ(v string) predicate.GrowthProduct {
+	return predicate.GrowthProduct(sql.FieldNEQ(FieldProductStatus, v))
 }
 
-// StatusIn applies the In predicate on the "status" field.
-func StatusIn(vs ...string) predicate.GrowthProduct {
-	return predicate.GrowthProduct(sql.FieldIn(FieldStatus, vs...))
+// ProductStatusIn applies the In predicate on the "product_status" field.
+func ProductStatusIn(vs ...string) predicate.GrowthProduct {
+	return predicate.GrowthProduct(sql.FieldIn(FieldProductStatus, vs...))
 }
 
-// StatusNotIn applies the NotIn predicate on the "status" field.
-func StatusNotIn(vs ...string) predicate.GrowthProduct {
-	return predicate.GrowthProduct(sql.FieldNotIn(FieldStatus, vs...))
+// ProductStatusNotIn applies the NotIn predicate on the "product_status" field.
+func ProductStatusNotIn(vs ...string) predicate.GrowthProduct {
+	return predicate.GrowthProduct(sql.FieldNotIn(FieldProductStatus, vs...))
 }
 
-// StatusGT applies the GT predicate on the "status" field.
-func StatusGT(v string) predicate.GrowthProduct {
-	return predicate.GrowthProduct(sql.FieldGT(FieldStatus, v))
+// ProductStatusGT applies the GT predicate on the "product_status" field.
+func ProductStatusGT(v string) predicate.GrowthProduct {
+	return predicate.GrowthProduct(sql.FieldGT(FieldProductStatus, v))
 }
 
-// StatusGTE applies the GTE predicate on the "status" field.
-func StatusGTE(v string) predicate.GrowthProduct {
-	return predicate.GrowthProduct(sql.FieldGTE(FieldStatus, v))
+// ProductStatusGTE applies the GTE predicate on the "product_status" field.
+func ProductStatusGTE(v string) predicate.GrowthProduct {
+	return predicate.GrowthProduct(sql.FieldGTE(FieldProductStatus, v))
 }
 
-// StatusLT applies the LT predicate on the "status" field.
-func StatusLT(v string) predicate.GrowthProduct {
-	return predicate.GrowthProduct(sql.FieldLT(FieldStatus, v))
+// ProductStatusLT applies the LT predicate on the "product_status" field.
+func ProductStatusLT(v string) predicate.GrowthProduct {
+	return predicate.GrowthProduct(sql.FieldLT(FieldProductStatus, v))
 }
 
-// StatusLTE applies the LTE predicate on the "status" field.
-func StatusLTE(v string) predicate.GrowthProduct {
-	return predicate.GrowthProduct(sql.FieldLTE(FieldStatus, v))
+// ProductStatusLTE applies the LTE predicate on the "product_status" field.
+func ProductStatusLTE(v string) predicate.GrowthProduct {
+	return predicate.GrowthProduct(sql.FieldLTE(FieldProductStatus, v))
 }
 
-// StatusContains applies the Contains predicate on the "status" field.
-func StatusContains(v string) predicate.GrowthProduct {
-	return predicate.GrowthProduct(sql.FieldContains(FieldStatus, v))
+// ProductStatusContains applies the Contains predicate on the "product_status" field.
+func ProductStatusContains(v string) predicate.GrowthProduct {
+	return predicate.GrowthProduct(sql.FieldContains(FieldProductStatus, v))
 }
 
-// StatusHasPrefix applies the HasPrefix predicate on the "status" field.
-func StatusHasPrefix(v string) predicate.GrowthProduct {
-	return predicate.GrowthProduct(sql.FieldHasPrefix(FieldStatus, v))
+// ProductStatusHasPrefix applies the HasPrefix predicate on the "product_status" field.
+func ProductStatusHasPrefix(v string) predicate.GrowthProduct {
+	return predicate.GrowthProduct(sql.FieldHasPrefix(FieldProductStatus, v))
 }
 
-// StatusHasSuffix applies the HasSuffix predicate on the "status" field.
-func StatusHasSuffix(v string) predicate.GrowthProduct {
-	return predicate.GrowthProduct(sql.FieldHasSuffix(FieldStatus, v))
+// ProductStatusHasSuffix applies the HasSuffix predicate on the "product_status" field.
+func ProductStatusHasSuffix(v string) predicate.GrowthProduct {
+	return predicate.GrowthProduct(sql.FieldHasSuffix(FieldProductStatus, v))
 }
 
-// StatusEqualFold applies the EqualFold predicate on the "status" field.
-func StatusEqualFold(v string) predicate.GrowthProduct {
-	return predicate.GrowthProduct(sql.FieldEqualFold(FieldStatus, v))
+// ProductStatusEqualFold applies the EqualFold predicate on the "product_status" field.
+func ProductStatusEqualFold(v string) predicate.GrowthProduct {
+	return predicate.GrowthProduct(sql.FieldEqualFold(FieldProductStatus, v))
 }
 
-// StatusContainsFold applies the ContainsFold predicate on the "status" field.
-func StatusContainsFold(v string) predicate.GrowthProduct {
-	return predicate.GrowthProduct(sql.FieldContainsFold(FieldStatus, v))
+// ProductStatusContainsFold applies the ContainsFold predicate on the "product_status" field.
+func ProductStatusContainsFold(v string) predicate.GrowthProduct {
+	return predicate.GrowthProduct(sql.FieldContainsFold(FieldProductStatus, v))
 }
 
 // CurrentVersionEQ applies the EQ predicate on the "current_version" field.

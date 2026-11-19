@@ -109,9 +109,9 @@ func Points(v int64) predicate.GrowthTransfer {
 	return predicate.GrowthTransfer(sql.FieldEQ(FieldPoints, v))
 }
 
-// Status applies equality check predicate on the "status" field. It's identical to StatusEQ.
-func Status(v string) predicate.GrowthTransfer {
-	return predicate.GrowthTransfer(sql.FieldEQ(FieldStatus, v))
+// TransferStatus applies equality check predicate on the "transfer_status" field. It's identical to TransferStatusEQ.
+func TransferStatus(v string) predicate.GrowthTransfer {
+	return predicate.GrowthTransfer(sql.FieldEQ(FieldTransferStatus, v))
 }
 
 // FailureReason applies equality check predicate on the "failure_reason" field. It's identical to FailureReasonEQ.
@@ -704,69 +704,69 @@ func PointsLTE(v int64) predicate.GrowthTransfer {
 	return predicate.GrowthTransfer(sql.FieldLTE(FieldPoints, v))
 }
 
-// StatusEQ applies the EQ predicate on the "status" field.
-func StatusEQ(v string) predicate.GrowthTransfer {
-	return predicate.GrowthTransfer(sql.FieldEQ(FieldStatus, v))
+// TransferStatusEQ applies the EQ predicate on the "transfer_status" field.
+func TransferStatusEQ(v string) predicate.GrowthTransfer {
+	return predicate.GrowthTransfer(sql.FieldEQ(FieldTransferStatus, v))
 }
 
-// StatusNEQ applies the NEQ predicate on the "status" field.
-func StatusNEQ(v string) predicate.GrowthTransfer {
-	return predicate.GrowthTransfer(sql.FieldNEQ(FieldStatus, v))
+// TransferStatusNEQ applies the NEQ predicate on the "transfer_status" field.
+func TransferStatusNEQ(v string) predicate.GrowthTransfer {
+	return predicate.GrowthTransfer(sql.FieldNEQ(FieldTransferStatus, v))
 }
 
-// StatusIn applies the In predicate on the "status" field.
-func StatusIn(vs ...string) predicate.GrowthTransfer {
-	return predicate.GrowthTransfer(sql.FieldIn(FieldStatus, vs...))
+// TransferStatusIn applies the In predicate on the "transfer_status" field.
+func TransferStatusIn(vs ...string) predicate.GrowthTransfer {
+	return predicate.GrowthTransfer(sql.FieldIn(FieldTransferStatus, vs...))
 }
 
-// StatusNotIn applies the NotIn predicate on the "status" field.
-func StatusNotIn(vs ...string) predicate.GrowthTransfer {
-	return predicate.GrowthTransfer(sql.FieldNotIn(FieldStatus, vs...))
+// TransferStatusNotIn applies the NotIn predicate on the "transfer_status" field.
+func TransferStatusNotIn(vs ...string) predicate.GrowthTransfer {
+	return predicate.GrowthTransfer(sql.FieldNotIn(FieldTransferStatus, vs...))
 }
 
-// StatusGT applies the GT predicate on the "status" field.
-func StatusGT(v string) predicate.GrowthTransfer {
-	return predicate.GrowthTransfer(sql.FieldGT(FieldStatus, v))
+// TransferStatusGT applies the GT predicate on the "transfer_status" field.
+func TransferStatusGT(v string) predicate.GrowthTransfer {
+	return predicate.GrowthTransfer(sql.FieldGT(FieldTransferStatus, v))
 }
 
-// StatusGTE applies the GTE predicate on the "status" field.
-func StatusGTE(v string) predicate.GrowthTransfer {
-	return predicate.GrowthTransfer(sql.FieldGTE(FieldStatus, v))
+// TransferStatusGTE applies the GTE predicate on the "transfer_status" field.
+func TransferStatusGTE(v string) predicate.GrowthTransfer {
+	return predicate.GrowthTransfer(sql.FieldGTE(FieldTransferStatus, v))
 }
 
-// StatusLT applies the LT predicate on the "status" field.
-func StatusLT(v string) predicate.GrowthTransfer {
-	return predicate.GrowthTransfer(sql.FieldLT(FieldStatus, v))
+// TransferStatusLT applies the LT predicate on the "transfer_status" field.
+func TransferStatusLT(v string) predicate.GrowthTransfer {
+	return predicate.GrowthTransfer(sql.FieldLT(FieldTransferStatus, v))
 }
 
-// StatusLTE applies the LTE predicate on the "status" field.
-func StatusLTE(v string) predicate.GrowthTransfer {
-	return predicate.GrowthTransfer(sql.FieldLTE(FieldStatus, v))
+// TransferStatusLTE applies the LTE predicate on the "transfer_status" field.
+func TransferStatusLTE(v string) predicate.GrowthTransfer {
+	return predicate.GrowthTransfer(sql.FieldLTE(FieldTransferStatus, v))
 }
 
-// StatusContains applies the Contains predicate on the "status" field.
-func StatusContains(v string) predicate.GrowthTransfer {
-	return predicate.GrowthTransfer(sql.FieldContains(FieldStatus, v))
+// TransferStatusContains applies the Contains predicate on the "transfer_status" field.
+func TransferStatusContains(v string) predicate.GrowthTransfer {
+	return predicate.GrowthTransfer(sql.FieldContains(FieldTransferStatus, v))
 }
 
-// StatusHasPrefix applies the HasPrefix predicate on the "status" field.
-func StatusHasPrefix(v string) predicate.GrowthTransfer {
-	return predicate.GrowthTransfer(sql.FieldHasPrefix(FieldStatus, v))
+// TransferStatusHasPrefix applies the HasPrefix predicate on the "transfer_status" field.
+func TransferStatusHasPrefix(v string) predicate.GrowthTransfer {
+	return predicate.GrowthTransfer(sql.FieldHasPrefix(FieldTransferStatus, v))
 }
 
-// StatusHasSuffix applies the HasSuffix predicate on the "status" field.
-func StatusHasSuffix(v string) predicate.GrowthTransfer {
-	return predicate.GrowthTransfer(sql.FieldHasSuffix(FieldStatus, v))
+// TransferStatusHasSuffix applies the HasSuffix predicate on the "transfer_status" field.
+func TransferStatusHasSuffix(v string) predicate.GrowthTransfer {
+	return predicate.GrowthTransfer(sql.FieldHasSuffix(FieldTransferStatus, v))
 }
 
-// StatusEqualFold applies the EqualFold predicate on the "status" field.
-func StatusEqualFold(v string) predicate.GrowthTransfer {
-	return predicate.GrowthTransfer(sql.FieldEqualFold(FieldStatus, v))
+// TransferStatusEqualFold applies the EqualFold predicate on the "transfer_status" field.
+func TransferStatusEqualFold(v string) predicate.GrowthTransfer {
+	return predicate.GrowthTransfer(sql.FieldEqualFold(FieldTransferStatus, v))
 }
 
-// StatusContainsFold applies the ContainsFold predicate on the "status" field.
-func StatusContainsFold(v string) predicate.GrowthTransfer {
-	return predicate.GrowthTransfer(sql.FieldContainsFold(FieldStatus, v))
+// TransferStatusContainsFold applies the ContainsFold predicate on the "transfer_status" field.
+func TransferStatusContainsFold(v string) predicate.GrowthTransfer {
+	return predicate.GrowthTransfer(sql.FieldContainsFold(FieldTransferStatus, v))
 }
 
 // FailureReasonEQ applies the EQ predicate on the "failure_reason" field.

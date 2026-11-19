@@ -50,10 +50,11 @@ AIWork 协同事项：
 | 顺序 | 脚本 | 变更内容 | 风险 |
 |---|---|---|---|
 | 1 | `backend/sqlArchiving/182_create_growth_tables.sql` | 创建 17 张 Growth 表、索引、唯一键和检查约束 | 中 |
-| 2 | `backend/sqlArchiving/184_growth_adjustment_account.sql` | 增加 `ADJUST` 账户枚举，修正预算检查约束 | 中 |
-| 3 | `backend/sqlArchiving/185_growth_multi_reward_claims.sql` | 增加领取 `sequence`，升级为支持多次发分的唯一键 | 中 |
-| 4 | `backend/sqlArchiving/163_seed_rbac_compatibility.sql` | 同步 RBAC 兼容 seed | 低 |
-| 5 | `backend/sqlArchiving/183_add_growth_rbac_permissions.sql` | 新增 Growth 权限和普通用户授权 | 中 |
+| 2 | `backend/sqlArchiving/184_growth_adjustment_account.sql` | 旧环境增加 `ADJUST` 账户枚举，修正预算检查约束 | 中 |
+| 3 | `backend/sqlArchiving/185_growth_multi_reward_claims.sql` | 旧环境增加领取 `sequence` 和多发分唯一键 | 中 |
+| 4 | `backend/sqlArchiving/186_growth_goldendb_schema_compat.sql` | 旧环境重命名保留字列并将 JSON 改为 LONGTEXT | 中 |
+| 5 | `backend/sqlArchiving/163_seed_rbac_compatibility.sql` | 同步 RBAC 兼容 seed | 低 |
+| 6 | `backend/sqlArchiving/183_add_growth_rbac_permissions.sql` | 新增 Growth 权限和普通用户授权 | 中 |
 
 核心结构变化：
 
@@ -66,6 +67,16 @@ growth_budgets:
 
 growth_transfers / growth_account_ledger:
   account_type 支持 ADJUST
+
+GoldenDB-compatible columns:
+  transfer_status / task_status / progress_status / claim_status
+  product_status / order_status / job_status / action_type
+  description -> remark
+
+JSON fields:
+  conditions / benefit_detail / product_snapshot
+  before_json / after_json
+  -> LONGTEXT NULL
 ```
 
 ### 3.2 执行前置条件
@@ -73,7 +84,7 @@ growth_transfers / growth_account_ledger:
 - 已完成数据库全量备份，并验证备份可恢复。
 - 已获取数据库变更审批。
 - 已停止成长计划写入及兑换履约流量。
-- 已确认 MySQL 8 或 GoldenDB 兼容环境可执行 `PREPARE/EXECUTE` 和 `CHECK` 约束。
+- 已确认 MySQL 8 或 GoldenDB 兼容环境支持 `CHECK` 约束和基础 `ALTER TABLE`。
 - 已确认现有 `growth_*` 表状态，但不手工重建已有业务表。
 
 备份示例：
@@ -86,17 +97,11 @@ mysqldump --single-transaction --routines --triggers \
 
 ### 3.3 执行命令
 
-按以下顺序执行：
+全新环境只执行完整建表和 RBAC 脚本：
 
 ```bash
 mysql -h <db-host> -P <db-port> -u <db-user> -p <database-name> \
   < backend/sqlArchiving/182_create_growth_tables.sql
-
-mysql -h <db-host> -P <db-port> -u <db-user> -p <database-name> \
-  < backend/sqlArchiving/184_growth_adjustment_account.sql
-
-mysql -h <db-host> -P <db-port> -u <db-user> -p <database-name> \
-  < backend/sqlArchiving/185_growth_multi_reward_claims.sql
 
 mysql -h <db-host> -P <db-port> -u <db-user> -p <database-name> \
   < backend/sqlArchiving/163_seed_rbac_compatibility.sql
@@ -105,11 +110,25 @@ mysql -h <db-host> -P <db-port> -u <db-user> -p <database-name> \
   < backend/sqlArchiving/183_add_growth_rbac_permissions.sql
 ```
 
+已经执行过旧版 182 的存量环境，再按以下顺序升级：
+
+```bash
+mysql -h <db-host> -P <db-port> -u <db-user> -p <database-name> \
+  < backend/sqlArchiving/184_growth_adjustment_account.sql
+
+mysql -h <db-host> -P <db-port> -u <db-user> -p <database-name> \
+  < backend/sqlArchiving/185_growth_multi_reward_claims.sql
+
+mysql -h <db-host> -P <db-port> -u <db-user> -p <database-name> \
+  < backend/sqlArchiving/186_growth_goldendb_schema_compat.sql
+```
+
 说明：
 
-- 182 使用 `CREATE TABLE IF NOT EXISTS`，可兼容新环境和已有 Growth 表的环境。
-- 184、185 包含存量结构升级逻辑，不应跳过。
-- 185 会识别旧三列唯一键并重建为包含 `sequence` 的新唯一键。
+- 最新版 182 只用于全新环境，不能在字段已经升级的环境重复执行增量字段升级。
+- 184/185/186 只用于旧版 Growth 表，不使用 `PREPARE`、`EXECUTE` 或动态 SQL。
+- 185 直接替换旧三列唯一键为包含 `sequence` 的新唯一键。
+- 186 直接重命名列并修改 LONGTEXT 类型，已有数据保持不变。
 - 不在生产执行 Ent 重新生成命令。
 
 ## 4. 配置与权限
@@ -207,6 +226,15 @@ WHERE constraint_schema = DATABASE()
 SHOW INDEX FROM growth_reward_claims
 WHERE Key_name = 'uq_growth_reward_claims_cycle';
 
+SELECT table_name, column_name, data_type, is_nullable
+FROM information_schema.columns
+WHERE table_schema = DATABASE()
+  AND table_name LIKE 'growth_%'
+  AND (
+    column_name IN ('status', 'description', 'action')
+    OR data_type = 'json'
+  );
+
 SELECT code, name, module, status
 FROM rbac_permissions
 WHERE code LIKE 'growth.%'
@@ -218,6 +246,8 @@ ORDER BY code;
 - Growth 表数量为 `17`。
 - `growth_reward_claims.sequence` 存在。
 - `uq_growth_reward_claims_cycle` 包含 `user_id, task_id, cycle_key, sequence`。
+- Growth 表中不存在 `status/description/action` 列，也不存在 JSON 类型列。
+- `conditions/benefit_detail/product_snapshot/before_json/after_json` 均为可空 LONGTEXT。
 - 转账、账务和奖励检查约束存在。
 - Growth 权限数量为 `5`。
 - 普通用户拥有 `growth.self.read`、`growth.self.exchange`。

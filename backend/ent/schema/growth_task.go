@@ -31,12 +31,12 @@ func (GrowthTask) Fields() []ent.Field {
 	return []ent.Field{
 		field.String("task_code").MaxLen(64).NotEmpty(),
 		field.String("title").MaxLen(255).NotEmpty(),
-		field.String("description").MaxLen(2048).Default(""),
+		field.String("remark").MaxLen(2048).Default(""),
 		field.String("category").MaxLen(32).Validate(growthEnum("category", "CHECKIN", "DAILY", "ACHIEVEMENT")),
 		field.String("task_type").MaxLen(32).Validate(growthEnum("task_type", "CHECKIN", "DAILY", "ACHIEVEMENT")),
 		field.String("icon").MaxLen(128).Default(""),
 		field.Int("sort_order").Default(0),
-		field.String("status").MaxLen(20).Default("DRAFT").Validate(growthEnum("status", "DRAFT", "ACTIVE", "OFFLINE")),
+		field.String("task_status").MaxLen(20).Default("DRAFT").Validate(growthEnum("task_status", "DRAFT", "ACTIVE", "OFFLINE")),
 		field.Time("effective_from").
 			Optional().
 			Nillable().
@@ -53,7 +53,7 @@ func (GrowthTask) Fields() []ent.Field {
 func (GrowthTask) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Fields("task_code").Unique(),
-		index.Fields("status", "sort_order"),
-		index.Fields("category", "status"),
+		index.Fields("task_status", "sort_order"),
+		index.Fields("category", "task_status"),
 	}
 }

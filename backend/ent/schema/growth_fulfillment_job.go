@@ -30,7 +30,7 @@ func (GrowthFulfillmentJob) Fields() []ent.Field {
 	return []ent.Field{
 		field.Int64("order_id"),
 		field.String("job_type").MaxLen(32).Default("FULFILL"),
-		field.String("status").MaxLen(20).Default("PENDING").Validate(growthEnum("status", "PENDING", "PROCESSING", "RETRY", "SUCCEEDED", "FAILED", "CANCELLED")),
+		field.String("job_status").MaxLen(20).Default("PENDING").Validate(growthEnum("job_status", "PENDING", "PROCESSING", "RETRY", "SUCCEEDED", "FAILED", "CANCELLED")),
 		field.Int("attempt_count").Default(0).Validate(growthNonNegativeInt("attempt_count")),
 		field.Int("max_attempts").Default(3).Validate(growthPositiveInt("max_attempts")),
 		field.Time("next_retry_at").Default(time.Now).SchemaType(map[string]string{dialect.MySQL: "datetime(6)"}),
@@ -50,7 +50,7 @@ func (GrowthFulfillmentJob) Fields() []ent.Field {
 func (GrowthFulfillmentJob) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Fields("order_id").Unique(),
-		index.Fields("status", "next_retry_at"),
+		index.Fields("job_status", "next_retry_at"),
 		index.Fields("locked_until"),
 	}
 }

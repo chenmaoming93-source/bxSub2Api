@@ -76,8 +76,16 @@ func (_c *GrowthExchangeOrderCreate) SetProductVersion(v int) *GrowthExchangeOrd
 }
 
 // SetProductSnapshot sets the "product_snapshot" field.
-func (_c *GrowthExchangeOrderCreate) SetProductSnapshot(v map[string]interface{}) *GrowthExchangeOrderCreate {
+func (_c *GrowthExchangeOrderCreate) SetProductSnapshot(v string) *GrowthExchangeOrderCreate {
 	_c.mutation.SetProductSnapshot(v)
+	return _c
+}
+
+// SetNillableProductSnapshot sets the "product_snapshot" field if the given value is not nil.
+func (_c *GrowthExchangeOrderCreate) SetNillableProductSnapshot(v *string) *GrowthExchangeOrderCreate {
+	if v != nil {
+		_c.SetProductSnapshot(*v)
+	}
 	return _c
 }
 
@@ -87,16 +95,16 @@ func (_c *GrowthExchangeOrderCreate) SetPointsCost(v int64) *GrowthExchangeOrder
 	return _c
 }
 
-// SetStatus sets the "status" field.
-func (_c *GrowthExchangeOrderCreate) SetStatus(v string) *GrowthExchangeOrderCreate {
-	_c.mutation.SetStatus(v)
+// SetOrderStatus sets the "order_status" field.
+func (_c *GrowthExchangeOrderCreate) SetOrderStatus(v string) *GrowthExchangeOrderCreate {
+	_c.mutation.SetOrderStatus(v)
 	return _c
 }
 
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (_c *GrowthExchangeOrderCreate) SetNillableStatus(v *string) *GrowthExchangeOrderCreate {
+// SetNillableOrderStatus sets the "order_status" field if the given value is not nil.
+func (_c *GrowthExchangeOrderCreate) SetNillableOrderStatus(v *string) *GrowthExchangeOrderCreate {
 	if v != nil {
-		_c.SetStatus(*v)
+		_c.SetOrderStatus(*v)
 	}
 	return _c
 }
@@ -239,9 +247,9 @@ func (_c *GrowthExchangeOrderCreate) defaults() {
 		v := growthexchangeorder.DefaultUpdatedAt()
 		_c.mutation.SetUpdatedAt(v)
 	}
-	if _, ok := _c.mutation.Status(); !ok {
-		v := growthexchangeorder.DefaultStatus
-		_c.mutation.SetStatus(v)
+	if _, ok := _c.mutation.OrderStatus(); !ok {
+		v := growthexchangeorder.DefaultOrderStatus
+		_c.mutation.SetOrderStatus(v)
 	}
 	if _, ok := _c.mutation.FailureReason(); !ok {
 		v := growthexchangeorder.DefaultFailureReason
@@ -279,9 +287,6 @@ func (_c *GrowthExchangeOrderCreate) check() error {
 			return &ValidationError{Name: "product_version", err: fmt.Errorf(`ent: validator failed for field "GrowthExchangeOrder.product_version": %w`, err)}
 		}
 	}
-	if _, ok := _c.mutation.ProductSnapshot(); !ok {
-		return &ValidationError{Name: "product_snapshot", err: errors.New(`ent: missing required field "GrowthExchangeOrder.product_snapshot"`)}
-	}
 	if _, ok := _c.mutation.PointsCost(); !ok {
 		return &ValidationError{Name: "points_cost", err: errors.New(`ent: missing required field "GrowthExchangeOrder.points_cost"`)}
 	}
@@ -290,12 +295,12 @@ func (_c *GrowthExchangeOrderCreate) check() error {
 			return &ValidationError{Name: "points_cost", err: fmt.Errorf(`ent: validator failed for field "GrowthExchangeOrder.points_cost": %w`, err)}
 		}
 	}
-	if _, ok := _c.mutation.Status(); !ok {
-		return &ValidationError{Name: "status", err: errors.New(`ent: missing required field "GrowthExchangeOrder.status"`)}
+	if _, ok := _c.mutation.OrderStatus(); !ok {
+		return &ValidationError{Name: "order_status", err: errors.New(`ent: missing required field "GrowthExchangeOrder.order_status"`)}
 	}
-	if v, ok := _c.mutation.Status(); ok {
-		if err := growthexchangeorder.StatusValidator(v); err != nil {
-			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "GrowthExchangeOrder.status": %w`, err)}
+	if v, ok := _c.mutation.OrderStatus(); ok {
+		if err := growthexchangeorder.OrderStatusValidator(v); err != nil {
+			return &ValidationError{Name: "order_status", err: fmt.Errorf(`ent: validator failed for field "GrowthExchangeOrder.order_status": %w`, err)}
 		}
 	}
 	if _, ok := _c.mutation.IdempotencyKey(); !ok {
@@ -365,16 +370,16 @@ func (_c *GrowthExchangeOrderCreate) createSpec() (*GrowthExchangeOrder, *sqlgra
 		_node.ProductVersion = value
 	}
 	if value, ok := _c.mutation.ProductSnapshot(); ok {
-		_spec.SetField(growthexchangeorder.FieldProductSnapshot, field.TypeJSON, value)
+		_spec.SetField(growthexchangeorder.FieldProductSnapshot, field.TypeString, value)
 		_node.ProductSnapshot = value
 	}
 	if value, ok := _c.mutation.PointsCost(); ok {
 		_spec.SetField(growthexchangeorder.FieldPointsCost, field.TypeInt64, value)
 		_node.PointsCost = value
 	}
-	if value, ok := _c.mutation.Status(); ok {
-		_spec.SetField(growthexchangeorder.FieldStatus, field.TypeString, value)
-		_node.Status = value
+	if value, ok := _c.mutation.OrderStatus(); ok {
+		_spec.SetField(growthexchangeorder.FieldOrderStatus, field.TypeString, value)
+		_node.OrderStatus = value
 	}
 	if value, ok := _c.mutation.IdempotencyKey(); ok {
 		_spec.SetField(growthexchangeorder.FieldIdempotencyKey, field.TypeString, value)
@@ -546,7 +551,7 @@ func (u *GrowthExchangeOrderUpsert) AddProductVersion(v int) *GrowthExchangeOrde
 }
 
 // SetProductSnapshot sets the "product_snapshot" field.
-func (u *GrowthExchangeOrderUpsert) SetProductSnapshot(v map[string]interface{}) *GrowthExchangeOrderUpsert {
+func (u *GrowthExchangeOrderUpsert) SetProductSnapshot(v string) *GrowthExchangeOrderUpsert {
 	u.Set(growthexchangeorder.FieldProductSnapshot, v)
 	return u
 }
@@ -554,6 +559,12 @@ func (u *GrowthExchangeOrderUpsert) SetProductSnapshot(v map[string]interface{})
 // UpdateProductSnapshot sets the "product_snapshot" field to the value that was provided on create.
 func (u *GrowthExchangeOrderUpsert) UpdateProductSnapshot() *GrowthExchangeOrderUpsert {
 	u.SetExcluded(growthexchangeorder.FieldProductSnapshot)
+	return u
+}
+
+// ClearProductSnapshot clears the value of the "product_snapshot" field.
+func (u *GrowthExchangeOrderUpsert) ClearProductSnapshot() *GrowthExchangeOrderUpsert {
+	u.SetNull(growthexchangeorder.FieldProductSnapshot)
 	return u
 }
 
@@ -575,15 +586,15 @@ func (u *GrowthExchangeOrderUpsert) AddPointsCost(v int64) *GrowthExchangeOrderU
 	return u
 }
 
-// SetStatus sets the "status" field.
-func (u *GrowthExchangeOrderUpsert) SetStatus(v string) *GrowthExchangeOrderUpsert {
-	u.Set(growthexchangeorder.FieldStatus, v)
+// SetOrderStatus sets the "order_status" field.
+func (u *GrowthExchangeOrderUpsert) SetOrderStatus(v string) *GrowthExchangeOrderUpsert {
+	u.Set(growthexchangeorder.FieldOrderStatus, v)
 	return u
 }
 
-// UpdateStatus sets the "status" field to the value that was provided on create.
-func (u *GrowthExchangeOrderUpsert) UpdateStatus() *GrowthExchangeOrderUpsert {
-	u.SetExcluded(growthexchangeorder.FieldStatus)
+// UpdateOrderStatus sets the "order_status" field to the value that was provided on create.
+func (u *GrowthExchangeOrderUpsert) UpdateOrderStatus() *GrowthExchangeOrderUpsert {
+	u.SetExcluded(growthexchangeorder.FieldOrderStatus)
 	return u
 }
 
@@ -849,7 +860,7 @@ func (u *GrowthExchangeOrderUpsertOne) UpdateProductVersion() *GrowthExchangeOrd
 }
 
 // SetProductSnapshot sets the "product_snapshot" field.
-func (u *GrowthExchangeOrderUpsertOne) SetProductSnapshot(v map[string]interface{}) *GrowthExchangeOrderUpsertOne {
+func (u *GrowthExchangeOrderUpsertOne) SetProductSnapshot(v string) *GrowthExchangeOrderUpsertOne {
 	return u.Update(func(s *GrowthExchangeOrderUpsert) {
 		s.SetProductSnapshot(v)
 	})
@@ -859,6 +870,13 @@ func (u *GrowthExchangeOrderUpsertOne) SetProductSnapshot(v map[string]interface
 func (u *GrowthExchangeOrderUpsertOne) UpdateProductSnapshot() *GrowthExchangeOrderUpsertOne {
 	return u.Update(func(s *GrowthExchangeOrderUpsert) {
 		s.UpdateProductSnapshot()
+	})
+}
+
+// ClearProductSnapshot clears the value of the "product_snapshot" field.
+func (u *GrowthExchangeOrderUpsertOne) ClearProductSnapshot() *GrowthExchangeOrderUpsertOne {
+	return u.Update(func(s *GrowthExchangeOrderUpsert) {
+		s.ClearProductSnapshot()
 	})
 }
 
@@ -883,17 +901,17 @@ func (u *GrowthExchangeOrderUpsertOne) UpdatePointsCost() *GrowthExchangeOrderUp
 	})
 }
 
-// SetStatus sets the "status" field.
-func (u *GrowthExchangeOrderUpsertOne) SetStatus(v string) *GrowthExchangeOrderUpsertOne {
+// SetOrderStatus sets the "order_status" field.
+func (u *GrowthExchangeOrderUpsertOne) SetOrderStatus(v string) *GrowthExchangeOrderUpsertOne {
 	return u.Update(func(s *GrowthExchangeOrderUpsert) {
-		s.SetStatus(v)
+		s.SetOrderStatus(v)
 	})
 }
 
-// UpdateStatus sets the "status" field to the value that was provided on create.
-func (u *GrowthExchangeOrderUpsertOne) UpdateStatus() *GrowthExchangeOrderUpsertOne {
+// UpdateOrderStatus sets the "order_status" field to the value that was provided on create.
+func (u *GrowthExchangeOrderUpsertOne) UpdateOrderStatus() *GrowthExchangeOrderUpsertOne {
 	return u.Update(func(s *GrowthExchangeOrderUpsert) {
-		s.UpdateStatus()
+		s.UpdateOrderStatus()
 	})
 }
 
@@ -1347,7 +1365,7 @@ func (u *GrowthExchangeOrderUpsertBulk) UpdateProductVersion() *GrowthExchangeOr
 }
 
 // SetProductSnapshot sets the "product_snapshot" field.
-func (u *GrowthExchangeOrderUpsertBulk) SetProductSnapshot(v map[string]interface{}) *GrowthExchangeOrderUpsertBulk {
+func (u *GrowthExchangeOrderUpsertBulk) SetProductSnapshot(v string) *GrowthExchangeOrderUpsertBulk {
 	return u.Update(func(s *GrowthExchangeOrderUpsert) {
 		s.SetProductSnapshot(v)
 	})
@@ -1357,6 +1375,13 @@ func (u *GrowthExchangeOrderUpsertBulk) SetProductSnapshot(v map[string]interfac
 func (u *GrowthExchangeOrderUpsertBulk) UpdateProductSnapshot() *GrowthExchangeOrderUpsertBulk {
 	return u.Update(func(s *GrowthExchangeOrderUpsert) {
 		s.UpdateProductSnapshot()
+	})
+}
+
+// ClearProductSnapshot clears the value of the "product_snapshot" field.
+func (u *GrowthExchangeOrderUpsertBulk) ClearProductSnapshot() *GrowthExchangeOrderUpsertBulk {
+	return u.Update(func(s *GrowthExchangeOrderUpsert) {
+		s.ClearProductSnapshot()
 	})
 }
 
@@ -1381,17 +1406,17 @@ func (u *GrowthExchangeOrderUpsertBulk) UpdatePointsCost() *GrowthExchangeOrderU
 	})
 }
 
-// SetStatus sets the "status" field.
-func (u *GrowthExchangeOrderUpsertBulk) SetStatus(v string) *GrowthExchangeOrderUpsertBulk {
+// SetOrderStatus sets the "order_status" field.
+func (u *GrowthExchangeOrderUpsertBulk) SetOrderStatus(v string) *GrowthExchangeOrderUpsertBulk {
 	return u.Update(func(s *GrowthExchangeOrderUpsert) {
-		s.SetStatus(v)
+		s.SetOrderStatus(v)
 	})
 }
 
-// UpdateStatus sets the "status" field to the value that was provided on create.
-func (u *GrowthExchangeOrderUpsertBulk) UpdateStatus() *GrowthExchangeOrderUpsertBulk {
+// UpdateOrderStatus sets the "order_status" field to the value that was provided on create.
+func (u *GrowthExchangeOrderUpsertBulk) UpdateOrderStatus() *GrowthExchangeOrderUpsertBulk {
 	return u.Update(func(s *GrowthExchangeOrderUpsert) {
-		s.UpdateStatus()
+		s.UpdateOrderStatus()
 	})
 }
 

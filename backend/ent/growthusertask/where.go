@@ -100,9 +100,9 @@ func CompletedCount(v int64) predicate.GrowthUserTask {
 	return predicate.GrowthUserTask(sql.FieldEQ(FieldCompletedCount, v))
 }
 
-// Status applies equality check predicate on the "status" field. It's identical to StatusEQ.
-func Status(v string) predicate.GrowthUserTask {
-	return predicate.GrowthUserTask(sql.FieldEQ(FieldStatus, v))
+// ProgressStatus applies equality check predicate on the "progress_status" field. It's identical to ProgressStatusEQ.
+func ProgressStatus(v string) predicate.GrowthUserTask {
+	return predicate.GrowthUserTask(sql.FieldEQ(FieldProgressStatus, v))
 }
 
 // CompletedAt applies equality check predicate on the "completed_at" field. It's identical to CompletedAtEQ.
@@ -480,69 +480,69 @@ func CompletedCountLTE(v int64) predicate.GrowthUserTask {
 	return predicate.GrowthUserTask(sql.FieldLTE(FieldCompletedCount, v))
 }
 
-// StatusEQ applies the EQ predicate on the "status" field.
-func StatusEQ(v string) predicate.GrowthUserTask {
-	return predicate.GrowthUserTask(sql.FieldEQ(FieldStatus, v))
+// ProgressStatusEQ applies the EQ predicate on the "progress_status" field.
+func ProgressStatusEQ(v string) predicate.GrowthUserTask {
+	return predicate.GrowthUserTask(sql.FieldEQ(FieldProgressStatus, v))
 }
 
-// StatusNEQ applies the NEQ predicate on the "status" field.
-func StatusNEQ(v string) predicate.GrowthUserTask {
-	return predicate.GrowthUserTask(sql.FieldNEQ(FieldStatus, v))
+// ProgressStatusNEQ applies the NEQ predicate on the "progress_status" field.
+func ProgressStatusNEQ(v string) predicate.GrowthUserTask {
+	return predicate.GrowthUserTask(sql.FieldNEQ(FieldProgressStatus, v))
 }
 
-// StatusIn applies the In predicate on the "status" field.
-func StatusIn(vs ...string) predicate.GrowthUserTask {
-	return predicate.GrowthUserTask(sql.FieldIn(FieldStatus, vs...))
+// ProgressStatusIn applies the In predicate on the "progress_status" field.
+func ProgressStatusIn(vs ...string) predicate.GrowthUserTask {
+	return predicate.GrowthUserTask(sql.FieldIn(FieldProgressStatus, vs...))
 }
 
-// StatusNotIn applies the NotIn predicate on the "status" field.
-func StatusNotIn(vs ...string) predicate.GrowthUserTask {
-	return predicate.GrowthUserTask(sql.FieldNotIn(FieldStatus, vs...))
+// ProgressStatusNotIn applies the NotIn predicate on the "progress_status" field.
+func ProgressStatusNotIn(vs ...string) predicate.GrowthUserTask {
+	return predicate.GrowthUserTask(sql.FieldNotIn(FieldProgressStatus, vs...))
 }
 
-// StatusGT applies the GT predicate on the "status" field.
-func StatusGT(v string) predicate.GrowthUserTask {
-	return predicate.GrowthUserTask(sql.FieldGT(FieldStatus, v))
+// ProgressStatusGT applies the GT predicate on the "progress_status" field.
+func ProgressStatusGT(v string) predicate.GrowthUserTask {
+	return predicate.GrowthUserTask(sql.FieldGT(FieldProgressStatus, v))
 }
 
-// StatusGTE applies the GTE predicate on the "status" field.
-func StatusGTE(v string) predicate.GrowthUserTask {
-	return predicate.GrowthUserTask(sql.FieldGTE(FieldStatus, v))
+// ProgressStatusGTE applies the GTE predicate on the "progress_status" field.
+func ProgressStatusGTE(v string) predicate.GrowthUserTask {
+	return predicate.GrowthUserTask(sql.FieldGTE(FieldProgressStatus, v))
 }
 
-// StatusLT applies the LT predicate on the "status" field.
-func StatusLT(v string) predicate.GrowthUserTask {
-	return predicate.GrowthUserTask(sql.FieldLT(FieldStatus, v))
+// ProgressStatusLT applies the LT predicate on the "progress_status" field.
+func ProgressStatusLT(v string) predicate.GrowthUserTask {
+	return predicate.GrowthUserTask(sql.FieldLT(FieldProgressStatus, v))
 }
 
-// StatusLTE applies the LTE predicate on the "status" field.
-func StatusLTE(v string) predicate.GrowthUserTask {
-	return predicate.GrowthUserTask(sql.FieldLTE(FieldStatus, v))
+// ProgressStatusLTE applies the LTE predicate on the "progress_status" field.
+func ProgressStatusLTE(v string) predicate.GrowthUserTask {
+	return predicate.GrowthUserTask(sql.FieldLTE(FieldProgressStatus, v))
 }
 
-// StatusContains applies the Contains predicate on the "status" field.
-func StatusContains(v string) predicate.GrowthUserTask {
-	return predicate.GrowthUserTask(sql.FieldContains(FieldStatus, v))
+// ProgressStatusContains applies the Contains predicate on the "progress_status" field.
+func ProgressStatusContains(v string) predicate.GrowthUserTask {
+	return predicate.GrowthUserTask(sql.FieldContains(FieldProgressStatus, v))
 }
 
-// StatusHasPrefix applies the HasPrefix predicate on the "status" field.
-func StatusHasPrefix(v string) predicate.GrowthUserTask {
-	return predicate.GrowthUserTask(sql.FieldHasPrefix(FieldStatus, v))
+// ProgressStatusHasPrefix applies the HasPrefix predicate on the "progress_status" field.
+func ProgressStatusHasPrefix(v string) predicate.GrowthUserTask {
+	return predicate.GrowthUserTask(sql.FieldHasPrefix(FieldProgressStatus, v))
 }
 
-// StatusHasSuffix applies the HasSuffix predicate on the "status" field.
-func StatusHasSuffix(v string) predicate.GrowthUserTask {
-	return predicate.GrowthUserTask(sql.FieldHasSuffix(FieldStatus, v))
+// ProgressStatusHasSuffix applies the HasSuffix predicate on the "progress_status" field.
+func ProgressStatusHasSuffix(v string) predicate.GrowthUserTask {
+	return predicate.GrowthUserTask(sql.FieldHasSuffix(FieldProgressStatus, v))
 }
 
-// StatusEqualFold applies the EqualFold predicate on the "status" field.
-func StatusEqualFold(v string) predicate.GrowthUserTask {
-	return predicate.GrowthUserTask(sql.FieldEqualFold(FieldStatus, v))
+// ProgressStatusEqualFold applies the EqualFold predicate on the "progress_status" field.
+func ProgressStatusEqualFold(v string) predicate.GrowthUserTask {
+	return predicate.GrowthUserTask(sql.FieldEqualFold(FieldProgressStatus, v))
 }
 
-// StatusContainsFold applies the ContainsFold predicate on the "status" field.
-func StatusContainsFold(v string) predicate.GrowthUserTask {
-	return predicate.GrowthUserTask(sql.FieldContainsFold(FieldStatus, v))
+// ProgressStatusContainsFold applies the ContainsFold predicate on the "progress_status" field.
+func ProgressStatusContainsFold(v string) predicate.GrowthUserTask {
+	return predicate.GrowthUserTask(sql.FieldContainsFold(FieldProgressStatus, v))
 }
 
 // CompletedAtEQ applies the EQ predicate on the "completed_at" field.

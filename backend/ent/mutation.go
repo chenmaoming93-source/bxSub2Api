@@ -19877,12 +19877,12 @@ type GrowthAdminAuditMutation struct {
 	id              *int64
 	created_at      *time.Time
 	updated_at      *time.Time
-	action          *string
+	action_type     *string
 	resource_type   *string
 	resource_id     *int64
 	addresource_id  *int64
-	before_json     *map[string]interface{}
-	after_json      *map[string]interface{}
+	before_json     *string
+	after_json      *string
 	reason          *string
 	request_id      *string
 	clearedFields   map[string]struct{}
@@ -20099,40 +20099,40 @@ func (m *GrowthAdminAuditMutation) ResetOperatorID() {
 	m.operator = nil
 }
 
-// SetAction sets the "action" field.
-func (m *GrowthAdminAuditMutation) SetAction(s string) {
-	m.action = &s
+// SetActionType sets the "action_type" field.
+func (m *GrowthAdminAuditMutation) SetActionType(s string) {
+	m.action_type = &s
 }
 
-// Action returns the value of the "action" field in the mutation.
-func (m *GrowthAdminAuditMutation) Action() (r string, exists bool) {
-	v := m.action
+// ActionType returns the value of the "action_type" field in the mutation.
+func (m *GrowthAdminAuditMutation) ActionType() (r string, exists bool) {
+	v := m.action_type
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldAction returns the old "action" field's value of the GrowthAdminAudit entity.
+// OldActionType returns the old "action_type" field's value of the GrowthAdminAudit entity.
 // If the GrowthAdminAudit object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *GrowthAdminAuditMutation) OldAction(ctx context.Context) (v string, err error) {
+func (m *GrowthAdminAuditMutation) OldActionType(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldAction is only allowed on UpdateOne operations")
+		return v, errors.New("OldActionType is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldAction requires an ID field in the mutation")
+		return v, errors.New("OldActionType requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldAction: %w", err)
+		return v, fmt.Errorf("querying old value for OldActionType: %w", err)
 	}
-	return oldValue.Action, nil
+	return oldValue.ActionType, nil
 }
 
-// ResetAction resets all changes to the "action" field.
-func (m *GrowthAdminAuditMutation) ResetAction() {
-	m.action = nil
+// ResetActionType resets all changes to the "action_type" field.
+func (m *GrowthAdminAuditMutation) ResetActionType() {
+	m.action_type = nil
 }
 
 // SetResourceType sets the "resource_type" field.
@@ -20242,12 +20242,12 @@ func (m *GrowthAdminAuditMutation) ResetResourceID() {
 }
 
 // SetBeforeJSON sets the "before_json" field.
-func (m *GrowthAdminAuditMutation) SetBeforeJSON(value map[string]interface{}) {
-	m.before_json = &value
+func (m *GrowthAdminAuditMutation) SetBeforeJSON(s string) {
+	m.before_json = &s
 }
 
 // BeforeJSON returns the value of the "before_json" field in the mutation.
-func (m *GrowthAdminAuditMutation) BeforeJSON() (r map[string]interface{}, exists bool) {
+func (m *GrowthAdminAuditMutation) BeforeJSON() (r string, exists bool) {
 	v := m.before_json
 	if v == nil {
 		return
@@ -20258,7 +20258,7 @@ func (m *GrowthAdminAuditMutation) BeforeJSON() (r map[string]interface{}, exist
 // OldBeforeJSON returns the old "before_json" field's value of the GrowthAdminAudit entity.
 // If the GrowthAdminAudit object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *GrowthAdminAuditMutation) OldBeforeJSON(ctx context.Context) (v map[string]interface{}, err error) {
+func (m *GrowthAdminAuditMutation) OldBeforeJSON(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldBeforeJSON is only allowed on UpdateOne operations")
 	}
@@ -20291,12 +20291,12 @@ func (m *GrowthAdminAuditMutation) ResetBeforeJSON() {
 }
 
 // SetAfterJSON sets the "after_json" field.
-func (m *GrowthAdminAuditMutation) SetAfterJSON(value map[string]interface{}) {
-	m.after_json = &value
+func (m *GrowthAdminAuditMutation) SetAfterJSON(s string) {
+	m.after_json = &s
 }
 
 // AfterJSON returns the value of the "after_json" field in the mutation.
-func (m *GrowthAdminAuditMutation) AfterJSON() (r map[string]interface{}, exists bool) {
+func (m *GrowthAdminAuditMutation) AfterJSON() (r string, exists bool) {
 	v := m.after_json
 	if v == nil {
 		return
@@ -20307,7 +20307,7 @@ func (m *GrowthAdminAuditMutation) AfterJSON() (r map[string]interface{}, exists
 // OldAfterJSON returns the old "after_json" field's value of the GrowthAdminAudit entity.
 // If the GrowthAdminAudit object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *GrowthAdminAuditMutation) OldAfterJSON(ctx context.Context) (v map[string]interface{}, err error) {
+func (m *GrowthAdminAuditMutation) OldAfterJSON(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldAfterJSON is only allowed on UpdateOne operations")
 	}
@@ -20482,8 +20482,8 @@ func (m *GrowthAdminAuditMutation) Fields() []string {
 	if m.operator != nil {
 		fields = append(fields, growthadminaudit.FieldOperatorID)
 	}
-	if m.action != nil {
-		fields = append(fields, growthadminaudit.FieldAction)
+	if m.action_type != nil {
+		fields = append(fields, growthadminaudit.FieldActionType)
 	}
 	if m.resource_type != nil {
 		fields = append(fields, growthadminaudit.FieldResourceType)
@@ -20517,8 +20517,8 @@ func (m *GrowthAdminAuditMutation) Field(name string) (ent.Value, bool) {
 		return m.UpdatedAt()
 	case growthadminaudit.FieldOperatorID:
 		return m.OperatorID()
-	case growthadminaudit.FieldAction:
-		return m.Action()
+	case growthadminaudit.FieldActionType:
+		return m.ActionType()
 	case growthadminaudit.FieldResourceType:
 		return m.ResourceType()
 	case growthadminaudit.FieldResourceID:
@@ -20546,8 +20546,8 @@ func (m *GrowthAdminAuditMutation) OldField(ctx context.Context, name string) (e
 		return m.OldUpdatedAt(ctx)
 	case growthadminaudit.FieldOperatorID:
 		return m.OldOperatorID(ctx)
-	case growthadminaudit.FieldAction:
-		return m.OldAction(ctx)
+	case growthadminaudit.FieldActionType:
+		return m.OldActionType(ctx)
 	case growthadminaudit.FieldResourceType:
 		return m.OldResourceType(ctx)
 	case growthadminaudit.FieldResourceID:
@@ -20590,12 +20590,12 @@ func (m *GrowthAdminAuditMutation) SetField(name string, value ent.Value) error 
 		}
 		m.SetOperatorID(v)
 		return nil
-	case growthadminaudit.FieldAction:
+	case growthadminaudit.FieldActionType:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetAction(v)
+		m.SetActionType(v)
 		return nil
 	case growthadminaudit.FieldResourceType:
 		v, ok := value.(string)
@@ -20612,14 +20612,14 @@ func (m *GrowthAdminAuditMutation) SetField(name string, value ent.Value) error 
 		m.SetResourceID(v)
 		return nil
 	case growthadminaudit.FieldBeforeJSON:
-		v, ok := value.(map[string]interface{})
+		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetBeforeJSON(v)
 		return nil
 	case growthadminaudit.FieldAfterJSON:
-		v, ok := value.(map[string]interface{})
+		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
@@ -20733,8 +20733,8 @@ func (m *GrowthAdminAuditMutation) ResetField(name string) error {
 	case growthadminaudit.FieldOperatorID:
 		m.ResetOperatorID()
 		return nil
-	case growthadminaudit.FieldAction:
-		m.ResetAction()
+	case growthadminaudit.FieldActionType:
+		m.ResetActionType()
 		return nil
 	case growthadminaudit.FieldResourceType:
 		m.ResetResourceType()
@@ -23831,10 +23831,10 @@ type GrowthExchangeOrderMutation struct {
 	addproduct_id         *int64
 	product_version       *int
 	addproduct_version    *int
-	product_snapshot      *map[string]interface{}
+	product_snapshot      *string
 	points_cost           *int64
 	addpoints_cost        *int64
-	status                *string
+	order_status          *string
 	idempotency_key       *string
 	expected_version      *int
 	addexpected_version   *int
@@ -24208,12 +24208,12 @@ func (m *GrowthExchangeOrderMutation) ResetProductVersion() {
 }
 
 // SetProductSnapshot sets the "product_snapshot" field.
-func (m *GrowthExchangeOrderMutation) SetProductSnapshot(value map[string]interface{}) {
-	m.product_snapshot = &value
+func (m *GrowthExchangeOrderMutation) SetProductSnapshot(s string) {
+	m.product_snapshot = &s
 }
 
 // ProductSnapshot returns the value of the "product_snapshot" field in the mutation.
-func (m *GrowthExchangeOrderMutation) ProductSnapshot() (r map[string]interface{}, exists bool) {
+func (m *GrowthExchangeOrderMutation) ProductSnapshot() (r string, exists bool) {
 	v := m.product_snapshot
 	if v == nil {
 		return
@@ -24224,7 +24224,7 @@ func (m *GrowthExchangeOrderMutation) ProductSnapshot() (r map[string]interface{
 // OldProductSnapshot returns the old "product_snapshot" field's value of the GrowthExchangeOrder entity.
 // If the GrowthExchangeOrder object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *GrowthExchangeOrderMutation) OldProductSnapshot(ctx context.Context) (v map[string]interface{}, err error) {
+func (m *GrowthExchangeOrderMutation) OldProductSnapshot(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldProductSnapshot is only allowed on UpdateOne operations")
 	}
@@ -24238,9 +24238,22 @@ func (m *GrowthExchangeOrderMutation) OldProductSnapshot(ctx context.Context) (v
 	return oldValue.ProductSnapshot, nil
 }
 
+// ClearProductSnapshot clears the value of the "product_snapshot" field.
+func (m *GrowthExchangeOrderMutation) ClearProductSnapshot() {
+	m.product_snapshot = nil
+	m.clearedFields[growthexchangeorder.FieldProductSnapshot] = struct{}{}
+}
+
+// ProductSnapshotCleared returns if the "product_snapshot" field was cleared in this mutation.
+func (m *GrowthExchangeOrderMutation) ProductSnapshotCleared() bool {
+	_, ok := m.clearedFields[growthexchangeorder.FieldProductSnapshot]
+	return ok
+}
+
 // ResetProductSnapshot resets all changes to the "product_snapshot" field.
 func (m *GrowthExchangeOrderMutation) ResetProductSnapshot() {
 	m.product_snapshot = nil
+	delete(m.clearedFields, growthexchangeorder.FieldProductSnapshot)
 }
 
 // SetPointsCost sets the "points_cost" field.
@@ -24299,40 +24312,40 @@ func (m *GrowthExchangeOrderMutation) ResetPointsCost() {
 	m.addpoints_cost = nil
 }
 
-// SetStatus sets the "status" field.
-func (m *GrowthExchangeOrderMutation) SetStatus(s string) {
-	m.status = &s
+// SetOrderStatus sets the "order_status" field.
+func (m *GrowthExchangeOrderMutation) SetOrderStatus(s string) {
+	m.order_status = &s
 }
 
-// Status returns the value of the "status" field in the mutation.
-func (m *GrowthExchangeOrderMutation) Status() (r string, exists bool) {
-	v := m.status
+// OrderStatus returns the value of the "order_status" field in the mutation.
+func (m *GrowthExchangeOrderMutation) OrderStatus() (r string, exists bool) {
+	v := m.order_status
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldStatus returns the old "status" field's value of the GrowthExchangeOrder entity.
+// OldOrderStatus returns the old "order_status" field's value of the GrowthExchangeOrder entity.
 // If the GrowthExchangeOrder object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *GrowthExchangeOrderMutation) OldStatus(ctx context.Context) (v string, err error) {
+func (m *GrowthExchangeOrderMutation) OldOrderStatus(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
+		return v, errors.New("OldOrderStatus is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldStatus requires an ID field in the mutation")
+		return v, errors.New("OldOrderStatus requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
+		return v, fmt.Errorf("querying old value for OldOrderStatus: %w", err)
 	}
-	return oldValue.Status, nil
+	return oldValue.OrderStatus, nil
 }
 
-// ResetStatus resets all changes to the "status" field.
-func (m *GrowthExchangeOrderMutation) ResetStatus() {
-	m.status = nil
+// ResetOrderStatus resets all changes to the "order_status" field.
+func (m *GrowthExchangeOrderMutation) ResetOrderStatus() {
+	m.order_status = nil
 }
 
 // SetIdempotencyKey sets the "idempotency_key" field.
@@ -24801,8 +24814,8 @@ func (m *GrowthExchangeOrderMutation) Fields() []string {
 	if m.points_cost != nil {
 		fields = append(fields, growthexchangeorder.FieldPointsCost)
 	}
-	if m.status != nil {
-		fields = append(fields, growthexchangeorder.FieldStatus)
+	if m.order_status != nil {
+		fields = append(fields, growthexchangeorder.FieldOrderStatus)
 	}
 	if m.idempotency_key != nil {
 		fields = append(fields, growthexchangeorder.FieldIdempotencyKey)
@@ -24849,8 +24862,8 @@ func (m *GrowthExchangeOrderMutation) Field(name string) (ent.Value, bool) {
 		return m.ProductSnapshot()
 	case growthexchangeorder.FieldPointsCost:
 		return m.PointsCost()
-	case growthexchangeorder.FieldStatus:
-		return m.Status()
+	case growthexchangeorder.FieldOrderStatus:
+		return m.OrderStatus()
 	case growthexchangeorder.FieldIdempotencyKey:
 		return m.IdempotencyKey()
 	case growthexchangeorder.FieldExpectedVersion:
@@ -24890,8 +24903,8 @@ func (m *GrowthExchangeOrderMutation) OldField(ctx context.Context, name string)
 		return m.OldProductSnapshot(ctx)
 	case growthexchangeorder.FieldPointsCost:
 		return m.OldPointsCost(ctx)
-	case growthexchangeorder.FieldStatus:
-		return m.OldStatus(ctx)
+	case growthexchangeorder.FieldOrderStatus:
+		return m.OldOrderStatus(ctx)
 	case growthexchangeorder.FieldIdempotencyKey:
 		return m.OldIdempotencyKey(ctx)
 	case growthexchangeorder.FieldExpectedVersion:
@@ -24958,7 +24971,7 @@ func (m *GrowthExchangeOrderMutation) SetField(name string, value ent.Value) err
 		m.SetProductVersion(v)
 		return nil
 	case growthexchangeorder.FieldProductSnapshot:
-		v, ok := value.(map[string]interface{})
+		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
@@ -24971,12 +24984,12 @@ func (m *GrowthExchangeOrderMutation) SetField(name string, value ent.Value) err
 		}
 		m.SetPointsCost(v)
 		return nil
-	case growthexchangeorder.FieldStatus:
+	case growthexchangeorder.FieldOrderStatus:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetStatus(v)
+		m.SetOrderStatus(v)
 		return nil
 	case growthexchangeorder.FieldIdempotencyKey:
 		v, ok := value.(string)
@@ -25132,6 +25145,9 @@ func (m *GrowthExchangeOrderMutation) AddField(name string, value ent.Value) err
 // mutation.
 func (m *GrowthExchangeOrderMutation) ClearedFields() []string {
 	var fields []string
+	if m.FieldCleared(growthexchangeorder.FieldProductSnapshot) {
+		fields = append(fields, growthexchangeorder.FieldProductSnapshot)
+	}
 	if m.FieldCleared(growthexchangeorder.FieldExpectedVersion) {
 		fields = append(fields, growthexchangeorder.FieldExpectedVersion)
 	}
@@ -25161,6 +25177,9 @@ func (m *GrowthExchangeOrderMutation) FieldCleared(name string) bool {
 // error if the field is not defined in the schema.
 func (m *GrowthExchangeOrderMutation) ClearField(name string) error {
 	switch name {
+	case growthexchangeorder.FieldProductSnapshot:
+		m.ClearProductSnapshot()
+		return nil
 	case growthexchangeorder.FieldExpectedVersion:
 		m.ClearExpectedVersion()
 		return nil
@@ -25208,8 +25227,8 @@ func (m *GrowthExchangeOrderMutation) ResetField(name string) error {
 	case growthexchangeorder.FieldPointsCost:
 		m.ResetPointsCost()
 		return nil
-	case growthexchangeorder.FieldStatus:
-		m.ResetStatus()
+	case growthexchangeorder.FieldOrderStatus:
+		m.ResetOrderStatus()
 		return nil
 	case growthexchangeorder.FieldIdempotencyKey:
 		m.ResetIdempotencyKey()
@@ -25321,7 +25340,7 @@ type GrowthFulfillmentJobMutation struct {
 	order_id           *int64
 	addorder_id        *int64
 	job_type           *string
-	status             *string
+	job_status         *string
 	attempt_count      *int
 	addattempt_count   *int
 	max_attempts       *int
@@ -25599,40 +25618,40 @@ func (m *GrowthFulfillmentJobMutation) ResetJobType() {
 	m.job_type = nil
 }
 
-// SetStatus sets the "status" field.
-func (m *GrowthFulfillmentJobMutation) SetStatus(s string) {
-	m.status = &s
+// SetJobStatus sets the "job_status" field.
+func (m *GrowthFulfillmentJobMutation) SetJobStatus(s string) {
+	m.job_status = &s
 }
 
-// Status returns the value of the "status" field in the mutation.
-func (m *GrowthFulfillmentJobMutation) Status() (r string, exists bool) {
-	v := m.status
+// JobStatus returns the value of the "job_status" field in the mutation.
+func (m *GrowthFulfillmentJobMutation) JobStatus() (r string, exists bool) {
+	v := m.job_status
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldStatus returns the old "status" field's value of the GrowthFulfillmentJob entity.
+// OldJobStatus returns the old "job_status" field's value of the GrowthFulfillmentJob entity.
 // If the GrowthFulfillmentJob object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *GrowthFulfillmentJobMutation) OldStatus(ctx context.Context) (v string, err error) {
+func (m *GrowthFulfillmentJobMutation) OldJobStatus(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
+		return v, errors.New("OldJobStatus is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldStatus requires an ID field in the mutation")
+		return v, errors.New("OldJobStatus requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
+		return v, fmt.Errorf("querying old value for OldJobStatus: %w", err)
 	}
-	return oldValue.Status, nil
+	return oldValue.JobStatus, nil
 }
 
-// ResetStatus resets all changes to the "status" field.
-func (m *GrowthFulfillmentJobMutation) ResetStatus() {
-	m.status = nil
+// ResetJobStatus resets all changes to the "job_status" field.
+func (m *GrowthFulfillmentJobMutation) ResetJobStatus() {
+	m.job_status = nil
 }
 
 // SetAttemptCount sets the "attempt_count" field.
@@ -26000,8 +26019,8 @@ func (m *GrowthFulfillmentJobMutation) Fields() []string {
 	if m.job_type != nil {
 		fields = append(fields, growthfulfillmentjob.FieldJobType)
 	}
-	if m.status != nil {
-		fields = append(fields, growthfulfillmentjob.FieldStatus)
+	if m.job_status != nil {
+		fields = append(fields, growthfulfillmentjob.FieldJobStatus)
 	}
 	if m.attempt_count != nil {
 		fields = append(fields, growthfulfillmentjob.FieldAttemptCount)
@@ -26040,8 +26059,8 @@ func (m *GrowthFulfillmentJobMutation) Field(name string) (ent.Value, bool) {
 		return m.OrderID()
 	case growthfulfillmentjob.FieldJobType:
 		return m.JobType()
-	case growthfulfillmentjob.FieldStatus:
-		return m.Status()
+	case growthfulfillmentjob.FieldJobStatus:
+		return m.JobStatus()
 	case growthfulfillmentjob.FieldAttemptCount:
 		return m.AttemptCount()
 	case growthfulfillmentjob.FieldMaxAttempts:
@@ -26073,8 +26092,8 @@ func (m *GrowthFulfillmentJobMutation) OldField(ctx context.Context, name string
 		return m.OldOrderID(ctx)
 	case growthfulfillmentjob.FieldJobType:
 		return m.OldJobType(ctx)
-	case growthfulfillmentjob.FieldStatus:
-		return m.OldStatus(ctx)
+	case growthfulfillmentjob.FieldJobStatus:
+		return m.OldJobStatus(ctx)
 	case growthfulfillmentjob.FieldAttemptCount:
 		return m.OldAttemptCount(ctx)
 	case growthfulfillmentjob.FieldMaxAttempts:
@@ -26126,12 +26145,12 @@ func (m *GrowthFulfillmentJobMutation) SetField(name string, value ent.Value) er
 		}
 		m.SetJobType(v)
 		return nil
-	case growthfulfillmentjob.FieldStatus:
+	case growthfulfillmentjob.FieldJobStatus:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetStatus(v)
+		m.SetJobStatus(v)
 		return nil
 	case growthfulfillmentjob.FieldAttemptCount:
 		v, ok := value.(int)
@@ -26297,8 +26316,8 @@ func (m *GrowthFulfillmentJobMutation) ResetField(name string) error {
 	case growthfulfillmentjob.FieldJobType:
 		m.ResetJobType()
 		return nil
-	case growthfulfillmentjob.FieldStatus:
-		m.ResetStatus()
+	case growthfulfillmentjob.FieldJobStatus:
+		m.ResetJobStatus()
 		return nil
 	case growthfulfillmentjob.FieldAttemptCount:
 		m.ResetAttemptCount()
@@ -27846,7 +27865,7 @@ type GrowthProductMutation struct {
 	fulfillment_mode   *string
 	sort_order         *int
 	addsort_order      *int
-	status             *string
+	product_status     *string
 	current_version    *int
 	addcurrent_version *int
 	clearedFields      map[string]struct{}
@@ -28261,40 +28280,40 @@ func (m *GrowthProductMutation) ResetSortOrder() {
 	m.addsort_order = nil
 }
 
-// SetStatus sets the "status" field.
-func (m *GrowthProductMutation) SetStatus(s string) {
-	m.status = &s
+// SetProductStatus sets the "product_status" field.
+func (m *GrowthProductMutation) SetProductStatus(s string) {
+	m.product_status = &s
 }
 
-// Status returns the value of the "status" field in the mutation.
-func (m *GrowthProductMutation) Status() (r string, exists bool) {
-	v := m.status
+// ProductStatus returns the value of the "product_status" field in the mutation.
+func (m *GrowthProductMutation) ProductStatus() (r string, exists bool) {
+	v := m.product_status
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldStatus returns the old "status" field's value of the GrowthProduct entity.
+// OldProductStatus returns the old "product_status" field's value of the GrowthProduct entity.
 // If the GrowthProduct object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *GrowthProductMutation) OldStatus(ctx context.Context) (v string, err error) {
+func (m *GrowthProductMutation) OldProductStatus(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
+		return v, errors.New("OldProductStatus is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldStatus requires an ID field in the mutation")
+		return v, errors.New("OldProductStatus requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
+		return v, fmt.Errorf("querying old value for OldProductStatus: %w", err)
 	}
-	return oldValue.Status, nil
+	return oldValue.ProductStatus, nil
 }
 
-// ResetStatus resets all changes to the "status" field.
-func (m *GrowthProductMutation) ResetStatus() {
-	m.status = nil
+// ResetProductStatus resets all changes to the "product_status" field.
+func (m *GrowthProductMutation) ResetProductStatus() {
+	m.product_status = nil
 }
 
 // SetCurrentVersion sets the "current_version" field.
@@ -28412,8 +28431,8 @@ func (m *GrowthProductMutation) Fields() []string {
 	if m.sort_order != nil {
 		fields = append(fields, growthproduct.FieldSortOrder)
 	}
-	if m.status != nil {
-		fields = append(fields, growthproduct.FieldStatus)
+	if m.product_status != nil {
+		fields = append(fields, growthproduct.FieldProductStatus)
 	}
 	if m.current_version != nil {
 		fields = append(fields, growthproduct.FieldCurrentVersion)
@@ -28442,8 +28461,8 @@ func (m *GrowthProductMutation) Field(name string) (ent.Value, bool) {
 		return m.FulfillmentMode()
 	case growthproduct.FieldSortOrder:
 		return m.SortOrder()
-	case growthproduct.FieldStatus:
-		return m.Status()
+	case growthproduct.FieldProductStatus:
+		return m.ProductStatus()
 	case growthproduct.FieldCurrentVersion:
 		return m.CurrentVersion()
 	}
@@ -28471,8 +28490,8 @@ func (m *GrowthProductMutation) OldField(ctx context.Context, name string) (ent.
 		return m.OldFulfillmentMode(ctx)
 	case growthproduct.FieldSortOrder:
 		return m.OldSortOrder(ctx)
-	case growthproduct.FieldStatus:
-		return m.OldStatus(ctx)
+	case growthproduct.FieldProductStatus:
+		return m.OldProductStatus(ctx)
 	case growthproduct.FieldCurrentVersion:
 		return m.OldCurrentVersion(ctx)
 	}
@@ -28540,12 +28559,12 @@ func (m *GrowthProductMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetSortOrder(v)
 		return nil
-	case growthproduct.FieldStatus:
+	case growthproduct.FieldProductStatus:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetStatus(v)
+		m.SetProductStatus(v)
 		return nil
 	case growthproduct.FieldCurrentVersion:
 		v, ok := value.(int)
@@ -28654,8 +28673,8 @@ func (m *GrowthProductMutation) ResetField(name string) error {
 	case growthproduct.FieldSortOrder:
 		m.ResetSortOrder()
 		return nil
-	case growthproduct.FieldStatus:
-		m.ResetStatus()
+	case growthproduct.FieldProductStatus:
+		m.ResetProductStatus()
 		return nil
 	case growthproduct.FieldCurrentVersion:
 		m.ResetCurrentVersion()
@@ -29773,7 +29792,7 @@ type GrowthProductVersionMutation struct {
 	points_cost       *int64
 	addpoints_cost    *int64
 	benefit_summary   *string
-	benefit_detail    *map[string]interface{}
+	benefit_detail    *string
 	token_amount      *int64
 	addtoken_amount   *int64
 	per_user_limit    *int
@@ -30164,12 +30183,12 @@ func (m *GrowthProductVersionMutation) ResetBenefitSummary() {
 }
 
 // SetBenefitDetail sets the "benefit_detail" field.
-func (m *GrowthProductVersionMutation) SetBenefitDetail(value map[string]interface{}) {
-	m.benefit_detail = &value
+func (m *GrowthProductVersionMutation) SetBenefitDetail(s string) {
+	m.benefit_detail = &s
 }
 
 // BenefitDetail returns the value of the "benefit_detail" field in the mutation.
-func (m *GrowthProductVersionMutation) BenefitDetail() (r map[string]interface{}, exists bool) {
+func (m *GrowthProductVersionMutation) BenefitDetail() (r string, exists bool) {
 	v := m.benefit_detail
 	if v == nil {
 		return
@@ -30180,7 +30199,7 @@ func (m *GrowthProductVersionMutation) BenefitDetail() (r map[string]interface{}
 // OldBenefitDetail returns the old "benefit_detail" field's value of the GrowthProductVersion entity.
 // If the GrowthProductVersion object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *GrowthProductVersionMutation) OldBenefitDetail(ctx context.Context) (v map[string]interface{}, err error) {
+func (m *GrowthProductVersionMutation) OldBenefitDetail(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldBenefitDetail is only allowed on UpdateOne operations")
 	}
@@ -30722,7 +30741,7 @@ func (m *GrowthProductVersionMutation) SetField(name string, value ent.Value) er
 		m.SetBenefitSummary(v)
 		return nil
 	case growthproductversion.FieldBenefitDetail:
-		v, ok := value.(map[string]interface{})
+		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
@@ -31032,7 +31051,7 @@ type GrowthRewardClaimMutation struct {
 	addtransfer_id  *int64
 	points          *int64
 	addpoints       *int64
-	status          *string
+	claim_status    *string
 	claimed_at      *time.Time
 	clearedFields   map[string]struct{}
 	user            *int64
@@ -31600,40 +31619,40 @@ func (m *GrowthRewardClaimMutation) ResetPoints() {
 	m.addpoints = nil
 }
 
-// SetStatus sets the "status" field.
-func (m *GrowthRewardClaimMutation) SetStatus(s string) {
-	m.status = &s
+// SetClaimStatus sets the "claim_status" field.
+func (m *GrowthRewardClaimMutation) SetClaimStatus(s string) {
+	m.claim_status = &s
 }
 
-// Status returns the value of the "status" field in the mutation.
-func (m *GrowthRewardClaimMutation) Status() (r string, exists bool) {
-	v := m.status
+// ClaimStatus returns the value of the "claim_status" field in the mutation.
+func (m *GrowthRewardClaimMutation) ClaimStatus() (r string, exists bool) {
+	v := m.claim_status
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldStatus returns the old "status" field's value of the GrowthRewardClaim entity.
+// OldClaimStatus returns the old "claim_status" field's value of the GrowthRewardClaim entity.
 // If the GrowthRewardClaim object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *GrowthRewardClaimMutation) OldStatus(ctx context.Context) (v string, err error) {
+func (m *GrowthRewardClaimMutation) OldClaimStatus(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
+		return v, errors.New("OldClaimStatus is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldStatus requires an ID field in the mutation")
+		return v, errors.New("OldClaimStatus requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
+		return v, fmt.Errorf("querying old value for OldClaimStatus: %w", err)
 	}
-	return oldValue.Status, nil
+	return oldValue.ClaimStatus, nil
 }
 
-// ResetStatus resets all changes to the "status" field.
-func (m *GrowthRewardClaimMutation) ResetStatus() {
-	m.status = nil
+// ResetClaimStatus resets all changes to the "claim_status" field.
+func (m *GrowthRewardClaimMutation) ResetClaimStatus() {
+	m.claim_status = nil
 }
 
 // SetClaimedAt sets the "claimed_at" field.
@@ -31764,8 +31783,8 @@ func (m *GrowthRewardClaimMutation) Fields() []string {
 	if m.points != nil {
 		fields = append(fields, growthrewardclaim.FieldPoints)
 	}
-	if m.status != nil {
-		fields = append(fields, growthrewardclaim.FieldStatus)
+	if m.claim_status != nil {
+		fields = append(fields, growthrewardclaim.FieldClaimStatus)
 	}
 	if m.claimed_at != nil {
 		fields = append(fields, growthrewardclaim.FieldClaimedAt)
@@ -31798,8 +31817,8 @@ func (m *GrowthRewardClaimMutation) Field(name string) (ent.Value, bool) {
 		return m.TransferID()
 	case growthrewardclaim.FieldPoints:
 		return m.Points()
-	case growthrewardclaim.FieldStatus:
-		return m.Status()
+	case growthrewardclaim.FieldClaimStatus:
+		return m.ClaimStatus()
 	case growthrewardclaim.FieldClaimedAt:
 		return m.ClaimedAt()
 	}
@@ -31831,8 +31850,8 @@ func (m *GrowthRewardClaimMutation) OldField(ctx context.Context, name string) (
 		return m.OldTransferID(ctx)
 	case growthrewardclaim.FieldPoints:
 		return m.OldPoints(ctx)
-	case growthrewardclaim.FieldStatus:
-		return m.OldStatus(ctx)
+	case growthrewardclaim.FieldClaimStatus:
+		return m.OldClaimStatus(ctx)
 	case growthrewardclaim.FieldClaimedAt:
 		return m.OldClaimedAt(ctx)
 	}
@@ -31914,12 +31933,12 @@ func (m *GrowthRewardClaimMutation) SetField(name string, value ent.Value) error
 		}
 		m.SetPoints(v)
 		return nil
-	case growthrewardclaim.FieldStatus:
+	case growthrewardclaim.FieldClaimStatus:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetStatus(v)
+		m.SetClaimStatus(v)
 		return nil
 	case growthrewardclaim.FieldClaimedAt:
 		v, ok := value.(time.Time)
@@ -32070,8 +32089,8 @@ func (m *GrowthRewardClaimMutation) ResetField(name string) error {
 	case growthrewardclaim.FieldPoints:
 		m.ResetPoints()
 		return nil
-	case growthrewardclaim.FieldStatus:
-		m.ResetStatus()
+	case growthrewardclaim.FieldClaimStatus:
+		m.ResetClaimStatus()
 		return nil
 	case growthrewardclaim.FieldClaimedAt:
 		m.ResetClaimedAt()
@@ -32164,13 +32183,13 @@ type GrowthTaskMutation struct {
 	updated_at            *time.Time
 	task_code             *string
 	title                 *string
-	description           *string
+	remark                *string
 	category              *string
 	task_type             *string
 	icon                  *string
 	sort_order            *int
 	addsort_order         *int
-	status                *string
+	task_status           *string
 	effective_from        *time.Time
 	effective_to          *time.Time
 	allocated_points      *int64
@@ -32425,40 +32444,40 @@ func (m *GrowthTaskMutation) ResetTitle() {
 	m.title = nil
 }
 
-// SetDescription sets the "description" field.
-func (m *GrowthTaskMutation) SetDescription(s string) {
-	m.description = &s
+// SetRemark sets the "remark" field.
+func (m *GrowthTaskMutation) SetRemark(s string) {
+	m.remark = &s
 }
 
-// Description returns the value of the "description" field in the mutation.
-func (m *GrowthTaskMutation) Description() (r string, exists bool) {
-	v := m.description
+// Remark returns the value of the "remark" field in the mutation.
+func (m *GrowthTaskMutation) Remark() (r string, exists bool) {
+	v := m.remark
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldDescription returns the old "description" field's value of the GrowthTask entity.
+// OldRemark returns the old "remark" field's value of the GrowthTask entity.
 // If the GrowthTask object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *GrowthTaskMutation) OldDescription(ctx context.Context) (v string, err error) {
+func (m *GrowthTaskMutation) OldRemark(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldDescription is only allowed on UpdateOne operations")
+		return v, errors.New("OldRemark is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldDescription requires an ID field in the mutation")
+		return v, errors.New("OldRemark requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldDescription: %w", err)
+		return v, fmt.Errorf("querying old value for OldRemark: %w", err)
 	}
-	return oldValue.Description, nil
+	return oldValue.Remark, nil
 }
 
-// ResetDescription resets all changes to the "description" field.
-func (m *GrowthTaskMutation) ResetDescription() {
-	m.description = nil
+// ResetRemark resets all changes to the "remark" field.
+func (m *GrowthTaskMutation) ResetRemark() {
+	m.remark = nil
 }
 
 // SetCategory sets the "category" field.
@@ -32625,40 +32644,40 @@ func (m *GrowthTaskMutation) ResetSortOrder() {
 	m.addsort_order = nil
 }
 
-// SetStatus sets the "status" field.
-func (m *GrowthTaskMutation) SetStatus(s string) {
-	m.status = &s
+// SetTaskStatus sets the "task_status" field.
+func (m *GrowthTaskMutation) SetTaskStatus(s string) {
+	m.task_status = &s
 }
 
-// Status returns the value of the "status" field in the mutation.
-func (m *GrowthTaskMutation) Status() (r string, exists bool) {
-	v := m.status
+// TaskStatus returns the value of the "task_status" field in the mutation.
+func (m *GrowthTaskMutation) TaskStatus() (r string, exists bool) {
+	v := m.task_status
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldStatus returns the old "status" field's value of the GrowthTask entity.
+// OldTaskStatus returns the old "task_status" field's value of the GrowthTask entity.
 // If the GrowthTask object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *GrowthTaskMutation) OldStatus(ctx context.Context) (v string, err error) {
+func (m *GrowthTaskMutation) OldTaskStatus(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
+		return v, errors.New("OldTaskStatus is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldStatus requires an ID field in the mutation")
+		return v, errors.New("OldTaskStatus requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
+		return v, fmt.Errorf("querying old value for OldTaskStatus: %w", err)
 	}
-	return oldValue.Status, nil
+	return oldValue.TaskStatus, nil
 }
 
-// ResetStatus resets all changes to the "status" field.
-func (m *GrowthTaskMutation) ResetStatus() {
-	m.status = nil
+// ResetTaskStatus resets all changes to the "task_status" field.
+func (m *GrowthTaskMutation) ResetTaskStatus() {
+	m.task_status = nil
 }
 
 // SetEffectiveFrom sets the "effective_from" field.
@@ -32918,8 +32937,8 @@ func (m *GrowthTaskMutation) Fields() []string {
 	if m.title != nil {
 		fields = append(fields, growthtask.FieldTitle)
 	}
-	if m.description != nil {
-		fields = append(fields, growthtask.FieldDescription)
+	if m.remark != nil {
+		fields = append(fields, growthtask.FieldRemark)
 	}
 	if m.category != nil {
 		fields = append(fields, growthtask.FieldCategory)
@@ -32933,8 +32952,8 @@ func (m *GrowthTaskMutation) Fields() []string {
 	if m.sort_order != nil {
 		fields = append(fields, growthtask.FieldSortOrder)
 	}
-	if m.status != nil {
-		fields = append(fields, growthtask.FieldStatus)
+	if m.task_status != nil {
+		fields = append(fields, growthtask.FieldTaskStatus)
 	}
 	if m.effective_from != nil {
 		fields = append(fields, growthtask.FieldEffectiveFrom)
@@ -32964,8 +32983,8 @@ func (m *GrowthTaskMutation) Field(name string) (ent.Value, bool) {
 		return m.TaskCode()
 	case growthtask.FieldTitle:
 		return m.Title()
-	case growthtask.FieldDescription:
-		return m.Description()
+	case growthtask.FieldRemark:
+		return m.Remark()
 	case growthtask.FieldCategory:
 		return m.Category()
 	case growthtask.FieldTaskType:
@@ -32974,8 +32993,8 @@ func (m *GrowthTaskMutation) Field(name string) (ent.Value, bool) {
 		return m.Icon()
 	case growthtask.FieldSortOrder:
 		return m.SortOrder()
-	case growthtask.FieldStatus:
-		return m.Status()
+	case growthtask.FieldTaskStatus:
+		return m.TaskStatus()
 	case growthtask.FieldEffectiveFrom:
 		return m.EffectiveFrom()
 	case growthtask.FieldEffectiveTo:
@@ -33001,8 +33020,8 @@ func (m *GrowthTaskMutation) OldField(ctx context.Context, name string) (ent.Val
 		return m.OldTaskCode(ctx)
 	case growthtask.FieldTitle:
 		return m.OldTitle(ctx)
-	case growthtask.FieldDescription:
-		return m.OldDescription(ctx)
+	case growthtask.FieldRemark:
+		return m.OldRemark(ctx)
 	case growthtask.FieldCategory:
 		return m.OldCategory(ctx)
 	case growthtask.FieldTaskType:
@@ -33011,8 +33030,8 @@ func (m *GrowthTaskMutation) OldField(ctx context.Context, name string) (ent.Val
 		return m.OldIcon(ctx)
 	case growthtask.FieldSortOrder:
 		return m.OldSortOrder(ctx)
-	case growthtask.FieldStatus:
-		return m.OldStatus(ctx)
+	case growthtask.FieldTaskStatus:
+		return m.OldTaskStatus(ctx)
 	case growthtask.FieldEffectiveFrom:
 		return m.OldEffectiveFrom(ctx)
 	case growthtask.FieldEffectiveTo:
@@ -33058,12 +33077,12 @@ func (m *GrowthTaskMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetTitle(v)
 		return nil
-	case growthtask.FieldDescription:
+	case growthtask.FieldRemark:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetDescription(v)
+		m.SetRemark(v)
 		return nil
 	case growthtask.FieldCategory:
 		v, ok := value.(string)
@@ -33093,12 +33112,12 @@ func (m *GrowthTaskMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetSortOrder(v)
 		return nil
-	case growthtask.FieldStatus:
+	case growthtask.FieldTaskStatus:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetStatus(v)
+		m.SetTaskStatus(v)
 		return nil
 	case growthtask.FieldEffectiveFrom:
 		v, ok := value.(time.Time)
@@ -33243,8 +33262,8 @@ func (m *GrowthTaskMutation) ResetField(name string) error {
 	case growthtask.FieldTitle:
 		m.ResetTitle()
 		return nil
-	case growthtask.FieldDescription:
-		m.ResetDescription()
+	case growthtask.FieldRemark:
+		m.ResetRemark()
 		return nil
 	case growthtask.FieldCategory:
 		m.ResetCategory()
@@ -33258,8 +33277,8 @@ func (m *GrowthTaskMutation) ResetField(name string) error {
 	case growthtask.FieldSortOrder:
 		m.ResetSortOrder()
 		return nil
-	case growthtask.FieldStatus:
-		m.ResetStatus()
+	case growthtask.FieldTaskStatus:
+		m.ResetTaskStatus()
 		return nil
 	case growthtask.FieldEffectiveFrom:
 		m.ResetEffectiveFrom()
@@ -33338,7 +33357,7 @@ type GrowthTaskRuleMutation struct {
 	version           *int
 	addversion        *int
 	trigger_event     *string
-	conditions        *map[string]interface{}
+	conditions        *string
 	target            *int64
 	addtarget         *int64
 	reward_points     *int64
@@ -33678,12 +33697,12 @@ func (m *GrowthTaskRuleMutation) ResetTriggerEvent() {
 }
 
 // SetConditions sets the "conditions" field.
-func (m *GrowthTaskRuleMutation) SetConditions(value map[string]interface{}) {
-	m.conditions = &value
+func (m *GrowthTaskRuleMutation) SetConditions(s string) {
+	m.conditions = &s
 }
 
 // Conditions returns the value of the "conditions" field in the mutation.
-func (m *GrowthTaskRuleMutation) Conditions() (r map[string]interface{}, exists bool) {
+func (m *GrowthTaskRuleMutation) Conditions() (r string, exists bool) {
 	v := m.conditions
 	if v == nil {
 		return
@@ -33694,7 +33713,7 @@ func (m *GrowthTaskRuleMutation) Conditions() (r map[string]interface{}, exists 
 // OldConditions returns the old "conditions" field's value of the GrowthTaskRule entity.
 // If the GrowthTaskRule object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *GrowthTaskRuleMutation) OldConditions(ctx context.Context) (v map[string]interface{}, err error) {
+func (m *GrowthTaskRuleMutation) OldConditions(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
 		return v, errors.New("OldConditions is only allowed on UpdateOne operations")
 	}
@@ -34378,7 +34397,7 @@ func (m *GrowthTaskRuleMutation) SetField(name string, value ent.Value) error {
 		m.SetTriggerEvent(v)
 		return nil
 	case growthtaskrule.FieldConditions:
-		v, ok := value.(map[string]interface{})
+		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
@@ -34723,7 +34742,7 @@ type GrowthTransferMutation struct {
 	addorder_id       *int64
 	points            *int64
 	addpoints         *int64
-	status            *string
+	transfer_status   *string
 	failure_reason    *string
 	completed_at      *time.Time
 	clearedFields     map[string]struct{}
@@ -35382,40 +35401,40 @@ func (m *GrowthTransferMutation) ResetPoints() {
 	m.addpoints = nil
 }
 
-// SetStatus sets the "status" field.
-func (m *GrowthTransferMutation) SetStatus(s string) {
-	m.status = &s
+// SetTransferStatus sets the "transfer_status" field.
+func (m *GrowthTransferMutation) SetTransferStatus(s string) {
+	m.transfer_status = &s
 }
 
-// Status returns the value of the "status" field in the mutation.
-func (m *GrowthTransferMutation) Status() (r string, exists bool) {
-	v := m.status
+// TransferStatus returns the value of the "transfer_status" field in the mutation.
+func (m *GrowthTransferMutation) TransferStatus() (r string, exists bool) {
+	v := m.transfer_status
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldStatus returns the old "status" field's value of the GrowthTransfer entity.
+// OldTransferStatus returns the old "transfer_status" field's value of the GrowthTransfer entity.
 // If the GrowthTransfer object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *GrowthTransferMutation) OldStatus(ctx context.Context) (v string, err error) {
+func (m *GrowthTransferMutation) OldTransferStatus(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
+		return v, errors.New("OldTransferStatus is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldStatus requires an ID field in the mutation")
+		return v, errors.New("OldTransferStatus requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
+		return v, fmt.Errorf("querying old value for OldTransferStatus: %w", err)
 	}
-	return oldValue.Status, nil
+	return oldValue.TransferStatus, nil
 }
 
-// ResetStatus resets all changes to the "status" field.
-func (m *GrowthTransferMutation) ResetStatus() {
-	m.status = nil
+// ResetTransferStatus resets all changes to the "transfer_status" field.
+func (m *GrowthTransferMutation) ResetTransferStatus() {
+	m.transfer_status = nil
 }
 
 // SetFailureReason sets the "failure_reason" field.
@@ -35571,8 +35590,8 @@ func (m *GrowthTransferMutation) Fields() []string {
 	if m.points != nil {
 		fields = append(fields, growthtransfer.FieldPoints)
 	}
-	if m.status != nil {
-		fields = append(fields, growthtransfer.FieldStatus)
+	if m.transfer_status != nil {
+		fields = append(fields, growthtransfer.FieldTransferStatus)
 	}
 	if m.failure_reason != nil {
 		fields = append(fields, growthtransfer.FieldFailureReason)
@@ -35610,8 +35629,8 @@ func (m *GrowthTransferMutation) Field(name string) (ent.Value, bool) {
 		return m.OrderID()
 	case growthtransfer.FieldPoints:
 		return m.Points()
-	case growthtransfer.FieldStatus:
-		return m.Status()
+	case growthtransfer.FieldTransferStatus:
+		return m.TransferStatus()
 	case growthtransfer.FieldFailureReason:
 		return m.FailureReason()
 	case growthtransfer.FieldCompletedAt:
@@ -35647,8 +35666,8 @@ func (m *GrowthTransferMutation) OldField(ctx context.Context, name string) (ent
 		return m.OldOrderID(ctx)
 	case growthtransfer.FieldPoints:
 		return m.OldPoints(ctx)
-	case growthtransfer.FieldStatus:
-		return m.OldStatus(ctx)
+	case growthtransfer.FieldTransferStatus:
+		return m.OldTransferStatus(ctx)
 	case growthtransfer.FieldFailureReason:
 		return m.OldFailureReason(ctx)
 	case growthtransfer.FieldCompletedAt:
@@ -35739,12 +35758,12 @@ func (m *GrowthTransferMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetPoints(v)
 		return nil
-	case growthtransfer.FieldStatus:
+	case growthtransfer.FieldTransferStatus:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetStatus(v)
+		m.SetTransferStatus(v)
 		return nil
 	case growthtransfer.FieldFailureReason:
 		v, ok := value.(string)
@@ -35938,8 +35957,8 @@ func (m *GrowthTransferMutation) ResetField(name string) error {
 	case growthtransfer.FieldPoints:
 		m.ResetPoints()
 		return nil
-	case growthtransfer.FieldStatus:
-		m.ResetStatus()
+	case growthtransfer.FieldTransferStatus:
+		m.ResetTransferStatus()
 		return nil
 	case growthtransfer.FieldFailureReason:
 		m.ResetFailureReason()
@@ -36018,7 +36037,7 @@ type GrowthUserTaskMutation struct {
 	addtarget          *int64
 	completed_count    *int64
 	addcompleted_count *int64
-	status             *string
+	progress_status    *string
 	completed_at       *time.Time
 	rewarded_at        *time.Time
 	clearedFields      map[string]struct{}
@@ -36551,40 +36570,40 @@ func (m *GrowthUserTaskMutation) ResetCompletedCount() {
 	m.addcompleted_count = nil
 }
 
-// SetStatus sets the "status" field.
-func (m *GrowthUserTaskMutation) SetStatus(s string) {
-	m.status = &s
+// SetProgressStatus sets the "progress_status" field.
+func (m *GrowthUserTaskMutation) SetProgressStatus(s string) {
+	m.progress_status = &s
 }
 
-// Status returns the value of the "status" field in the mutation.
-func (m *GrowthUserTaskMutation) Status() (r string, exists bool) {
-	v := m.status
+// ProgressStatus returns the value of the "progress_status" field in the mutation.
+func (m *GrowthUserTaskMutation) ProgressStatus() (r string, exists bool) {
+	v := m.progress_status
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldStatus returns the old "status" field's value of the GrowthUserTask entity.
+// OldProgressStatus returns the old "progress_status" field's value of the GrowthUserTask entity.
 // If the GrowthUserTask object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *GrowthUserTaskMutation) OldStatus(ctx context.Context) (v string, err error) {
+func (m *GrowthUserTaskMutation) OldProgressStatus(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
+		return v, errors.New("OldProgressStatus is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldStatus requires an ID field in the mutation")
+		return v, errors.New("OldProgressStatus requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
+		return v, fmt.Errorf("querying old value for OldProgressStatus: %w", err)
 	}
-	return oldValue.Status, nil
+	return oldValue.ProgressStatus, nil
 }
 
-// ResetStatus resets all changes to the "status" field.
-func (m *GrowthUserTaskMutation) ResetStatus() {
-	m.status = nil
+// ResetProgressStatus resets all changes to the "progress_status" field.
+func (m *GrowthUserTaskMutation) ResetProgressStatus() {
+	m.progress_status = nil
 }
 
 // SetCompletedAt sets the "completed_at" field.
@@ -36774,8 +36793,8 @@ func (m *GrowthUserTaskMutation) Fields() []string {
 	if m.completed_count != nil {
 		fields = append(fields, growthusertask.FieldCompletedCount)
 	}
-	if m.status != nil {
-		fields = append(fields, growthusertask.FieldStatus)
+	if m.progress_status != nil {
+		fields = append(fields, growthusertask.FieldProgressStatus)
 	}
 	if m.completed_at != nil {
 		fields = append(fields, growthusertask.FieldCompletedAt)
@@ -36809,8 +36828,8 @@ func (m *GrowthUserTaskMutation) Field(name string) (ent.Value, bool) {
 		return m.Target()
 	case growthusertask.FieldCompletedCount:
 		return m.CompletedCount()
-	case growthusertask.FieldStatus:
-		return m.Status()
+	case growthusertask.FieldProgressStatus:
+		return m.ProgressStatus()
 	case growthusertask.FieldCompletedAt:
 		return m.CompletedAt()
 	case growthusertask.FieldRewardedAt:
@@ -36842,8 +36861,8 @@ func (m *GrowthUserTaskMutation) OldField(ctx context.Context, name string) (ent
 		return m.OldTarget(ctx)
 	case growthusertask.FieldCompletedCount:
 		return m.OldCompletedCount(ctx)
-	case growthusertask.FieldStatus:
-		return m.OldStatus(ctx)
+	case growthusertask.FieldProgressStatus:
+		return m.OldProgressStatus(ctx)
 	case growthusertask.FieldCompletedAt:
 		return m.OldCompletedAt(ctx)
 	case growthusertask.FieldRewardedAt:
@@ -36920,12 +36939,12 @@ func (m *GrowthUserTaskMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetCompletedCount(v)
 		return nil
-	case growthusertask.FieldStatus:
+	case growthusertask.FieldProgressStatus:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetStatus(v)
+		m.SetProgressStatus(v)
 		return nil
 	case growthusertask.FieldCompletedAt:
 		v, ok := value.(time.Time)
@@ -37095,8 +37114,8 @@ func (m *GrowthUserTaskMutation) ResetField(name string) error {
 	case growthusertask.FieldCompletedCount:
 		m.ResetCompletedCount()
 		return nil
-	case growthusertask.FieldStatus:
-		m.ResetStatus()
+	case growthusertask.FieldProgressStatus:
+		m.ResetProgressStatus()
 		return nil
 	case growthusertask.FieldCompletedAt:
 		m.ResetCompletedAt()

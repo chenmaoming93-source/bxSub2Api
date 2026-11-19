@@ -27,11 +27,11 @@ func (GrowthAdminAudit) Mixin() []ent.Mixin {
 func (GrowthAdminAudit) Fields() []ent.Field {
 	return []ent.Field{
 		field.Int64("operator_id"),
-		field.String("action").MaxLen(64).NotEmpty(),
+		field.String("action_type").MaxLen(64).NotEmpty(),
 		field.String("resource_type").MaxLen(64).NotEmpty(),
 		field.Int64("resource_id").Optional().Nillable(),
-		field.JSON("before_json", map[string]any{}).Optional(),
-		field.JSON("after_json", map[string]any{}).Optional(),
+		field.Text("before_json").Optional(),
+		field.Text("after_json").Optional(),
 		field.String("reason").MaxLen(512).Default(""),
 		field.String("request_id").MaxLen(128).Default(""),
 	}
@@ -52,6 +52,6 @@ func (GrowthAdminAudit) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Fields("operator_id", "created_at"),
 		index.Fields("resource_type", "resource_id", "created_at"),
-		index.Fields("action", "created_at"),
+		index.Fields("action_type", "created_at"),
 	}
 }

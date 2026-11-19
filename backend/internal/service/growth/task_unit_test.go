@@ -74,7 +74,7 @@ func TestBuildTaskViewExposesPublishedAndPendingVersions(t *testing.T) {
 		ID:                3,
 		TaskCode:          "first_call",
 		Title:             "首次调用",
-		Status:            "ACTIVE",
+		TaskStatus:        "ACTIVE",
 		AllocatedPoints:   200,
 		DistributedPoints: 40,
 	}

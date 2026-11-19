@@ -69,16 +69,16 @@ func (_u *GrowthFulfillmentJobUpdate) SetNillableJobType(v *string) *GrowthFulfi
 	return _u
 }
 
-// SetStatus sets the "status" field.
-func (_u *GrowthFulfillmentJobUpdate) SetStatus(v string) *GrowthFulfillmentJobUpdate {
-	_u.mutation.SetStatus(v)
+// SetJobStatus sets the "job_status" field.
+func (_u *GrowthFulfillmentJobUpdate) SetJobStatus(v string) *GrowthFulfillmentJobUpdate {
+	_u.mutation.SetJobStatus(v)
 	return _u
 }
 
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (_u *GrowthFulfillmentJobUpdate) SetNillableStatus(v *string) *GrowthFulfillmentJobUpdate {
+// SetNillableJobStatus sets the "job_status" field if the given value is not nil.
+func (_u *GrowthFulfillmentJobUpdate) SetNillableJobStatus(v *string) *GrowthFulfillmentJobUpdate {
 	if v != nil {
-		_u.SetStatus(*v)
+		_u.SetJobStatus(*v)
 	}
 	return _u
 }
@@ -255,9 +255,9 @@ func (_u *GrowthFulfillmentJobUpdate) check() error {
 			return &ValidationError{Name: "job_type", err: fmt.Errorf(`ent: validator failed for field "GrowthFulfillmentJob.job_type": %w`, err)}
 		}
 	}
-	if v, ok := _u.mutation.Status(); ok {
-		if err := growthfulfillmentjob.StatusValidator(v); err != nil {
-			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "GrowthFulfillmentJob.status": %w`, err)}
+	if v, ok := _u.mutation.JobStatus(); ok {
+		if err := growthfulfillmentjob.JobStatusValidator(v); err != nil {
+			return &ValidationError{Name: "job_status", err: fmt.Errorf(`ent: validator failed for field "GrowthFulfillmentJob.job_status": %w`, err)}
 		}
 	}
 	if v, ok := _u.mutation.AttemptCount(); ok {
@@ -307,8 +307,8 @@ func (_u *GrowthFulfillmentJobUpdate) sqlSave(ctx context.Context) (_node int, e
 	if value, ok := _u.mutation.JobType(); ok {
 		_spec.SetField(growthfulfillmentjob.FieldJobType, field.TypeString, value)
 	}
-	if value, ok := _u.mutation.Status(); ok {
-		_spec.SetField(growthfulfillmentjob.FieldStatus, field.TypeString, value)
+	if value, ok := _u.mutation.JobStatus(); ok {
+		_spec.SetField(growthfulfillmentjob.FieldJobStatus, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.AttemptCount(); ok {
 		_spec.SetField(growthfulfillmentjob.FieldAttemptCount, field.TypeInt, value)
@@ -404,16 +404,16 @@ func (_u *GrowthFulfillmentJobUpdateOne) SetNillableJobType(v *string) *GrowthFu
 	return _u
 }
 
-// SetStatus sets the "status" field.
-func (_u *GrowthFulfillmentJobUpdateOne) SetStatus(v string) *GrowthFulfillmentJobUpdateOne {
-	_u.mutation.SetStatus(v)
+// SetJobStatus sets the "job_status" field.
+func (_u *GrowthFulfillmentJobUpdateOne) SetJobStatus(v string) *GrowthFulfillmentJobUpdateOne {
+	_u.mutation.SetJobStatus(v)
 	return _u
 }
 
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (_u *GrowthFulfillmentJobUpdateOne) SetNillableStatus(v *string) *GrowthFulfillmentJobUpdateOne {
+// SetNillableJobStatus sets the "job_status" field if the given value is not nil.
+func (_u *GrowthFulfillmentJobUpdateOne) SetNillableJobStatus(v *string) *GrowthFulfillmentJobUpdateOne {
 	if v != nil {
-		_u.SetStatus(*v)
+		_u.SetJobStatus(*v)
 	}
 	return _u
 }
@@ -603,9 +603,9 @@ func (_u *GrowthFulfillmentJobUpdateOne) check() error {
 			return &ValidationError{Name: "job_type", err: fmt.Errorf(`ent: validator failed for field "GrowthFulfillmentJob.job_type": %w`, err)}
 		}
 	}
-	if v, ok := _u.mutation.Status(); ok {
-		if err := growthfulfillmentjob.StatusValidator(v); err != nil {
-			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "GrowthFulfillmentJob.status": %w`, err)}
+	if v, ok := _u.mutation.JobStatus(); ok {
+		if err := growthfulfillmentjob.JobStatusValidator(v); err != nil {
+			return &ValidationError{Name: "job_status", err: fmt.Errorf(`ent: validator failed for field "GrowthFulfillmentJob.job_status": %w`, err)}
 		}
 	}
 	if v, ok := _u.mutation.AttemptCount(); ok {
@@ -672,8 +672,8 @@ func (_u *GrowthFulfillmentJobUpdateOne) sqlSave(ctx context.Context) (_node *Gr
 	if value, ok := _u.mutation.JobType(); ok {
 		_spec.SetField(growthfulfillmentjob.FieldJobType, field.TypeString, value)
 	}
-	if value, ok := _u.mutation.Status(); ok {
-		_spec.SetField(growthfulfillmentjob.FieldStatus, field.TypeString, value)
+	if value, ok := _u.mutation.JobStatus(); ok {
+		_spec.SetField(growthfulfillmentjob.FieldJobStatus, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.AttemptCount(); ok {
 		_spec.SetField(growthfulfillmentjob.FieldAttemptCount, field.TypeInt, value)

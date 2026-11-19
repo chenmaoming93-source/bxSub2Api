@@ -168,16 +168,16 @@ func (_u *GrowthUserTaskUpdate) AddCompletedCount(v int64) *GrowthUserTaskUpdate
 	return _u
 }
 
-// SetStatus sets the "status" field.
-func (_u *GrowthUserTaskUpdate) SetStatus(v string) *GrowthUserTaskUpdate {
-	_u.mutation.SetStatus(v)
+// SetProgressStatus sets the "progress_status" field.
+func (_u *GrowthUserTaskUpdate) SetProgressStatus(v string) *GrowthUserTaskUpdate {
+	_u.mutation.SetProgressStatus(v)
 	return _u
 }
 
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (_u *GrowthUserTaskUpdate) SetNillableStatus(v *string) *GrowthUserTaskUpdate {
+// SetNillableProgressStatus sets the "progress_status" field if the given value is not nil.
+func (_u *GrowthUserTaskUpdate) SetNillableProgressStatus(v *string) *GrowthUserTaskUpdate {
 	if v != nil {
-		_u.SetStatus(*v)
+		_u.SetProgressStatus(*v)
 	}
 	return _u
 }
@@ -296,9 +296,9 @@ func (_u *GrowthUserTaskUpdate) check() error {
 			return &ValidationError{Name: "completed_count", err: fmt.Errorf(`ent: validator failed for field "GrowthUserTask.completed_count": %w`, err)}
 		}
 	}
-	if v, ok := _u.mutation.Status(); ok {
-		if err := growthusertask.StatusValidator(v); err != nil {
-			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "GrowthUserTask.status": %w`, err)}
+	if v, ok := _u.mutation.ProgressStatus(); ok {
+		if err := growthusertask.ProgressStatusValidator(v); err != nil {
+			return &ValidationError{Name: "progress_status", err: fmt.Errorf(`ent: validator failed for field "GrowthUserTask.progress_status": %w`, err)}
 		}
 	}
 	if _u.mutation.UserCleared() && len(_u.mutation.UserIDs()) > 0 {
@@ -355,8 +355,8 @@ func (_u *GrowthUserTaskUpdate) sqlSave(ctx context.Context) (_node int, err err
 	if value, ok := _u.mutation.AddedCompletedCount(); ok {
 		_spec.AddField(growthusertask.FieldCompletedCount, field.TypeInt64, value)
 	}
-	if value, ok := _u.mutation.Status(); ok {
-		_spec.SetField(growthusertask.FieldStatus, field.TypeString, value)
+	if value, ok := _u.mutation.ProgressStatus(); ok {
+		_spec.SetField(growthusertask.FieldProgressStatus, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.CompletedAt(); ok {
 		_spec.SetField(growthusertask.FieldCompletedAt, field.TypeTime, value)
@@ -558,16 +558,16 @@ func (_u *GrowthUserTaskUpdateOne) AddCompletedCount(v int64) *GrowthUserTaskUpd
 	return _u
 }
 
-// SetStatus sets the "status" field.
-func (_u *GrowthUserTaskUpdateOne) SetStatus(v string) *GrowthUserTaskUpdateOne {
-	_u.mutation.SetStatus(v)
+// SetProgressStatus sets the "progress_status" field.
+func (_u *GrowthUserTaskUpdateOne) SetProgressStatus(v string) *GrowthUserTaskUpdateOne {
+	_u.mutation.SetProgressStatus(v)
 	return _u
 }
 
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (_u *GrowthUserTaskUpdateOne) SetNillableStatus(v *string) *GrowthUserTaskUpdateOne {
+// SetNillableProgressStatus sets the "progress_status" field if the given value is not nil.
+func (_u *GrowthUserTaskUpdateOne) SetNillableProgressStatus(v *string) *GrowthUserTaskUpdateOne {
 	if v != nil {
-		_u.SetStatus(*v)
+		_u.SetProgressStatus(*v)
 	}
 	return _u
 }
@@ -699,9 +699,9 @@ func (_u *GrowthUserTaskUpdateOne) check() error {
 			return &ValidationError{Name: "completed_count", err: fmt.Errorf(`ent: validator failed for field "GrowthUserTask.completed_count": %w`, err)}
 		}
 	}
-	if v, ok := _u.mutation.Status(); ok {
-		if err := growthusertask.StatusValidator(v); err != nil {
-			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "GrowthUserTask.status": %w`, err)}
+	if v, ok := _u.mutation.ProgressStatus(); ok {
+		if err := growthusertask.ProgressStatusValidator(v); err != nil {
+			return &ValidationError{Name: "progress_status", err: fmt.Errorf(`ent: validator failed for field "GrowthUserTask.progress_status": %w`, err)}
 		}
 	}
 	if _u.mutation.UserCleared() && len(_u.mutation.UserIDs()) > 0 {
@@ -775,8 +775,8 @@ func (_u *GrowthUserTaskUpdateOne) sqlSave(ctx context.Context) (_node *GrowthUs
 	if value, ok := _u.mutation.AddedCompletedCount(); ok {
 		_spec.AddField(growthusertask.FieldCompletedCount, field.TypeInt64, value)
 	}
-	if value, ok := _u.mutation.Status(); ok {
-		_spec.SetField(growthusertask.FieldStatus, field.TypeString, value)
+	if value, ok := _u.mutation.ProgressStatus(); ok {
+		_spec.SetField(growthusertask.FieldProgressStatus, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.CompletedAt(); ok {
 		_spec.SetField(growthusertask.FieldCompletedAt, field.TypeTime, value)

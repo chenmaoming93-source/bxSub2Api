@@ -154,9 +154,11 @@ growth_inventory_ledger
 growth_admin_audit
 ```
 
+全新环境使用最新版 182 即可，该脚本已经包含 ADJUST、多次发分和 GoldenDB 兼容字段，不执行 184/185/186。
+
 ### 3.2 存量环境升级账务约束与 ADJUST 账户
 
-如果环境此前已经执行过旧版 `182_create_growth_tables.sql`，必须继续执行：
+仅当环境已执行过旧版 `182_create_growth_tables.sql` 时执行：
 
 ```bash
 mysql -h <db-host> -P <db-port> -u <db-user> -p \
@@ -168,20 +170,34 @@ mysql -h <db-host> -P <db-port> -u <db-user> -p \
 - 允许人工调账扣减写入独立的 `ADJUST` 账户，不再混入 `REDEEMED` 消费口径。
 - 将预算检查修正为 `distributed_amount <= total_amount`，保证“任务发分 + 人工调账增加”不超过总预算；任务分配仍满足 `allocated_amount <= total_amount`。
 
-全新环境执行最新版 182 后，也应执行一次 184，保持所有环境结构一致。
-
 ### 3.3 启用同周期多次任务奖励
 
-任务奖励领取表已增加周期内 `sequence`，唯一键调整为 `(user_id, task_id, cycle_key, sequence)`。如果环境此前使用过只允许单次领取的版本，继续执行：
+仅旧版单次领取表执行：
 
 ```bash
 mysql -h <db-host> -P <db-port> -u <db-user> -p \
   <database-name> < backend/sqlArchiving/185_growth_multi_reward_claims.sql
 ```
 
-脚本会兼容新旧表结构：缺列时补列，旧三列唯一键存在时自动重建，并补充 `sequence > 0` 检查约束。
+脚本直接补列、替换唯一键并增加检查约束，不使用动态 SQL。
 
-### 3.4 更新 RBAC 兼容 seed
+### 3.4 GoldenDB 字段兼容升级
+
+仅旧版 Growth 表执行：
+
+```bash
+mysql -h <db-host> -P <db-port> -u <db-user> -p \
+  <database-name> < backend/sqlArchiving/186_growth_goldendb_schema_compat.sql
+```
+
+该脚本使用简单 `ALTER TABLE ... CHANGE/MODIFY COLUMN`：
+
+- `status` 改为按语义命名的非保留字列。
+- `description` 改为 `remark`。
+- `action` 改为 `action_type`。
+- 5 个 JSON 字段改为 `LONGTEXT NULL`。
+
+### 3.5 更新 RBAC 兼容 seed
 
 ```bash
 mysql -h <db-host> -P <db-port> -u <db-user> -p \
@@ -190,14 +206,14 @@ mysql -h <db-host> -P <db-port> -u <db-user> -p \
 
 该脚本必须幂等，可重复执行。
 
-### 3.5 添加 Growth 权限
+### 3.6 添加 Growth 权限
 
 ```bash
 mysql -h <db-host> -P <db-port> -u <db-user> -p \
   <database-name> < backend/sqlArchiving/183_add_growth_rbac_permissions.sql
 ```
 
-### 3.6 数据库验证
+### 3.7 数据库验证
 
 ```sql
 SELECT COUNT(*) AS growth_table_count
@@ -217,6 +233,15 @@ WHERE constraint_schema = DATABASE()
 
 SHOW INDEX FROM growth_reward_claims
 WHERE Key_name = 'uq_growth_reward_claims_cycle';
+
+SELECT table_name, column_name, data_type, is_nullable
+FROM information_schema.columns
+WHERE table_schema = DATABASE()
+  AND table_name LIKE 'growth_%'
+  AND (
+    column_name IN ('status', 'description', 'action')
+    OR data_type = 'json'
+  );
 
 SELECT code, name, module, status
 FROM rbac_permissions
@@ -238,6 +263,7 @@ WHERE r.code = 'user'
 - 普通用户 Growth 权限：`2`
 - 预算、账户与奖励序号相关检查约束均存在，转账和账务账户枚举均包含 `ADJUST`
 - `growth_reward_claims.sequence` 存在，且唯一键包含 `user_id, task_id, cycle_key, sequence`
+- 保留字和 JSON 类型检查结果为空
 
 ## 4. 发布后端和前端
 

@@ -130,7 +130,7 @@ func (s *ProductService) Create(ctx context.Context, input ProductCreateInput) (
 		SetIcon(strings.TrimSpace(input.Icon)).
 		SetFulfillmentMode(input.FulfillmentMode).
 		SetSortOrder(input.SortOrder).
-		SetStatus("DRAFT").
+		SetProductStatus("DRAFT").
 		SetCurrentVersion(0).
 		Save(ctx)
 	if err != nil {
@@ -220,9 +220,7 @@ func (s *ProductService) Update(ctx context.Context, productID int64, input Prod
 			SetBenefitSummary(strings.TrimSpace(input.Version.BenefitSummary)).
 			SetTokenAmount(input.Version.TokenAmount).
 			SetPerUserLimit(input.Version.PerUserLimit)
-		if input.Version.BenefitDetail != nil {
-			update.SetBenefitDetail(input.Version.BenefitDetail)
-		}
+		update.SetBenefitDetail(encodeJSONText(input.Version.BenefitDetail))
 		draft, err = update.Save(ctx)
 	}
 	if err != nil {
@@ -268,7 +266,7 @@ func (s *ProductService) Publish(ctx context.Context, productID int64, operatorI
 	}
 	draft, err := latestDraftProductVersionTx(ctx, tx, productID)
 	if ent.IsNotFound(err) {
-		if product.Status == "ACTIVE" {
+		if product.ProductStatus == "ACTIVE" {
 			current, currentErr := currentProductVersionTx(ctx, tx, productID)
 			if currentErr == nil {
 				inventory, inventoryErr := tx.GrowthProductInventory.Query().
@@ -313,7 +311,7 @@ func (s *ProductService) Publish(ctx context.Context, productID int64, operatorI
 	before := *product
 	product, err = tx.GrowthProduct.UpdateOneID(productID).
 		SetCurrentVersion(published.Version).
-		SetStatus("ACTIVE").
+		SetProductStatus("ACTIVE").
 		Save(ctx)
 	if err != nil {
 		return ProductListView{}, err
@@ -451,11 +449,11 @@ func (s *ProductService) Offline(ctx context.Context, productID int64, operatorI
 	if err != nil {
 		return ProductListView{}, err
 	}
-	if product.Status == "OFFLINE" {
+	if product.ProductStatus == "OFFLINE" {
 		return ProductListView{}, ErrProductStateInvalid
 	}
 	before := *product
-	product, err = tx.GrowthProduct.UpdateOneID(productID).SetStatus("OFFLINE").Save(ctx)
+	product, err = tx.GrowthProduct.UpdateOneID(productID).SetProductStatus("OFFLINE").Save(ctx)
 	if err != nil {
 		return ProductListView{}, err
 	}
@@ -476,7 +474,7 @@ func (s *ProductService) List(ctx context.Context, filter BudgetListFilter, prod
 	filter = normalizeBudgetFilter(filter)
 	query := s.client.GrowthProduct.Query()
 	if filter.Status != "" {
-		query = query.Where(growthproduct.StatusEQ(filter.Status))
+		query = query.Where(growthproduct.ProductStatusEQ(filter.Status))
 	}
 	if productType != "" {
 		query = query.Where(growthproduct.ProductTypeEQ(productType))
@@ -552,9 +550,7 @@ func createProductVersion(ctx context.Context, tx *ent.Tx, productID int64, vers
 		SetTokenAmount(input.TokenAmount).
 		SetPerUserLimit(input.PerUserLimit).
 		SetCreatedBy(operatorID)
-	if input.BenefitDetail != nil {
-		create.SetBenefitDetail(input.BenefitDetail)
-	}
+	create.SetBenefitDetail(encodeJSONText(input.BenefitDetail))
 	return create.Save(ctx)
 }
 
@@ -656,14 +652,14 @@ func buildProductView(product *ent.GrowthProduct, current, pending *ent.GrowthPr
 		Icon:            product.Icon,
 		FulfillmentMode: product.FulfillmentMode,
 		SortOrder:       product.SortOrder,
-		Status:          product.Status,
+		Status:          product.ProductStatus,
 		CurrentVersion:  product.CurrentVersion,
 		UpdatedAt:       product.UpdatedAt,
 	}
 	if current != nil {
 		view.PointsCost = current.PointsCost
 		view.BenefitSummary = current.BenefitSummary
-		view.BenefitDetail = current.BenefitDetail
+		view.BenefitDetail = decodeJSONText(current.BenefitDetail)
 		view.TokenAmount = current.TokenAmount
 		view.PerUserLimit = current.PerUserLimit
 	}
@@ -692,7 +688,7 @@ func productVersionView(version *ent.GrowthProductVersion) ProductVersionView {
 		Version:        version.Version,
 		PointsCost:     version.PointsCost,
 		BenefitSummary: version.BenefitSummary,
-		BenefitDetail:  version.BenefitDetail,
+		BenefitDetail:  decodeJSONText(version.BenefitDetail),
 		TokenAmount:    version.TokenAmount,
 		PerUserLimit:   version.PerUserLimit,
 		CreatedBy:      version.CreatedBy,
@@ -746,11 +742,11 @@ func appendProductAudit(ctx context.Context, tx *ent.Tx, operatorID int64, actio
 	}
 	_, err := tx.GrowthAdminAudit.Create().
 		SetOperatorID(operatorID).
-		SetAction(action).
+		SetActionType(action).
 		SetResourceType("growth_product").
 		SetResourceID(productID).
-		SetBeforeJSON(beforeJSON).
-		SetAfterJSON(productAuditSnapshot(after)).
+		SetBeforeJSON(encodeJSONText(beforeJSON)).
+		SetAfterJSON(encodeJSONText(productAuditSnapshot(after))).
 		SetReason(strings.TrimSpace(reason)).
 		SetRequestID(strings.TrimSpace(requestID)).
 		Save(ctx)
@@ -760,11 +756,11 @@ func appendProductAudit(ctx context.Context, tx *ent.Tx, operatorID int64, actio
 func appendProductInventoryAudit(ctx context.Context, tx *ent.Tx, operatorID int64, productID int64, before, after *ent.GrowthProductInventory, requestID, reason string) error {
 	_, err := tx.GrowthAdminAudit.Create().
 		SetOperatorID(operatorID).
-		SetAction("product.stock.adjust").
+		SetActionType("product.stock.adjust").
 		SetResourceType("growth_product_inventory").
 		SetResourceID(productID).
-		SetBeforeJSON(productInventorySnapshot(before)).
-		SetAfterJSON(productInventorySnapshot(after)).
+		SetBeforeJSON(encodeJSONText(productInventorySnapshot(before))).
+		SetAfterJSON(encodeJSONText(productInventorySnapshot(after))).
 		SetReason(strings.TrimSpace(reason)).
 		SetRequestID(strings.TrimSpace(requestID)).
 		Save(ctx)
@@ -779,7 +775,7 @@ func productAuditSnapshot(product *ent.GrowthProduct) map[string]any {
 		"product_id":       product.ID,
 		"product_code":     product.ProductCode,
 		"title":            product.Title,
-		"status":           product.Status,
+		"status":           product.ProductStatus,
 		"current_version":  product.CurrentVersion,
 		"fulfillment_mode": product.FulfillmentMode,
 	}

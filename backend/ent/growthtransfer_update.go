@@ -219,16 +219,16 @@ func (_u *GrowthTransferUpdate) AddPoints(v int64) *GrowthTransferUpdate {
 	return _u
 }
 
-// SetStatus sets the "status" field.
-func (_u *GrowthTransferUpdate) SetStatus(v string) *GrowthTransferUpdate {
-	_u.mutation.SetStatus(v)
+// SetTransferStatus sets the "transfer_status" field.
+func (_u *GrowthTransferUpdate) SetTransferStatus(v string) *GrowthTransferUpdate {
+	_u.mutation.SetTransferStatus(v)
 	return _u
 }
 
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (_u *GrowthTransferUpdate) SetNillableStatus(v *string) *GrowthTransferUpdate {
+// SetNillableTransferStatus sets the "transfer_status" field if the given value is not nil.
+func (_u *GrowthTransferUpdate) SetNillableTransferStatus(v *string) *GrowthTransferUpdate {
 	if v != nil {
-		_u.SetStatus(*v)
+		_u.SetTransferStatus(*v)
 	}
 	return _u
 }
@@ -335,9 +335,9 @@ func (_u *GrowthTransferUpdate) check() error {
 			return &ValidationError{Name: "points", err: fmt.Errorf(`ent: validator failed for field "GrowthTransfer.points": %w`, err)}
 		}
 	}
-	if v, ok := _u.mutation.Status(); ok {
-		if err := growthtransfer.StatusValidator(v); err != nil {
-			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "GrowthTransfer.status": %w`, err)}
+	if v, ok := _u.mutation.TransferStatus(); ok {
+		if err := growthtransfer.TransferStatusValidator(v); err != nil {
+			return &ValidationError{Name: "transfer_status", err: fmt.Errorf(`ent: validator failed for field "GrowthTransfer.transfer_status": %w`, err)}
 		}
 	}
 	if v, ok := _u.mutation.FailureReason(); ok {
@@ -417,8 +417,8 @@ func (_u *GrowthTransferUpdate) sqlSave(ctx context.Context) (_node int, err err
 	if value, ok := _u.mutation.AddedPoints(); ok {
 		_spec.AddField(growthtransfer.FieldPoints, field.TypeInt64, value)
 	}
-	if value, ok := _u.mutation.Status(); ok {
-		_spec.SetField(growthtransfer.FieldStatus, field.TypeString, value)
+	if value, ok := _u.mutation.TransferStatus(); ok {
+		_spec.SetField(growthtransfer.FieldTransferStatus, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.FailureReason(); ok {
 		_spec.SetField(growthtransfer.FieldFailureReason, field.TypeString, value)
@@ -640,16 +640,16 @@ func (_u *GrowthTransferUpdateOne) AddPoints(v int64) *GrowthTransferUpdateOne {
 	return _u
 }
 
-// SetStatus sets the "status" field.
-func (_u *GrowthTransferUpdateOne) SetStatus(v string) *GrowthTransferUpdateOne {
-	_u.mutation.SetStatus(v)
+// SetTransferStatus sets the "transfer_status" field.
+func (_u *GrowthTransferUpdateOne) SetTransferStatus(v string) *GrowthTransferUpdateOne {
+	_u.mutation.SetTransferStatus(v)
 	return _u
 }
 
-// SetNillableStatus sets the "status" field if the given value is not nil.
-func (_u *GrowthTransferUpdateOne) SetNillableStatus(v *string) *GrowthTransferUpdateOne {
+// SetNillableTransferStatus sets the "transfer_status" field if the given value is not nil.
+func (_u *GrowthTransferUpdateOne) SetNillableTransferStatus(v *string) *GrowthTransferUpdateOne {
 	if v != nil {
-		_u.SetStatus(*v)
+		_u.SetTransferStatus(*v)
 	}
 	return _u
 }
@@ -769,9 +769,9 @@ func (_u *GrowthTransferUpdateOne) check() error {
 			return &ValidationError{Name: "points", err: fmt.Errorf(`ent: validator failed for field "GrowthTransfer.points": %w`, err)}
 		}
 	}
-	if v, ok := _u.mutation.Status(); ok {
-		if err := growthtransfer.StatusValidator(v); err != nil {
-			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "GrowthTransfer.status": %w`, err)}
+	if v, ok := _u.mutation.TransferStatus(); ok {
+		if err := growthtransfer.TransferStatusValidator(v); err != nil {
+			return &ValidationError{Name: "transfer_status", err: fmt.Errorf(`ent: validator failed for field "GrowthTransfer.transfer_status": %w`, err)}
 		}
 	}
 	if v, ok := _u.mutation.FailureReason(); ok {
@@ -868,8 +868,8 @@ func (_u *GrowthTransferUpdateOne) sqlSave(ctx context.Context) (_node *GrowthTr
 	if value, ok := _u.mutation.AddedPoints(); ok {
 		_spec.AddField(growthtransfer.FieldPoints, field.TypeInt64, value)
 	}
-	if value, ok := _u.mutation.Status(); ok {
-		_spec.SetField(growthtransfer.FieldStatus, field.TypeString, value)
+	if value, ok := _u.mutation.TransferStatus(); ok {
+		_spec.SetField(growthtransfer.FieldTransferStatus, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.FailureReason(); ok {
 		_spec.SetField(growthtransfer.FieldFailureReason, field.TypeString, value)

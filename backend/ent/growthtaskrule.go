@@ -3,7 +3,6 @@
 package ent
 
 import (
-	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -29,7 +28,7 @@ type GrowthTaskRule struct {
 	// TriggerEvent holds the value of the "trigger_event" field.
 	TriggerEvent string `json:"trigger_event,omitempty"`
 	// Conditions holds the value of the "conditions" field.
-	Conditions map[string]interface{} `json:"conditions,omitempty"`
+	Conditions string `json:"conditions,omitempty"`
 	// Target holds the value of the "target" field.
 	Target int64 `json:"target,omitempty"`
 	// RewardPoints holds the value of the "reward_points" field.
@@ -56,11 +55,9 @@ func (*GrowthTaskRule) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case growthtaskrule.FieldConditions:
-			values[i] = new([]byte)
 		case growthtaskrule.FieldID, growthtaskrule.FieldTaskID, growthtaskrule.FieldVersion, growthtaskrule.FieldTarget, growthtaskrule.FieldRewardPoints, growthtaskrule.FieldDailyLimit, growthtaskrule.FieldPerUserLimit, growthtaskrule.FieldCreatedBy:
 			values[i] = new(sql.NullInt64)
-		case growthtaskrule.FieldTriggerEvent, growthtaskrule.FieldPeriodType:
+		case growthtaskrule.FieldTriggerEvent, growthtaskrule.FieldConditions, growthtaskrule.FieldPeriodType:
 			values[i] = new(sql.NullString)
 		case growthtaskrule.FieldCreatedAt, growthtaskrule.FieldUpdatedAt, growthtaskrule.FieldEffectiveFrom, growthtaskrule.FieldEffectiveTo, growthtaskrule.FieldPublishedAt:
 			values[i] = new(sql.NullTime)
@@ -116,12 +113,10 @@ func (_m *GrowthTaskRule) assignValues(columns []string, values []any) error {
 				_m.TriggerEvent = value.String
 			}
 		case growthtaskrule.FieldConditions:
-			if value, ok := values[i].(*[]byte); !ok {
+			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field conditions", values[i])
-			} else if value != nil && len(*value) > 0 {
-				if err := json.Unmarshal(*value, &_m.Conditions); err != nil {
-					return fmt.Errorf("unmarshal field conditions: %w", err)
-				}
+			} else if value.Valid {
+				_m.Conditions = value.String
 			}
 		case growthtaskrule.FieldTarget:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -231,7 +226,7 @@ func (_m *GrowthTaskRule) String() string {
 	builder.WriteString(_m.TriggerEvent)
 	builder.WriteString(", ")
 	builder.WriteString("conditions=")
-	builder.WriteString(fmt.Sprintf("%v", _m.Conditions))
+	builder.WriteString(_m.Conditions)
 	builder.WriteString(", ")
 	builder.WriteString("target=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Target))

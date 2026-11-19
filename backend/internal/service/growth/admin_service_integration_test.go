@@ -106,7 +106,7 @@ func TestAdjustmentAuditAndReconciliation(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 2, adjustTransfers)
 	auditCount, err := client.GrowthAdminAudit.Query().
-		Where(growthadminaudit.ActionContains("adjust")).
+		Where(growthadminaudit.ActionTypeContains("adjust")).
 		Count(ctx)
 	require.NoError(t, err)
 	require.Equal(t, 2, auditCount)

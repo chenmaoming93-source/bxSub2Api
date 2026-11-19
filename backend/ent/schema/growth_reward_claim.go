@@ -35,7 +35,7 @@ func (GrowthRewardClaim) Fields() []ent.Field {
 		field.String("idempotency_key").MaxLen(128).NotEmpty(),
 		field.Int64("transfer_id"),
 		field.Int64("points").Validate(growthPositive("points")),
-		field.String("status").MaxLen(20).Default("SUCCEEDED"),
+		field.String("claim_status").MaxLen(20).Default("SUCCEEDED"),
 		field.Time("claimed_at").SchemaType(map[string]string{dialect.MySQL: "datetime(6)"}),
 	}
 }
