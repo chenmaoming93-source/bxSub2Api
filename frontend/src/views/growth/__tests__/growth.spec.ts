@@ -13,6 +13,8 @@ describe('growth pages', () => {
     expect(read('src/router/index.ts')).toContain("to.path === '/admin/growth' || to.path === '/growth'")
     expect(read('src/views/growth/AdminGrowthView.vue')).toContain('v-if="!canRead"')
     expect(read('src/views/growth/UserGrowthView.vue')).toContain('v-if="!canRead"')
+    expect(read('src/views/growth/AdminGrowthView.vue')).toContain('<AppLayout>')
+    expect(read('src/views/growth/UserGrowthView.vue')).toContain('<AppLayout>')
   })
 
   it('keeps Web check-in and completion actions absent', () => {

@@ -13,6 +13,7 @@ import {
 import BaseDialog from '@/components/common/BaseDialog.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import LoadingSpinner from '@/components/common/LoadingSpinner.vue'
+import AppLayout from '@/components/layout/AppLayout.vue'
 import GrowthNotice from '@/components/growth/GrowthNotice.vue'
 import GrowthStatusBadge from '@/components/growth/GrowthStatusBadge.vue'
 import GrowthTabs from '@/components/growth/GrowthTabs.vue'
@@ -230,7 +231,8 @@ onMounted(async () => {
 </script>
 
 <template>
-  <section class="content">
+  <AppLayout>
+    <section class="content">
     <header class="page-header">
       <div>
         <h1>{{ t('growth.user.title') }}</h1>
@@ -334,5 +336,6 @@ onMounted(async () => {
       @confirm="confirmExchange"
       @cancel="confirmOpen = false"
     />
-  </section>
+    </section>
+  </AppLayout>
 </template>

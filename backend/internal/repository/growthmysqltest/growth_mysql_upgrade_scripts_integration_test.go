@@ -69,6 +69,9 @@ func TestGrowthCompatibilityUpgradeScripts(t *testing.T) {
 				from_account_type IN ('TASK', 'WALLET', 'REDEEMED', 'SYSTEM')
 				AND to_account_type IN ('TASK', 'WALLET', 'REDEEMED', 'SYSTEM')
 				AND points > 0
+			),
+			CONSTRAINT chk_growth_transfers_status CHECK (
+				status IN ('PENDING', 'SUCCEEDED', 'FAILED', 'REVERSED')
 			)
 		)`,
 		`CREATE TABLE growth_account_ledger (
@@ -93,18 +96,49 @@ func TestGrowthCompatibilityUpgradeScripts(t *testing.T) {
 		`CREATE TABLE growth_tasks (
 			id BIGINT PRIMARY KEY,
 			description VARCHAR(2048) NOT NULL,
-			status VARCHAR(20) NOT NULL
+			status VARCHAR(20) NOT NULL,
+			CONSTRAINT chk_growth_tasks_status CHECK (status IN ('DRAFT', 'ACTIVE', 'OFFLINE'))
 		)`,
 		`CREATE TABLE growth_user_tasks (id BIGINT PRIMARY KEY, status VARCHAR(32) NOT NULL)`,
-		`CREATE TABLE growth_products (id BIGINT PRIMARY KEY, status VARCHAR(20) NOT NULL)`,
+		`CREATE TABLE growth_products (
+			id BIGINT PRIMARY KEY,
+			product_type VARCHAR(32) NOT NULL,
+			fulfillment_mode VARCHAR(32) NOT NULL,
+			status VARCHAR(20) NOT NULL,
+			current_version INT NOT NULL,
+			CONSTRAINT chk_growth_products_values CHECK (
+				product_type IN ('TOKEN_QUOTA', 'SUBSCRIPTION', 'PHYSICAL')
+				AND fulfillment_mode IN ('AUTOMATIC', 'MANUAL')
+				AND status IN ('DRAFT', 'ACTIVE', 'PAUSED', 'OFFLINE')
+				AND current_version >= 0
+			)
+		)`,
 		`CREATE TABLE growth_task_rules (id BIGINT PRIMARY KEY, conditions JSON NULL)`,
 		`CREATE TABLE growth_product_versions (id BIGINT PRIMARY KEY, benefit_detail JSON NULL)`,
 		`CREATE TABLE growth_exchange_orders (
 			id BIGINT PRIMARY KEY,
+			product_version INT NOT NULL,
+			points_cost BIGINT NOT NULL,
 			status VARCHAR(20) NOT NULL,
-			product_snapshot JSON NOT NULL
+			product_snapshot JSON NOT NULL,
+			CONSTRAINT chk_growth_exchange_orders_values CHECK (
+				product_version > 0
+				AND points_cost > 0
+				AND status IN ('CREATED', 'FULFILLING', 'SUCCEEDED', 'FAILED', 'REFUNDED')
+			)
 		)`,
-		`CREATE TABLE growth_fulfillment_jobs (id BIGINT PRIMARY KEY, status VARCHAR(20) NOT NULL)`,
+		`CREATE TABLE growth_fulfillment_jobs (
+			id BIGINT PRIMARY KEY,
+			status VARCHAR(20) NOT NULL,
+			attempt_count INT NOT NULL,
+			max_attempts INT NOT NULL,
+			CONSTRAINT chk_growth_fulfillment_jobs_values CHECK (
+				status IN ('PENDING', 'PROCESSING', 'RETRY', 'SUCCEEDED', 'FAILED', 'CANCELLED')
+				AND attempt_count >= 0
+				AND max_attempts > 0
+				AND attempt_count <= max_attempts
+			)
+		)`,
 		`CREATE TABLE growth_admin_audit (
 			id BIGINT PRIMARY KEY,
 			action VARCHAR(64) NOT NULL,
@@ -117,7 +151,8 @@ func TestGrowthCompatibilityUpgradeScripts(t *testing.T) {
 		require.NoErrorf(t, err, "create legacy table: %s", statement)
 	}
 	_, err = db.ExecContext(ctx, `INSERT INTO growth_exchange_orders
-		(id, status, product_snapshot) VALUES (1, 'CREATED', '{"title":"legacy"}')`)
+		(id, product_version, points_cost, status, product_snapshot)
+		VALUES (1, 1, 10, 'CREATED', '{"title":"legacy"}')`)
 	require.NoError(t, err)
 
 	_, sourceFile, _, ok := runtime.Caller(0)
