@@ -231,7 +231,10 @@ func TestProductionGrowthKeyParsesAndDerivesPublicKey(t *testing.T) {
 	require.NotNil(t, growthSM2PrivateKey)
 	publicKey, err := growthcrypto.PublicKeyHex(growthSM2PrivateKey)
 	require.NoError(t, err)
-	require.Len(t, publicKey, 128)
+	require.Equal(t,
+		"20b71146efd12e7e14ba9ce133743e0c9ac1cea1b689c3061637ce0238fbc933e4e69686a273866a1a023a985f7652865a776c05a7116015223e73b5a8a61b34",
+		publicKey,
+	)
 	t.Logf("growth-sm2-v1 public key: %s", publicKey)
 }
 

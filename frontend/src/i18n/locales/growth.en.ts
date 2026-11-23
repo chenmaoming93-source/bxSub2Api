@@ -256,7 +256,7 @@ export default {
       stockReason: 'Adjustment reason',
       publishTitle: 'Publish product version',
       publishHint: 'New orders will use the pending product version.',
-      invalidToken: 'Token products require a positive token amount and automatic fulfillment.',
+      invalidToken: 'Token products require a positive token amount.',
       versionHistoryTitle: '{title} · Version history',
       versionEffective: 'v{version} effective {time}',
       draftVersion: 'Pending',

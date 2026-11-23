@@ -19,6 +19,8 @@ export interface ChartDataset {
   hidden?: boolean
 }
 
+export type TokenChartMetric = 'total' | 'input' | 'output' | 'cache'
+
 type LabelResolver = (key: string, fallback: string) => string
 
 export function alignedSeries(labels: string[], series: Series[]): Series[] {
@@ -29,7 +31,7 @@ export function tokenChartDatasets(
   labels: string[],
   response: TimeSeriesResponse | null,
   concurrency: number[] = [],
-  metric: 'total' | 'input' | 'output' | 'cache' = 'total',
+  metric: TokenChartMetric = 'total',
   labelFor: LabelResolver = (_key, fallback) => fallback,
   groupBy?: ObservabilityGroupBy,
   dimensionLabels: Record<string, string> = {},
@@ -105,6 +107,20 @@ export function tokenChartDatasets(
       yAxisID: 'yTokens',
     })
   }
+  const cacheHitRate = cacheHitRatePoints(labels, response)
+  if (cacheHitRate) {
+    datasets.push({
+      key: 'cache_hit_rate',
+      label: labelFor('cache_hit_rate', 'Cache hit rate'),
+      data: cacheHitRate,
+      borderColor: '#ec4899',
+      backgroundColor: '#ec489320',
+      fill: false,
+      tension: 0.25,
+      yAxisID: 'yRate',
+      order: 0,
+    })
+  }
   if (requests?.points.length === labels.length) {
     datasets.push({
       label: labelFor('total_requests', requests.name || 'Requests'),
@@ -129,6 +145,22 @@ export function tokenChartDatasets(
     })
   }
   return datasets
+}
+
+function cacheHitRatePoints(labels: string[], response: TimeSeriesResponse): number[] | null {
+  const input = response.series.find((item) => item.key === 'input_tokens')
+  const cache = response.series.find((item) => item.key === 'cache_tokens')
+  if (
+    input?.points.length !== labels.length ||
+    cache?.points.length !== labels.length
+  ) {
+    return null
+  }
+  return labels.map((_label, index) => {
+    const cacheTokens = cache.points[index] || 0
+    const denominator = (input.points[index] || 0) + cacheTokens
+    return denominator > 0 ? cacheTokens / denominator : 0
+  })
 }
 
 function sumPoints(points: number[]) {

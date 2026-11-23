@@ -1564,6 +1564,8 @@ export default {
       latestValue: 'Latest {label}: {value}',
       accountCapacityWarning: 'Account #{id} is at {current}/{limit} concurrency with {waiting} waiting and {percent}% saturation. Review account capacity.',
       tokenRequestTrend: 'Token usage and request trend',
+      cacheHitRate: 'Cache hit rate',
+      cacheHitRateHelp: 'Cache hit rate = cache / (input + cache)',
       dimensionOther: 'Other',
       overallToken: 'Overall Tokens',
       buckets: '{count} buckets',

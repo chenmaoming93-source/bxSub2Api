@@ -197,16 +197,17 @@ func (s *OrderService) Create(ctx context.Context, command ExchangeCommand) (Exc
 
 	var orderID int64
 	snapshot := map[string]any{
-		"product_id":      product.ID,
-		"product_code":    product.ProductCode,
-		"title":           product.Title,
-		"product_type":    product.ProductType,
-		"version":         version.Version,
-		"points_cost":     version.PointsCost,
-		"benefit_summary": version.BenefitSummary,
-		"benefit_detail":  normalizeJSONMap(version.BenefitDetail),
-		"token_amount":    version.TokenAmount,
-		"per_user_limit":  version.PerUserLimit,
+		"product_id":       product.ID,
+		"product_code":     product.ProductCode,
+		"title":            product.Title,
+		"product_type":     product.ProductType,
+		"fulfillment_mode": product.FulfillmentMode,
+		"version":          version.Version,
+		"points_cost":      version.PointsCost,
+		"benefit_summary":  version.BenefitSummary,
+		"benefit_detail":   normalizeJSONMap(version.BenefitDetail),
+		"token_amount":     version.TokenAmount,
+		"per_user_limit":   version.PerUserLimit,
 	}
 	debit, err := s.transfers.debitWalletTx(ctx, tx, WalletDebitCommand{
 		UserID: command.UserID, Points: version.PointsCost, BizType: "EXCHANGE",

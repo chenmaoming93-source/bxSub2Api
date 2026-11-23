@@ -111,7 +111,7 @@ func (s *FulfillmentService) ProcessDue(ctx context.Context) (int, error) {
 		if err != nil {
 			continue
 		}
-		if productType(order) == "PHYSICAL" {
+		if requiresManualFulfillment(order) {
 			continue
 		}
 		claimed, err := s.claim(ctx, job.ID, now)
@@ -375,8 +375,8 @@ func (s *FulfillmentService) ManualComplete(ctx context.Context, orderID, operat
 	if err != nil {
 		return ExchangeOrderDetail{}, err
 	}
-	if productType(order) != "PHYSICAL" || order.OrderStatus != "FULFILLING" {
-		return ExchangeOrderDetail{}, infraerrors.Conflict("ORDER_STATE_INVALID", "manual completion requires a fulfilling physical order")
+	if !requiresManualFulfillment(order) || order.OrderStatus != "FULFILLING" {
+		return ExchangeOrderDetail{}, infraerrors.Conflict("ORDER_STATE_INVALID", "manual completion requires a fulfilling manual order")
 	}
 	inventory, err := tx.GrowthProductInventory.Query().
 		Where(growthproductinventory.ProductIDEQ(order.ProductID)).
@@ -590,6 +590,22 @@ func productType(order *ent.GrowthExchangeOrder) string {
 		return value
 	}
 	return ""
+}
+
+func fulfillmentMode(order *ent.GrowthExchangeOrder) string {
+	if order == nil {
+		return "AUTOMATIC"
+	}
+	if value, ok := normalizeJSONMap(order.ProductSnapshot)["fulfillment_mode"].(string); ok {
+		if mode := strings.ToUpper(strings.TrimSpace(value)); mode != "" {
+			return mode
+		}
+	}
+	return "AUTOMATIC"
+}
+
+func requiresManualFulfillment(order *ent.GrowthExchangeOrder) bool {
+	return productType(order) == "PHYSICAL" || fulfillmentMode(order) == "MANUAL"
 }
 
 func int64FromSnapshot(snapshot map[string]any, key string) int64 {

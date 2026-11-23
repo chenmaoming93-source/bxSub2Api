@@ -117,6 +117,39 @@ func TestOutboxWorkerRetryRefundManualAndAdminOperations(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "SUCCEEDED", subOrderEntity.OrderStatus)
 
+	manualTokenProduct, err := products.Create(ctx, ProductCreateInput{
+		OperatorID: 1, ProductCode: "fulfill_manual_token", Title: "手动 Token 履约", ProductType: "TOKEN_QUOTA",
+		FulfillmentMode: "MANUAL", StockMode: "LIMITED", InitialStock: 1,
+		Version:   ProductVersionInput{PointsCost: 15, BenefitSummary: "人工发放 Token", TokenAmount: 500, PerUserLimit: 1},
+		RequestID: "fulfill-manual-token-product",
+	})
+	require.NoError(t, err)
+	_, err = products.Publish(ctx, manualTokenProduct.ProductID, 1, "fulfill-manual-token-publish")
+	require.NoError(t, err)
+	manualTokenOrder, err := orders.Create(ctx, ExchangeCommand{
+		UserID: 1, ProductID: manualTokenProduct.ProductID, IdempotencyKey: "fulfill-manual-token-order",
+	})
+	require.NoError(t, err)
+	processed, err = fulfillment.ProcessDue(ctx)
+	require.NoError(t, err)
+	require.Zero(t, processed)
+	manualTokenJob, err := client.GrowthFulfillmentJob.Query().
+		Where(growthfulfillmentjob.OrderIDEQ(manualTokenOrder.OrderID)).
+		Only(ctx)
+	require.NoError(t, err)
+	require.Equal(t, "PENDING", manualTokenJob.JobStatus)
+	require.Zero(t, manualTokenJob.AttemptCount)
+	manualWalletBefore, err := client.GrowthWallet.Query().Where(growthwallet.UserIDEQ(1)).Only(ctx)
+	require.NoError(t, err)
+	manualTokenCompleted, err := fulfillment.ManualComplete(
+		ctx, manualTokenOrder.OrderID, 1, "运营已人工发放 Token", "manual-complete-token",
+	)
+	require.NoError(t, err)
+	require.Equal(t, "SUCCEEDED", manualTokenCompleted.Status)
+	manualWalletAfter, err := client.GrowthWallet.Query().Where(growthwallet.UserIDEQ(1)).Only(ctx)
+	require.NoError(t, err)
+	require.Equal(t, manualWalletBefore.AvailablePoints, manualWalletAfter.AvailablePoints)
+
 	failingProduct, err := products.Create(ctx, ProductCreateInput{
 		OperatorID: 1, ProductCode: "fulfill_fail", Title: "失败履约", ProductType: "TOKEN_QUOTA",
 		FulfillmentMode: "AUTOMATIC", StockMode: "LIMITED", InitialStock: 1,
@@ -202,6 +235,6 @@ func TestOutboxWorkerRetryRefundManualAndAdminOperations(t *testing.T) {
 
 	adminItems, total, err := fulfillment.ListAdminOrders(ctx, 1, 50, "", "")
 	require.NoError(t, err)
-	require.Equal(t, int64(5), total)
-	require.Len(t, adminItems, 5)
+	require.Equal(t, int64(6), total)
+	require.Len(t, adminItems, 6)
 }

@@ -61,7 +61,7 @@ const tokenAmount = computed(() => Number(form.tokenAmount) || 0)
 const editorValid = computed(() => {
   if (!form.title.trim() || !pointsCost.value || !form.benefitSummary.trim()) return false
   if (editorMode.value === 'create' && !form.code.trim()) return false
-  if (form.productType === 'TOKEN_QUOTA' && (tokenAmount.value <= 0 || form.fulfillmentMode !== 'AUTOMATIC')) return false
+  if (form.productType === 'TOKEN_QUOTA' && tokenAmount.value <= 0) return false
   return true
 })
 const actionTitle = computed(() => {
@@ -281,6 +281,10 @@ function stockClass(product: GrowthProduct): string {
   return 'text-gray-700 dark:text-dark-200'
 }
 
+function canPublishProduct(product: GrowthProduct): boolean {
+  return product.status !== 'ACTIVE' || Boolean(product.pending_version)
+}
+
 function errorMessage(cause: unknown): string {
   if (cause && typeof cause === 'object') {
     const value = cause as { reason?: string; message?: string }
@@ -375,7 +379,7 @@ onMounted(load)
                     <button class="btn btn-sm btn-secondary" @click="editProduct(product)">{{ t('growth.admin.product.edit') }}</button>
                     <button class="btn btn-sm btn-secondary" @click="openAction(product, 'stock')">{{ t('growth.admin.product.stock') }}</button>
                     <button v-if="product.status === 'ACTIVE'" class="btn btn-sm btn-danger" @click="openAction(product, 'offline')">{{ t('growth.admin.product.offline') }}</button>
-                    <button v-else class="btn btn-sm btn-primary" @click="openAction(product, 'publish')">{{ product.pending_version ? t('growth.admin.product.publishVersion') : t('growth.admin.product.publish') }}</button>
+                    <button v-if="canPublishProduct(product)" class="btn btn-sm btn-primary" @click="openAction(product, 'publish')">{{ product.pending_version ? t('growth.admin.product.publishVersion') : t('growth.admin.product.publish') }}</button>
                   </template>
                 </div>
               </td>
@@ -408,7 +412,7 @@ onMounted(load)
             <button class="btn btn-sm btn-secondary" @click="editProduct(product)">{{ t('growth.admin.product.edit') }}</button>
             <button class="btn btn-sm btn-secondary" @click="openAction(product, 'stock')">{{ t('growth.admin.product.stock') }}</button>
             <button v-if="product.status === 'ACTIVE'" class="btn btn-sm btn-danger" @click="openAction(product, 'offline')">{{ t('growth.admin.product.offline') }}</button>
-            <button v-else class="btn btn-sm btn-primary" @click="openAction(product, 'publish')">{{ t('growth.admin.product.publish') }}</button>
+            <button v-if="canPublishProduct(product)" class="btn btn-sm btn-primary" @click="openAction(product, 'publish')">{{ product.pending_version ? t('growth.admin.product.publishVersion') : t('growth.admin.product.publish') }}</button>
           </template>
         </div>
       </article>
@@ -475,7 +479,7 @@ onMounted(load)
             </label>
           </template>
         </div>
-        <GrowthNotice v-if="form.productType === 'TOKEN_QUOTA' && (tokenAmount <= 0 || form.fulfillmentMode !== 'AUTOMATIC')" tone="warning">{{ t('growth.admin.product.invalidToken') }}</GrowthNotice>
+        <GrowthNotice v-if="form.productType === 'TOKEN_QUOTA' && tokenAmount <= 0" tone="warning">{{ t('growth.admin.product.invalidToken') }}</GrowthNotice>
         <div class="flex justify-end gap-2">
           <button type="button" class="btn btn-secondary" @click="editorOpen = false">{{ t('growth.common.cancel') }}</button>
           <button type="submit" class="btn btn-primary" :disabled="!editorValid || saving">

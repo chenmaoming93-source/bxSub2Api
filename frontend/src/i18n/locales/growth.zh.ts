@@ -256,7 +256,7 @@ export default {
       stockReason: '调整原因',
       publishTitle: '发布商品版本',
       publishHint: '发布后新兑换订单将使用当前待发布版本。',
-      invalidToken: 'Token 商品必须填写大于 0 的发放数量，并选择自动发放。',
+      invalidToken: 'Token 商品必须填写大于 0 的发放数量。',
       versionHistoryTitle: '{title} · 版本历史',
       versionEffective: 'v{version} 生效于 {time}',
       draftVersion: '待发布',

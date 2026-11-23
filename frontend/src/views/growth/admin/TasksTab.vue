@@ -448,7 +448,13 @@ onMounted(load)
               <td class="px-4 py-3 text-xs text-gray-500 dark:text-dark-400">{{ dateTime(task.updated_at) }}</td>
               <td class="px-4 py-3">
                 <div class="flex flex-wrap gap-1">
-                  <button v-for="action in availableActions(task)" :key="action" class="btn btn-sm btn-secondary" @click="runAction(task, action)">{{ actionLabel(action) }}</button>
+                  <button
+                    v-for="action in availableActions(task)"
+                    :key="action"
+                    class="btn btn-sm"
+                    :class="action === 'publish' ? 'btn-primary' : 'btn-secondary'"
+                    @click="runAction(task, action)"
+                  >{{ actionLabel(action) }}</button>
                 </div>
               </td>
             </tr>

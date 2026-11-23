@@ -32,6 +32,12 @@ describe('growth pages', () => {
     expect(read('src/api/growth/admin.ts')).toContain("'/admin/growth/tasks'")
     expect(read('src/api/growth/admin.ts')).toContain("'/admin/growth/products'")
     expect(read('src/api/growth/admin.ts')).toContain("'/admin/growth/exchanges'")
+    const products = read('src/views/growth/admin/ProductsTab.vue')
+    expect(products).toContain('product.status !== \'ACTIVE\' || Boolean(product.pending_version)')
+    expect(products).toContain('growth.admin.product.publishVersion')
+    expect(products).toContain("form.productType === 'TOKEN_QUOTA' && tokenAmount.value <= 0")
+    expect(products).not.toContain("tokenAmount.value <= 0 || form.fulfillmentMode !== 'AUTOMATIC'")
+    expect(read('src/views/growth/admin/TasksTab.vue')).toContain("action === 'publish' ? 'btn-primary' : 'btn-secondary'")
   })
 
   it('uses formal dialogs instead of browser prompt flows in growth views', () => {

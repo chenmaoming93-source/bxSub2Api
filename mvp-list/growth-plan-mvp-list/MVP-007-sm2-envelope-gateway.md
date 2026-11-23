@@ -63,7 +63,7 @@ The U face is POST-only, uses a fixed `growth-sm2-v1` envelope, and has no JWT o
 | Middleware | `backend/internal/server/middleware/growth_payload.go` | SM2 gateway, nonce cache dispatch, user mapping, safe audit logging and string-code errors. |
 | Nonce cache | `backend/internal/service/growth/nonce_cache.go` | Redis `SET NX` TTL anti-replay. |
 | Routes/config | `backend/internal/server/routes/growth.go`, `backend/internal/server/router.go`, `backend/internal/config/config.go`, `backend/config/config.yaml` | U route tree, RBAC exclusion and `growth.crypto.time_window: 5m`. |
-| AIWork public key | `growth-sm2-v1` | `82faea4b9093687dd34416141fd05ac825944de64a55e60be17873e4539524931a90619fe65ca78657dabe658ff7278c5a0a5161981c9e3a55ed75115fe6b72d` |
+| AIWork public key | `growth-sm2-v1` | `20b71146efd12e7e14ba9ce133743e0c9ac1cea1b689c3061637ce0238fbc933e4e69686a273866a1a023a985f7652865a776c05a7116015223e73b5a8a61b34` |
 
 ## Execution Notes
 

@@ -1568,6 +1568,8 @@ export default {
       latestValue: '{label}最新值 {value}',
       accountCapacityWarning: '账号 #{id} 当前并发 {current}/{limit}，等待 {waiting}，饱和度 {percent}%。请人工核查账号容量。',
       tokenRequestTrend: 'Token 用量与请求趋势',
+      cacheHitRate: '缓存命中率',
+      cacheHitRateHelp: '缓存命中率 = 缓存 / (输入 + 缓存)',
       dimensionOther: '其他',
       overallToken: '整体 Token',
       buckets: '{count} 个时间桶',

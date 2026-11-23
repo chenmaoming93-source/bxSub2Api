@@ -25,6 +25,9 @@ func TestValidateProductCreate(t *testing.T) {
 		},
 	}
 	require.NoError(t, validateProductCreate(valid))
+	manual := valid
+	manual.FulfillmentMode = "MANUAL"
+	require.NoError(t, validateProductCreate(manual))
 
 	tests := []struct {
 		name   string

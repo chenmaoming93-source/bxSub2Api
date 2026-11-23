@@ -286,7 +286,7 @@ func (s *ProductService) Publish(ctx context.Context, productID int64, operatorI
 	if err != nil {
 		return ProductListView{}, err
 	}
-	if product.ProductType == "TOKEN_QUOTA" && (draft.TokenAmount <= 0 || product.FulfillmentMode != "AUTOMATIC") {
+	if product.ProductType == "TOKEN_QUOTA" && draft.TokenAmount <= 0 {
 		return ProductListView{}, ErrProductPublishInvalid
 	}
 	now := time.Now()

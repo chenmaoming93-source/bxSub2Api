@@ -22,7 +22,7 @@ const (
 	// growth-sm2-v1. It is intentionally not loaded from config, environment,
 	// KMS, or an API key store. A key change requires a coordinated code release
 	// with AIWork Main.
-	growthSM2PrivateKeyHex = "be0a68d8fd7fcf76f2ee116216ecb3034c0d16916fca0d9d4b5601ac3ea81e9b"
+	growthSM2PrivateKeyHex = "11ff9644954cf7d7f251700e66c4360b581d9e0e9be781aac12b7db141633505"
 )
 
 var growthSM2PrivateKey = mustGrowthSM2PrivateKey()
