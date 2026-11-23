@@ -15,6 +15,9 @@ func TestUReadWReadContractFields(t *testing.T) {
 	assertJSONFields(t, growthservice.UOverviewView{}, []string{
 		"user_id", "available_points", "earned_total", "spent_total", "checkin", "task_summary", "server_time",
 	})
+	assertJSONFields(t, growthservice.UPointsRankView{}, []string{
+		"user_id", "available_points", "rank", "total_users", "rank_text",
+	})
 	assertJSONFields(t, growthservice.UTaskItemView{}, []string{
 		"task_id", "task_code", "title", "category", "task_type", "status", "progress", "target",
 		"cycle_key", "reward_hint", "reward_pool", "rule_version", "action", "icon", "sort_order",

@@ -224,7 +224,7 @@ go build -trimpath -o bin/server ./cmd/server
 1. 将 SM2 公钥交付 AIWork Main。
 2. 双方使用固定向量完成 SM2/SM4/SM3 互解测试。
 3. 更新 AIWork 任务完成逻辑：每次真实完成生成新 `completion_ref` 和新幂等键。
-4. 完成 U 面 11 个接口冒烟测试。
+4. 完成 U 面 12 个接口冒烟测试。
 
 ## 6. 数据库验证
 

@@ -340,7 +340,7 @@ function normalize(raw: any): { ok: boolean; data?: any; code: string | number; 
 
 | 依赖 | 需要 sub2api 提供 | 阻塞 AIWork 阶段 |
 |---|---|---|
-| U 面 11 接口 | 契约 v4.0 第 2.1 节全部（全 POST + 加密信封；删除原完成请求状态查询接口） | A2～A5 |
+| U 面 12 接口 | 契约 v4.0 第 2.1 节全部（全 POST + 加密信封；删除原完成请求状态查询接口） | A2～A5 |
 | 加密配置 | sub2api 分配的测试 SM2 密钥对（公钥写死进 Main 常量、私钥写死进 sub2api 常量）、`kid` 固定 `growth-sm2-v1`、SM2/SM4/SM3 规范实现一致 | A1 起 |
 | 网络边界 | 内网/VPN 可访问地址 + IP 白名单已放行 AIWork、双方 NTP 同步 | A2 起 |
 | 测试环境 | 测试账号 email、测试总预算与任务额度、Mock/真实开关 | A6 |

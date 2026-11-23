@@ -226,9 +226,9 @@
 
 ## 2. 接口总表
 
-> 原令牌交换与身份头相关接口/字段已随模型整体取消；**v4.0 起 I 面 `task-events` 接口亦删除**（任务完成判定收敛到 AIWork）。**U 面 11 个接口统一 `POST`，业务参数放加密 payload 的 `params`。**
+> 原令牌交换与身份头相关接口/字段已随模型整体取消；**v4.0 起 I 面 `task-events` 接口亦删除**（任务完成判定收敛到 AIWork）。**U 面 12 个接口统一 `POST`，业务参数放加密 payload 的 `params`。**
 
-### 2.1 U 面 11 个接口
+### 2.1 U 面 12 个接口
 
 | # | 分类 | Path（均 POST） | 用途 | 幂等键 |
 |---|---|---|---|---|
@@ -243,6 +243,7 @@
 | 9 | 命令 | `/growth/tasks/{task_id}/completion-requests` | 提交任务完成（AIWork 判定完成并声明，sub2api 按规则发分） | **必填** |
 | 10 | 命令 | `/growth/exchanges` | 提交兑换请求 | **必填** |
 | 11 | 状态 | `/growth/exchanges/{order_id}` | 查询订单扣分与履约状态 | — |
+| 12 | 读 | `/growth/rank` | 当前用户积分排名及参与排名总人数 | — |
 
 > **v4.0 删除的接口**：原 #11 `POST /growth/completion-requests/{request_id}`（完成请求核验状态查询）——完成请求改为**同步发分**，响应即最终结果，无需异步轮询；如需追溯历史完成记录，用 `/growth/ledger` 的 `biz_type=TASK` 流水。原 I 面 `task-events` 一并删除。U 面由 12 个收敛为 11 个。
 
@@ -390,7 +391,16 @@
 
 `status`：`CREATED` / `FULFILLING` / `SUCCEEDED` / `FAILED` / `REFUNDED`。最终失败时 `refund_transfer_id` 非空。
 
-### 3.13 ~~I 面 `POST /api/v1/integrations/growth/task-events`~~ — v4.0 删除
+### 3.13 `POST /growth/rank`
+
+`params`：`{}`。按当前可用积分计算竞争排名；同分同名次，后续名次按超过当前积分的人数加 1。
+`admin@example.com` 从排名和总用户数中排除。
+
+```json
+{ "user_id": 12345, "available_points": 260, "rank": 3, "total_users": 20, "rank_text": "3/20" }
+```
+
+### 3.14 ~~I 面 `POST /api/v1/integrations/growth/task-events`~~ — v4.0 删除
 
 > **删除**：v4.0 起任务完成判定归属 AIWork、经 U 面完成请求直接声明，sub2api 不接收可信任务事件、不做证据核验。原接口的 `source_system` / `source_event_id` / `payload_digest` / 归属校验等语义整体作废，不得实现或调用。
 

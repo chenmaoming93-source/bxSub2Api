@@ -397,7 +397,7 @@ return maxSeq + 1, nil
 | 预算模型 v6.1 | 单行 `growth_budgets` + 四类流水 + 任务额度；对账接口已补 `AdjustmentOut` |
 | 加锁顺序 | 全局统一 `growth_tasks → growth_budgets → growth_wallets`，代码内已有注释固化 |
 | 幂等三层 | Redis coordinator + `unique(biz_type, idempotency_key)` + 业务唯一键 |
-| 契约 v4.0 | U 面 11 接口齐全；`/exchanges` 按 `product_id` 分流读写 |
+| 契约 v4.0 | U 面 12 接口齐全；`/exchanges` 按 `product_id` 分流读写 |
 | 写死 SM2 私钥 | DESIGN v5.1 既定决策，非缺陷 |
 
 ---

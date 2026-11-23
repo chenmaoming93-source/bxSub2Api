@@ -7,7 +7,7 @@
 > **v6.0 → v6.1（预算模型变更，非破坏性）**：取消「TASK / CHECKIN / REDEEM 多积分池」，改为**单一总预算 + 任务额度分配**——
 > 总预算由运营手动增加/核减；**新建任务时从总预算划拨一份额度给该任务**，发放只消耗任务额度；任务额度耗尽即停止发分，可追加或回收。
 > 兑换不再占用发放预算（兑换消耗的是用户已获得的积分），`REDEEMED` 仅作为消耗账户与统计口径。
-> U 面 11 个接口、SM2 信封、完成判定归属、响应字段**全部不变**（对外无感）。
+> U 面 12 个接口、SM2 信封、完成判定归属、响应字段**保持兼容**（新增积分排名接口）。
 >
 > **v6.1 → v6.2（任务生命周期澄清，非破坏性）**：**任务不提供删除**——M 面不注册 `DELETE`、`growth_tasks` 不加 `deleted_at`；移除手段只有下线，下线后可「重新上线」（须重新划拨额度）。`task_code` 创建后不可修改、不可复用。U 面与契约**零改动**。
 
@@ -22,7 +22,7 @@
 | 3 | 任务完成依赖「可信任务服务 / Orange 事件」，而 sub2api 侧不存在该组件 | **v6.0 定稿：任务/签到是否完成由 AIWork 侧判定**，提交完成请求时带 `completion_ref`；sub2api **不回查 `usage_logs`、不接 I 面事件、不做证据核验**，收到完成请求即按当前规则算分并发放（账务防重仍由服务端负责） |
 | 4 | `idempotency_key` 同时用于接口去重与账务防重，语义混淆 | 拆成 **L1 请求幂等**（复用 `idempotency_records`）+ **L2 账务唯一约束**（DB 唯一键），两层都不可省 |
 | 5 | 游标分页、REST 路径、`/growth/*` 裸前缀、分布式 ID 等与项目规约不一致 | 对齐 `response.Response` envelope、`/api/v1/*` 前缀、`AUTO_INCREMENT BIGINT`、`sqlArchiving/growth/ddl/182_*.sql`、RBAC coverage、`config.yaml` 同步 |
-| 6 | API 清单缺「我的订单列表」和「完成请求状态查询」，异步核验无法闭环 | 接口清单随模型演进；**v6.0 完成请求改为同步发分，删除异步核验状态查询接口**，U 面收敛为 **11 个接口**（读 7 / 命令 3 / 状态 1），见配套契约 v4.0 |
+| 6 | API 清单缺「我的订单列表」和「完成请求状态查询」，异步核验无法闭环 | 接口清单随模型演进；**v6.0 完成请求改为同步发分，删除异步核验状态查询接口**，并补充积分排名，U 面当前为 **12 个接口**（读 8 / 命令 3 / 状态 1），见配套契约 v4.0 |
 | 7 | 后管能力与给 AIWork 的接口混在同一节 | **两平面隔离**（U / M），M 面永不暴露给 AIWork，AIWork 也不得持有管理凭证；v6.0 删除 I 面 |
 
 ---
@@ -55,7 +55,7 @@
 
 | 平面 | 路径前缀 | 调用方 | 信任方式 | 说明 |
 |---|---|---|---|---|
-| **U 面**（用户面） | `/api/v1/growth/*` | AIWork Electron **Main**（用户态） | 请求体 SM2 数字信封（SM2 封装 + SM4 加密 + SM3-HMAC）；服务端私钥解封装成功即可信 | **11 个接口**，配套契约 v4.0 全文定义；挂 `GrowthPayloadDecryptor` 解封装并映射 `AuthSubject.UserID`；**无 JWT、无令牌交换、无身份头**；任务完成声明也在此 |
+| **U 面**（用户面） | `/api/v1/growth/*` | AIWork Electron **Main**（用户态） | 请求体 SM2 数字信封（SM2 封装 + SM4 加密 + SM3-HMAC）；服务端私钥解封装成功即可信 | **12 个接口**，配套契约 v4.0 全文定义；挂 `GrowthPayloadDecryptor` 解封装并映射 `AuthSubject.UserID`；**无 JWT、无令牌交换、无身份头**；任务完成声明也在此 |
 | **M 面**（管理面） | `/api/v1/admin/growth/*` | 仅 sub2api 后管 Vue | `AdminIdentityAuth` + RBAC permission | 总预算/任务额度/任务/商品/订单/调账/报表；**不对 AIWork 开放** |
 | **W 面**（Web 用户面） | `/api/v1/user/growth/*` | 登录用户（sub2api 自带前端） | `jwtAuth` 会话 | 只读概览 + 兑换；**不提供签到**（签到只能在 AIWork 发起），见页面设计文档 |
 
@@ -138,7 +138,7 @@ sequenceDiagram
 
 要点：
 1. **解封装中间件前置**：`GrowthPayloadDecryptor` 在所有 U 面 handler 之前执行，SM2 解封/MAC/SM4 解密/防重放/`path` 绑定任一失败即早退（`CRYPTO_*` 错误码），不进业务层。**顺序固定**：先 MAC 后解密，防填充/oracle 攻击。
-2. **统一 POST**：11 个接口全部 `POST`，业务参数放加密 payload 的 `params`，避免 GET 明文 query 泄露用户名。
+2. **统一 POST**：12 个接口全部 `POST`，业务参数放加密 payload 的 `params`，避免 GET 明文 query 泄露用户名。
 3. **会话密钥/IV 每次随机**：重试复用幂等键但**重新生成 SM4 会话密钥 + IV 并重新完整加密**；绝不复用。
 4. **必须写 `AuthSubject`**：映射出的 `users.id` 写入 context，否则幂等组件 `ActorScope` 退化为 `user:0`，不同用户幂等键互相踩踏。
 5. **SM2 密文编码统一 C1C3C2**：tjfoc/gmsm 与 sm-crypto 都需显式确认，禁止一端 DER 一端裸拼接。

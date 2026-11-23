@@ -11,6 +11,7 @@ func RegisterGrowthRoutes(v1 *gin.RouterGroup, h *handler.Handlers, decryptor mi
 	growth := v1.Group("/growth")
 	growth.Use(decryptor.Middleware())
 	growth.POST("/me", h.Growth.UMe)
+	growth.POST("/rank", h.Growth.UPointsRank)
 	growth.POST("/tasks", h.Growth.UTasks)
 	growth.POST("/tasks/:task_id", h.Growth.UTask)
 	growth.POST("/tasks/:task_id/completion-requests", h.Growth.UCompletion)

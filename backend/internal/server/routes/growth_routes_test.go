@@ -12,9 +12,9 @@ func TestGrowthUFaceRouteContract(t *testing.T) {
 	source, err := os.ReadFile("growth.go")
 	require.NoError(t, err)
 	text := string(source)
-	require.Equal(t, 10, strings.Count(text, "growth.POST("))
+	require.Equal(t, 11, strings.Count(text, "growth.POST("))
 	for _, route := range []string{
-		`"/me"`, `"/tasks"`, `"/tasks/:task_id"`, `"/tasks/:task_id/completion-requests"`,
+		`"/me"`, `"/rank"`, `"/tasks"`, `"/tasks/:task_id"`, `"/tasks/:task_id/completion-requests"`,
 		`"/ledger"`, `"/products"`, `"/products/:product_id"`, `"/exchanges"`,
 		`"/exchanges/:order_id"`, `"/checkins"`,
 	} {

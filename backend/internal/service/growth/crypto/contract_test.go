@@ -38,6 +38,7 @@ const (
 var (
 	aiworkUContract = []string{
 		"POST /growth/me",
+		"POST /growth/rank",
 		"POST /growth/tasks",
 		"POST /growth/tasks/:task_id",
 		"POST /growth/ledger",
@@ -99,7 +100,7 @@ var (
 )
 
 func TestContractRouteAndPermissionBaseline(t *testing.T) {
-	require.Len(t, aiworkUContract, 11)
+	require.Len(t, aiworkUContract, 12)
 	require.Len(t, webWContract, 8)
 	require.Equal(t, []string{
 		"growth.adjust",

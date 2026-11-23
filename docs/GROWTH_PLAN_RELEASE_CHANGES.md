@@ -56,7 +56,7 @@ GoldenDB 兼容列名：
 |---|---|---|
 | 服务与账务 | `backend/internal/service/growth/` | 总预算、任务额度、规则版本、钱包、双边转账、签到、任务完成、商品版本、库存、订单、Outbox 履约、退款、调账、审计、对账 |
 | SM2 网关 | `backend/internal/service/growth/crypto/` | SM2 C1C3C2、SM4-CBC、SM3-HMAC、时间窗、nonce 防重放、payload/path 校验、固定向量测试 |
-| U 面 Handler | `backend/internal/handler/growth/` | AIWork 11 个操作的参数解析、业务调用、幂等处理 |
+| U 面 Handler | `backend/internal/handler/growth/` | AIWork 12 个操作的参数解析、业务调用、幂等处理 |
 | M/W 面 Handler | `backend/internal/handler/growth/admin_points_handler.go` 等 | 管理端数据/写操作、Web 用户端读接口和兑换 |
 | Redis nonce | `backend/internal/service/growth/nonce_cache.go` | 防重放 nonce 窗口缓存 |
 | 履约 Worker | `backend/internal/service/growth/fulfillment_service.go` | 订单预占、Outbox、自动重试、人工完成、失败退款、库存恢复 |
@@ -89,6 +89,7 @@ GoldenDB 兼容列名：
 | 9 | `/growth/tasks/{task_id}/completion-requests` | AIWork 判定任务完成后提交发分 | 是 |
 | 10 | `/growth/exchanges` | 创建兑换订单 | 是 |
 | 11 | `/growth/exchanges/{order_id}` | 兑换履约状态查询 | 否 |
+| 12 | `/growth/rank` | 当前用户积分排名，排除管理员账号 | 否 |
 
 调用说明：[GROWTH_PLAN_EXTERNAL_API_EXAMPLES.md](GROWTH_PLAN_EXTERNAL_API_EXAMPLES.md)  
 冻结契约：[GROWTH_PLAN_AIWORK_API.md](GROWTH_PLAN_AIWORK_API.md)

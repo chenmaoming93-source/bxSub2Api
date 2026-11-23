@@ -96,7 +96,7 @@ MAC 输入中的四个值使用最终 base64 字符串拼接，不先做 base64 
 
 ## 3. 对外接口总表
 
-共 **11 个操作**，由 **10 个 URL 路径**承载；`/growth/exchanges` 根据参数区分“订单列表”和“创建兑换”。
+共 **12 个操作**，由 **11 个 URL 路径**承载；`/growth/exchanges` 根据参数区分“订单列表”和“创建兑换”。
 
 | # | 操作 | URL | payload.path | 幂等键 |
 |---|---|---|---|---|
@@ -111,6 +111,7 @@ MAC 输入中的四个值使用最终 base64 字符串拼接，不先做 base64 
 | 9 | 任务完成发分 | `POST /api/v1/growth/tasks/{task_id}/completion-requests` | `/growth/tasks/:task_id/completion-requests` | **是** |
 | 10 | 创建兑换 | `POST /api/v1/growth/exchanges` | `/growth/exchanges` | **是** |
 | 11 | 兑换订单状态 | `POST /api/v1/growth/exchanges/{order_id}` | `/growth/exchanges/:order_id` | 否 |
+| 12 | 我的积分排名 | `POST /api/v1/growth/rank` | `/growth/rank` | 否 |
 
 ## 4. TypeScript 通用调用封装
 
@@ -595,6 +596,36 @@ const orderStatus = await callGrowth<ExchangeOrderDetail>({
 ```
 
 状态：`CREATED`、`FULFILLING`、`SUCCEEDED`、`FAILED`、`REFUNDED`。
+
+### 5.12 获取当前用户积分排名
+
+`params` 为空对象。排名按当前可用积分计算，同分同名次，后续名次按超过当前积分的人数加 1；
+`admin@example.com` 从排名和总用户数中排除。
+
+```ts
+const ranking = await callGrowth<PointsRank>({
+  pathTemplate: '/growth/rank',
+  requestPath: '/growth/rank',
+  username: 'user@example.com',
+  params: {},
+})
+```
+
+响应：
+
+```json
+{
+  "code": 0,
+  "message": "success",
+  "data": {
+    "user_id": 12345,
+    "available_points": 260,
+    "rank": 3,
+    "total_users": 20,
+    "rank_text": "3/20"
+  }
+}
+```
 
 ## 6. cURL 示例
 

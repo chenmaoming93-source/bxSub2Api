@@ -32,6 +32,14 @@ type UOverviewView struct {
 	ServerTime       string           `json:"server_time"`
 }
 
+type UPointsRankView struct {
+	UserID          int64  `json:"user_id"`
+	AvailablePoints int64  `json:"available_points"`
+	Rank            int64  `json:"rank"`
+	TotalUsers      int64  `json:"total_users"`
+	RankText        string `json:"rank_text"`
+}
+
 type UCheckinView struct {
 	BusinessDate string `json:"business_date"`
 	Timezone     string `json:"timezone"`
@@ -215,6 +223,51 @@ func (s *ReadService) UOverview(ctx context.Context, userID int64) (UOverviewVie
 		TaskSummary: UTaskSummaryView{InProgress: core.inProgress, CompletedToday: core.completedToday},
 		ServerTime:  s.serverTime(),
 	}, nil
+}
+
+func (s *ReadService) UPointsRank(ctx context.Context, userID int64) (UPointsRankView, error) {
+	const excludedEmail = "admin@example.com"
+	var result UPointsRankView
+	rows, err := s.client.QueryContext(ctx, `
+SELECT
+  u.id,
+  COALESCE(w.available_points, 0),
+  1 + (
+    SELECT COUNT(*)
+    FROM users peer
+    LEFT JOIN growth_wallets peer_wallet ON peer_wallet.user_id = peer.id
+    WHERE peer.deleted_at IS NULL
+      AND LOWER(peer.email) <> ?
+      AND COALESCE(peer_wallet.available_points, 0) > COALESCE(w.available_points, 0)
+  ),
+  (
+    SELECT COUNT(*)
+    FROM users counted
+    WHERE counted.deleted_at IS NULL
+      AND LOWER(counted.email) <> ?
+  )
+FROM users u
+LEFT JOIN growth_wallets w ON w.user_id = u.id
+WHERE u.id = ?
+  AND u.deleted_at IS NULL
+  AND LOWER(u.email) <> ?`,
+		excludedEmail, excludedEmail, userID, excludedEmail,
+	)
+	if err != nil {
+		return UPointsRankView{}, err
+	}
+	defer func() { _ = rows.Close() }()
+	if !rows.Next() {
+		if err := rows.Err(); err != nil {
+			return UPointsRankView{}, err
+		}
+		return UPointsRankView{}, infraerrors.NotFound("POINTS_RANK_UNAVAILABLE", "current user is excluded from points ranking")
+	}
+	if err := rows.Scan(&result.UserID, &result.AvailablePoints, &result.Rank, &result.TotalUsers); err != nil {
+		return UPointsRankView{}, err
+	}
+	result.RankText = fmt.Sprintf("%d/%d", result.Rank, result.TotalUsers)
+	return result, nil
 }
 
 func (s *ReadService) WOverview(ctx context.Context, userID int64) (WOverviewView, error) {

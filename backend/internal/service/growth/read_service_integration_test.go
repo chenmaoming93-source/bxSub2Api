@@ -98,6 +98,34 @@ func TestGrowthUAndWReadModelsIsolationAndCursor(t *testing.T) {
 	require.NoError(t, err)
 	_, err = client.GrowthWallet.Create().SetUserID(2).SetAvailablePoints(99).SetEarnedTotal(99).Save(ctx)
 	require.NoError(t, err)
+	_, err = client.ExecContext(ctx, `INSERT INTO users (id, email, password_hash) VALUES
+		(3, 'third@example.com', 'x'),
+		(4, 'admin@example.com', 'x')`)
+	require.NoError(t, err)
+	_, err = client.GrowthWallet.Create().SetUserID(3).SetAvailablePoints(15).SetEarnedTotal(15).Save(ctx)
+	require.NoError(t, err)
+	_, err = client.GrowthWallet.Create().SetUserID(4).SetAvailablePoints(1000).SetEarnedTotal(1000).Save(ctx)
+	require.NoError(t, err)
+
+	firstRank, err := reads.UPointsRank(ctx, 1)
+	require.NoError(t, err)
+	require.Equal(t, int64(15), firstRank.AvailablePoints)
+	require.Equal(t, int64(2), firstRank.Rank)
+	require.Equal(t, int64(3), firstRank.TotalUsers)
+	require.Equal(t, "2/3", firstRank.RankText)
+
+	secondRank, err := reads.UPointsRank(ctx, 2)
+	require.NoError(t, err)
+	require.Equal(t, int64(1), secondRank.Rank)
+	require.Equal(t, int64(3), secondRank.TotalUsers)
+
+	tiedRank, err := reads.UPointsRank(ctx, 3)
+	require.NoError(t, err)
+	require.Equal(t, int64(2), tiedRank.Rank)
+	require.Equal(t, "2/3", tiedRank.RankText)
+
+	_, err = reads.UPointsRank(ctx, 4)
+	require.Error(t, err)
 
 	currentVersion, err := client.GrowthProductVersion.Query().
 		Where(growthproductversion.ProductIDEQ(product.ProductID)).

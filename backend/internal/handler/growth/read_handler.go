@@ -16,6 +16,7 @@ import (
 
 type ReadService interface {
 	UOverview(context.Context, int64) (growthservice.UOverviewView, error)
+	UPointsRank(context.Context, int64) (growthservice.UPointsRankView, error)
 	WOverview(context.Context, int64) (growthservice.WOverviewView, error)
 	UTasks(context.Context, int64, int, int, string) ([]growthservice.UTaskItemView, int64, error)
 	UTask(context.Context, int64, int64) (growthservice.UTaskItemView, error)
@@ -70,6 +71,19 @@ func (h *Handler) UMe(c *gin.Context) {
 		return
 	}
 	item, err := h.reads.UOverview(c.Request.Context(), userID)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, item)
+}
+
+func (h *Handler) UPointsRank(c *gin.Context) {
+	userID, ok := growthSubjectUserID(c)
+	if !ok {
+		return
+	}
+	item, err := h.reads.UPointsRank(c.Request.Context(), userID)
 	if err != nil {
 		response.ErrorFrom(c, err)
 		return
