@@ -97,9 +97,9 @@
         <h2 class="text-base font-semibold text-gray-900 dark:text-white">{{ t('admin.observability.workbenchTitle') }}</h2>
         <p class="mt-1 text-xs text-gray-500">{{ t('admin.observability.workbenchHint') }}</p>
       </div>
-      <div class="grid gap-4 xl:grid-cols-[minmax(0,1.7fr)_minmax(300px,.9fr)]">
+      <div>
         <div class="min-w-0">
-          <div class="flex flex-wrap gap-2" role="tablist" :aria-label="t('admin.observability.scopeTitle')">
+          <div class="flex flex-wrap gap-2" role="tablist" :aria-label="t('admin.observability.workbenchTitle')">
             <button
               v-for="selector in selectors"
               :id="`object-dimension-tab-${selector.key}`"
@@ -124,6 +124,7 @@
             <label class="inline-flex items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
               <input v-model="highPressureOnly" type="checkbox" class="rounded border-gray-300 text-primary-600" />{{ t('admin.observability.highPressureOnlyLabel') }}
             </label>
+            <button type="button" class="btn btn-primary" :disabled="!hasPendingSelectionChanges" @click="confirmObjectSelection">{{ t('admin.observability.applySelection') }}</button>
           </div>
           <div
             :id="`object-dimension-panel-${activeDimension}`"
@@ -145,24 +146,12 @@
             <p v-if="filteredActiveOptions.length === 0" class="col-span-full py-6 text-center text-sm text-gray-400">{{ t('admin.observability.noMatchingObjects') }}</p>
           </div>
           <div class="mt-3 flex flex-wrap items-center gap-2">
-            <button v-for="chip in activeFilterChips" :key="chip.key" type="button" class="rounded-full bg-primary-50 px-3 py-1 text-xs text-primary-700 dark:bg-primary-900/30 dark:text-primary-300" @click="removeFilter(chip.type, chip.value)">
+            <button v-for="chip in activeFilterChips" :key="chip.key" type="button" class="rounded-full bg-primary-50 px-3 py-1 text-xs text-primary-700 dark:bg-primary-900/30 dark:text-primary-300" @click="removeAppliedFilter(chip.type, chip.value)">
               {{ chip.label }} ×
             </button>
-            <button type="button" class="text-xs text-gray-500 underline" @click="clearFilters">{{ t('admin.observability.clearAll') }}</button>
+            <button type="button" class="text-xs text-gray-500 underline" @click="clearAppliedFilters">{{ t('admin.observability.clearAll') }}</button>
           </div>
         </div>
-        <aside class="rounded-xl border border-gray-200 bg-gray-50 p-3 dark:border-dark-600 dark:bg-dark-700">
-          <div class="flex items-start justify-between gap-2">
-            <div><b class="text-sm text-gray-900 dark:text-white">{{ t('admin.observability.scopeTitle') }}</b><p class="text-xs text-gray-500">{{ t('admin.observability.scopeSummary') }}</p></div>
-            <span class="rounded-full bg-primary-50 px-2 py-1 text-xs text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">{{ t('admin.observability.pathsCount', { count: scopeValues.paths }) }}</span>
-          </div>
-          <div class="mt-3 grid grid-cols-2 gap-2">
-            <div v-for="metric in scopeValues.items" :key="metric.label" class="rounded-lg border border-gray-200 bg-white p-2 dark:border-dark-600 dark:bg-dark-800">
-              <span class="text-xs text-gray-500">{{ metric.label }}</span>
-              <strong class="mt-1 block text-base text-gray-900 dark:text-white">{{ metric.value }}</strong>
-            </div>
-          </div>
-        </aside>
       </div>
     </section>
 
@@ -173,7 +162,7 @@
 
     <section>
       <div v-if="snapshotError" class="mb-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700 dark:border-red-800 dark:bg-red-950/30 dark:text-red-300" role="alert">{{ snapshotError }}</div>
-      <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7" :aria-busy="snapshotLoading">
+      <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-8" :aria-busy="snapshotLoading">
         <article v-for="metric in kpis" :key="metric.label" class="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm dark:border-dark-600 dark:bg-dark-800">
           <div class="flex items-center gap-2 text-xs text-gray-500"><span class="h-2 w-2 rounded-full" :class="metric.dot"></span>{{ metric.label }}</div>
           <div class="mt-2 text-2xl font-semibold text-gray-900 dark:text-white">{{ metric.value }}</div>
@@ -232,11 +221,12 @@
       </div>
       <div class="min-w-0 space-y-4">
         <PressureRanking :accounts="visiblePressureAccounts" :candidates="visiblePressureCandidates" @select="selectAccount" />
+        <ConcurrencyCapacityCard :capacity="snapshot?.capacity" />
         <QualityTopPeriods :response="latency" :loading="trendLoading" :error="latencyError" />
       </div>
     </section>
 
-    <section class="grid min-w-0 gap-4 xl:grid-cols-[minmax(0,1.45fr)_minmax(340px,.75fr)]">
+    <section class="min-w-0">
       <div class="min-w-0 space-y-2">
         <div class="flex flex-wrap items-center justify-end gap-2">
           <div class="inline-flex rounded-lg bg-gray-100 p-1 text-xs dark:bg-dark-700">
@@ -269,7 +259,6 @@
           @select="handleHeatmapSelection"
         />
       </div>
-      <ConcurrencyCapacityCard :capacity="snapshot?.capacity" />
     </section>
 
     <DrilldownPanel
@@ -334,7 +323,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import { useObservabilityI18n } from '@/components/observability/useObservabilityI18n'
@@ -345,6 +334,7 @@ import type {
   ObservabilityFilters,
   ObservabilityGroupBy,
   ObservabilityWindow,
+  SnapshotFilterOptions,
 } from '@/api/admin/observability'
 import { useObservability } from '@/composables/useObservability'
 import TokenTrendChart from '@/components/observability/TokenTrendChart.vue'
@@ -403,8 +393,26 @@ interface SelectorOption {
 }
 
 type SelectorKey = 'users' | 'groups' | 'aliases' | 'accounts'
+interface PendingSelections {
+  users: number[]
+  groups: number[]
+  aliases: string[]
+  accounts: number[]
+}
 const activeDimension = ref<SelectorKey>('groups')
 const dimensionSearch = ref('')
+const pendingSelections = reactive<PendingSelections>({
+  users: [],
+  groups: [],
+  aliases: [],
+  accounts: [],
+})
+const knownFilterOptions = reactive<SnapshotFilterOptions>({
+  users: [],
+  groups: [],
+  aliases: [],
+  accounts: [],
+})
 const tokenMetric = ref<'total' | 'input' | 'output' | 'cache'>('total')
 const qualityMode = ref<'all' | 'duration' | 'ttft' | 'failure'>('all')
 const timeMenuOpen = ref(false)
@@ -452,6 +460,77 @@ const heatmapDimensionOptions = computed(() => [
 ])
 const chartLabels = computed(() => trend.value?.labels?.length ? trend.value.labels : latency.value?.labels || [])
 
+function mergeFilterOptions<T>(
+  existing: T[],
+  incoming: T[],
+  keyOf: (item: T) => string | number,
+): T[] {
+  const merged = [...existing]
+  for (const item of incoming) {
+    const index = merged.findIndex((candidate) => keyOf(candidate) === keyOf(item))
+    if (index >= 0) merged[index] = item
+    else merged.push(item)
+  }
+  return merged
+}
+
+watch(snapshot, (current) => {
+  if (!current) return
+  const options = current.filter_options
+  const optionUsers = Array.isArray(options?.users) ? options.users : []
+  const optionGroups = Array.isArray(options?.groups) ? options.groups : []
+  const optionAliases = Array.isArray(options?.aliases) ? options.aliases : []
+  const optionAccounts = Array.isArray(options?.accounts) ? options.accounts : []
+  const topUsers = Array.isArray(current.top_users) ? current.top_users : []
+  const topGroups = Array.isArray(current.top_groups) ? current.top_groups : []
+  const topAliases = Array.isArray(current.top_aliases) ? current.top_aliases : []
+  const topAccounts = Array.isArray(current.top_accounts) ? current.top_accounts : []
+  const pressureAccounts = Array.isArray(current.pressure?.accounts) ? current.pressure.accounts : []
+  const pressureCandidates = Array.isArray(current.pressure?.candidates) ? current.pressure.candidates : []
+  const pressureRows = [...pressureAccounts, ...pressureCandidates]
+  const fallbackUsers: UserFilterOption[] = topUsers
+    .map((row) => Number(row.key))
+    .filter((id) => Number.isFinite(id) && id > 0)
+    .map((id) => {
+      const row = topUsers.find((candidate) => Number(candidate.key) === id)
+      return { user_id: id, email: row?.name || `#${id}`, department: '' }
+    })
+  const fallbackGroups: NamedFilterOption[] = [
+    ...topGroups
+      .map((row) => ({ id: Number(row.key), name: row.name || `#${row.key}` }))
+      .filter((item) => Number.isFinite(item.id) && item.id > 0),
+    ...pressureRows
+      .filter((row) => (row.group_id || 0) > 0 && Boolean(row.group_name))
+      .map((row) => ({ id: Number(row.group_id), name: String(row.group_name) })),
+  ]
+  const fallbackAliases: NamedFilterOption[] = [
+    ...topAliases.map((row) => ({ id: 0, name: row.name || row.key })),
+    ...pressureRows
+      .filter((row) => Boolean(row.route_alias))
+      .map((row) => ({ id: 0, name: String(row.route_alias) })),
+  ]
+  const fallbackAccounts: AccountFilterOption[] = [
+    ...topAccounts
+      .map((row) => ({
+        account_id: Number(row.key),
+        name: row.name || `#${row.key}`,
+        bound_model: '',
+      }))
+      .filter((item) => Number.isFinite(item.account_id) && item.account_id > 0),
+    ...pressureAccounts
+      .map((row) => ({
+        account_id: Number(row.account_id),
+        name: row.account_name || `#${row.account_id}`,
+        bound_model: '',
+      }))
+      .filter((item) => Number.isFinite(item.account_id) && item.account_id > 0),
+  ]
+  knownFilterOptions.users = mergeFilterOptions(knownFilterOptions.users, [...optionUsers, ...fallbackUsers], (item) => item.user_id)
+  knownFilterOptions.groups = mergeFilterOptions(knownFilterOptions.groups, [...optionGroups, ...fallbackGroups], (item) => item.id)
+  knownFilterOptions.aliases = mergeFilterOptions(knownFilterOptions.aliases, [...optionAliases, ...fallbackAliases], (item) => item.name)
+  knownFilterOptions.accounts = mergeFilterOptions(knownFilterOptions.accounts, [...optionAccounts, ...fallbackAccounts], (item) => item.account_id)
+}, { immediate: true })
+
 const selectors = computed<Array<{
   key: SelectorKey
   label: string
@@ -459,7 +538,7 @@ const selectors = computed<Array<{
   selected: (value: number | string) => boolean
   toggle: (value: number | string) => void
 }>>(() => {
-  const options = snapshot.value?.filter_options
+  const options = knownFilterOptions
   return [
     {
       key: 'users',
@@ -469,8 +548,8 @@ const selectors = computed<Array<{
         label: `#${item.user_id} · ${item.email || t('admin.observability.notLoaded')}`,
         detail: item.department || t('admin.observability.noDepartment'),
       })),
-      selected: (value: number | string) => filters.userIds.includes(Number(value)),
-      toggle: (value: number | string) => toggleArray(filters, 'userIds', Number(value)),
+      selected: (value: number | string) => pendingSelections.users.includes(Number(value)),
+      toggle: (value: number | string) => togglePendingSelection('users', Number(value)),
     },
     {
       key: 'groups',
@@ -479,8 +558,8 @@ const selectors = computed<Array<{
         value: item.id,
         label: item.name,
       })),
-      selected: (value: number | string) => filters.groupIds.includes(Number(value)),
-      toggle: (value: number | string) => toggleArray(filters, 'groupIds', Number(value)),
+      selected: (value: number | string) => pendingSelections.groups.includes(Number(value)),
+      toggle: (value: number | string) => togglePendingSelection('groups', Number(value)),
     },
     {
       key: 'aliases',
@@ -489,8 +568,8 @@ const selectors = computed<Array<{
         value: item.name,
         label: item.name,
       })),
-      selected: (value: number | string) => filters.routeAliases.includes(String(value)),
-      toggle: (value: number | string) => toggleArray(filters, 'routeAliases', String(value)),
+      selected: (value: number | string) => pendingSelections.aliases.includes(String(value)),
+      toggle: (value: number | string) => togglePendingSelection('aliases', String(value)),
     },
     {
       key: 'accounts',
@@ -500,13 +579,72 @@ const selectors = computed<Array<{
         label: item.name || `#${item.account_id}`,
         detail: item.bound_model || t('admin.observability.unknownModel'),
       })),
-      selected: (value: number | string) => filters.accountIds.includes(Number(value)),
-      toggle: (value: number | string) => toggleArray(filters, 'accountIds', Number(value)),
+      selected: (value: number | string) => pendingSelections.accounts.includes(Number(value)),
+      toggle: (value: number | string) => togglePendingSelection('accounts', Number(value)),
     },
   ]
 })
 
 const activeSelector = computed(() => selectors.value.find((selector) => selector.key === activeDimension.value))
+
+function togglePendingSelection(key: SelectorKey, value: number | string) {
+  switch (key) {
+  case 'users':
+    pendingSelections.users = toggleValue(pendingSelections.users, Number(value))
+    break
+  case 'groups':
+    pendingSelections.groups = toggleValue(pendingSelections.groups, Number(value))
+    break
+  case 'aliases':
+    pendingSelections.aliases = toggleValue(pendingSelections.aliases, String(value))
+    break
+  case 'accounts':
+    pendingSelections.accounts = toggleValue(pendingSelections.accounts, Number(value))
+    break
+  }
+}
+
+function toggleValue<T>(values: T[], value: T): T[] {
+  return values.includes(value)
+    ? values.filter((item) => item !== value)
+    : [...values, value]
+}
+
+function selectionSignature(values: Array<number | string>) {
+  return values.map(String).sort().join('\u0000')
+}
+
+const hasPendingSelectionChanges = computed(() =>
+  selectionSignature(pendingSelections.users) !== selectionSignature(filters.userIds)
+  || selectionSignature(pendingSelections.groups) !== selectionSignature(filters.groupIds)
+  || selectionSignature(pendingSelections.aliases) !== selectionSignature(filters.routeAliases)
+  || selectionSignature(pendingSelections.accounts) !== selectionSignature(filters.accountIds),
+)
+
+function syncPendingSelections() {
+  pendingSelections.users = [...filters.userIds]
+  pendingSelections.groups = [...filters.groupIds]
+  pendingSelections.aliases = [...filters.routeAliases]
+  pendingSelections.accounts = [...filters.accountIds]
+}
+
+function confirmObjectSelection() {
+  if (!hasPendingSelectionChanges.value) return
+  filters.userIds = [...pendingSelections.users]
+  filters.groupIds = [...pendingSelections.groups]
+  filters.routeAliases = [...pendingSelections.aliases]
+  filters.accountIds = [...pendingSelections.accounts]
+}
+
+function removeAppliedFilter(type: keyof ObservabilityFilters, value: number | string) {
+  removeFilter(type, value)
+  syncPendingSelections()
+}
+
+function clearAppliedFilters() {
+  clearFilters()
+  syncPendingSelections()
+}
 
 function activateDimensionSelector(key: SelectorKey) {
   activeDimension.value = key
@@ -538,23 +676,28 @@ const filteredActiveOptions = computed(() => {
 function selectAllActive() {
   const selector = activeSelector.value
   if (!selector) return
-  for (const option of selector.options) {
-    if (!selector.selected(option.value)) selector.toggle(option.value)
-  }
+  const values = selector.options.map((option) => option.value)
+  if (activeDimension.value === 'users') pendingSelections.users = values.map(Number)
+  else if (activeDimension.value === 'groups') pendingSelections.groups = values.map(Number)
+  else if (activeDimension.value === 'aliases') pendingSelections.aliases = values.map(String)
+  else pendingSelections.accounts = values.map(Number)
 }
 
 function clearActiveDimension() {
-  const selector = activeSelector.value
-  if (!selector) return
-  for (const option of [...selector.options]) {
-    if (selector.selected(option.value)) selector.toggle(option.value)
-  }
+  if (activeDimension.value === 'users') pendingSelections.users = []
+  else if (activeDimension.value === 'groups') pendingSelections.groups = []
+  else if (activeDimension.value === 'aliases') pendingSelections.aliases = []
+  else pendingSelections.accounts = []
 }
 
 const drilldown = useObservabilityDrilldown({ filters, window, bucket, rangeStart, rangeEnd, search })
 
 applyRouteFilters()
-watch(() => route.query, applyRouteFilters)
+syncPendingSelections()
+watch(() => route.query, () => {
+  applyRouteFilters()
+  syncPendingSelections()
+})
 
 const dimensionTabs = computed(() => [
   { key: 'users', label: t('admin.observability.user'), rows: snapshot.value?.top_users || [] },
@@ -580,24 +723,6 @@ function metricValue(code: string, fallback = 0) {
   return snapshot.value?.metrics.find((metric) => metric.code === code)?.value ?? fallback
 }
 
-const scopeValues = computed(() => {
-  const capacity = snapshot.value?.capacity
-  const global = capacity?.global
-  const failureRate = metricValue('client_failure_rate')
-  return {
-    paths: drilldown.paths.value?.total || 0,
-    items: [
-      { label: t('admin.observability.tokenUsage'), value: formatCompact(metricValue('total_tokens')) },
-      { label: t('admin.observability.tokenRate'), value: `${metricValue('token_rate').toFixed(1)}/s` },
-      { label: t('admin.observability.concurrencyLimit'), value: `${global?.current || 0} / ${global?.limit || 0}` },
-      { label: t('admin.observability.saturation'), value: `${Math.round((global?.utilization || 0) * 100)}%` },
-      { label: t('admin.observability.peakAccountConcurrency'), value: String(Math.max(0, ...pressureAccounts.value.map((row) => row.current))) },
-      { label: t('admin.observability.avgFirstToken'), value: `${Math.round(metricValue('avg_first_token_ms')).toLocaleString()}ms` },
-      { label: t('admin.observability.avgErrorRate'), value: `${(failureRate * 100).toFixed(2)}%` },
-    ],
-  }
-})
-
 const capacityAttention = computed(() => {
   const row = [...pressureAccounts.value].sort((a, b) => b.utilization - a.utilization)[0]
   if (!row || row.utilization < OBSERVABILITY_STATUS_THRESHOLDS.attention) return ''
@@ -619,7 +744,8 @@ const kpis = computed(() => {
   const requestPoints = seriesPoints('total_requests')
   const failurePoints = seriesPointsFrom(latency.value, 'client_failure_rate')
   return [
-    { label: t('admin.observability.currentTokenRate'), value: `${metricValue('token_rate').toFixed(1)}/s`, detail: t('admin.observability.cumulative', { value: formatCompact(metricValue('total_tokens')) }), dot: 'bg-emerald-500', color: '#10b981', points: tokenRates },
+    { label: t('admin.observability.tokenUsage'), value: formatCompact(metricValue('total_tokens')), detail: t('admin.observability.totalTokens'), dot: 'bg-emerald-500', color: '#10b981', points: seriesPoints('total_tokens') },
+    { label: t('admin.observability.currentTokenRate'), value: `${metricValue('token_rate').toFixed(1)}/s`, detail: t('admin.observability.tokenRateDetail'), dot: 'bg-teal-500', color: '#14b8a6', points: tokenRates },
     { label: t('admin.observability.currentConcurrencyLimit'), value: `${global?.current || 0}/${global?.limit || 0}`, detail: t('admin.observability.waterLevel', { percent: Math.round((global?.utilization || 0) * 100) }), dot: 'bg-blue-500', color: '#3b82f6', points: concurrencyOverlay.value },
     { label: t('admin.observability.activeModelAccounts'), value: String(pressureAccounts.value.length), detail: t('admin.observability.availableAccounts', { count: snapshot.value?.filter_options?.accounts?.length || 0 }), dot: 'bg-indigo-500', color: '#6366f1', points: activeAccountPoints.value },
     { label: t('admin.observability.maxScenarioPressure'), value: `${Math.round(maxPressure.value * 100)}%`, detail: topAccount?.account_name || t('admin.observability.noPressureSample'), dot: 'bg-amber-500', color: '#f59e0b', points: maxPressurePoints.value },
@@ -657,7 +783,7 @@ const activeAccountPoints = computed(() => {
 })
 
 function dimensionLabelsFor(groupBy: ObservabilityGroupBy) {
-  const options = snapshot.value?.filter_options
+  const options = knownFilterOptions
   const labels: Record<string, string> = {}
   if (groupBy === 'account_id') {
     for (const account of options?.accounts || []) {
@@ -788,17 +914,9 @@ function toggleAutoRefresh() {
 
 fillQuickRange('1h')
 
-function toggleArray<K extends 'userIds' | 'groupIds' | 'accountIds' | 'routeAliases'>(
-  target: ObservabilityFilters,
-  key: K,
-  value: ObservabilityFilters[K][number],
-) {
-  const current = target[key] as Array<typeof value>
-  target[key] = (current.includes(value) ? current.filter((item) => item !== value) : [...current, value]) as never
-}
-
 function selectAccount(accountId: number) {
   filters.accountIds = filters.accountIds.includes(accountId) ? [] : [accountId]
+  syncPendingSelections()
 }
 
 const drilldownFocus = computed(() => heatmapFocus.value ? { kind: heatmapFocus.value.kind, key: heatmapFocus.value.key } : null)

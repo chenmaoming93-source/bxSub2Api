@@ -45,7 +45,10 @@ function buildObservabilityMock() {
         users: [{ user_id: 1, email: 'alice@example.com', department: '研发部' }],
         groups: [{ id: 7, name: 'coding' }],
         aliases: [{ id: 8, name: 'gpt-5' }],
-        accounts: [{ account_id: 4, name: 'claude-pro-01', bound_model: 'claude-sonnet-4-5' }],
+        accounts: [
+          { account_id: 4, name: 'claude-pro-01', bound_model: 'claude-sonnet-4-5' },
+          { account_id: 5, name: 'claude-backup-01', bound_model: 'claude-sonnet-4-5' },
+        ],
       },
     })
     return {
@@ -139,10 +142,11 @@ describe('ModelObservabilityView interactions', () => {
     })
   })
 
-  it('renders all seven KPI cards from the snapshot contract', async () => {
+  it('renders all eight KPI cards from the snapshot contract', async () => {
     const wrapper = mountView()
     await flushPromises()
-    expect(wrapper.findAll('article')).toHaveLength(7)
+    expect(wrapper.findAll('article')).toHaveLength(8)
+    expect(wrapper.text()).toContain('admin.observability.tokenUsage')
     expect(wrapper.text()).toContain('12.5/s')
     expect(wrapper.text()).toContain('850ms')
     expect(wrapper.text()).toContain('claude-pro-01')
@@ -167,6 +171,54 @@ describe('ModelObservabilityView interactions', () => {
     expect(mocks.observability?.filters.groupIds).toEqual([7])
     expect(mocks.observability?.filters.accountIds).toEqual([4])
     expect(mocks.observability?.filters.routeAliases).toEqual(['gpt-5'])
+  })
+
+  it('stages multi-select changes and applies them only after confirmation', async () => {
+    const wrapper = mountView()
+    await flushPromises()
+    const accountTab = wrapper.findAll('[role="tab"]')
+      .find((tab) => tab.text().includes('admin.observability.account'))
+    expect(accountTab).toBeDefined()
+    await accountTab!.trigger('click')
+
+    const checkboxes = wrapper.get('[role="tabpanel"]').findAll('input[type="checkbox"]')
+    expect(checkboxes).toHaveLength(2)
+    await checkboxes[0]!.setValue(true)
+    await checkboxes[1]!.setValue(true)
+    await flushPromises()
+
+    expect(mocks.observability?.filters.accountIds).toEqual([])
+    expect(wrapper.get('[role="tabpanel"]').findAll('label')).toHaveLength(2)
+
+    const applyButton = wrapper.findAll('button')
+      .find((button) => button.text().includes('admin.observability.applySelection'))
+    expect(applyButton).toBeDefined()
+    await applyButton!.trigger('click')
+    await flushPromises()
+
+    expect(mocks.observability?.filters.accountIds).toEqual([4, 5])
+  })
+
+  it('falls back to pressure and top rows when request filter options are empty', async () => {
+    const snapshot = mocks.observability!.snapshot.value
+    snapshot.filter_options = {
+      users: null as unknown as [],
+      groups: null as unknown as [],
+      aliases: null as unknown as [],
+      accounts: null as unknown as [],
+    }
+    snapshot.top_users = null as unknown as []
+    snapshot.top_groups = null as unknown as []
+    snapshot.top_aliases = null as unknown as []
+    snapshot.top_accounts = null as unknown as []
+
+    const wrapper = mountView()
+    await flushPromises()
+    const accountTab = wrapper.findAll('[role="tab"]')
+      .find((tab) => tab.text().includes('admin.observability.account'))
+    await accountTab!.trigger('click')
+
+    expect(wrapper.get('[role="tabpanel"]').text()).toContain('claude-pro-01')
   })
 
   it('links a heatmap click to the inline drilldown without changing filters', async () => {
