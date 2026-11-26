@@ -203,6 +203,16 @@ const rawRoutes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/growth',
+    name: 'UserGrowth',
+    component: () => import('@/views/growth/UserGrowthView.vue'),
+    meta: {
+      requiresAuth: true,
+      title: 'My Points',
+      titleKey: 'growth.user.title'
+    }
+  },
+  {
     path: '/keys',
     name: 'Keys',
     component: () => import('@/views/user/KeysView.vue'),
@@ -414,6 +424,16 @@ const rawRoutes: RouteRecordRaw[] = [
       title: 'User Management',
       titleKey: 'admin.users.title',
       descriptionKey: 'admin.users.description'
+    }
+  },
+  {
+    path: '/admin/growth',
+    name: 'AdminGrowth',
+    component: () => import('@/views/growth/AdminGrowthView.vue'),
+    meta: {
+      requiresAuth: true,
+      title: 'Growth Plan',
+      titleKey: 'growth.admin.title'
     }
   },
   {
@@ -823,6 +843,10 @@ router.beforeEach(async (to, _from, next) => {
     ? authStore.canAll(requiredPermissions)
     : authStore.canAny(requiredPermissions)
   if (requiredPermissions.length > 0 && !permissionAllowed) {
+    if (to.path === '/admin/growth' || to.path === '/growth') {
+      next()
+      return
+    }
     next('/welcome')
     return
   }

@@ -1,0 +1,24 @@
+-- Remove legacy Growth validation constraints from environments created by older SQL.
+-- Run this before 186 when those constraints still exist.
+
+ALTER TABLE growth_budgets DROP CONSTRAINT chk_growth_budgets_nonnegative;
+ALTER TABLE growth_budget_entries DROP CONSTRAINT chk_growth_budget_entries_type;
+ALTER TABLE growth_budget_entries DROP CONSTRAINT chk_growth_budget_entries_amounts;
+ALTER TABLE growth_wallets DROP CONSTRAINT chk_growth_wallets_balances;
+ALTER TABLE growth_transfers DROP CONSTRAINT chk_growth_transfers_accounts;
+ALTER TABLE growth_transfers DROP CONSTRAINT chk_growth_transfers_status;
+ALTER TABLE growth_account_ledger DROP CONSTRAINT chk_growth_account_ledger_values;
+ALTER TABLE growth_tasks DROP CONSTRAINT chk_growth_tasks_quota;
+ALTER TABLE growth_tasks DROP CONSTRAINT chk_growth_tasks_status;
+ALTER TABLE growth_tasks DROP CONSTRAINT chk_growth_tasks_category;
+ALTER TABLE growth_tasks DROP CONSTRAINT chk_growth_tasks_type;
+ALTER TABLE growth_task_rules DROP CONSTRAINT chk_growth_task_rules_values;
+ALTER TABLE growth_user_tasks DROP CONSTRAINT chk_growth_user_tasks_values;
+ALTER TABLE growth_completion_requests DROP CONSTRAINT chk_growth_completion_result;
+ALTER TABLE growth_reward_claims DROP CONSTRAINT chk_growth_reward_claims_points;
+ALTER TABLE growth_products DROP CONSTRAINT chk_growth_products_values;
+ALTER TABLE growth_product_versions DROP CONSTRAINT chk_growth_product_versions_values;
+ALTER TABLE growth_product_inventory DROP CONSTRAINT chk_growth_product_inventory_values;
+ALTER TABLE growth_exchange_orders DROP CONSTRAINT chk_growth_exchange_orders_values;
+ALTER TABLE growth_fulfillment_jobs DROP CONSTRAINT chk_growth_fulfillment_jobs_values;
+ALTER TABLE growth_inventory_ledger DROP CONSTRAINT chk_growth_inventory_ledger_values;

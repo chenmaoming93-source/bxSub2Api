@@ -28,6 +28,23 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/channelmonitorrequesttemplate"
 	"github.com/Wei-Shaw/sub2api/ent/errorpassthroughrule"
 	"github.com/Wei-Shaw/sub2api/ent/group"
+	"github.com/Wei-Shaw/sub2api/ent/growthaccountledger"
+	"github.com/Wei-Shaw/sub2api/ent/growthadminaudit"
+	"github.com/Wei-Shaw/sub2api/ent/growthbudget"
+	"github.com/Wei-Shaw/sub2api/ent/growthbudgetentry"
+	"github.com/Wei-Shaw/sub2api/ent/growthcompletionrequest"
+	"github.com/Wei-Shaw/sub2api/ent/growthexchangeorder"
+	"github.com/Wei-Shaw/sub2api/ent/growthfulfillmentjob"
+	"github.com/Wei-Shaw/sub2api/ent/growthinventoryledger"
+	"github.com/Wei-Shaw/sub2api/ent/growthproduct"
+	"github.com/Wei-Shaw/sub2api/ent/growthproductinventory"
+	"github.com/Wei-Shaw/sub2api/ent/growthproductversion"
+	"github.com/Wei-Shaw/sub2api/ent/growthrewardclaim"
+	"github.com/Wei-Shaw/sub2api/ent/growthtask"
+	"github.com/Wei-Shaw/sub2api/ent/growthtaskrule"
+	"github.com/Wei-Shaw/sub2api/ent/growthtransfer"
+	"github.com/Wei-Shaw/sub2api/ent/growthusertask"
+	"github.com/Wei-Shaw/sub2api/ent/growthwallet"
 	"github.com/Wei-Shaw/sub2api/ent/idempotencyrecord"
 	"github.com/Wei-Shaw/sub2api/ent/identityadoptiondecision"
 	"github.com/Wei-Shaw/sub2api/ent/observabilityconcurrencybucket"
@@ -100,6 +117,40 @@ type Client struct {
 	ErrorPassthroughRule *ErrorPassthroughRuleClient
 	// Group is the client for interacting with the Group builders.
 	Group *GroupClient
+	// GrowthAccountLedger is the client for interacting with the GrowthAccountLedger builders.
+	GrowthAccountLedger *GrowthAccountLedgerClient
+	// GrowthAdminAudit is the client for interacting with the GrowthAdminAudit builders.
+	GrowthAdminAudit *GrowthAdminAuditClient
+	// GrowthBudget is the client for interacting with the GrowthBudget builders.
+	GrowthBudget *GrowthBudgetClient
+	// GrowthBudgetEntry is the client for interacting with the GrowthBudgetEntry builders.
+	GrowthBudgetEntry *GrowthBudgetEntryClient
+	// GrowthCompletionRequest is the client for interacting with the GrowthCompletionRequest builders.
+	GrowthCompletionRequest *GrowthCompletionRequestClient
+	// GrowthExchangeOrder is the client for interacting with the GrowthExchangeOrder builders.
+	GrowthExchangeOrder *GrowthExchangeOrderClient
+	// GrowthFulfillmentJob is the client for interacting with the GrowthFulfillmentJob builders.
+	GrowthFulfillmentJob *GrowthFulfillmentJobClient
+	// GrowthInventoryLedger is the client for interacting with the GrowthInventoryLedger builders.
+	GrowthInventoryLedger *GrowthInventoryLedgerClient
+	// GrowthProduct is the client for interacting with the GrowthProduct builders.
+	GrowthProduct *GrowthProductClient
+	// GrowthProductInventory is the client for interacting with the GrowthProductInventory builders.
+	GrowthProductInventory *GrowthProductInventoryClient
+	// GrowthProductVersion is the client for interacting with the GrowthProductVersion builders.
+	GrowthProductVersion *GrowthProductVersionClient
+	// GrowthRewardClaim is the client for interacting with the GrowthRewardClaim builders.
+	GrowthRewardClaim *GrowthRewardClaimClient
+	// GrowthTask is the client for interacting with the GrowthTask builders.
+	GrowthTask *GrowthTaskClient
+	// GrowthTaskRule is the client for interacting with the GrowthTaskRule builders.
+	GrowthTaskRule *GrowthTaskRuleClient
+	// GrowthTransfer is the client for interacting with the GrowthTransfer builders.
+	GrowthTransfer *GrowthTransferClient
+	// GrowthUserTask is the client for interacting with the GrowthUserTask builders.
+	GrowthUserTask *GrowthUserTaskClient
+	// GrowthWallet is the client for interacting with the GrowthWallet builders.
+	GrowthWallet *GrowthWalletClient
 	// IdempotencyRecord is the client for interacting with the IdempotencyRecord builders.
 	IdempotencyRecord *IdempotencyRecordClient
 	// IdentityAdoptionDecision is the client for interacting with the IdentityAdoptionDecision builders.
@@ -198,6 +249,23 @@ func (c *Client) init() {
 	c.ChannelMonitorRequestTemplate = NewChannelMonitorRequestTemplateClient(c.config)
 	c.ErrorPassthroughRule = NewErrorPassthroughRuleClient(c.config)
 	c.Group = NewGroupClient(c.config)
+	c.GrowthAccountLedger = NewGrowthAccountLedgerClient(c.config)
+	c.GrowthAdminAudit = NewGrowthAdminAuditClient(c.config)
+	c.GrowthBudget = NewGrowthBudgetClient(c.config)
+	c.GrowthBudgetEntry = NewGrowthBudgetEntryClient(c.config)
+	c.GrowthCompletionRequest = NewGrowthCompletionRequestClient(c.config)
+	c.GrowthExchangeOrder = NewGrowthExchangeOrderClient(c.config)
+	c.GrowthFulfillmentJob = NewGrowthFulfillmentJobClient(c.config)
+	c.GrowthInventoryLedger = NewGrowthInventoryLedgerClient(c.config)
+	c.GrowthProduct = NewGrowthProductClient(c.config)
+	c.GrowthProductInventory = NewGrowthProductInventoryClient(c.config)
+	c.GrowthProductVersion = NewGrowthProductVersionClient(c.config)
+	c.GrowthRewardClaim = NewGrowthRewardClaimClient(c.config)
+	c.GrowthTask = NewGrowthTaskClient(c.config)
+	c.GrowthTaskRule = NewGrowthTaskRuleClient(c.config)
+	c.GrowthTransfer = NewGrowthTransferClient(c.config)
+	c.GrowthUserTask = NewGrowthUserTaskClient(c.config)
+	c.GrowthWallet = NewGrowthWalletClient(c.config)
 	c.IdempotencyRecord = NewIdempotencyRecordClient(c.config)
 	c.IdentityAdoptionDecision = NewIdentityAdoptionDecisionClient(c.config)
 	c.ObservabilityConcurrencyBucket = NewObservabilityConcurrencyBucketClient(c.config)
@@ -340,6 +408,23 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		ChannelMonitorRequestTemplate:  NewChannelMonitorRequestTemplateClient(cfg),
 		ErrorPassthroughRule:           NewErrorPassthroughRuleClient(cfg),
 		Group:                          NewGroupClient(cfg),
+		GrowthAccountLedger:            NewGrowthAccountLedgerClient(cfg),
+		GrowthAdminAudit:               NewGrowthAdminAuditClient(cfg),
+		GrowthBudget:                   NewGrowthBudgetClient(cfg),
+		GrowthBudgetEntry:              NewGrowthBudgetEntryClient(cfg),
+		GrowthCompletionRequest:        NewGrowthCompletionRequestClient(cfg),
+		GrowthExchangeOrder:            NewGrowthExchangeOrderClient(cfg),
+		GrowthFulfillmentJob:           NewGrowthFulfillmentJobClient(cfg),
+		GrowthInventoryLedger:          NewGrowthInventoryLedgerClient(cfg),
+		GrowthProduct:                  NewGrowthProductClient(cfg),
+		GrowthProductInventory:         NewGrowthProductInventoryClient(cfg),
+		GrowthProductVersion:           NewGrowthProductVersionClient(cfg),
+		GrowthRewardClaim:              NewGrowthRewardClaimClient(cfg),
+		GrowthTask:                     NewGrowthTaskClient(cfg),
+		GrowthTaskRule:                 NewGrowthTaskRuleClient(cfg),
+		GrowthTransfer:                 NewGrowthTransferClient(cfg),
+		GrowthUserTask:                 NewGrowthUserTaskClient(cfg),
+		GrowthWallet:                   NewGrowthWalletClient(cfg),
 		IdempotencyRecord:              NewIdempotencyRecordClient(cfg),
 		IdentityAdoptionDecision:       NewIdentityAdoptionDecisionClient(cfg),
 		ObservabilityConcurrencyBucket: NewObservabilityConcurrencyBucketClient(cfg),
@@ -409,6 +494,23 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		ChannelMonitorRequestTemplate:  NewChannelMonitorRequestTemplateClient(cfg),
 		ErrorPassthroughRule:           NewErrorPassthroughRuleClient(cfg),
 		Group:                          NewGroupClient(cfg),
+		GrowthAccountLedger:            NewGrowthAccountLedgerClient(cfg),
+		GrowthAdminAudit:               NewGrowthAdminAuditClient(cfg),
+		GrowthBudget:                   NewGrowthBudgetClient(cfg),
+		GrowthBudgetEntry:              NewGrowthBudgetEntryClient(cfg),
+		GrowthCompletionRequest:        NewGrowthCompletionRequestClient(cfg),
+		GrowthExchangeOrder:            NewGrowthExchangeOrderClient(cfg),
+		GrowthFulfillmentJob:           NewGrowthFulfillmentJobClient(cfg),
+		GrowthInventoryLedger:          NewGrowthInventoryLedgerClient(cfg),
+		GrowthProduct:                  NewGrowthProductClient(cfg),
+		GrowthProductInventory:         NewGrowthProductInventoryClient(cfg),
+		GrowthProductVersion:           NewGrowthProductVersionClient(cfg),
+		GrowthRewardClaim:              NewGrowthRewardClaimClient(cfg),
+		GrowthTask:                     NewGrowthTaskClient(cfg),
+		GrowthTaskRule:                 NewGrowthTaskRuleClient(cfg),
+		GrowthTransfer:                 NewGrowthTransferClient(cfg),
+		GrowthUserTask:                 NewGrowthUserTaskClient(cfg),
+		GrowthWallet:                   NewGrowthWalletClient(cfg),
 		IdempotencyRecord:              NewIdempotencyRecordClient(cfg),
 		IdentityAdoptionDecision:       NewIdentityAdoptionDecisionClient(cfg),
 		ObservabilityConcurrencyBucket: NewObservabilityConcurrencyBucketClient(cfg),
@@ -479,17 +581,22 @@ func (c *Client) Use(hooks ...Hook) {
 		c.AuthIdentity, c.AuthIdentityChannel, c.ChannelMonitor,
 		c.ChannelMonitorDailyRollup, c.ChannelMonitorHistory,
 		c.ChannelMonitorRequestTemplate, c.ErrorPassthroughRule, c.Group,
-		c.IdempotencyRecord, c.IdentityAdoptionDecision,
-		c.ObservabilityConcurrencyBucket, c.ObservabilityRequestBucket,
-		c.PaymentAuditLog, c.PaymentOrder, c.PaymentProviderInstance,
-		c.PendingAuthSession, c.PromoCode, c.PromoCodeUsage, c.Proxy, c.RBACAuditLog,
-		c.RBACPermission, c.RBACPolicyState, c.RBACRole, c.RBACRolePermission,
-		c.RBACUserRole, c.RBACUserVersion, c.RedeemCode, c.SecurityCheckLog,
-		c.SecuritySecret, c.Setting, c.SubscriptionPlan, c.TLSFingerprintProfile,
-		c.TokenStatAggregate, c.TokenStatPeriodState, c.TokenStatProjection,
-		c.TokenStatProjectionMetric, c.TokenStatQuotaRule, c.UsageCleanupTask,
-		c.UsageLog, c.User, c.UserAllowedGroup, c.UserAttributeDefinition,
-		c.UserAttributeValue, c.UserPlatformQuota, c.UserSubscription,
+		c.GrowthAccountLedger, c.GrowthAdminAudit, c.GrowthBudget, c.GrowthBudgetEntry,
+		c.GrowthCompletionRequest, c.GrowthExchangeOrder, c.GrowthFulfillmentJob,
+		c.GrowthInventoryLedger, c.GrowthProduct, c.GrowthProductInventory,
+		c.GrowthProductVersion, c.GrowthRewardClaim, c.GrowthTask, c.GrowthTaskRule,
+		c.GrowthTransfer, c.GrowthUserTask, c.GrowthWallet, c.IdempotencyRecord,
+		c.IdentityAdoptionDecision, c.ObservabilityConcurrencyBucket,
+		c.ObservabilityRequestBucket, c.PaymentAuditLog, c.PaymentOrder,
+		c.PaymentProviderInstance, c.PendingAuthSession, c.PromoCode, c.PromoCodeUsage,
+		c.Proxy, c.RBACAuditLog, c.RBACPermission, c.RBACPolicyState, c.RBACRole,
+		c.RBACRolePermission, c.RBACUserRole, c.RBACUserVersion, c.RedeemCode,
+		c.SecurityCheckLog, c.SecuritySecret, c.Setting, c.SubscriptionPlan,
+		c.TLSFingerprintProfile, c.TokenStatAggregate, c.TokenStatPeriodState,
+		c.TokenStatProjection, c.TokenStatProjectionMetric, c.TokenStatQuotaRule,
+		c.UsageCleanupTask, c.UsageLog, c.User, c.UserAllowedGroup,
+		c.UserAttributeDefinition, c.UserAttributeValue, c.UserPlatformQuota,
+		c.UserSubscription,
 	} {
 		n.Use(hooks...)
 	}
@@ -503,17 +610,22 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 		c.AuthIdentity, c.AuthIdentityChannel, c.ChannelMonitor,
 		c.ChannelMonitorDailyRollup, c.ChannelMonitorHistory,
 		c.ChannelMonitorRequestTemplate, c.ErrorPassthroughRule, c.Group,
-		c.IdempotencyRecord, c.IdentityAdoptionDecision,
-		c.ObservabilityConcurrencyBucket, c.ObservabilityRequestBucket,
-		c.PaymentAuditLog, c.PaymentOrder, c.PaymentProviderInstance,
-		c.PendingAuthSession, c.PromoCode, c.PromoCodeUsage, c.Proxy, c.RBACAuditLog,
-		c.RBACPermission, c.RBACPolicyState, c.RBACRole, c.RBACRolePermission,
-		c.RBACUserRole, c.RBACUserVersion, c.RedeemCode, c.SecurityCheckLog,
-		c.SecuritySecret, c.Setting, c.SubscriptionPlan, c.TLSFingerprintProfile,
-		c.TokenStatAggregate, c.TokenStatPeriodState, c.TokenStatProjection,
-		c.TokenStatProjectionMetric, c.TokenStatQuotaRule, c.UsageCleanupTask,
-		c.UsageLog, c.User, c.UserAllowedGroup, c.UserAttributeDefinition,
-		c.UserAttributeValue, c.UserPlatformQuota, c.UserSubscription,
+		c.GrowthAccountLedger, c.GrowthAdminAudit, c.GrowthBudget, c.GrowthBudgetEntry,
+		c.GrowthCompletionRequest, c.GrowthExchangeOrder, c.GrowthFulfillmentJob,
+		c.GrowthInventoryLedger, c.GrowthProduct, c.GrowthProductInventory,
+		c.GrowthProductVersion, c.GrowthRewardClaim, c.GrowthTask, c.GrowthTaskRule,
+		c.GrowthTransfer, c.GrowthUserTask, c.GrowthWallet, c.IdempotencyRecord,
+		c.IdentityAdoptionDecision, c.ObservabilityConcurrencyBucket,
+		c.ObservabilityRequestBucket, c.PaymentAuditLog, c.PaymentOrder,
+		c.PaymentProviderInstance, c.PendingAuthSession, c.PromoCode, c.PromoCodeUsage,
+		c.Proxy, c.RBACAuditLog, c.RBACPermission, c.RBACPolicyState, c.RBACRole,
+		c.RBACRolePermission, c.RBACUserRole, c.RBACUserVersion, c.RedeemCode,
+		c.SecurityCheckLog, c.SecuritySecret, c.Setting, c.SubscriptionPlan,
+		c.TLSFingerprintProfile, c.TokenStatAggregate, c.TokenStatPeriodState,
+		c.TokenStatProjection, c.TokenStatProjectionMetric, c.TokenStatQuotaRule,
+		c.UsageCleanupTask, c.UsageLog, c.User, c.UserAllowedGroup,
+		c.UserAttributeDefinition, c.UserAttributeValue, c.UserPlatformQuota,
+		c.UserSubscription,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -548,6 +660,40 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.ErrorPassthroughRule.mutate(ctx, m)
 	case *GroupMutation:
 		return c.Group.mutate(ctx, m)
+	case *GrowthAccountLedgerMutation:
+		return c.GrowthAccountLedger.mutate(ctx, m)
+	case *GrowthAdminAuditMutation:
+		return c.GrowthAdminAudit.mutate(ctx, m)
+	case *GrowthBudgetMutation:
+		return c.GrowthBudget.mutate(ctx, m)
+	case *GrowthBudgetEntryMutation:
+		return c.GrowthBudgetEntry.mutate(ctx, m)
+	case *GrowthCompletionRequestMutation:
+		return c.GrowthCompletionRequest.mutate(ctx, m)
+	case *GrowthExchangeOrderMutation:
+		return c.GrowthExchangeOrder.mutate(ctx, m)
+	case *GrowthFulfillmentJobMutation:
+		return c.GrowthFulfillmentJob.mutate(ctx, m)
+	case *GrowthInventoryLedgerMutation:
+		return c.GrowthInventoryLedger.mutate(ctx, m)
+	case *GrowthProductMutation:
+		return c.GrowthProduct.mutate(ctx, m)
+	case *GrowthProductInventoryMutation:
+		return c.GrowthProductInventory.mutate(ctx, m)
+	case *GrowthProductVersionMutation:
+		return c.GrowthProductVersion.mutate(ctx, m)
+	case *GrowthRewardClaimMutation:
+		return c.GrowthRewardClaim.mutate(ctx, m)
+	case *GrowthTaskMutation:
+		return c.GrowthTask.mutate(ctx, m)
+	case *GrowthTaskRuleMutation:
+		return c.GrowthTaskRule.mutate(ctx, m)
+	case *GrowthTransferMutation:
+		return c.GrowthTransfer.mutate(ctx, m)
+	case *GrowthUserTaskMutation:
+		return c.GrowthUserTask.mutate(ctx, m)
+	case *GrowthWalletMutation:
+		return c.GrowthWallet.mutate(ctx, m)
 	case *IdempotencyRecordMutation:
 		return c.IdempotencyRecord.mutate(ctx, m)
 	case *IdentityAdoptionDecisionMutation:
@@ -2790,6 +2936,2363 @@ func (c *GroupClient) mutate(ctx context.Context, m *GroupMutation) (Value, erro
 		return (&GroupDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown Group mutation op: %q", m.Op())
+	}
+}
+
+// GrowthAccountLedgerClient is a client for the GrowthAccountLedger schema.
+type GrowthAccountLedgerClient struct {
+	config
+}
+
+// NewGrowthAccountLedgerClient returns a client for the GrowthAccountLedger from the given config.
+func NewGrowthAccountLedgerClient(c config) *GrowthAccountLedgerClient {
+	return &GrowthAccountLedgerClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `growthaccountledger.Hooks(f(g(h())))`.
+func (c *GrowthAccountLedgerClient) Use(hooks ...Hook) {
+	c.hooks.GrowthAccountLedger = append(c.hooks.GrowthAccountLedger, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `growthaccountledger.Intercept(f(g(h())))`.
+func (c *GrowthAccountLedgerClient) Intercept(interceptors ...Interceptor) {
+	c.inters.GrowthAccountLedger = append(c.inters.GrowthAccountLedger, interceptors...)
+}
+
+// Create returns a builder for creating a GrowthAccountLedger entity.
+func (c *GrowthAccountLedgerClient) Create() *GrowthAccountLedgerCreate {
+	mutation := newGrowthAccountLedgerMutation(c.config, OpCreate)
+	return &GrowthAccountLedgerCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of GrowthAccountLedger entities.
+func (c *GrowthAccountLedgerClient) CreateBulk(builders ...*GrowthAccountLedgerCreate) *GrowthAccountLedgerCreateBulk {
+	return &GrowthAccountLedgerCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *GrowthAccountLedgerClient) MapCreateBulk(slice any, setFunc func(*GrowthAccountLedgerCreate, int)) *GrowthAccountLedgerCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &GrowthAccountLedgerCreateBulk{err: fmt.Errorf("calling to GrowthAccountLedgerClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*GrowthAccountLedgerCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &GrowthAccountLedgerCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for GrowthAccountLedger.
+func (c *GrowthAccountLedgerClient) Update() *GrowthAccountLedgerUpdate {
+	mutation := newGrowthAccountLedgerMutation(c.config, OpUpdate)
+	return &GrowthAccountLedgerUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *GrowthAccountLedgerClient) UpdateOne(_m *GrowthAccountLedger) *GrowthAccountLedgerUpdateOne {
+	mutation := newGrowthAccountLedgerMutation(c.config, OpUpdateOne, withGrowthAccountLedger(_m))
+	return &GrowthAccountLedgerUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *GrowthAccountLedgerClient) UpdateOneID(id int64) *GrowthAccountLedgerUpdateOne {
+	mutation := newGrowthAccountLedgerMutation(c.config, OpUpdateOne, withGrowthAccountLedgerID(id))
+	return &GrowthAccountLedgerUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for GrowthAccountLedger.
+func (c *GrowthAccountLedgerClient) Delete() *GrowthAccountLedgerDelete {
+	mutation := newGrowthAccountLedgerMutation(c.config, OpDelete)
+	return &GrowthAccountLedgerDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *GrowthAccountLedgerClient) DeleteOne(_m *GrowthAccountLedger) *GrowthAccountLedgerDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *GrowthAccountLedgerClient) DeleteOneID(id int64) *GrowthAccountLedgerDeleteOne {
+	builder := c.Delete().Where(growthaccountledger.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &GrowthAccountLedgerDeleteOne{builder}
+}
+
+// Query returns a query builder for GrowthAccountLedger.
+func (c *GrowthAccountLedgerClient) Query() *GrowthAccountLedgerQuery {
+	return &GrowthAccountLedgerQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeGrowthAccountLedger},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a GrowthAccountLedger entity by its id.
+func (c *GrowthAccountLedgerClient) Get(ctx context.Context, id int64) (*GrowthAccountLedger, error) {
+	return c.Query().Where(growthaccountledger.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *GrowthAccountLedgerClient) GetX(ctx context.Context, id int64) *GrowthAccountLedger {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *GrowthAccountLedgerClient) Hooks() []Hook {
+	return c.hooks.GrowthAccountLedger
+}
+
+// Interceptors returns the client interceptors.
+func (c *GrowthAccountLedgerClient) Interceptors() []Interceptor {
+	return c.inters.GrowthAccountLedger
+}
+
+func (c *GrowthAccountLedgerClient) mutate(ctx context.Context, m *GrowthAccountLedgerMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&GrowthAccountLedgerCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&GrowthAccountLedgerUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&GrowthAccountLedgerUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&GrowthAccountLedgerDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown GrowthAccountLedger mutation op: %q", m.Op())
+	}
+}
+
+// GrowthAdminAuditClient is a client for the GrowthAdminAudit schema.
+type GrowthAdminAuditClient struct {
+	config
+}
+
+// NewGrowthAdminAuditClient returns a client for the GrowthAdminAudit from the given config.
+func NewGrowthAdminAuditClient(c config) *GrowthAdminAuditClient {
+	return &GrowthAdminAuditClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `growthadminaudit.Hooks(f(g(h())))`.
+func (c *GrowthAdminAuditClient) Use(hooks ...Hook) {
+	c.hooks.GrowthAdminAudit = append(c.hooks.GrowthAdminAudit, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `growthadminaudit.Intercept(f(g(h())))`.
+func (c *GrowthAdminAuditClient) Intercept(interceptors ...Interceptor) {
+	c.inters.GrowthAdminAudit = append(c.inters.GrowthAdminAudit, interceptors...)
+}
+
+// Create returns a builder for creating a GrowthAdminAudit entity.
+func (c *GrowthAdminAuditClient) Create() *GrowthAdminAuditCreate {
+	mutation := newGrowthAdminAuditMutation(c.config, OpCreate)
+	return &GrowthAdminAuditCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of GrowthAdminAudit entities.
+func (c *GrowthAdminAuditClient) CreateBulk(builders ...*GrowthAdminAuditCreate) *GrowthAdminAuditCreateBulk {
+	return &GrowthAdminAuditCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *GrowthAdminAuditClient) MapCreateBulk(slice any, setFunc func(*GrowthAdminAuditCreate, int)) *GrowthAdminAuditCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &GrowthAdminAuditCreateBulk{err: fmt.Errorf("calling to GrowthAdminAuditClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*GrowthAdminAuditCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &GrowthAdminAuditCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for GrowthAdminAudit.
+func (c *GrowthAdminAuditClient) Update() *GrowthAdminAuditUpdate {
+	mutation := newGrowthAdminAuditMutation(c.config, OpUpdate)
+	return &GrowthAdminAuditUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *GrowthAdminAuditClient) UpdateOne(_m *GrowthAdminAudit) *GrowthAdminAuditUpdateOne {
+	mutation := newGrowthAdminAuditMutation(c.config, OpUpdateOne, withGrowthAdminAudit(_m))
+	return &GrowthAdminAuditUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *GrowthAdminAuditClient) UpdateOneID(id int64) *GrowthAdminAuditUpdateOne {
+	mutation := newGrowthAdminAuditMutation(c.config, OpUpdateOne, withGrowthAdminAuditID(id))
+	return &GrowthAdminAuditUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for GrowthAdminAudit.
+func (c *GrowthAdminAuditClient) Delete() *GrowthAdminAuditDelete {
+	mutation := newGrowthAdminAuditMutation(c.config, OpDelete)
+	return &GrowthAdminAuditDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *GrowthAdminAuditClient) DeleteOne(_m *GrowthAdminAudit) *GrowthAdminAuditDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *GrowthAdminAuditClient) DeleteOneID(id int64) *GrowthAdminAuditDeleteOne {
+	builder := c.Delete().Where(growthadminaudit.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &GrowthAdminAuditDeleteOne{builder}
+}
+
+// Query returns a query builder for GrowthAdminAudit.
+func (c *GrowthAdminAuditClient) Query() *GrowthAdminAuditQuery {
+	return &GrowthAdminAuditQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeGrowthAdminAudit},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a GrowthAdminAudit entity by its id.
+func (c *GrowthAdminAuditClient) Get(ctx context.Context, id int64) (*GrowthAdminAudit, error) {
+	return c.Query().Where(growthadminaudit.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *GrowthAdminAuditClient) GetX(ctx context.Context, id int64) *GrowthAdminAudit {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryOperator queries the operator edge of a GrowthAdminAudit.
+func (c *GrowthAdminAuditClient) QueryOperator(_m *GrowthAdminAudit) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(growthadminaudit.Table, growthadminaudit.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, growthadminaudit.OperatorTable, growthadminaudit.OperatorColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *GrowthAdminAuditClient) Hooks() []Hook {
+	return c.hooks.GrowthAdminAudit
+}
+
+// Interceptors returns the client interceptors.
+func (c *GrowthAdminAuditClient) Interceptors() []Interceptor {
+	return c.inters.GrowthAdminAudit
+}
+
+func (c *GrowthAdminAuditClient) mutate(ctx context.Context, m *GrowthAdminAuditMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&GrowthAdminAuditCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&GrowthAdminAuditUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&GrowthAdminAuditUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&GrowthAdminAuditDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown GrowthAdminAudit mutation op: %q", m.Op())
+	}
+}
+
+// GrowthBudgetClient is a client for the GrowthBudget schema.
+type GrowthBudgetClient struct {
+	config
+}
+
+// NewGrowthBudgetClient returns a client for the GrowthBudget from the given config.
+func NewGrowthBudgetClient(c config) *GrowthBudgetClient {
+	return &GrowthBudgetClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `growthbudget.Hooks(f(g(h())))`.
+func (c *GrowthBudgetClient) Use(hooks ...Hook) {
+	c.hooks.GrowthBudget = append(c.hooks.GrowthBudget, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `growthbudget.Intercept(f(g(h())))`.
+func (c *GrowthBudgetClient) Intercept(interceptors ...Interceptor) {
+	c.inters.GrowthBudget = append(c.inters.GrowthBudget, interceptors...)
+}
+
+// Create returns a builder for creating a GrowthBudget entity.
+func (c *GrowthBudgetClient) Create() *GrowthBudgetCreate {
+	mutation := newGrowthBudgetMutation(c.config, OpCreate)
+	return &GrowthBudgetCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of GrowthBudget entities.
+func (c *GrowthBudgetClient) CreateBulk(builders ...*GrowthBudgetCreate) *GrowthBudgetCreateBulk {
+	return &GrowthBudgetCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *GrowthBudgetClient) MapCreateBulk(slice any, setFunc func(*GrowthBudgetCreate, int)) *GrowthBudgetCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &GrowthBudgetCreateBulk{err: fmt.Errorf("calling to GrowthBudgetClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*GrowthBudgetCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &GrowthBudgetCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for GrowthBudget.
+func (c *GrowthBudgetClient) Update() *GrowthBudgetUpdate {
+	mutation := newGrowthBudgetMutation(c.config, OpUpdate)
+	return &GrowthBudgetUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *GrowthBudgetClient) UpdateOne(_m *GrowthBudget) *GrowthBudgetUpdateOne {
+	mutation := newGrowthBudgetMutation(c.config, OpUpdateOne, withGrowthBudget(_m))
+	return &GrowthBudgetUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *GrowthBudgetClient) UpdateOneID(id int64) *GrowthBudgetUpdateOne {
+	mutation := newGrowthBudgetMutation(c.config, OpUpdateOne, withGrowthBudgetID(id))
+	return &GrowthBudgetUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for GrowthBudget.
+func (c *GrowthBudgetClient) Delete() *GrowthBudgetDelete {
+	mutation := newGrowthBudgetMutation(c.config, OpDelete)
+	return &GrowthBudgetDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *GrowthBudgetClient) DeleteOne(_m *GrowthBudget) *GrowthBudgetDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *GrowthBudgetClient) DeleteOneID(id int64) *GrowthBudgetDeleteOne {
+	builder := c.Delete().Where(growthbudget.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &GrowthBudgetDeleteOne{builder}
+}
+
+// Query returns a query builder for GrowthBudget.
+func (c *GrowthBudgetClient) Query() *GrowthBudgetQuery {
+	return &GrowthBudgetQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeGrowthBudget},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a GrowthBudget entity by its id.
+func (c *GrowthBudgetClient) Get(ctx context.Context, id int64) (*GrowthBudget, error) {
+	return c.Query().Where(growthbudget.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *GrowthBudgetClient) GetX(ctx context.Context, id int64) *GrowthBudget {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *GrowthBudgetClient) Hooks() []Hook {
+	return c.hooks.GrowthBudget
+}
+
+// Interceptors returns the client interceptors.
+func (c *GrowthBudgetClient) Interceptors() []Interceptor {
+	return c.inters.GrowthBudget
+}
+
+func (c *GrowthBudgetClient) mutate(ctx context.Context, m *GrowthBudgetMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&GrowthBudgetCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&GrowthBudgetUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&GrowthBudgetUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&GrowthBudgetDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown GrowthBudget mutation op: %q", m.Op())
+	}
+}
+
+// GrowthBudgetEntryClient is a client for the GrowthBudgetEntry schema.
+type GrowthBudgetEntryClient struct {
+	config
+}
+
+// NewGrowthBudgetEntryClient returns a client for the GrowthBudgetEntry from the given config.
+func NewGrowthBudgetEntryClient(c config) *GrowthBudgetEntryClient {
+	return &GrowthBudgetEntryClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `growthbudgetentry.Hooks(f(g(h())))`.
+func (c *GrowthBudgetEntryClient) Use(hooks ...Hook) {
+	c.hooks.GrowthBudgetEntry = append(c.hooks.GrowthBudgetEntry, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `growthbudgetentry.Intercept(f(g(h())))`.
+func (c *GrowthBudgetEntryClient) Intercept(interceptors ...Interceptor) {
+	c.inters.GrowthBudgetEntry = append(c.inters.GrowthBudgetEntry, interceptors...)
+}
+
+// Create returns a builder for creating a GrowthBudgetEntry entity.
+func (c *GrowthBudgetEntryClient) Create() *GrowthBudgetEntryCreate {
+	mutation := newGrowthBudgetEntryMutation(c.config, OpCreate)
+	return &GrowthBudgetEntryCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of GrowthBudgetEntry entities.
+func (c *GrowthBudgetEntryClient) CreateBulk(builders ...*GrowthBudgetEntryCreate) *GrowthBudgetEntryCreateBulk {
+	return &GrowthBudgetEntryCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *GrowthBudgetEntryClient) MapCreateBulk(slice any, setFunc func(*GrowthBudgetEntryCreate, int)) *GrowthBudgetEntryCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &GrowthBudgetEntryCreateBulk{err: fmt.Errorf("calling to GrowthBudgetEntryClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*GrowthBudgetEntryCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &GrowthBudgetEntryCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for GrowthBudgetEntry.
+func (c *GrowthBudgetEntryClient) Update() *GrowthBudgetEntryUpdate {
+	mutation := newGrowthBudgetEntryMutation(c.config, OpUpdate)
+	return &GrowthBudgetEntryUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *GrowthBudgetEntryClient) UpdateOne(_m *GrowthBudgetEntry) *GrowthBudgetEntryUpdateOne {
+	mutation := newGrowthBudgetEntryMutation(c.config, OpUpdateOne, withGrowthBudgetEntry(_m))
+	return &GrowthBudgetEntryUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *GrowthBudgetEntryClient) UpdateOneID(id int64) *GrowthBudgetEntryUpdateOne {
+	mutation := newGrowthBudgetEntryMutation(c.config, OpUpdateOne, withGrowthBudgetEntryID(id))
+	return &GrowthBudgetEntryUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for GrowthBudgetEntry.
+func (c *GrowthBudgetEntryClient) Delete() *GrowthBudgetEntryDelete {
+	mutation := newGrowthBudgetEntryMutation(c.config, OpDelete)
+	return &GrowthBudgetEntryDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *GrowthBudgetEntryClient) DeleteOne(_m *GrowthBudgetEntry) *GrowthBudgetEntryDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *GrowthBudgetEntryClient) DeleteOneID(id int64) *GrowthBudgetEntryDeleteOne {
+	builder := c.Delete().Where(growthbudgetentry.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &GrowthBudgetEntryDeleteOne{builder}
+}
+
+// Query returns a query builder for GrowthBudgetEntry.
+func (c *GrowthBudgetEntryClient) Query() *GrowthBudgetEntryQuery {
+	return &GrowthBudgetEntryQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeGrowthBudgetEntry},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a GrowthBudgetEntry entity by its id.
+func (c *GrowthBudgetEntryClient) Get(ctx context.Context, id int64) (*GrowthBudgetEntry, error) {
+	return c.Query().Where(growthbudgetentry.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *GrowthBudgetEntryClient) GetX(ctx context.Context, id int64) *GrowthBudgetEntry {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *GrowthBudgetEntryClient) Hooks() []Hook {
+	return c.hooks.GrowthBudgetEntry
+}
+
+// Interceptors returns the client interceptors.
+func (c *GrowthBudgetEntryClient) Interceptors() []Interceptor {
+	return c.inters.GrowthBudgetEntry
+}
+
+func (c *GrowthBudgetEntryClient) mutate(ctx context.Context, m *GrowthBudgetEntryMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&GrowthBudgetEntryCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&GrowthBudgetEntryUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&GrowthBudgetEntryUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&GrowthBudgetEntryDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown GrowthBudgetEntry mutation op: %q", m.Op())
+	}
+}
+
+// GrowthCompletionRequestClient is a client for the GrowthCompletionRequest schema.
+type GrowthCompletionRequestClient struct {
+	config
+}
+
+// NewGrowthCompletionRequestClient returns a client for the GrowthCompletionRequest from the given config.
+func NewGrowthCompletionRequestClient(c config) *GrowthCompletionRequestClient {
+	return &GrowthCompletionRequestClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `growthcompletionrequest.Hooks(f(g(h())))`.
+func (c *GrowthCompletionRequestClient) Use(hooks ...Hook) {
+	c.hooks.GrowthCompletionRequest = append(c.hooks.GrowthCompletionRequest, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `growthcompletionrequest.Intercept(f(g(h())))`.
+func (c *GrowthCompletionRequestClient) Intercept(interceptors ...Interceptor) {
+	c.inters.GrowthCompletionRequest = append(c.inters.GrowthCompletionRequest, interceptors...)
+}
+
+// Create returns a builder for creating a GrowthCompletionRequest entity.
+func (c *GrowthCompletionRequestClient) Create() *GrowthCompletionRequestCreate {
+	mutation := newGrowthCompletionRequestMutation(c.config, OpCreate)
+	return &GrowthCompletionRequestCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of GrowthCompletionRequest entities.
+func (c *GrowthCompletionRequestClient) CreateBulk(builders ...*GrowthCompletionRequestCreate) *GrowthCompletionRequestCreateBulk {
+	return &GrowthCompletionRequestCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *GrowthCompletionRequestClient) MapCreateBulk(slice any, setFunc func(*GrowthCompletionRequestCreate, int)) *GrowthCompletionRequestCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &GrowthCompletionRequestCreateBulk{err: fmt.Errorf("calling to GrowthCompletionRequestClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*GrowthCompletionRequestCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &GrowthCompletionRequestCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for GrowthCompletionRequest.
+func (c *GrowthCompletionRequestClient) Update() *GrowthCompletionRequestUpdate {
+	mutation := newGrowthCompletionRequestMutation(c.config, OpUpdate)
+	return &GrowthCompletionRequestUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *GrowthCompletionRequestClient) UpdateOne(_m *GrowthCompletionRequest) *GrowthCompletionRequestUpdateOne {
+	mutation := newGrowthCompletionRequestMutation(c.config, OpUpdateOne, withGrowthCompletionRequest(_m))
+	return &GrowthCompletionRequestUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *GrowthCompletionRequestClient) UpdateOneID(id int64) *GrowthCompletionRequestUpdateOne {
+	mutation := newGrowthCompletionRequestMutation(c.config, OpUpdateOne, withGrowthCompletionRequestID(id))
+	return &GrowthCompletionRequestUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for GrowthCompletionRequest.
+func (c *GrowthCompletionRequestClient) Delete() *GrowthCompletionRequestDelete {
+	mutation := newGrowthCompletionRequestMutation(c.config, OpDelete)
+	return &GrowthCompletionRequestDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *GrowthCompletionRequestClient) DeleteOne(_m *GrowthCompletionRequest) *GrowthCompletionRequestDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *GrowthCompletionRequestClient) DeleteOneID(id int64) *GrowthCompletionRequestDeleteOne {
+	builder := c.Delete().Where(growthcompletionrequest.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &GrowthCompletionRequestDeleteOne{builder}
+}
+
+// Query returns a query builder for GrowthCompletionRequest.
+func (c *GrowthCompletionRequestClient) Query() *GrowthCompletionRequestQuery {
+	return &GrowthCompletionRequestQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeGrowthCompletionRequest},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a GrowthCompletionRequest entity by its id.
+func (c *GrowthCompletionRequestClient) Get(ctx context.Context, id int64) (*GrowthCompletionRequest, error) {
+	return c.Query().Where(growthcompletionrequest.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *GrowthCompletionRequestClient) GetX(ctx context.Context, id int64) *GrowthCompletionRequest {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryUser queries the user edge of a GrowthCompletionRequest.
+func (c *GrowthCompletionRequestClient) QueryUser(_m *GrowthCompletionRequest) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(growthcompletionrequest.Table, growthcompletionrequest.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, growthcompletionrequest.UserTable, growthcompletionrequest.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *GrowthCompletionRequestClient) Hooks() []Hook {
+	return c.hooks.GrowthCompletionRequest
+}
+
+// Interceptors returns the client interceptors.
+func (c *GrowthCompletionRequestClient) Interceptors() []Interceptor {
+	return c.inters.GrowthCompletionRequest
+}
+
+func (c *GrowthCompletionRequestClient) mutate(ctx context.Context, m *GrowthCompletionRequestMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&GrowthCompletionRequestCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&GrowthCompletionRequestUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&GrowthCompletionRequestUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&GrowthCompletionRequestDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown GrowthCompletionRequest mutation op: %q", m.Op())
+	}
+}
+
+// GrowthExchangeOrderClient is a client for the GrowthExchangeOrder schema.
+type GrowthExchangeOrderClient struct {
+	config
+}
+
+// NewGrowthExchangeOrderClient returns a client for the GrowthExchangeOrder from the given config.
+func NewGrowthExchangeOrderClient(c config) *GrowthExchangeOrderClient {
+	return &GrowthExchangeOrderClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `growthexchangeorder.Hooks(f(g(h())))`.
+func (c *GrowthExchangeOrderClient) Use(hooks ...Hook) {
+	c.hooks.GrowthExchangeOrder = append(c.hooks.GrowthExchangeOrder, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `growthexchangeorder.Intercept(f(g(h())))`.
+func (c *GrowthExchangeOrderClient) Intercept(interceptors ...Interceptor) {
+	c.inters.GrowthExchangeOrder = append(c.inters.GrowthExchangeOrder, interceptors...)
+}
+
+// Create returns a builder for creating a GrowthExchangeOrder entity.
+func (c *GrowthExchangeOrderClient) Create() *GrowthExchangeOrderCreate {
+	mutation := newGrowthExchangeOrderMutation(c.config, OpCreate)
+	return &GrowthExchangeOrderCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of GrowthExchangeOrder entities.
+func (c *GrowthExchangeOrderClient) CreateBulk(builders ...*GrowthExchangeOrderCreate) *GrowthExchangeOrderCreateBulk {
+	return &GrowthExchangeOrderCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *GrowthExchangeOrderClient) MapCreateBulk(slice any, setFunc func(*GrowthExchangeOrderCreate, int)) *GrowthExchangeOrderCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &GrowthExchangeOrderCreateBulk{err: fmt.Errorf("calling to GrowthExchangeOrderClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*GrowthExchangeOrderCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &GrowthExchangeOrderCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for GrowthExchangeOrder.
+func (c *GrowthExchangeOrderClient) Update() *GrowthExchangeOrderUpdate {
+	mutation := newGrowthExchangeOrderMutation(c.config, OpUpdate)
+	return &GrowthExchangeOrderUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *GrowthExchangeOrderClient) UpdateOne(_m *GrowthExchangeOrder) *GrowthExchangeOrderUpdateOne {
+	mutation := newGrowthExchangeOrderMutation(c.config, OpUpdateOne, withGrowthExchangeOrder(_m))
+	return &GrowthExchangeOrderUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *GrowthExchangeOrderClient) UpdateOneID(id int64) *GrowthExchangeOrderUpdateOne {
+	mutation := newGrowthExchangeOrderMutation(c.config, OpUpdateOne, withGrowthExchangeOrderID(id))
+	return &GrowthExchangeOrderUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for GrowthExchangeOrder.
+func (c *GrowthExchangeOrderClient) Delete() *GrowthExchangeOrderDelete {
+	mutation := newGrowthExchangeOrderMutation(c.config, OpDelete)
+	return &GrowthExchangeOrderDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *GrowthExchangeOrderClient) DeleteOne(_m *GrowthExchangeOrder) *GrowthExchangeOrderDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *GrowthExchangeOrderClient) DeleteOneID(id int64) *GrowthExchangeOrderDeleteOne {
+	builder := c.Delete().Where(growthexchangeorder.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &GrowthExchangeOrderDeleteOne{builder}
+}
+
+// Query returns a query builder for GrowthExchangeOrder.
+func (c *GrowthExchangeOrderClient) Query() *GrowthExchangeOrderQuery {
+	return &GrowthExchangeOrderQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeGrowthExchangeOrder},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a GrowthExchangeOrder entity by its id.
+func (c *GrowthExchangeOrderClient) Get(ctx context.Context, id int64) (*GrowthExchangeOrder, error) {
+	return c.Query().Where(growthexchangeorder.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *GrowthExchangeOrderClient) GetX(ctx context.Context, id int64) *GrowthExchangeOrder {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryUser queries the user edge of a GrowthExchangeOrder.
+func (c *GrowthExchangeOrderClient) QueryUser(_m *GrowthExchangeOrder) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(growthexchangeorder.Table, growthexchangeorder.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, growthexchangeorder.UserTable, growthexchangeorder.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *GrowthExchangeOrderClient) Hooks() []Hook {
+	return c.hooks.GrowthExchangeOrder
+}
+
+// Interceptors returns the client interceptors.
+func (c *GrowthExchangeOrderClient) Interceptors() []Interceptor {
+	return c.inters.GrowthExchangeOrder
+}
+
+func (c *GrowthExchangeOrderClient) mutate(ctx context.Context, m *GrowthExchangeOrderMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&GrowthExchangeOrderCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&GrowthExchangeOrderUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&GrowthExchangeOrderUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&GrowthExchangeOrderDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown GrowthExchangeOrder mutation op: %q", m.Op())
+	}
+}
+
+// GrowthFulfillmentJobClient is a client for the GrowthFulfillmentJob schema.
+type GrowthFulfillmentJobClient struct {
+	config
+}
+
+// NewGrowthFulfillmentJobClient returns a client for the GrowthFulfillmentJob from the given config.
+func NewGrowthFulfillmentJobClient(c config) *GrowthFulfillmentJobClient {
+	return &GrowthFulfillmentJobClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `growthfulfillmentjob.Hooks(f(g(h())))`.
+func (c *GrowthFulfillmentJobClient) Use(hooks ...Hook) {
+	c.hooks.GrowthFulfillmentJob = append(c.hooks.GrowthFulfillmentJob, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `growthfulfillmentjob.Intercept(f(g(h())))`.
+func (c *GrowthFulfillmentJobClient) Intercept(interceptors ...Interceptor) {
+	c.inters.GrowthFulfillmentJob = append(c.inters.GrowthFulfillmentJob, interceptors...)
+}
+
+// Create returns a builder for creating a GrowthFulfillmentJob entity.
+func (c *GrowthFulfillmentJobClient) Create() *GrowthFulfillmentJobCreate {
+	mutation := newGrowthFulfillmentJobMutation(c.config, OpCreate)
+	return &GrowthFulfillmentJobCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of GrowthFulfillmentJob entities.
+func (c *GrowthFulfillmentJobClient) CreateBulk(builders ...*GrowthFulfillmentJobCreate) *GrowthFulfillmentJobCreateBulk {
+	return &GrowthFulfillmentJobCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *GrowthFulfillmentJobClient) MapCreateBulk(slice any, setFunc func(*GrowthFulfillmentJobCreate, int)) *GrowthFulfillmentJobCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &GrowthFulfillmentJobCreateBulk{err: fmt.Errorf("calling to GrowthFulfillmentJobClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*GrowthFulfillmentJobCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &GrowthFulfillmentJobCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for GrowthFulfillmentJob.
+func (c *GrowthFulfillmentJobClient) Update() *GrowthFulfillmentJobUpdate {
+	mutation := newGrowthFulfillmentJobMutation(c.config, OpUpdate)
+	return &GrowthFulfillmentJobUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *GrowthFulfillmentJobClient) UpdateOne(_m *GrowthFulfillmentJob) *GrowthFulfillmentJobUpdateOne {
+	mutation := newGrowthFulfillmentJobMutation(c.config, OpUpdateOne, withGrowthFulfillmentJob(_m))
+	return &GrowthFulfillmentJobUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *GrowthFulfillmentJobClient) UpdateOneID(id int64) *GrowthFulfillmentJobUpdateOne {
+	mutation := newGrowthFulfillmentJobMutation(c.config, OpUpdateOne, withGrowthFulfillmentJobID(id))
+	return &GrowthFulfillmentJobUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for GrowthFulfillmentJob.
+func (c *GrowthFulfillmentJobClient) Delete() *GrowthFulfillmentJobDelete {
+	mutation := newGrowthFulfillmentJobMutation(c.config, OpDelete)
+	return &GrowthFulfillmentJobDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *GrowthFulfillmentJobClient) DeleteOne(_m *GrowthFulfillmentJob) *GrowthFulfillmentJobDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *GrowthFulfillmentJobClient) DeleteOneID(id int64) *GrowthFulfillmentJobDeleteOne {
+	builder := c.Delete().Where(growthfulfillmentjob.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &GrowthFulfillmentJobDeleteOne{builder}
+}
+
+// Query returns a query builder for GrowthFulfillmentJob.
+func (c *GrowthFulfillmentJobClient) Query() *GrowthFulfillmentJobQuery {
+	return &GrowthFulfillmentJobQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeGrowthFulfillmentJob},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a GrowthFulfillmentJob entity by its id.
+func (c *GrowthFulfillmentJobClient) Get(ctx context.Context, id int64) (*GrowthFulfillmentJob, error) {
+	return c.Query().Where(growthfulfillmentjob.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *GrowthFulfillmentJobClient) GetX(ctx context.Context, id int64) *GrowthFulfillmentJob {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *GrowthFulfillmentJobClient) Hooks() []Hook {
+	return c.hooks.GrowthFulfillmentJob
+}
+
+// Interceptors returns the client interceptors.
+func (c *GrowthFulfillmentJobClient) Interceptors() []Interceptor {
+	return c.inters.GrowthFulfillmentJob
+}
+
+func (c *GrowthFulfillmentJobClient) mutate(ctx context.Context, m *GrowthFulfillmentJobMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&GrowthFulfillmentJobCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&GrowthFulfillmentJobUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&GrowthFulfillmentJobUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&GrowthFulfillmentJobDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown GrowthFulfillmentJob mutation op: %q", m.Op())
+	}
+}
+
+// GrowthInventoryLedgerClient is a client for the GrowthInventoryLedger schema.
+type GrowthInventoryLedgerClient struct {
+	config
+}
+
+// NewGrowthInventoryLedgerClient returns a client for the GrowthInventoryLedger from the given config.
+func NewGrowthInventoryLedgerClient(c config) *GrowthInventoryLedgerClient {
+	return &GrowthInventoryLedgerClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `growthinventoryledger.Hooks(f(g(h())))`.
+func (c *GrowthInventoryLedgerClient) Use(hooks ...Hook) {
+	c.hooks.GrowthInventoryLedger = append(c.hooks.GrowthInventoryLedger, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `growthinventoryledger.Intercept(f(g(h())))`.
+func (c *GrowthInventoryLedgerClient) Intercept(interceptors ...Interceptor) {
+	c.inters.GrowthInventoryLedger = append(c.inters.GrowthInventoryLedger, interceptors...)
+}
+
+// Create returns a builder for creating a GrowthInventoryLedger entity.
+func (c *GrowthInventoryLedgerClient) Create() *GrowthInventoryLedgerCreate {
+	mutation := newGrowthInventoryLedgerMutation(c.config, OpCreate)
+	return &GrowthInventoryLedgerCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of GrowthInventoryLedger entities.
+func (c *GrowthInventoryLedgerClient) CreateBulk(builders ...*GrowthInventoryLedgerCreate) *GrowthInventoryLedgerCreateBulk {
+	return &GrowthInventoryLedgerCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *GrowthInventoryLedgerClient) MapCreateBulk(slice any, setFunc func(*GrowthInventoryLedgerCreate, int)) *GrowthInventoryLedgerCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &GrowthInventoryLedgerCreateBulk{err: fmt.Errorf("calling to GrowthInventoryLedgerClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*GrowthInventoryLedgerCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &GrowthInventoryLedgerCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for GrowthInventoryLedger.
+func (c *GrowthInventoryLedgerClient) Update() *GrowthInventoryLedgerUpdate {
+	mutation := newGrowthInventoryLedgerMutation(c.config, OpUpdate)
+	return &GrowthInventoryLedgerUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *GrowthInventoryLedgerClient) UpdateOne(_m *GrowthInventoryLedger) *GrowthInventoryLedgerUpdateOne {
+	mutation := newGrowthInventoryLedgerMutation(c.config, OpUpdateOne, withGrowthInventoryLedger(_m))
+	return &GrowthInventoryLedgerUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *GrowthInventoryLedgerClient) UpdateOneID(id int64) *GrowthInventoryLedgerUpdateOne {
+	mutation := newGrowthInventoryLedgerMutation(c.config, OpUpdateOne, withGrowthInventoryLedgerID(id))
+	return &GrowthInventoryLedgerUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for GrowthInventoryLedger.
+func (c *GrowthInventoryLedgerClient) Delete() *GrowthInventoryLedgerDelete {
+	mutation := newGrowthInventoryLedgerMutation(c.config, OpDelete)
+	return &GrowthInventoryLedgerDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *GrowthInventoryLedgerClient) DeleteOne(_m *GrowthInventoryLedger) *GrowthInventoryLedgerDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *GrowthInventoryLedgerClient) DeleteOneID(id int64) *GrowthInventoryLedgerDeleteOne {
+	builder := c.Delete().Where(growthinventoryledger.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &GrowthInventoryLedgerDeleteOne{builder}
+}
+
+// Query returns a query builder for GrowthInventoryLedger.
+func (c *GrowthInventoryLedgerClient) Query() *GrowthInventoryLedgerQuery {
+	return &GrowthInventoryLedgerQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeGrowthInventoryLedger},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a GrowthInventoryLedger entity by its id.
+func (c *GrowthInventoryLedgerClient) Get(ctx context.Context, id int64) (*GrowthInventoryLedger, error) {
+	return c.Query().Where(growthinventoryledger.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *GrowthInventoryLedgerClient) GetX(ctx context.Context, id int64) *GrowthInventoryLedger {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *GrowthInventoryLedgerClient) Hooks() []Hook {
+	return c.hooks.GrowthInventoryLedger
+}
+
+// Interceptors returns the client interceptors.
+func (c *GrowthInventoryLedgerClient) Interceptors() []Interceptor {
+	return c.inters.GrowthInventoryLedger
+}
+
+func (c *GrowthInventoryLedgerClient) mutate(ctx context.Context, m *GrowthInventoryLedgerMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&GrowthInventoryLedgerCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&GrowthInventoryLedgerUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&GrowthInventoryLedgerUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&GrowthInventoryLedgerDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown GrowthInventoryLedger mutation op: %q", m.Op())
+	}
+}
+
+// GrowthProductClient is a client for the GrowthProduct schema.
+type GrowthProductClient struct {
+	config
+}
+
+// NewGrowthProductClient returns a client for the GrowthProduct from the given config.
+func NewGrowthProductClient(c config) *GrowthProductClient {
+	return &GrowthProductClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `growthproduct.Hooks(f(g(h())))`.
+func (c *GrowthProductClient) Use(hooks ...Hook) {
+	c.hooks.GrowthProduct = append(c.hooks.GrowthProduct, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `growthproduct.Intercept(f(g(h())))`.
+func (c *GrowthProductClient) Intercept(interceptors ...Interceptor) {
+	c.inters.GrowthProduct = append(c.inters.GrowthProduct, interceptors...)
+}
+
+// Create returns a builder for creating a GrowthProduct entity.
+func (c *GrowthProductClient) Create() *GrowthProductCreate {
+	mutation := newGrowthProductMutation(c.config, OpCreate)
+	return &GrowthProductCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of GrowthProduct entities.
+func (c *GrowthProductClient) CreateBulk(builders ...*GrowthProductCreate) *GrowthProductCreateBulk {
+	return &GrowthProductCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *GrowthProductClient) MapCreateBulk(slice any, setFunc func(*GrowthProductCreate, int)) *GrowthProductCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &GrowthProductCreateBulk{err: fmt.Errorf("calling to GrowthProductClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*GrowthProductCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &GrowthProductCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for GrowthProduct.
+func (c *GrowthProductClient) Update() *GrowthProductUpdate {
+	mutation := newGrowthProductMutation(c.config, OpUpdate)
+	return &GrowthProductUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *GrowthProductClient) UpdateOne(_m *GrowthProduct) *GrowthProductUpdateOne {
+	mutation := newGrowthProductMutation(c.config, OpUpdateOne, withGrowthProduct(_m))
+	return &GrowthProductUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *GrowthProductClient) UpdateOneID(id int64) *GrowthProductUpdateOne {
+	mutation := newGrowthProductMutation(c.config, OpUpdateOne, withGrowthProductID(id))
+	return &GrowthProductUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for GrowthProduct.
+func (c *GrowthProductClient) Delete() *GrowthProductDelete {
+	mutation := newGrowthProductMutation(c.config, OpDelete)
+	return &GrowthProductDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *GrowthProductClient) DeleteOne(_m *GrowthProduct) *GrowthProductDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *GrowthProductClient) DeleteOneID(id int64) *GrowthProductDeleteOne {
+	builder := c.Delete().Where(growthproduct.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &GrowthProductDeleteOne{builder}
+}
+
+// Query returns a query builder for GrowthProduct.
+func (c *GrowthProductClient) Query() *GrowthProductQuery {
+	return &GrowthProductQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeGrowthProduct},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a GrowthProduct entity by its id.
+func (c *GrowthProductClient) Get(ctx context.Context, id int64) (*GrowthProduct, error) {
+	return c.Query().Where(growthproduct.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *GrowthProductClient) GetX(ctx context.Context, id int64) *GrowthProduct {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *GrowthProductClient) Hooks() []Hook {
+	return c.hooks.GrowthProduct
+}
+
+// Interceptors returns the client interceptors.
+func (c *GrowthProductClient) Interceptors() []Interceptor {
+	return c.inters.GrowthProduct
+}
+
+func (c *GrowthProductClient) mutate(ctx context.Context, m *GrowthProductMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&GrowthProductCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&GrowthProductUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&GrowthProductUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&GrowthProductDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown GrowthProduct mutation op: %q", m.Op())
+	}
+}
+
+// GrowthProductInventoryClient is a client for the GrowthProductInventory schema.
+type GrowthProductInventoryClient struct {
+	config
+}
+
+// NewGrowthProductInventoryClient returns a client for the GrowthProductInventory from the given config.
+func NewGrowthProductInventoryClient(c config) *GrowthProductInventoryClient {
+	return &GrowthProductInventoryClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `growthproductinventory.Hooks(f(g(h())))`.
+func (c *GrowthProductInventoryClient) Use(hooks ...Hook) {
+	c.hooks.GrowthProductInventory = append(c.hooks.GrowthProductInventory, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `growthproductinventory.Intercept(f(g(h())))`.
+func (c *GrowthProductInventoryClient) Intercept(interceptors ...Interceptor) {
+	c.inters.GrowthProductInventory = append(c.inters.GrowthProductInventory, interceptors...)
+}
+
+// Create returns a builder for creating a GrowthProductInventory entity.
+func (c *GrowthProductInventoryClient) Create() *GrowthProductInventoryCreate {
+	mutation := newGrowthProductInventoryMutation(c.config, OpCreate)
+	return &GrowthProductInventoryCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of GrowthProductInventory entities.
+func (c *GrowthProductInventoryClient) CreateBulk(builders ...*GrowthProductInventoryCreate) *GrowthProductInventoryCreateBulk {
+	return &GrowthProductInventoryCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *GrowthProductInventoryClient) MapCreateBulk(slice any, setFunc func(*GrowthProductInventoryCreate, int)) *GrowthProductInventoryCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &GrowthProductInventoryCreateBulk{err: fmt.Errorf("calling to GrowthProductInventoryClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*GrowthProductInventoryCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &GrowthProductInventoryCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for GrowthProductInventory.
+func (c *GrowthProductInventoryClient) Update() *GrowthProductInventoryUpdate {
+	mutation := newGrowthProductInventoryMutation(c.config, OpUpdate)
+	return &GrowthProductInventoryUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *GrowthProductInventoryClient) UpdateOne(_m *GrowthProductInventory) *GrowthProductInventoryUpdateOne {
+	mutation := newGrowthProductInventoryMutation(c.config, OpUpdateOne, withGrowthProductInventory(_m))
+	return &GrowthProductInventoryUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *GrowthProductInventoryClient) UpdateOneID(id int64) *GrowthProductInventoryUpdateOne {
+	mutation := newGrowthProductInventoryMutation(c.config, OpUpdateOne, withGrowthProductInventoryID(id))
+	return &GrowthProductInventoryUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for GrowthProductInventory.
+func (c *GrowthProductInventoryClient) Delete() *GrowthProductInventoryDelete {
+	mutation := newGrowthProductInventoryMutation(c.config, OpDelete)
+	return &GrowthProductInventoryDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *GrowthProductInventoryClient) DeleteOne(_m *GrowthProductInventory) *GrowthProductInventoryDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *GrowthProductInventoryClient) DeleteOneID(id int64) *GrowthProductInventoryDeleteOne {
+	builder := c.Delete().Where(growthproductinventory.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &GrowthProductInventoryDeleteOne{builder}
+}
+
+// Query returns a query builder for GrowthProductInventory.
+func (c *GrowthProductInventoryClient) Query() *GrowthProductInventoryQuery {
+	return &GrowthProductInventoryQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeGrowthProductInventory},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a GrowthProductInventory entity by its id.
+func (c *GrowthProductInventoryClient) Get(ctx context.Context, id int64) (*GrowthProductInventory, error) {
+	return c.Query().Where(growthproductinventory.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *GrowthProductInventoryClient) GetX(ctx context.Context, id int64) *GrowthProductInventory {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *GrowthProductInventoryClient) Hooks() []Hook {
+	return c.hooks.GrowthProductInventory
+}
+
+// Interceptors returns the client interceptors.
+func (c *GrowthProductInventoryClient) Interceptors() []Interceptor {
+	return c.inters.GrowthProductInventory
+}
+
+func (c *GrowthProductInventoryClient) mutate(ctx context.Context, m *GrowthProductInventoryMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&GrowthProductInventoryCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&GrowthProductInventoryUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&GrowthProductInventoryUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&GrowthProductInventoryDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown GrowthProductInventory mutation op: %q", m.Op())
+	}
+}
+
+// GrowthProductVersionClient is a client for the GrowthProductVersion schema.
+type GrowthProductVersionClient struct {
+	config
+}
+
+// NewGrowthProductVersionClient returns a client for the GrowthProductVersion from the given config.
+func NewGrowthProductVersionClient(c config) *GrowthProductVersionClient {
+	return &GrowthProductVersionClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `growthproductversion.Hooks(f(g(h())))`.
+func (c *GrowthProductVersionClient) Use(hooks ...Hook) {
+	c.hooks.GrowthProductVersion = append(c.hooks.GrowthProductVersion, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `growthproductversion.Intercept(f(g(h())))`.
+func (c *GrowthProductVersionClient) Intercept(interceptors ...Interceptor) {
+	c.inters.GrowthProductVersion = append(c.inters.GrowthProductVersion, interceptors...)
+}
+
+// Create returns a builder for creating a GrowthProductVersion entity.
+func (c *GrowthProductVersionClient) Create() *GrowthProductVersionCreate {
+	mutation := newGrowthProductVersionMutation(c.config, OpCreate)
+	return &GrowthProductVersionCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of GrowthProductVersion entities.
+func (c *GrowthProductVersionClient) CreateBulk(builders ...*GrowthProductVersionCreate) *GrowthProductVersionCreateBulk {
+	return &GrowthProductVersionCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *GrowthProductVersionClient) MapCreateBulk(slice any, setFunc func(*GrowthProductVersionCreate, int)) *GrowthProductVersionCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &GrowthProductVersionCreateBulk{err: fmt.Errorf("calling to GrowthProductVersionClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*GrowthProductVersionCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &GrowthProductVersionCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for GrowthProductVersion.
+func (c *GrowthProductVersionClient) Update() *GrowthProductVersionUpdate {
+	mutation := newGrowthProductVersionMutation(c.config, OpUpdate)
+	return &GrowthProductVersionUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *GrowthProductVersionClient) UpdateOne(_m *GrowthProductVersion) *GrowthProductVersionUpdateOne {
+	mutation := newGrowthProductVersionMutation(c.config, OpUpdateOne, withGrowthProductVersion(_m))
+	return &GrowthProductVersionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *GrowthProductVersionClient) UpdateOneID(id int64) *GrowthProductVersionUpdateOne {
+	mutation := newGrowthProductVersionMutation(c.config, OpUpdateOne, withGrowthProductVersionID(id))
+	return &GrowthProductVersionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for GrowthProductVersion.
+func (c *GrowthProductVersionClient) Delete() *GrowthProductVersionDelete {
+	mutation := newGrowthProductVersionMutation(c.config, OpDelete)
+	return &GrowthProductVersionDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *GrowthProductVersionClient) DeleteOne(_m *GrowthProductVersion) *GrowthProductVersionDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *GrowthProductVersionClient) DeleteOneID(id int64) *GrowthProductVersionDeleteOne {
+	builder := c.Delete().Where(growthproductversion.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &GrowthProductVersionDeleteOne{builder}
+}
+
+// Query returns a query builder for GrowthProductVersion.
+func (c *GrowthProductVersionClient) Query() *GrowthProductVersionQuery {
+	return &GrowthProductVersionQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeGrowthProductVersion},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a GrowthProductVersion entity by its id.
+func (c *GrowthProductVersionClient) Get(ctx context.Context, id int64) (*GrowthProductVersion, error) {
+	return c.Query().Where(growthproductversion.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *GrowthProductVersionClient) GetX(ctx context.Context, id int64) *GrowthProductVersion {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *GrowthProductVersionClient) Hooks() []Hook {
+	return c.hooks.GrowthProductVersion
+}
+
+// Interceptors returns the client interceptors.
+func (c *GrowthProductVersionClient) Interceptors() []Interceptor {
+	return c.inters.GrowthProductVersion
+}
+
+func (c *GrowthProductVersionClient) mutate(ctx context.Context, m *GrowthProductVersionMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&GrowthProductVersionCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&GrowthProductVersionUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&GrowthProductVersionUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&GrowthProductVersionDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown GrowthProductVersion mutation op: %q", m.Op())
+	}
+}
+
+// GrowthRewardClaimClient is a client for the GrowthRewardClaim schema.
+type GrowthRewardClaimClient struct {
+	config
+}
+
+// NewGrowthRewardClaimClient returns a client for the GrowthRewardClaim from the given config.
+func NewGrowthRewardClaimClient(c config) *GrowthRewardClaimClient {
+	return &GrowthRewardClaimClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `growthrewardclaim.Hooks(f(g(h())))`.
+func (c *GrowthRewardClaimClient) Use(hooks ...Hook) {
+	c.hooks.GrowthRewardClaim = append(c.hooks.GrowthRewardClaim, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `growthrewardclaim.Intercept(f(g(h())))`.
+func (c *GrowthRewardClaimClient) Intercept(interceptors ...Interceptor) {
+	c.inters.GrowthRewardClaim = append(c.inters.GrowthRewardClaim, interceptors...)
+}
+
+// Create returns a builder for creating a GrowthRewardClaim entity.
+func (c *GrowthRewardClaimClient) Create() *GrowthRewardClaimCreate {
+	mutation := newGrowthRewardClaimMutation(c.config, OpCreate)
+	return &GrowthRewardClaimCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of GrowthRewardClaim entities.
+func (c *GrowthRewardClaimClient) CreateBulk(builders ...*GrowthRewardClaimCreate) *GrowthRewardClaimCreateBulk {
+	return &GrowthRewardClaimCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *GrowthRewardClaimClient) MapCreateBulk(slice any, setFunc func(*GrowthRewardClaimCreate, int)) *GrowthRewardClaimCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &GrowthRewardClaimCreateBulk{err: fmt.Errorf("calling to GrowthRewardClaimClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*GrowthRewardClaimCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &GrowthRewardClaimCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for GrowthRewardClaim.
+func (c *GrowthRewardClaimClient) Update() *GrowthRewardClaimUpdate {
+	mutation := newGrowthRewardClaimMutation(c.config, OpUpdate)
+	return &GrowthRewardClaimUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *GrowthRewardClaimClient) UpdateOne(_m *GrowthRewardClaim) *GrowthRewardClaimUpdateOne {
+	mutation := newGrowthRewardClaimMutation(c.config, OpUpdateOne, withGrowthRewardClaim(_m))
+	return &GrowthRewardClaimUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *GrowthRewardClaimClient) UpdateOneID(id int64) *GrowthRewardClaimUpdateOne {
+	mutation := newGrowthRewardClaimMutation(c.config, OpUpdateOne, withGrowthRewardClaimID(id))
+	return &GrowthRewardClaimUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for GrowthRewardClaim.
+func (c *GrowthRewardClaimClient) Delete() *GrowthRewardClaimDelete {
+	mutation := newGrowthRewardClaimMutation(c.config, OpDelete)
+	return &GrowthRewardClaimDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *GrowthRewardClaimClient) DeleteOne(_m *GrowthRewardClaim) *GrowthRewardClaimDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *GrowthRewardClaimClient) DeleteOneID(id int64) *GrowthRewardClaimDeleteOne {
+	builder := c.Delete().Where(growthrewardclaim.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &GrowthRewardClaimDeleteOne{builder}
+}
+
+// Query returns a query builder for GrowthRewardClaim.
+func (c *GrowthRewardClaimClient) Query() *GrowthRewardClaimQuery {
+	return &GrowthRewardClaimQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeGrowthRewardClaim},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a GrowthRewardClaim entity by its id.
+func (c *GrowthRewardClaimClient) Get(ctx context.Context, id int64) (*GrowthRewardClaim, error) {
+	return c.Query().Where(growthrewardclaim.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *GrowthRewardClaimClient) GetX(ctx context.Context, id int64) *GrowthRewardClaim {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryUser queries the user edge of a GrowthRewardClaim.
+func (c *GrowthRewardClaimClient) QueryUser(_m *GrowthRewardClaim) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(growthrewardclaim.Table, growthrewardclaim.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, growthrewardclaim.UserTable, growthrewardclaim.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *GrowthRewardClaimClient) Hooks() []Hook {
+	return c.hooks.GrowthRewardClaim
+}
+
+// Interceptors returns the client interceptors.
+func (c *GrowthRewardClaimClient) Interceptors() []Interceptor {
+	return c.inters.GrowthRewardClaim
+}
+
+func (c *GrowthRewardClaimClient) mutate(ctx context.Context, m *GrowthRewardClaimMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&GrowthRewardClaimCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&GrowthRewardClaimUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&GrowthRewardClaimUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&GrowthRewardClaimDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown GrowthRewardClaim mutation op: %q", m.Op())
+	}
+}
+
+// GrowthTaskClient is a client for the GrowthTask schema.
+type GrowthTaskClient struct {
+	config
+}
+
+// NewGrowthTaskClient returns a client for the GrowthTask from the given config.
+func NewGrowthTaskClient(c config) *GrowthTaskClient {
+	return &GrowthTaskClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `growthtask.Hooks(f(g(h())))`.
+func (c *GrowthTaskClient) Use(hooks ...Hook) {
+	c.hooks.GrowthTask = append(c.hooks.GrowthTask, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `growthtask.Intercept(f(g(h())))`.
+func (c *GrowthTaskClient) Intercept(interceptors ...Interceptor) {
+	c.inters.GrowthTask = append(c.inters.GrowthTask, interceptors...)
+}
+
+// Create returns a builder for creating a GrowthTask entity.
+func (c *GrowthTaskClient) Create() *GrowthTaskCreate {
+	mutation := newGrowthTaskMutation(c.config, OpCreate)
+	return &GrowthTaskCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of GrowthTask entities.
+func (c *GrowthTaskClient) CreateBulk(builders ...*GrowthTaskCreate) *GrowthTaskCreateBulk {
+	return &GrowthTaskCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *GrowthTaskClient) MapCreateBulk(slice any, setFunc func(*GrowthTaskCreate, int)) *GrowthTaskCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &GrowthTaskCreateBulk{err: fmt.Errorf("calling to GrowthTaskClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*GrowthTaskCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &GrowthTaskCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for GrowthTask.
+func (c *GrowthTaskClient) Update() *GrowthTaskUpdate {
+	mutation := newGrowthTaskMutation(c.config, OpUpdate)
+	return &GrowthTaskUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *GrowthTaskClient) UpdateOne(_m *GrowthTask) *GrowthTaskUpdateOne {
+	mutation := newGrowthTaskMutation(c.config, OpUpdateOne, withGrowthTask(_m))
+	return &GrowthTaskUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *GrowthTaskClient) UpdateOneID(id int64) *GrowthTaskUpdateOne {
+	mutation := newGrowthTaskMutation(c.config, OpUpdateOne, withGrowthTaskID(id))
+	return &GrowthTaskUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for GrowthTask.
+func (c *GrowthTaskClient) Delete() *GrowthTaskDelete {
+	mutation := newGrowthTaskMutation(c.config, OpDelete)
+	return &GrowthTaskDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *GrowthTaskClient) DeleteOne(_m *GrowthTask) *GrowthTaskDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *GrowthTaskClient) DeleteOneID(id int64) *GrowthTaskDeleteOne {
+	builder := c.Delete().Where(growthtask.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &GrowthTaskDeleteOne{builder}
+}
+
+// Query returns a query builder for GrowthTask.
+func (c *GrowthTaskClient) Query() *GrowthTaskQuery {
+	return &GrowthTaskQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeGrowthTask},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a GrowthTask entity by its id.
+func (c *GrowthTaskClient) Get(ctx context.Context, id int64) (*GrowthTask, error) {
+	return c.Query().Where(growthtask.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *GrowthTaskClient) GetX(ctx context.Context, id int64) *GrowthTask {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *GrowthTaskClient) Hooks() []Hook {
+	return c.hooks.GrowthTask
+}
+
+// Interceptors returns the client interceptors.
+func (c *GrowthTaskClient) Interceptors() []Interceptor {
+	return c.inters.GrowthTask
+}
+
+func (c *GrowthTaskClient) mutate(ctx context.Context, m *GrowthTaskMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&GrowthTaskCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&GrowthTaskUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&GrowthTaskUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&GrowthTaskDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown GrowthTask mutation op: %q", m.Op())
+	}
+}
+
+// GrowthTaskRuleClient is a client for the GrowthTaskRule schema.
+type GrowthTaskRuleClient struct {
+	config
+}
+
+// NewGrowthTaskRuleClient returns a client for the GrowthTaskRule from the given config.
+func NewGrowthTaskRuleClient(c config) *GrowthTaskRuleClient {
+	return &GrowthTaskRuleClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `growthtaskrule.Hooks(f(g(h())))`.
+func (c *GrowthTaskRuleClient) Use(hooks ...Hook) {
+	c.hooks.GrowthTaskRule = append(c.hooks.GrowthTaskRule, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `growthtaskrule.Intercept(f(g(h())))`.
+func (c *GrowthTaskRuleClient) Intercept(interceptors ...Interceptor) {
+	c.inters.GrowthTaskRule = append(c.inters.GrowthTaskRule, interceptors...)
+}
+
+// Create returns a builder for creating a GrowthTaskRule entity.
+func (c *GrowthTaskRuleClient) Create() *GrowthTaskRuleCreate {
+	mutation := newGrowthTaskRuleMutation(c.config, OpCreate)
+	return &GrowthTaskRuleCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of GrowthTaskRule entities.
+func (c *GrowthTaskRuleClient) CreateBulk(builders ...*GrowthTaskRuleCreate) *GrowthTaskRuleCreateBulk {
+	return &GrowthTaskRuleCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *GrowthTaskRuleClient) MapCreateBulk(slice any, setFunc func(*GrowthTaskRuleCreate, int)) *GrowthTaskRuleCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &GrowthTaskRuleCreateBulk{err: fmt.Errorf("calling to GrowthTaskRuleClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*GrowthTaskRuleCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &GrowthTaskRuleCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for GrowthTaskRule.
+func (c *GrowthTaskRuleClient) Update() *GrowthTaskRuleUpdate {
+	mutation := newGrowthTaskRuleMutation(c.config, OpUpdate)
+	return &GrowthTaskRuleUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *GrowthTaskRuleClient) UpdateOne(_m *GrowthTaskRule) *GrowthTaskRuleUpdateOne {
+	mutation := newGrowthTaskRuleMutation(c.config, OpUpdateOne, withGrowthTaskRule(_m))
+	return &GrowthTaskRuleUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *GrowthTaskRuleClient) UpdateOneID(id int64) *GrowthTaskRuleUpdateOne {
+	mutation := newGrowthTaskRuleMutation(c.config, OpUpdateOne, withGrowthTaskRuleID(id))
+	return &GrowthTaskRuleUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for GrowthTaskRule.
+func (c *GrowthTaskRuleClient) Delete() *GrowthTaskRuleDelete {
+	mutation := newGrowthTaskRuleMutation(c.config, OpDelete)
+	return &GrowthTaskRuleDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *GrowthTaskRuleClient) DeleteOne(_m *GrowthTaskRule) *GrowthTaskRuleDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *GrowthTaskRuleClient) DeleteOneID(id int64) *GrowthTaskRuleDeleteOne {
+	builder := c.Delete().Where(growthtaskrule.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &GrowthTaskRuleDeleteOne{builder}
+}
+
+// Query returns a query builder for GrowthTaskRule.
+func (c *GrowthTaskRuleClient) Query() *GrowthTaskRuleQuery {
+	return &GrowthTaskRuleQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeGrowthTaskRule},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a GrowthTaskRule entity by its id.
+func (c *GrowthTaskRuleClient) Get(ctx context.Context, id int64) (*GrowthTaskRule, error) {
+	return c.Query().Where(growthtaskrule.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *GrowthTaskRuleClient) GetX(ctx context.Context, id int64) *GrowthTaskRule {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *GrowthTaskRuleClient) Hooks() []Hook {
+	return c.hooks.GrowthTaskRule
+}
+
+// Interceptors returns the client interceptors.
+func (c *GrowthTaskRuleClient) Interceptors() []Interceptor {
+	return c.inters.GrowthTaskRule
+}
+
+func (c *GrowthTaskRuleClient) mutate(ctx context.Context, m *GrowthTaskRuleMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&GrowthTaskRuleCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&GrowthTaskRuleUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&GrowthTaskRuleUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&GrowthTaskRuleDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown GrowthTaskRule mutation op: %q", m.Op())
+	}
+}
+
+// GrowthTransferClient is a client for the GrowthTransfer schema.
+type GrowthTransferClient struct {
+	config
+}
+
+// NewGrowthTransferClient returns a client for the GrowthTransfer from the given config.
+func NewGrowthTransferClient(c config) *GrowthTransferClient {
+	return &GrowthTransferClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `growthtransfer.Hooks(f(g(h())))`.
+func (c *GrowthTransferClient) Use(hooks ...Hook) {
+	c.hooks.GrowthTransfer = append(c.hooks.GrowthTransfer, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `growthtransfer.Intercept(f(g(h())))`.
+func (c *GrowthTransferClient) Intercept(interceptors ...Interceptor) {
+	c.inters.GrowthTransfer = append(c.inters.GrowthTransfer, interceptors...)
+}
+
+// Create returns a builder for creating a GrowthTransfer entity.
+func (c *GrowthTransferClient) Create() *GrowthTransferCreate {
+	mutation := newGrowthTransferMutation(c.config, OpCreate)
+	return &GrowthTransferCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of GrowthTransfer entities.
+func (c *GrowthTransferClient) CreateBulk(builders ...*GrowthTransferCreate) *GrowthTransferCreateBulk {
+	return &GrowthTransferCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *GrowthTransferClient) MapCreateBulk(slice any, setFunc func(*GrowthTransferCreate, int)) *GrowthTransferCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &GrowthTransferCreateBulk{err: fmt.Errorf("calling to GrowthTransferClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*GrowthTransferCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &GrowthTransferCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for GrowthTransfer.
+func (c *GrowthTransferClient) Update() *GrowthTransferUpdate {
+	mutation := newGrowthTransferMutation(c.config, OpUpdate)
+	return &GrowthTransferUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *GrowthTransferClient) UpdateOne(_m *GrowthTransfer) *GrowthTransferUpdateOne {
+	mutation := newGrowthTransferMutation(c.config, OpUpdateOne, withGrowthTransfer(_m))
+	return &GrowthTransferUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *GrowthTransferClient) UpdateOneID(id int64) *GrowthTransferUpdateOne {
+	mutation := newGrowthTransferMutation(c.config, OpUpdateOne, withGrowthTransferID(id))
+	return &GrowthTransferUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for GrowthTransfer.
+func (c *GrowthTransferClient) Delete() *GrowthTransferDelete {
+	mutation := newGrowthTransferMutation(c.config, OpDelete)
+	return &GrowthTransferDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *GrowthTransferClient) DeleteOne(_m *GrowthTransfer) *GrowthTransferDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *GrowthTransferClient) DeleteOneID(id int64) *GrowthTransferDeleteOne {
+	builder := c.Delete().Where(growthtransfer.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &GrowthTransferDeleteOne{builder}
+}
+
+// Query returns a query builder for GrowthTransfer.
+func (c *GrowthTransferClient) Query() *GrowthTransferQuery {
+	return &GrowthTransferQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeGrowthTransfer},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a GrowthTransfer entity by its id.
+func (c *GrowthTransferClient) Get(ctx context.Context, id int64) (*GrowthTransfer, error) {
+	return c.Query().Where(growthtransfer.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *GrowthTransferClient) GetX(ctx context.Context, id int64) *GrowthTransfer {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// Hooks returns the client hooks.
+func (c *GrowthTransferClient) Hooks() []Hook {
+	return c.hooks.GrowthTransfer
+}
+
+// Interceptors returns the client interceptors.
+func (c *GrowthTransferClient) Interceptors() []Interceptor {
+	return c.inters.GrowthTransfer
+}
+
+func (c *GrowthTransferClient) mutate(ctx context.Context, m *GrowthTransferMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&GrowthTransferCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&GrowthTransferUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&GrowthTransferUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&GrowthTransferDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown GrowthTransfer mutation op: %q", m.Op())
+	}
+}
+
+// GrowthUserTaskClient is a client for the GrowthUserTask schema.
+type GrowthUserTaskClient struct {
+	config
+}
+
+// NewGrowthUserTaskClient returns a client for the GrowthUserTask from the given config.
+func NewGrowthUserTaskClient(c config) *GrowthUserTaskClient {
+	return &GrowthUserTaskClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `growthusertask.Hooks(f(g(h())))`.
+func (c *GrowthUserTaskClient) Use(hooks ...Hook) {
+	c.hooks.GrowthUserTask = append(c.hooks.GrowthUserTask, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `growthusertask.Intercept(f(g(h())))`.
+func (c *GrowthUserTaskClient) Intercept(interceptors ...Interceptor) {
+	c.inters.GrowthUserTask = append(c.inters.GrowthUserTask, interceptors...)
+}
+
+// Create returns a builder for creating a GrowthUserTask entity.
+func (c *GrowthUserTaskClient) Create() *GrowthUserTaskCreate {
+	mutation := newGrowthUserTaskMutation(c.config, OpCreate)
+	return &GrowthUserTaskCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of GrowthUserTask entities.
+func (c *GrowthUserTaskClient) CreateBulk(builders ...*GrowthUserTaskCreate) *GrowthUserTaskCreateBulk {
+	return &GrowthUserTaskCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *GrowthUserTaskClient) MapCreateBulk(slice any, setFunc func(*GrowthUserTaskCreate, int)) *GrowthUserTaskCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &GrowthUserTaskCreateBulk{err: fmt.Errorf("calling to GrowthUserTaskClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*GrowthUserTaskCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &GrowthUserTaskCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for GrowthUserTask.
+func (c *GrowthUserTaskClient) Update() *GrowthUserTaskUpdate {
+	mutation := newGrowthUserTaskMutation(c.config, OpUpdate)
+	return &GrowthUserTaskUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *GrowthUserTaskClient) UpdateOne(_m *GrowthUserTask) *GrowthUserTaskUpdateOne {
+	mutation := newGrowthUserTaskMutation(c.config, OpUpdateOne, withGrowthUserTask(_m))
+	return &GrowthUserTaskUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *GrowthUserTaskClient) UpdateOneID(id int64) *GrowthUserTaskUpdateOne {
+	mutation := newGrowthUserTaskMutation(c.config, OpUpdateOne, withGrowthUserTaskID(id))
+	return &GrowthUserTaskUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for GrowthUserTask.
+func (c *GrowthUserTaskClient) Delete() *GrowthUserTaskDelete {
+	mutation := newGrowthUserTaskMutation(c.config, OpDelete)
+	return &GrowthUserTaskDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *GrowthUserTaskClient) DeleteOne(_m *GrowthUserTask) *GrowthUserTaskDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *GrowthUserTaskClient) DeleteOneID(id int64) *GrowthUserTaskDeleteOne {
+	builder := c.Delete().Where(growthusertask.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &GrowthUserTaskDeleteOne{builder}
+}
+
+// Query returns a query builder for GrowthUserTask.
+func (c *GrowthUserTaskClient) Query() *GrowthUserTaskQuery {
+	return &GrowthUserTaskQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeGrowthUserTask},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a GrowthUserTask entity by its id.
+func (c *GrowthUserTaskClient) Get(ctx context.Context, id int64) (*GrowthUserTask, error) {
+	return c.Query().Where(growthusertask.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *GrowthUserTaskClient) GetX(ctx context.Context, id int64) *GrowthUserTask {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryUser queries the user edge of a GrowthUserTask.
+func (c *GrowthUserTaskClient) QueryUser(_m *GrowthUserTask) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(growthusertask.Table, growthusertask.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, growthusertask.UserTable, growthusertask.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *GrowthUserTaskClient) Hooks() []Hook {
+	return c.hooks.GrowthUserTask
+}
+
+// Interceptors returns the client interceptors.
+func (c *GrowthUserTaskClient) Interceptors() []Interceptor {
+	return c.inters.GrowthUserTask
+}
+
+func (c *GrowthUserTaskClient) mutate(ctx context.Context, m *GrowthUserTaskMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&GrowthUserTaskCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&GrowthUserTaskUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&GrowthUserTaskUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&GrowthUserTaskDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown GrowthUserTask mutation op: %q", m.Op())
+	}
+}
+
+// GrowthWalletClient is a client for the GrowthWallet schema.
+type GrowthWalletClient struct {
+	config
+}
+
+// NewGrowthWalletClient returns a client for the GrowthWallet from the given config.
+func NewGrowthWalletClient(c config) *GrowthWalletClient {
+	return &GrowthWalletClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `growthwallet.Hooks(f(g(h())))`.
+func (c *GrowthWalletClient) Use(hooks ...Hook) {
+	c.hooks.GrowthWallet = append(c.hooks.GrowthWallet, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `growthwallet.Intercept(f(g(h())))`.
+func (c *GrowthWalletClient) Intercept(interceptors ...Interceptor) {
+	c.inters.GrowthWallet = append(c.inters.GrowthWallet, interceptors...)
+}
+
+// Create returns a builder for creating a GrowthWallet entity.
+func (c *GrowthWalletClient) Create() *GrowthWalletCreate {
+	mutation := newGrowthWalletMutation(c.config, OpCreate)
+	return &GrowthWalletCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of GrowthWallet entities.
+func (c *GrowthWalletClient) CreateBulk(builders ...*GrowthWalletCreate) *GrowthWalletCreateBulk {
+	return &GrowthWalletCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *GrowthWalletClient) MapCreateBulk(slice any, setFunc func(*GrowthWalletCreate, int)) *GrowthWalletCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &GrowthWalletCreateBulk{err: fmt.Errorf("calling to GrowthWalletClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*GrowthWalletCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &GrowthWalletCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for GrowthWallet.
+func (c *GrowthWalletClient) Update() *GrowthWalletUpdate {
+	mutation := newGrowthWalletMutation(c.config, OpUpdate)
+	return &GrowthWalletUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *GrowthWalletClient) UpdateOne(_m *GrowthWallet) *GrowthWalletUpdateOne {
+	mutation := newGrowthWalletMutation(c.config, OpUpdateOne, withGrowthWallet(_m))
+	return &GrowthWalletUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *GrowthWalletClient) UpdateOneID(id int64) *GrowthWalletUpdateOne {
+	mutation := newGrowthWalletMutation(c.config, OpUpdateOne, withGrowthWalletID(id))
+	return &GrowthWalletUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for GrowthWallet.
+func (c *GrowthWalletClient) Delete() *GrowthWalletDelete {
+	mutation := newGrowthWalletMutation(c.config, OpDelete)
+	return &GrowthWalletDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *GrowthWalletClient) DeleteOne(_m *GrowthWallet) *GrowthWalletDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *GrowthWalletClient) DeleteOneID(id int64) *GrowthWalletDeleteOne {
+	builder := c.Delete().Where(growthwallet.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &GrowthWalletDeleteOne{builder}
+}
+
+// Query returns a query builder for GrowthWallet.
+func (c *GrowthWalletClient) Query() *GrowthWalletQuery {
+	return &GrowthWalletQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeGrowthWallet},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a GrowthWallet entity by its id.
+func (c *GrowthWalletClient) Get(ctx context.Context, id int64) (*GrowthWallet, error) {
+	return c.Query().Where(growthwallet.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *GrowthWalletClient) GetX(ctx context.Context, id int64) *GrowthWallet {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryUser queries the user edge of a GrowthWallet.
+func (c *GrowthWalletClient) QueryUser(_m *GrowthWallet) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(growthwallet.Table, growthwallet.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, true, growthwallet.UserTable, growthwallet.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *GrowthWalletClient) Hooks() []Hook {
+	return c.hooks.GrowthWallet
+}
+
+// Interceptors returns the client interceptors.
+func (c *GrowthWalletClient) Interceptors() []Interceptor {
+	return c.inters.GrowthWallet
+}
+
+func (c *GrowthWalletClient) mutate(ctx context.Context, m *GrowthWalletMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&GrowthWalletCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&GrowthWalletUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&GrowthWalletUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&GrowthWalletDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown GrowthWallet mutation op: %q", m.Op())
 	}
 }
 
@@ -7734,6 +10237,102 @@ func (c *UserClient) QueryRbacAuditLogs(_m *User) *RBACAuditLogQuery {
 	return query
 }
 
+// QueryGrowthWallet queries the growth_wallet edge of a User.
+func (c *UserClient) QueryGrowthWallet(_m *User) *GrowthWalletQuery {
+	query := (&GrowthWalletClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(growthwallet.Table, growthwallet.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, user.GrowthWalletTable, user.GrowthWalletColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryGrowthUserTasks queries the growth_user_tasks edge of a User.
+func (c *UserClient) QueryGrowthUserTasks(_m *User) *GrowthUserTaskQuery {
+	query := (&GrowthUserTaskClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(growthusertask.Table, growthusertask.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.GrowthUserTasksTable, user.GrowthUserTasksColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryGrowthCompletionRequests queries the growth_completion_requests edge of a User.
+func (c *UserClient) QueryGrowthCompletionRequests(_m *User) *GrowthCompletionRequestQuery {
+	query := (&GrowthCompletionRequestClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(growthcompletionrequest.Table, growthcompletionrequest.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.GrowthCompletionRequestsTable, user.GrowthCompletionRequestsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryGrowthRewardClaims queries the growth_reward_claims edge of a User.
+func (c *UserClient) QueryGrowthRewardClaims(_m *User) *GrowthRewardClaimQuery {
+	query := (&GrowthRewardClaimClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(growthrewardclaim.Table, growthrewardclaim.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.GrowthRewardClaimsTable, user.GrowthRewardClaimsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryGrowthExchangeOrders queries the growth_exchange_orders edge of a User.
+func (c *UserClient) QueryGrowthExchangeOrders(_m *User) *GrowthExchangeOrderQuery {
+	query := (&GrowthExchangeOrderClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(growthexchangeorder.Table, growthexchangeorder.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.GrowthExchangeOrdersTable, user.GrowthExchangeOrdersColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryGrowthAdminAudits queries the growth_admin_audits edge of a User.
+func (c *UserClient) QueryGrowthAdminAudits(_m *User) *GrowthAdminAuditQuery {
+	query := (&GrowthAdminAuditClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(growthadminaudit.Table, growthadminaudit.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.GrowthAdminAuditsTable, user.GrowthAdminAuditsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // QueryUserAllowedGroups queries the user_allowed_groups edge of a User.
 func (c *UserClient) QueryUserAllowedGroups(_m *User) *UserAllowedGroupQuery {
 	query := (&UserAllowedGroupClient{config: c.config}).Query()
@@ -8565,31 +11164,41 @@ type (
 		APIKey, Account, AccountGroup, Announcement, AnnouncementRead, AuthIdentity,
 		AuthIdentityChannel, ChannelMonitor, ChannelMonitorDailyRollup,
 		ChannelMonitorHistory, ChannelMonitorRequestTemplate, ErrorPassthroughRule,
-		Group, IdempotencyRecord, IdentityAdoptionDecision,
-		ObservabilityConcurrencyBucket, ObservabilityRequestBucket, PaymentAuditLog,
-		PaymentOrder, PaymentProviderInstance, PendingAuthSession, PromoCode,
-		PromoCodeUsage, Proxy, RBACAuditLog, RBACPermission, RBACPolicyState, RBACRole,
-		RBACRolePermission, RBACUserRole, RBACUserVersion, RedeemCode,
-		SecurityCheckLog, SecuritySecret, Setting, SubscriptionPlan,
-		TLSFingerprintProfile, TokenStatAggregate, TokenStatPeriodState,
-		TokenStatProjection, TokenStatProjectionMetric, TokenStatQuotaRule,
-		UsageCleanupTask, UsageLog, User, UserAllowedGroup, UserAttributeDefinition,
-		UserAttributeValue, UserPlatformQuota, UserSubscription []ent.Hook
+		Group, GrowthAccountLedger, GrowthAdminAudit, GrowthBudget, GrowthBudgetEntry,
+		GrowthCompletionRequest, GrowthExchangeOrder, GrowthFulfillmentJob,
+		GrowthInventoryLedger, GrowthProduct, GrowthProductInventory,
+		GrowthProductVersion, GrowthRewardClaim, GrowthTask, GrowthTaskRule,
+		GrowthTransfer, GrowthUserTask, GrowthWallet, IdempotencyRecord,
+		IdentityAdoptionDecision, ObservabilityConcurrencyBucket,
+		ObservabilityRequestBucket, PaymentAuditLog, PaymentOrder,
+		PaymentProviderInstance, PendingAuthSession, PromoCode, PromoCodeUsage, Proxy,
+		RBACAuditLog, RBACPermission, RBACPolicyState, RBACRole, RBACRolePermission,
+		RBACUserRole, RBACUserVersion, RedeemCode, SecurityCheckLog, SecuritySecret,
+		Setting, SubscriptionPlan, TLSFingerprintProfile, TokenStatAggregate,
+		TokenStatPeriodState, TokenStatProjection, TokenStatProjectionMetric,
+		TokenStatQuotaRule, UsageCleanupTask, UsageLog, User, UserAllowedGroup,
+		UserAttributeDefinition, UserAttributeValue, UserPlatformQuota,
+		UserSubscription []ent.Hook
 	}
 	inters struct {
 		APIKey, Account, AccountGroup, Announcement, AnnouncementRead, AuthIdentity,
 		AuthIdentityChannel, ChannelMonitor, ChannelMonitorDailyRollup,
 		ChannelMonitorHistory, ChannelMonitorRequestTemplate, ErrorPassthroughRule,
-		Group, IdempotencyRecord, IdentityAdoptionDecision,
-		ObservabilityConcurrencyBucket, ObservabilityRequestBucket, PaymentAuditLog,
-		PaymentOrder, PaymentProviderInstance, PendingAuthSession, PromoCode,
-		PromoCodeUsage, Proxy, RBACAuditLog, RBACPermission, RBACPolicyState, RBACRole,
-		RBACRolePermission, RBACUserRole, RBACUserVersion, RedeemCode,
-		SecurityCheckLog, SecuritySecret, Setting, SubscriptionPlan,
-		TLSFingerprintProfile, TokenStatAggregate, TokenStatPeriodState,
-		TokenStatProjection, TokenStatProjectionMetric, TokenStatQuotaRule,
-		UsageCleanupTask, UsageLog, User, UserAllowedGroup, UserAttributeDefinition,
-		UserAttributeValue, UserPlatformQuota, UserSubscription []ent.Interceptor
+		Group, GrowthAccountLedger, GrowthAdminAudit, GrowthBudget, GrowthBudgetEntry,
+		GrowthCompletionRequest, GrowthExchangeOrder, GrowthFulfillmentJob,
+		GrowthInventoryLedger, GrowthProduct, GrowthProductInventory,
+		GrowthProductVersion, GrowthRewardClaim, GrowthTask, GrowthTaskRule,
+		GrowthTransfer, GrowthUserTask, GrowthWallet, IdempotencyRecord,
+		IdentityAdoptionDecision, ObservabilityConcurrencyBucket,
+		ObservabilityRequestBucket, PaymentAuditLog, PaymentOrder,
+		PaymentProviderInstance, PendingAuthSession, PromoCode, PromoCodeUsage, Proxy,
+		RBACAuditLog, RBACPermission, RBACPolicyState, RBACRole, RBACRolePermission,
+		RBACUserRole, RBACUserVersion, RedeemCode, SecurityCheckLog, SecuritySecret,
+		Setting, SubscriptionPlan, TLSFingerprintProfile, TokenStatAggregate,
+		TokenStatPeriodState, TokenStatProjection, TokenStatProjectionMetric,
+		TokenStatQuotaRule, UsageCleanupTask, UsageLog, User, UserAllowedGroup,
+		UserAttributeDefinition, UserAttributeValue, UserPlatformQuota,
+		UserSubscription []ent.Interceptor
 	}
 )
 

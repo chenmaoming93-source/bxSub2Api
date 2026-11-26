@@ -1,3 +1,5 @@
+import growth from './growth.en'
+
 export default {
   // Home Page
   home: {
@@ -1496,6 +1498,7 @@ export default {
       noDepartment: 'No department',
       unknownModel: 'Unknown model attribution',
       totalTokens: 'Window tokens',
+      tokenRateDetail: 'Calculated per time bucket',
       tokenRate: 'Token rate',
       requests: 'Requests',
       clientFailureRate: 'Final failure rate',
@@ -1544,12 +1547,10 @@ export default {
       searchDimension: 'Search objects in this dimension...',
       selectAllScope: 'Select full scope',
       clearDimension: 'Clear dimension',
+      applySelection: 'Apply',
       highPressureOnlyLabel: 'High-pressure only',
       noMatchingObjects: 'No objects match the current filter combination',
       clearAll: 'Clear all',
-      scopeTitle: 'Current observability scope',
-      scopeSummary: 'Token path sum · concurrency deduplicated by account',
-      pathsCount: '{count} paths',
       tokenUsage: 'Token usage',
       concurrencyLimit: 'Concurrency / limit',
       saturation: 'Saturation',
@@ -1562,6 +1563,8 @@ export default {
       latestValue: 'Latest {label}: {value}',
       accountCapacityWarning: 'Account #{id} is at {current}/{limit} concurrency with {waiting} waiting and {percent}% saturation. Review account capacity.',
       tokenRequestTrend: 'Token usage and request trend',
+      cacheHitRate: 'Cache hit rate',
+      cacheHitRateHelp: 'Cache hit rate = cache / (input + cache)',
       dimensionOther: 'Other',
       overallToken: 'Overall Tokens',
       buckets: '{count} buckets',
@@ -7692,5 +7695,5 @@ export default {
       },
     },
   },
-
+  growth,
 }

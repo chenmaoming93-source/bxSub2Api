@@ -124,6 +124,12 @@ const (
 	PermissionPromoCodesManage       = "promo_codes.manage"
 	PermissionAffiliatesRead         = "affiliates.read"
 	PermissionAffiliatesManage       = "affiliates.manage"
+
+	PermissionGrowthRead         = "growth.read"
+	PermissionGrowthManage       = "growth.manage"
+	PermissionGrowthAdjust       = "growth.adjust"
+	PermissionGrowthSelfRead     = "growth.self.read"
+	PermissionGrowthSelfExchange = "growth.self.exchange"
 )
 
 type RiskLevel string
@@ -279,6 +285,17 @@ func buildCatalog() []PermissionDefinition {
 		[3]string{PermissionRedeemCodesManage, "管理兑换码", "生成、修改或删除兑换码"},
 		[3]string{PermissionPromoCodesManage, "管理优惠码", "创建、修改或删除优惠码"},
 		[3]string{PermissionAffiliatesManage, "管理返利", "修改专属返利或批量费率"},
+	)
+	add("growth", RiskLow,
+		[3]string{PermissionGrowthRead, "查看成长计划", "查看总预算、任务、商品、订单和用户积分"},
+		[3]string{PermissionGrowthSelfRead, "查看我的积分", "查看当前用户成长积分、任务、商品和流水"},
+	)
+	add("growth", RiskHigh,
+		[3]string{PermissionGrowthManage, "管理成长计划", "管理预算额度、任务、商品和订单履约"},
+		[3]string{PermissionGrowthSelfExchange, "兑换成长商品", "使用当前用户积分兑换商品"},
+	)
+	add("growth", RiskCritical,
+		[3]string{PermissionGrowthAdjust, "调整用户积分", "对用户成长积分执行受审计调账"},
 	)
 
 	sort.Slice(definitions, func(i, j int) bool { return definitions[i].Code < definitions[j].Code })

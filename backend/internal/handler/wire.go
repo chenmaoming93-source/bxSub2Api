@@ -3,8 +3,10 @@ package handler
 import (
 	"github.com/Wei-Shaw/sub2api/internal/config"
 	"github.com/Wei-Shaw/sub2api/internal/handler/admin"
+	growthhandler "github.com/Wei-Shaw/sub2api/internal/handler/growth"
 	"github.com/Wei-Shaw/sub2api/internal/rbac"
 	"github.com/Wei-Shaw/sub2api/internal/service"
+	growthservice "github.com/Wei-Shaw/sub2api/internal/service/growth"
 	tokenstat "github.com/Wei-Shaw/sub2api/internal/service/tokenstat"
 
 	"github.com/google/wire"
@@ -152,6 +154,7 @@ func ProvideHandlers(
 	usageHandler *UsageHandler,
 	redeemHandler *RedeemHandler,
 	subscriptionHandler *SubscriptionHandler,
+	growthHandler *growthhandler.Handler,
 	announcementHandler *AnnouncementHandler,
 	channelMonitorUserHandler *ChannelMonitorUserHandler,
 	adminHandlers *AdminHandlers,
@@ -182,6 +185,7 @@ func ProvideHandlers(
 		Usage:                     usageHandler,
 		Redeem:                    redeemHandler,
 		Subscription:              subscriptionHandler,
+		Growth:                    growthHandler,
 		Announcement:              announcementHandler,
 		ChannelMonitor:            channelMonitorUserHandler,
 		Admin:                     adminHandlers,
@@ -209,6 +213,26 @@ var ProviderSet = wire.NewSet(
 	NewSubscriptionHandler,
 	NewAnnouncementHandler,
 	NewChannelMonitorUserHandler,
+	growthhandler.NewHandler,
+	growthservice.NewBudgetService,
+	growthservice.NewTaskService,
+	growthservice.NewProductService,
+	growthservice.NewReadService,
+	growthservice.NewTransferService,
+	growthservice.NewCheckinService,
+	growthservice.NewCompletionService,
+	growthservice.NewOrderService,
+	growthservice.NewFulfillmentService,
+	growthservice.NewAdminGrowthService,
+	wire.Bind(new(growthhandler.BudgetService), new(*growthservice.BudgetService)),
+	wire.Bind(new(growthhandler.TaskService), new(*growthservice.TaskService)),
+	wire.Bind(new(growthhandler.ProductService), new(*growthservice.ProductService)),
+	wire.Bind(new(growthhandler.ReadService), new(*growthservice.ReadService)),
+	wire.Bind(new(growthhandler.CheckinService), new(*growthservice.CheckinService)),
+	wire.Bind(new(growthhandler.CompletionService), new(*growthservice.CompletionService)),
+	wire.Bind(new(growthhandler.OrderService), new(*growthservice.OrderService)),
+	wire.Bind(new(growthhandler.FulfillmentService), new(*growthservice.FulfillmentService)),
+	wire.Bind(new(growthhandler.AdminGrowthService), new(*growthservice.AdminGrowthService)),
 	NewGatewayHandler,
 	NewOpenAIGatewayHandler,
 	NewTotpHandler,

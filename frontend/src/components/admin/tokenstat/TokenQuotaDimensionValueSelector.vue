@@ -27,6 +27,30 @@
         </button>
       </div>
     </div>
+    <div v-else-if="code === 'user_id'" class="relative">
+      <input
+        v-model="userSearchText"
+        class="input"
+        required
+        placeholder="搜索用户名或邮箱"
+        @input="onUserSearchInput"
+      />
+      <div v-if="userSearchResults.length" class="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-xl border border-gray-200 bg-white shadow-sm dark:border-dark-700 dark:bg-dark-800">
+        <button
+          v-for="user in userSearchResults"
+          :key="user.id"
+          type="button"
+          class="flex w-full flex-col gap-0.5 px-3 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-dark-700"
+          @click="selectUser(user)"
+        >
+          <span class="flex items-center gap-2">
+            <span class="truncate font-medium text-gray-800 dark:text-gray-100">{{ userLabel(user) }}</span>
+            <span class="shrink-0 text-xs text-gray-400">#{{ user.id }}</span>
+          </span>
+          <span v-if="user.username" class="truncate text-xs text-gray-500 dark:text-gray-400">{{ user.email }}</span>
+        </button>
+      </div>
+    </div>
     <Select
       v-else-if="searchableOptions"
       :model-value="modelValue"
@@ -54,8 +78,9 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import Select from '@/components/common/Select.vue'
 import { searchApiKeys, type SimpleApiKey } from '@/api/admin/usage'
+import * as usersAPI from '@/api/admin/users'
 import type { DimensionCode } from '@/api/admin/dynamicTokenStatistics'
-import type { SelectOption } from '@/types'
+import type { AdminUser, SelectOption } from '@/types'
 
 const props = withDefaults(defineProps<{
   modelValue?: string | number
@@ -80,6 +105,11 @@ const emit = defineEmits<{
 
 const searchableOptions = computed(() => props.useSelector)
 const placeholder = computed(() => searchableOptions.value ? `请选择${props.displayName}` : '具体值（不支持任意值）')
+const userSearchText = ref(props.selectedLabel)
+const userSearchResults = ref<AdminUser[]>([])
+let userSearchTimer: ReturnType<typeof setTimeout> | undefined
+let userSearchController: AbortController | undefined
+let userSearchVersion = 0
 const apiKeySearchText = ref(props.selectedLabel)
 const apiKeySearchResults = ref<SimpleApiKey[]>([])
 let apiKeySearchTimer: ReturnType<typeof setTimeout> | undefined
@@ -87,9 +117,11 @@ let apiKeySearchController: AbortController | undefined
 let apiKeySearchVersion = 0
 
 watch(() => props.selectedLabel, value => {
+  if (props.code === 'user_id' && value !== userSearchText.value) userSearchText.value = value
   if (props.code === 'api_key_id' && value !== apiKeySearchText.value) apiKeySearchText.value = value
 })
 watch(() => props.modelValue, value => {
+  if (props.code === 'user_id' && (value === '' || value === undefined)) userSearchText.value = ''
   if (props.code === 'api_key_id' && (value === '' || value === undefined)) apiKeySearchText.value = ''
 })
 
@@ -102,6 +134,43 @@ function updateFromInput(event: Event) {
   const value = (event.target as HTMLInputElement).value
   emit('update:modelValue', value)
   emit('change', value)
+}
+function userLabel(user: AdminUser): string {
+  return user.username || user.email
+}
+function onUserSearchInput() {
+  emit('update:modelValue', '')
+  emit('change', '')
+  emit('selected-label', '')
+  userSearchResults.value = []
+  if (userSearchTimer) clearTimeout(userSearchTimer)
+  userSearchController?.abort()
+  const keyword = userSearchText.value.trim()
+  if (keyword.length < 2) return
+  const version = ++userSearchVersion
+  userSearchTimer = setTimeout(async () => {
+    const controller = new AbortController()
+    userSearchController = controller
+    try {
+      const response = await usersAPI.list(
+        1,
+        30,
+        { search: keyword, exclude_super_admins: true },
+        { signal: controller.signal }
+      )
+      if (version === userSearchVersion) userSearchResults.value = response.items
+    } catch {
+      if (version === userSearchVersion && !controller.signal.aborted) userSearchResults.value = []
+    }
+  }, 300)
+}
+function selectUser(user: AdminUser) {
+  const label = `${userLabel(user)}${user.email && user.username ? ` · ${user.email}` : ''}`
+  userSearchText.value = label
+  userSearchResults.value = []
+  emit('update:modelValue', user.id)
+  emit('change', user.id)
+  emit('selected-label', label)
 }
 function onAPIKeySearchInput() {
   emit('update:modelValue', '')
@@ -135,6 +204,8 @@ function selectAPIKey(key: SimpleApiKey) {
 }
 
 onBeforeUnmount(() => {
+  if (userSearchTimer) clearTimeout(userSearchTimer)
+  userSearchController?.abort()
   if (apiKeySearchTimer) clearTimeout(apiKeySearchTimer)
   apiKeySearchController?.abort()
 })

@@ -18,6 +18,23 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/channelmonitorrequesttemplate"
 	"github.com/Wei-Shaw/sub2api/ent/errorpassthroughrule"
 	"github.com/Wei-Shaw/sub2api/ent/group"
+	"github.com/Wei-Shaw/sub2api/ent/growthaccountledger"
+	"github.com/Wei-Shaw/sub2api/ent/growthadminaudit"
+	"github.com/Wei-Shaw/sub2api/ent/growthbudget"
+	"github.com/Wei-Shaw/sub2api/ent/growthbudgetentry"
+	"github.com/Wei-Shaw/sub2api/ent/growthcompletionrequest"
+	"github.com/Wei-Shaw/sub2api/ent/growthexchangeorder"
+	"github.com/Wei-Shaw/sub2api/ent/growthfulfillmentjob"
+	"github.com/Wei-Shaw/sub2api/ent/growthinventoryledger"
+	"github.com/Wei-Shaw/sub2api/ent/growthproduct"
+	"github.com/Wei-Shaw/sub2api/ent/growthproductinventory"
+	"github.com/Wei-Shaw/sub2api/ent/growthproductversion"
+	"github.com/Wei-Shaw/sub2api/ent/growthrewardclaim"
+	"github.com/Wei-Shaw/sub2api/ent/growthtask"
+	"github.com/Wei-Shaw/sub2api/ent/growthtaskrule"
+	"github.com/Wei-Shaw/sub2api/ent/growthtransfer"
+	"github.com/Wei-Shaw/sub2api/ent/growthusertask"
+	"github.com/Wei-Shaw/sub2api/ent/growthwallet"
 	"github.com/Wei-Shaw/sub2api/ent/idempotencyrecord"
 	"github.com/Wei-Shaw/sub2api/ent/identityadoptiondecision"
 	"github.com/Wei-Shaw/sub2api/ent/observabilityconcurrencybucket"
@@ -917,6 +934,1271 @@ func init() {
 	groupDescSecurityCheckConfig := groupFields[33].Descriptor()
 	// group.DefaultSecurityCheckConfig holds the default value on creation for the security_check_config field.
 	group.DefaultSecurityCheckConfig = groupDescSecurityCheckConfig.Default.(domain.SecurityCheckConfig)
+	growthaccountledgerMixin := schema.GrowthAccountLedger{}.Mixin()
+	growthaccountledgerMixinFields0 := growthaccountledgerMixin[0].Fields()
+	_ = growthaccountledgerMixinFields0
+	growthaccountledgerFields := schema.GrowthAccountLedger{}.Fields()
+	_ = growthaccountledgerFields
+	// growthaccountledgerDescCreatedAt is the schema descriptor for created_at field.
+	growthaccountledgerDescCreatedAt := growthaccountledgerMixinFields0[0].Descriptor()
+	// growthaccountledger.DefaultCreatedAt holds the default value on creation for the created_at field.
+	growthaccountledger.DefaultCreatedAt = growthaccountledgerDescCreatedAt.Default.(func() time.Time)
+	// growthaccountledgerDescUpdatedAt is the schema descriptor for updated_at field.
+	growthaccountledgerDescUpdatedAt := growthaccountledgerMixinFields0[1].Descriptor()
+	// growthaccountledger.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	growthaccountledger.DefaultUpdatedAt = growthaccountledgerDescUpdatedAt.Default.(func() time.Time)
+	// growthaccountledger.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	growthaccountledger.UpdateDefaultUpdatedAt = growthaccountledgerDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// growthaccountledgerDescAccountType is the schema descriptor for account_type field.
+	growthaccountledgerDescAccountType := growthaccountledgerFields[2].Descriptor()
+	// growthaccountledger.AccountTypeValidator is a validator for the "account_type" field. It is called by the builders before save.
+	growthaccountledger.AccountTypeValidator = func() func(string) error {
+		validators := growthaccountledgerDescAccountType.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(account_type string) error {
+			for _, fn := range fns {
+				if err := fn(account_type); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// growthaccountledgerDescDirection is the schema descriptor for direction field.
+	growthaccountledgerDescDirection := growthaccountledgerFields[3].Descriptor()
+	// growthaccountledger.DirectionValidator is a validator for the "direction" field. It is called by the builders before save.
+	growthaccountledger.DirectionValidator = func() func(string) error {
+		validators := growthaccountledgerDescDirection.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(direction string) error {
+			for _, fn := range fns {
+				if err := fn(direction); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// growthaccountledgerDescPoints is the schema descriptor for points field.
+	growthaccountledgerDescPoints := growthaccountledgerFields[4].Descriptor()
+	// growthaccountledger.PointsValidator is a validator for the "points" field. It is called by the builders before save.
+	growthaccountledger.PointsValidator = growthaccountledgerDescPoints.Validators[0].(func(int64) error)
+	// growthaccountledgerDescBizType is the schema descriptor for biz_type field.
+	growthaccountledgerDescBizType := growthaccountledgerFields[6].Descriptor()
+	// growthaccountledger.BizTypeValidator is a validator for the "biz_type" field. It is called by the builders before save.
+	growthaccountledger.BizTypeValidator = func() func(string) error {
+		validators := growthaccountledgerDescBizType.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(biz_type string) error {
+			for _, fn := range fns {
+				if err := fn(biz_type); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// growthaccountledgerDescTitle is the schema descriptor for title field.
+	growthaccountledgerDescTitle := growthaccountledgerFields[7].Descriptor()
+	// growthaccountledger.TitleValidator is a validator for the "title" field. It is called by the builders before save.
+	growthaccountledger.TitleValidator = func() func(string) error {
+		validators := growthaccountledgerDescTitle.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(title string) error {
+			for _, fn := range fns {
+				if err := fn(title); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	growthadminauditMixin := schema.GrowthAdminAudit{}.Mixin()
+	growthadminauditMixinFields0 := growthadminauditMixin[0].Fields()
+	_ = growthadminauditMixinFields0
+	growthadminauditFields := schema.GrowthAdminAudit{}.Fields()
+	_ = growthadminauditFields
+	// growthadminauditDescCreatedAt is the schema descriptor for created_at field.
+	growthadminauditDescCreatedAt := growthadminauditMixinFields0[0].Descriptor()
+	// growthadminaudit.DefaultCreatedAt holds the default value on creation for the created_at field.
+	growthadminaudit.DefaultCreatedAt = growthadminauditDescCreatedAt.Default.(func() time.Time)
+	// growthadminauditDescUpdatedAt is the schema descriptor for updated_at field.
+	growthadminauditDescUpdatedAt := growthadminauditMixinFields0[1].Descriptor()
+	// growthadminaudit.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	growthadminaudit.DefaultUpdatedAt = growthadminauditDescUpdatedAt.Default.(func() time.Time)
+	// growthadminaudit.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	growthadminaudit.UpdateDefaultUpdatedAt = growthadminauditDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// growthadminauditDescActionType is the schema descriptor for action_type field.
+	growthadminauditDescActionType := growthadminauditFields[1].Descriptor()
+	// growthadminaudit.ActionTypeValidator is a validator for the "action_type" field. It is called by the builders before save.
+	growthadminaudit.ActionTypeValidator = func() func(string) error {
+		validators := growthadminauditDescActionType.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(action_type string) error {
+			for _, fn := range fns {
+				if err := fn(action_type); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// growthadminauditDescResourceType is the schema descriptor for resource_type field.
+	growthadminauditDescResourceType := growthadminauditFields[2].Descriptor()
+	// growthadminaudit.ResourceTypeValidator is a validator for the "resource_type" field. It is called by the builders before save.
+	growthadminaudit.ResourceTypeValidator = func() func(string) error {
+		validators := growthadminauditDescResourceType.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(resource_type string) error {
+			for _, fn := range fns {
+				if err := fn(resource_type); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// growthadminauditDescReason is the schema descriptor for reason field.
+	growthadminauditDescReason := growthadminauditFields[6].Descriptor()
+	// growthadminaudit.DefaultReason holds the default value on creation for the reason field.
+	growthadminaudit.DefaultReason = growthadminauditDescReason.Default.(string)
+	// growthadminaudit.ReasonValidator is a validator for the "reason" field. It is called by the builders before save.
+	growthadminaudit.ReasonValidator = growthadminauditDescReason.Validators[0].(func(string) error)
+	// growthadminauditDescRequestID is the schema descriptor for request_id field.
+	growthadminauditDescRequestID := growthadminauditFields[7].Descriptor()
+	// growthadminaudit.DefaultRequestID holds the default value on creation for the request_id field.
+	growthadminaudit.DefaultRequestID = growthadminauditDescRequestID.Default.(string)
+	// growthadminaudit.RequestIDValidator is a validator for the "request_id" field. It is called by the builders before save.
+	growthadminaudit.RequestIDValidator = growthadminauditDescRequestID.Validators[0].(func(string) error)
+	growthbudgetMixin := schema.GrowthBudget{}.Mixin()
+	growthbudgetMixinFields0 := growthbudgetMixin[0].Fields()
+	_ = growthbudgetMixinFields0
+	growthbudgetFields := schema.GrowthBudget{}.Fields()
+	_ = growthbudgetFields
+	// growthbudgetDescCreatedAt is the schema descriptor for created_at field.
+	growthbudgetDescCreatedAt := growthbudgetMixinFields0[0].Descriptor()
+	// growthbudget.DefaultCreatedAt holds the default value on creation for the created_at field.
+	growthbudget.DefaultCreatedAt = growthbudgetDescCreatedAt.Default.(func() time.Time)
+	// growthbudgetDescUpdatedAt is the schema descriptor for updated_at field.
+	growthbudgetDescUpdatedAt := growthbudgetMixinFields0[1].Descriptor()
+	// growthbudget.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	growthbudget.DefaultUpdatedAt = growthbudgetDescUpdatedAt.Default.(func() time.Time)
+	// growthbudget.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	growthbudget.UpdateDefaultUpdatedAt = growthbudgetDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// growthbudgetDescTotalAmount is the schema descriptor for total_amount field.
+	growthbudgetDescTotalAmount := growthbudgetFields[0].Descriptor()
+	// growthbudget.DefaultTotalAmount holds the default value on creation for the total_amount field.
+	growthbudget.DefaultTotalAmount = growthbudgetDescTotalAmount.Default.(int64)
+	// growthbudget.TotalAmountValidator is a validator for the "total_amount" field. It is called by the builders before save.
+	growthbudget.TotalAmountValidator = growthbudgetDescTotalAmount.Validators[0].(func(int64) error)
+	// growthbudgetDescAllocatedAmount is the schema descriptor for allocated_amount field.
+	growthbudgetDescAllocatedAmount := growthbudgetFields[1].Descriptor()
+	// growthbudget.DefaultAllocatedAmount holds the default value on creation for the allocated_amount field.
+	growthbudget.DefaultAllocatedAmount = growthbudgetDescAllocatedAmount.Default.(int64)
+	// growthbudget.AllocatedAmountValidator is a validator for the "allocated_amount" field. It is called by the builders before save.
+	growthbudget.AllocatedAmountValidator = growthbudgetDescAllocatedAmount.Validators[0].(func(int64) error)
+	// growthbudgetDescDistributedAmount is the schema descriptor for distributed_amount field.
+	growthbudgetDescDistributedAmount := growthbudgetFields[2].Descriptor()
+	// growthbudget.DefaultDistributedAmount holds the default value on creation for the distributed_amount field.
+	growthbudget.DefaultDistributedAmount = growthbudgetDescDistributedAmount.Default.(int64)
+	// growthbudget.DistributedAmountValidator is a validator for the "distributed_amount" field. It is called by the builders before save.
+	growthbudget.DistributedAmountValidator = growthbudgetDescDistributedAmount.Validators[0].(func(int64) error)
+	// growthbudgetDescVersion is the schema descriptor for version field.
+	growthbudgetDescVersion := growthbudgetFields[3].Descriptor()
+	// growthbudget.DefaultVersion holds the default value on creation for the version field.
+	growthbudget.DefaultVersion = growthbudgetDescVersion.Default.(int64)
+	// growthbudget.VersionValidator is a validator for the "version" field. It is called by the builders before save.
+	growthbudget.VersionValidator = growthbudgetDescVersion.Validators[0].(func(int64) error)
+	growthbudgetentryMixin := schema.GrowthBudgetEntry{}.Mixin()
+	growthbudgetentryMixinFields0 := growthbudgetentryMixin[0].Fields()
+	_ = growthbudgetentryMixinFields0
+	growthbudgetentryFields := schema.GrowthBudgetEntry{}.Fields()
+	_ = growthbudgetentryFields
+	// growthbudgetentryDescCreatedAt is the schema descriptor for created_at field.
+	growthbudgetentryDescCreatedAt := growthbudgetentryMixinFields0[0].Descriptor()
+	// growthbudgetentry.DefaultCreatedAt holds the default value on creation for the created_at field.
+	growthbudgetentry.DefaultCreatedAt = growthbudgetentryDescCreatedAt.Default.(func() time.Time)
+	// growthbudgetentryDescUpdatedAt is the schema descriptor for updated_at field.
+	growthbudgetentryDescUpdatedAt := growthbudgetentryMixinFields0[1].Descriptor()
+	// growthbudgetentry.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	growthbudgetentry.DefaultUpdatedAt = growthbudgetentryDescUpdatedAt.Default.(func() time.Time)
+	// growthbudgetentry.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	growthbudgetentry.UpdateDefaultUpdatedAt = growthbudgetentryDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// growthbudgetentryDescBudgetID is the schema descriptor for budget_id field.
+	growthbudgetentryDescBudgetID := growthbudgetentryFields[0].Descriptor()
+	// growthbudgetentry.DefaultBudgetID holds the default value on creation for the budget_id field.
+	growthbudgetentry.DefaultBudgetID = growthbudgetentryDescBudgetID.Default.(int64)
+	// growthbudgetentryDescEntryType is the schema descriptor for entry_type field.
+	growthbudgetentryDescEntryType := growthbudgetentryFields[1].Descriptor()
+	// growthbudgetentry.EntryTypeValidator is a validator for the "entry_type" field. It is called by the builders before save.
+	growthbudgetentry.EntryTypeValidator = func() func(string) error {
+		validators := growthbudgetentryDescEntryType.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(entry_type string) error {
+			for _, fn := range fns {
+				if err := fn(entry_type); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// growthbudgetentryDescPoints is the schema descriptor for points field.
+	growthbudgetentryDescPoints := growthbudgetentryFields[2].Descriptor()
+	// growthbudgetentry.PointsValidator is a validator for the "points" field. It is called by the builders before save.
+	growthbudgetentry.PointsValidator = growthbudgetentryDescPoints.Validators[0].(func(int64) error)
+	// growthbudgetentryDescBudgetAfter is the schema descriptor for budget_after field.
+	growthbudgetentryDescBudgetAfter := growthbudgetentryFields[3].Descriptor()
+	// growthbudgetentry.BudgetAfterValidator is a validator for the "budget_after" field. It is called by the builders before save.
+	growthbudgetentry.BudgetAfterValidator = growthbudgetentryDescBudgetAfter.Validators[0].(func(int64) error)
+	// growthbudgetentryDescAllocatedAfter is the schema descriptor for allocated_after field.
+	growthbudgetentryDescAllocatedAfter := growthbudgetentryFields[4].Descriptor()
+	// growthbudgetentry.AllocatedAfterValidator is a validator for the "allocated_after" field. It is called by the builders before save.
+	growthbudgetentry.AllocatedAfterValidator = growthbudgetentryDescAllocatedAfter.Validators[0].(func(int64) error)
+	// growthbudgetentryDescDistributedAfter is the schema descriptor for distributed_after field.
+	growthbudgetentryDescDistributedAfter := growthbudgetentryFields[5].Descriptor()
+	// growthbudgetentry.DefaultDistributedAfter holds the default value on creation for the distributed_after field.
+	growthbudgetentry.DefaultDistributedAfter = growthbudgetentryDescDistributedAfter.Default.(int64)
+	// growthbudgetentry.DistributedAfterValidator is a validator for the "distributed_after" field. It is called by the builders before save.
+	growthbudgetentry.DistributedAfterValidator = growthbudgetentryDescDistributedAfter.Validators[0].(func(int64) error)
+	// growthbudgetentryDescReason is the schema descriptor for reason field.
+	growthbudgetentryDescReason := growthbudgetentryFields[8].Descriptor()
+	// growthbudgetentry.ReasonValidator is a validator for the "reason" field. It is called by the builders before save.
+	growthbudgetentry.ReasonValidator = func() func(string) error {
+		validators := growthbudgetentryDescReason.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(reason string) error {
+			for _, fn := range fns {
+				if err := fn(reason); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// growthbudgetentryDescRequestID is the schema descriptor for request_id field.
+	growthbudgetentryDescRequestID := growthbudgetentryFields[9].Descriptor()
+	// growthbudgetentry.DefaultRequestID holds the default value on creation for the request_id field.
+	growthbudgetentry.DefaultRequestID = growthbudgetentryDescRequestID.Default.(string)
+	// growthbudgetentry.RequestIDValidator is a validator for the "request_id" field. It is called by the builders before save.
+	growthbudgetentry.RequestIDValidator = growthbudgetentryDescRequestID.Validators[0].(func(string) error)
+	growthcompletionrequestMixin := schema.GrowthCompletionRequest{}.Mixin()
+	growthcompletionrequestMixinFields0 := growthcompletionrequestMixin[0].Fields()
+	_ = growthcompletionrequestMixinFields0
+	growthcompletionrequestFields := schema.GrowthCompletionRequest{}.Fields()
+	_ = growthcompletionrequestFields
+	// growthcompletionrequestDescCreatedAt is the schema descriptor for created_at field.
+	growthcompletionrequestDescCreatedAt := growthcompletionrequestMixinFields0[0].Descriptor()
+	// growthcompletionrequest.DefaultCreatedAt holds the default value on creation for the created_at field.
+	growthcompletionrequest.DefaultCreatedAt = growthcompletionrequestDescCreatedAt.Default.(func() time.Time)
+	// growthcompletionrequestDescUpdatedAt is the schema descriptor for updated_at field.
+	growthcompletionrequestDescUpdatedAt := growthcompletionrequestMixinFields0[1].Descriptor()
+	// growthcompletionrequest.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	growthcompletionrequest.DefaultUpdatedAt = growthcompletionrequestDescUpdatedAt.Default.(func() time.Time)
+	// growthcompletionrequest.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	growthcompletionrequest.UpdateDefaultUpdatedAt = growthcompletionrequestDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// growthcompletionrequestDescCompletionRef is the schema descriptor for completion_ref field.
+	growthcompletionrequestDescCompletionRef := growthcompletionrequestFields[2].Descriptor()
+	// growthcompletionrequest.CompletionRefValidator is a validator for the "completion_ref" field. It is called by the builders before save.
+	growthcompletionrequest.CompletionRefValidator = func() func(string) error {
+		validators := growthcompletionrequestDescCompletionRef.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(completion_ref string) error {
+			for _, fn := range fns {
+				if err := fn(completion_ref); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// growthcompletionrequestDescRequestID is the schema descriptor for request_id field.
+	growthcompletionrequestDescRequestID := growthcompletionrequestFields[3].Descriptor()
+	// growthcompletionrequest.DefaultRequestID holds the default value on creation for the request_id field.
+	growthcompletionrequest.DefaultRequestID = growthcompletionrequestDescRequestID.Default.(string)
+	// growthcompletionrequest.RequestIDValidator is a validator for the "request_id" field. It is called by the builders before save.
+	growthcompletionrequest.RequestIDValidator = growthcompletionrequestDescRequestID.Validators[0].(func(string) error)
+	// growthcompletionrequestDescResult is the schema descriptor for result field.
+	growthcompletionrequestDescResult := growthcompletionrequestFields[4].Descriptor()
+	// growthcompletionrequest.ResultValidator is a validator for the "result" field. It is called by the builders before save.
+	growthcompletionrequest.ResultValidator = func() func(string) error {
+		validators := growthcompletionrequestDescResult.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(result string) error {
+			for _, fn := range fns {
+				if err := fn(result); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// growthcompletionrequestDescAwardedPoints is the schema descriptor for awarded_points field.
+	growthcompletionrequestDescAwardedPoints := growthcompletionrequestFields[6].Descriptor()
+	// growthcompletionrequest.DefaultAwardedPoints holds the default value on creation for the awarded_points field.
+	growthcompletionrequest.DefaultAwardedPoints = growthcompletionrequestDescAwardedPoints.Default.(int64)
+	// growthcompletionrequest.AwardedPointsValidator is a validator for the "awarded_points" field. It is called by the builders before save.
+	growthcompletionrequest.AwardedPointsValidator = growthcompletionrequestDescAwardedPoints.Validators[0].(func(int64) error)
+	// growthcompletionrequestDescCycleKey is the schema descriptor for cycle_key field.
+	growthcompletionrequestDescCycleKey := growthcompletionrequestFields[8].Descriptor()
+	// growthcompletionrequest.CycleKeyValidator is a validator for the "cycle_key" field. It is called by the builders before save.
+	growthcompletionrequest.CycleKeyValidator = growthcompletionrequestDescCycleKey.Validators[0].(func(string) error)
+	growthexchangeorderMixin := schema.GrowthExchangeOrder{}.Mixin()
+	growthexchangeorderMixinFields0 := growthexchangeorderMixin[0].Fields()
+	_ = growthexchangeorderMixinFields0
+	growthexchangeorderFields := schema.GrowthExchangeOrder{}.Fields()
+	_ = growthexchangeorderFields
+	// growthexchangeorderDescCreatedAt is the schema descriptor for created_at field.
+	growthexchangeorderDescCreatedAt := growthexchangeorderMixinFields0[0].Descriptor()
+	// growthexchangeorder.DefaultCreatedAt holds the default value on creation for the created_at field.
+	growthexchangeorder.DefaultCreatedAt = growthexchangeorderDescCreatedAt.Default.(func() time.Time)
+	// growthexchangeorderDescUpdatedAt is the schema descriptor for updated_at field.
+	growthexchangeorderDescUpdatedAt := growthexchangeorderMixinFields0[1].Descriptor()
+	// growthexchangeorder.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	growthexchangeorder.DefaultUpdatedAt = growthexchangeorderDescUpdatedAt.Default.(func() time.Time)
+	// growthexchangeorder.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	growthexchangeorder.UpdateDefaultUpdatedAt = growthexchangeorderDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// growthexchangeorderDescOrderNo is the schema descriptor for order_no field.
+	growthexchangeorderDescOrderNo := growthexchangeorderFields[0].Descriptor()
+	// growthexchangeorder.OrderNoValidator is a validator for the "order_no" field. It is called by the builders before save.
+	growthexchangeorder.OrderNoValidator = func() func(string) error {
+		validators := growthexchangeorderDescOrderNo.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(order_no string) error {
+			for _, fn := range fns {
+				if err := fn(order_no); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// growthexchangeorderDescProductVersion is the schema descriptor for product_version field.
+	growthexchangeorderDescProductVersion := growthexchangeorderFields[3].Descriptor()
+	// growthexchangeorder.ProductVersionValidator is a validator for the "product_version" field. It is called by the builders before save.
+	growthexchangeorder.ProductVersionValidator = growthexchangeorderDescProductVersion.Validators[0].(func(int) error)
+	// growthexchangeorderDescPointsCost is the schema descriptor for points_cost field.
+	growthexchangeorderDescPointsCost := growthexchangeorderFields[5].Descriptor()
+	// growthexchangeorder.PointsCostValidator is a validator for the "points_cost" field. It is called by the builders before save.
+	growthexchangeorder.PointsCostValidator = growthexchangeorderDescPointsCost.Validators[0].(func(int64) error)
+	// growthexchangeorderDescOrderStatus is the schema descriptor for order_status field.
+	growthexchangeorderDescOrderStatus := growthexchangeorderFields[6].Descriptor()
+	// growthexchangeorder.DefaultOrderStatus holds the default value on creation for the order_status field.
+	growthexchangeorder.DefaultOrderStatus = growthexchangeorderDescOrderStatus.Default.(string)
+	// growthexchangeorder.OrderStatusValidator is a validator for the "order_status" field. It is called by the builders before save.
+	growthexchangeorder.OrderStatusValidator = func() func(string) error {
+		validators := growthexchangeorderDescOrderStatus.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(order_status string) error {
+			for _, fn := range fns {
+				if err := fn(order_status); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// growthexchangeorderDescIdempotencyKey is the schema descriptor for idempotency_key field.
+	growthexchangeorderDescIdempotencyKey := growthexchangeorderFields[7].Descriptor()
+	// growthexchangeorder.IdempotencyKeyValidator is a validator for the "idempotency_key" field. It is called by the builders before save.
+	growthexchangeorder.IdempotencyKeyValidator = func() func(string) error {
+		validators := growthexchangeorderDescIdempotencyKey.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(idempotency_key string) error {
+			for _, fn := range fns {
+				if err := fn(idempotency_key); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// growthexchangeorderDescFailureReason is the schema descriptor for failure_reason field.
+	growthexchangeorderDescFailureReason := growthexchangeorderFields[11].Descriptor()
+	// growthexchangeorder.DefaultFailureReason holds the default value on creation for the failure_reason field.
+	growthexchangeorder.DefaultFailureReason = growthexchangeorderDescFailureReason.Default.(string)
+	// growthexchangeorder.FailureReasonValidator is a validator for the "failure_reason" field. It is called by the builders before save.
+	growthexchangeorder.FailureReasonValidator = growthexchangeorderDescFailureReason.Validators[0].(func(string) error)
+	growthfulfillmentjobMixin := schema.GrowthFulfillmentJob{}.Mixin()
+	growthfulfillmentjobMixinFields0 := growthfulfillmentjobMixin[0].Fields()
+	_ = growthfulfillmentjobMixinFields0
+	growthfulfillmentjobFields := schema.GrowthFulfillmentJob{}.Fields()
+	_ = growthfulfillmentjobFields
+	// growthfulfillmentjobDescCreatedAt is the schema descriptor for created_at field.
+	growthfulfillmentjobDescCreatedAt := growthfulfillmentjobMixinFields0[0].Descriptor()
+	// growthfulfillmentjob.DefaultCreatedAt holds the default value on creation for the created_at field.
+	growthfulfillmentjob.DefaultCreatedAt = growthfulfillmentjobDescCreatedAt.Default.(func() time.Time)
+	// growthfulfillmentjobDescUpdatedAt is the schema descriptor for updated_at field.
+	growthfulfillmentjobDescUpdatedAt := growthfulfillmentjobMixinFields0[1].Descriptor()
+	// growthfulfillmentjob.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	growthfulfillmentjob.DefaultUpdatedAt = growthfulfillmentjobDescUpdatedAt.Default.(func() time.Time)
+	// growthfulfillmentjob.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	growthfulfillmentjob.UpdateDefaultUpdatedAt = growthfulfillmentjobDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// growthfulfillmentjobDescJobType is the schema descriptor for job_type field.
+	growthfulfillmentjobDescJobType := growthfulfillmentjobFields[1].Descriptor()
+	// growthfulfillmentjob.DefaultJobType holds the default value on creation for the job_type field.
+	growthfulfillmentjob.DefaultJobType = growthfulfillmentjobDescJobType.Default.(string)
+	// growthfulfillmentjob.JobTypeValidator is a validator for the "job_type" field. It is called by the builders before save.
+	growthfulfillmentjob.JobTypeValidator = growthfulfillmentjobDescJobType.Validators[0].(func(string) error)
+	// growthfulfillmentjobDescJobStatus is the schema descriptor for job_status field.
+	growthfulfillmentjobDescJobStatus := growthfulfillmentjobFields[2].Descriptor()
+	// growthfulfillmentjob.DefaultJobStatus holds the default value on creation for the job_status field.
+	growthfulfillmentjob.DefaultJobStatus = growthfulfillmentjobDescJobStatus.Default.(string)
+	// growthfulfillmentjob.JobStatusValidator is a validator for the "job_status" field. It is called by the builders before save.
+	growthfulfillmentjob.JobStatusValidator = func() func(string) error {
+		validators := growthfulfillmentjobDescJobStatus.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(job_status string) error {
+			for _, fn := range fns {
+				if err := fn(job_status); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// growthfulfillmentjobDescAttemptCount is the schema descriptor for attempt_count field.
+	growthfulfillmentjobDescAttemptCount := growthfulfillmentjobFields[3].Descriptor()
+	// growthfulfillmentjob.DefaultAttemptCount holds the default value on creation for the attempt_count field.
+	growthfulfillmentjob.DefaultAttemptCount = growthfulfillmentjobDescAttemptCount.Default.(int)
+	// growthfulfillmentjob.AttemptCountValidator is a validator for the "attempt_count" field. It is called by the builders before save.
+	growthfulfillmentjob.AttemptCountValidator = growthfulfillmentjobDescAttemptCount.Validators[0].(func(int) error)
+	// growthfulfillmentjobDescMaxAttempts is the schema descriptor for max_attempts field.
+	growthfulfillmentjobDescMaxAttempts := growthfulfillmentjobFields[4].Descriptor()
+	// growthfulfillmentjob.DefaultMaxAttempts holds the default value on creation for the max_attempts field.
+	growthfulfillmentjob.DefaultMaxAttempts = growthfulfillmentjobDescMaxAttempts.Default.(int)
+	// growthfulfillmentjob.MaxAttemptsValidator is a validator for the "max_attempts" field. It is called by the builders before save.
+	growthfulfillmentjob.MaxAttemptsValidator = growthfulfillmentjobDescMaxAttempts.Validators[0].(func(int) error)
+	// growthfulfillmentjobDescNextRetryAt is the schema descriptor for next_retry_at field.
+	growthfulfillmentjobDescNextRetryAt := growthfulfillmentjobFields[5].Descriptor()
+	// growthfulfillmentjob.DefaultNextRetryAt holds the default value on creation for the next_retry_at field.
+	growthfulfillmentjob.DefaultNextRetryAt = growthfulfillmentjobDescNextRetryAt.Default.(func() time.Time)
+	// growthfulfillmentjobDescLastError is the schema descriptor for last_error field.
+	growthfulfillmentjobDescLastError := growthfulfillmentjobFields[7].Descriptor()
+	// growthfulfillmentjob.DefaultLastError holds the default value on creation for the last_error field.
+	growthfulfillmentjob.DefaultLastError = growthfulfillmentjobDescLastError.Default.(string)
+	// growthfulfillmentjob.LastErrorValidator is a validator for the "last_error" field. It is called by the builders before save.
+	growthfulfillmentjob.LastErrorValidator = growthfulfillmentjobDescLastError.Validators[0].(func(string) error)
+	// growthfulfillmentjobDescProviderReference is the schema descriptor for provider_reference field.
+	growthfulfillmentjobDescProviderReference := growthfulfillmentjobFields[8].Descriptor()
+	// growthfulfillmentjob.DefaultProviderReference holds the default value on creation for the provider_reference field.
+	growthfulfillmentjob.DefaultProviderReference = growthfulfillmentjobDescProviderReference.Default.(string)
+	// growthfulfillmentjob.ProviderReferenceValidator is a validator for the "provider_reference" field. It is called by the builders before save.
+	growthfulfillmentjob.ProviderReferenceValidator = growthfulfillmentjobDescProviderReference.Validators[0].(func(string) error)
+	growthinventoryledgerMixin := schema.GrowthInventoryLedger{}.Mixin()
+	growthinventoryledgerMixinFields0 := growthinventoryledgerMixin[0].Fields()
+	_ = growthinventoryledgerMixinFields0
+	growthinventoryledgerFields := schema.GrowthInventoryLedger{}.Fields()
+	_ = growthinventoryledgerFields
+	// growthinventoryledgerDescCreatedAt is the schema descriptor for created_at field.
+	growthinventoryledgerDescCreatedAt := growthinventoryledgerMixinFields0[0].Descriptor()
+	// growthinventoryledger.DefaultCreatedAt holds the default value on creation for the created_at field.
+	growthinventoryledger.DefaultCreatedAt = growthinventoryledgerDescCreatedAt.Default.(func() time.Time)
+	// growthinventoryledgerDescUpdatedAt is the schema descriptor for updated_at field.
+	growthinventoryledgerDescUpdatedAt := growthinventoryledgerMixinFields0[1].Descriptor()
+	// growthinventoryledger.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	growthinventoryledger.DefaultUpdatedAt = growthinventoryledgerDescUpdatedAt.Default.(func() time.Time)
+	// growthinventoryledger.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	growthinventoryledger.UpdateDefaultUpdatedAt = growthinventoryledgerDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// growthinventoryledgerDescBusinessKey is the schema descriptor for business_key field.
+	growthinventoryledgerDescBusinessKey := growthinventoryledgerFields[0].Descriptor()
+	// growthinventoryledger.BusinessKeyValidator is a validator for the "business_key" field. It is called by the builders before save.
+	growthinventoryledger.BusinessKeyValidator = func() func(string) error {
+		validators := growthinventoryledgerDescBusinessKey.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(business_key string) error {
+			for _, fn := range fns {
+				if err := fn(business_key); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// growthinventoryledgerDescOperationType is the schema descriptor for operation_type field.
+	growthinventoryledgerDescOperationType := growthinventoryledgerFields[3].Descriptor()
+	// growthinventoryledger.OperationTypeValidator is a validator for the "operation_type" field. It is called by the builders before save.
+	growthinventoryledger.OperationTypeValidator = func() func(string) error {
+		validators := growthinventoryledgerDescOperationType.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(operation_type string) error {
+			for _, fn := range fns {
+				if err := fn(operation_type); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// growthinventoryledgerDescDeltaAvailable is the schema descriptor for delta_available field.
+	growthinventoryledgerDescDeltaAvailable := growthinventoryledgerFields[4].Descriptor()
+	// growthinventoryledger.DefaultDeltaAvailable holds the default value on creation for the delta_available field.
+	growthinventoryledger.DefaultDeltaAvailable = growthinventoryledgerDescDeltaAvailable.Default.(int64)
+	// growthinventoryledgerDescDeltaReserved is the schema descriptor for delta_reserved field.
+	growthinventoryledgerDescDeltaReserved := growthinventoryledgerFields[5].Descriptor()
+	// growthinventoryledger.DefaultDeltaReserved holds the default value on creation for the delta_reserved field.
+	growthinventoryledger.DefaultDeltaReserved = growthinventoryledgerDescDeltaReserved.Default.(int64)
+	// growthinventoryledgerDescDeltaSold is the schema descriptor for delta_sold field.
+	growthinventoryledgerDescDeltaSold := growthinventoryledgerFields[6].Descriptor()
+	// growthinventoryledger.DefaultDeltaSold holds the default value on creation for the delta_sold field.
+	growthinventoryledger.DefaultDeltaSold = growthinventoryledgerDescDeltaSold.Default.(int64)
+	// growthinventoryledgerDescAvailableAfter is the schema descriptor for available_after field.
+	growthinventoryledgerDescAvailableAfter := growthinventoryledgerFields[7].Descriptor()
+	// growthinventoryledger.AvailableAfterValidator is a validator for the "available_after" field. It is called by the builders before save.
+	growthinventoryledger.AvailableAfterValidator = growthinventoryledgerDescAvailableAfter.Validators[0].(func(int64) error)
+	// growthinventoryledgerDescReservedAfter is the schema descriptor for reserved_after field.
+	growthinventoryledgerDescReservedAfter := growthinventoryledgerFields[8].Descriptor()
+	// growthinventoryledger.ReservedAfterValidator is a validator for the "reserved_after" field. It is called by the builders before save.
+	growthinventoryledger.ReservedAfterValidator = growthinventoryledgerDescReservedAfter.Validators[0].(func(int64) error)
+	// growthinventoryledgerDescSoldAfter is the schema descriptor for sold_after field.
+	growthinventoryledgerDescSoldAfter := growthinventoryledgerFields[9].Descriptor()
+	// growthinventoryledger.SoldAfterValidator is a validator for the "sold_after" field. It is called by the builders before save.
+	growthinventoryledger.SoldAfterValidator = growthinventoryledgerDescSoldAfter.Validators[0].(func(int64) error)
+	// growthinventoryledgerDescReason is the schema descriptor for reason field.
+	growthinventoryledgerDescReason := growthinventoryledgerFields[12].Descriptor()
+	// growthinventoryledger.DefaultReason holds the default value on creation for the reason field.
+	growthinventoryledger.DefaultReason = growthinventoryledgerDescReason.Default.(string)
+	// growthinventoryledger.ReasonValidator is a validator for the "reason" field. It is called by the builders before save.
+	growthinventoryledger.ReasonValidator = growthinventoryledgerDescReason.Validators[0].(func(string) error)
+	growthproductMixin := schema.GrowthProduct{}.Mixin()
+	growthproductMixinFields0 := growthproductMixin[0].Fields()
+	_ = growthproductMixinFields0
+	growthproductFields := schema.GrowthProduct{}.Fields()
+	_ = growthproductFields
+	// growthproductDescCreatedAt is the schema descriptor for created_at field.
+	growthproductDescCreatedAt := growthproductMixinFields0[0].Descriptor()
+	// growthproduct.DefaultCreatedAt holds the default value on creation for the created_at field.
+	growthproduct.DefaultCreatedAt = growthproductDescCreatedAt.Default.(func() time.Time)
+	// growthproductDescUpdatedAt is the schema descriptor for updated_at field.
+	growthproductDescUpdatedAt := growthproductMixinFields0[1].Descriptor()
+	// growthproduct.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	growthproduct.DefaultUpdatedAt = growthproductDescUpdatedAt.Default.(func() time.Time)
+	// growthproduct.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	growthproduct.UpdateDefaultUpdatedAt = growthproductDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// growthproductDescProductCode is the schema descriptor for product_code field.
+	growthproductDescProductCode := growthproductFields[0].Descriptor()
+	// growthproduct.ProductCodeValidator is a validator for the "product_code" field. It is called by the builders before save.
+	growthproduct.ProductCodeValidator = func() func(string) error {
+		validators := growthproductDescProductCode.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(product_code string) error {
+			for _, fn := range fns {
+				if err := fn(product_code); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// growthproductDescTitle is the schema descriptor for title field.
+	growthproductDescTitle := growthproductFields[1].Descriptor()
+	// growthproduct.TitleValidator is a validator for the "title" field. It is called by the builders before save.
+	growthproduct.TitleValidator = func() func(string) error {
+		validators := growthproductDescTitle.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(title string) error {
+			for _, fn := range fns {
+				if err := fn(title); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// growthproductDescProductType is the schema descriptor for product_type field.
+	growthproductDescProductType := growthproductFields[2].Descriptor()
+	// growthproduct.ProductTypeValidator is a validator for the "product_type" field. It is called by the builders before save.
+	growthproduct.ProductTypeValidator = func() func(string) error {
+		validators := growthproductDescProductType.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(product_type string) error {
+			for _, fn := range fns {
+				if err := fn(product_type); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// growthproductDescIcon is the schema descriptor for icon field.
+	growthproductDescIcon := growthproductFields[3].Descriptor()
+	// growthproduct.DefaultIcon holds the default value on creation for the icon field.
+	growthproduct.DefaultIcon = growthproductDescIcon.Default.(string)
+	// growthproduct.IconValidator is a validator for the "icon" field. It is called by the builders before save.
+	growthproduct.IconValidator = growthproductDescIcon.Validators[0].(func(string) error)
+	// growthproductDescFulfillmentMode is the schema descriptor for fulfillment_mode field.
+	growthproductDescFulfillmentMode := growthproductFields[4].Descriptor()
+	// growthproduct.FulfillmentModeValidator is a validator for the "fulfillment_mode" field. It is called by the builders before save.
+	growthproduct.FulfillmentModeValidator = func() func(string) error {
+		validators := growthproductDescFulfillmentMode.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(fulfillment_mode string) error {
+			for _, fn := range fns {
+				if err := fn(fulfillment_mode); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// growthproductDescSortOrder is the schema descriptor for sort_order field.
+	growthproductDescSortOrder := growthproductFields[5].Descriptor()
+	// growthproduct.DefaultSortOrder holds the default value on creation for the sort_order field.
+	growthproduct.DefaultSortOrder = growthproductDescSortOrder.Default.(int)
+	// growthproductDescProductStatus is the schema descriptor for product_status field.
+	growthproductDescProductStatus := growthproductFields[6].Descriptor()
+	// growthproduct.DefaultProductStatus holds the default value on creation for the product_status field.
+	growthproduct.DefaultProductStatus = growthproductDescProductStatus.Default.(string)
+	// growthproduct.ProductStatusValidator is a validator for the "product_status" field. It is called by the builders before save.
+	growthproduct.ProductStatusValidator = func() func(string) error {
+		validators := growthproductDescProductStatus.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(product_status string) error {
+			for _, fn := range fns {
+				if err := fn(product_status); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// growthproductDescCurrentVersion is the schema descriptor for current_version field.
+	growthproductDescCurrentVersion := growthproductFields[7].Descriptor()
+	// growthproduct.DefaultCurrentVersion holds the default value on creation for the current_version field.
+	growthproduct.DefaultCurrentVersion = growthproductDescCurrentVersion.Default.(int)
+	// growthproduct.CurrentVersionValidator is a validator for the "current_version" field. It is called by the builders before save.
+	growthproduct.CurrentVersionValidator = growthproductDescCurrentVersion.Validators[0].(func(int) error)
+	growthproductinventoryMixin := schema.GrowthProductInventory{}.Mixin()
+	growthproductinventoryMixinFields0 := growthproductinventoryMixin[0].Fields()
+	_ = growthproductinventoryMixinFields0
+	growthproductinventoryFields := schema.GrowthProductInventory{}.Fields()
+	_ = growthproductinventoryFields
+	// growthproductinventoryDescCreatedAt is the schema descriptor for created_at field.
+	growthproductinventoryDescCreatedAt := growthproductinventoryMixinFields0[0].Descriptor()
+	// growthproductinventory.DefaultCreatedAt holds the default value on creation for the created_at field.
+	growthproductinventory.DefaultCreatedAt = growthproductinventoryDescCreatedAt.Default.(func() time.Time)
+	// growthproductinventoryDescUpdatedAt is the schema descriptor for updated_at field.
+	growthproductinventoryDescUpdatedAt := growthproductinventoryMixinFields0[1].Descriptor()
+	// growthproductinventory.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	growthproductinventory.DefaultUpdatedAt = growthproductinventoryDescUpdatedAt.Default.(func() time.Time)
+	// growthproductinventory.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	growthproductinventory.UpdateDefaultUpdatedAt = growthproductinventoryDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// growthproductinventoryDescStockMode is the schema descriptor for stock_mode field.
+	growthproductinventoryDescStockMode := growthproductinventoryFields[1].Descriptor()
+	// growthproductinventory.DefaultStockMode holds the default value on creation for the stock_mode field.
+	growthproductinventory.DefaultStockMode = growthproductinventoryDescStockMode.Default.(string)
+	// growthproductinventory.StockModeValidator is a validator for the "stock_mode" field. It is called by the builders before save.
+	growthproductinventory.StockModeValidator = func() func(string) error {
+		validators := growthproductinventoryDescStockMode.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(stock_mode string) error {
+			for _, fn := range fns {
+				if err := fn(stock_mode); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// growthproductinventoryDescAvailable is the schema descriptor for available field.
+	growthproductinventoryDescAvailable := growthproductinventoryFields[2].Descriptor()
+	// growthproductinventory.DefaultAvailable holds the default value on creation for the available field.
+	growthproductinventory.DefaultAvailable = growthproductinventoryDescAvailable.Default.(int64)
+	// growthproductinventory.AvailableValidator is a validator for the "available" field. It is called by the builders before save.
+	growthproductinventory.AvailableValidator = growthproductinventoryDescAvailable.Validators[0].(func(int64) error)
+	// growthproductinventoryDescReserved is the schema descriptor for reserved field.
+	growthproductinventoryDescReserved := growthproductinventoryFields[3].Descriptor()
+	// growthproductinventory.DefaultReserved holds the default value on creation for the reserved field.
+	growthproductinventory.DefaultReserved = growthproductinventoryDescReserved.Default.(int64)
+	// growthproductinventory.ReservedValidator is a validator for the "reserved" field. It is called by the builders before save.
+	growthproductinventory.ReservedValidator = growthproductinventoryDescReserved.Validators[0].(func(int64) error)
+	// growthproductinventoryDescSold is the schema descriptor for sold field.
+	growthproductinventoryDescSold := growthproductinventoryFields[4].Descriptor()
+	// growthproductinventory.DefaultSold holds the default value on creation for the sold field.
+	growthproductinventory.DefaultSold = growthproductinventoryDescSold.Default.(int64)
+	// growthproductinventory.SoldValidator is a validator for the "sold" field. It is called by the builders before save.
+	growthproductinventory.SoldValidator = growthproductinventoryDescSold.Validators[0].(func(int64) error)
+	// growthproductinventoryDescLockVersion is the schema descriptor for lock_version field.
+	growthproductinventoryDescLockVersion := growthproductinventoryFields[5].Descriptor()
+	// growthproductinventory.DefaultLockVersion holds the default value on creation for the lock_version field.
+	growthproductinventory.DefaultLockVersion = growthproductinventoryDescLockVersion.Default.(int64)
+	// growthproductinventory.LockVersionValidator is a validator for the "lock_version" field. It is called by the builders before save.
+	growthproductinventory.LockVersionValidator = growthproductinventoryDescLockVersion.Validators[0].(func(int64) error)
+	// growthproductinventoryDescTokenQuotaTotal is the schema descriptor for token_quota_total field.
+	growthproductinventoryDescTokenQuotaTotal := growthproductinventoryFields[6].Descriptor()
+	// growthproductinventory.DefaultTokenQuotaTotal holds the default value on creation for the token_quota_total field.
+	growthproductinventory.DefaultTokenQuotaTotal = growthproductinventoryDescTokenQuotaTotal.Default.(int64)
+	// growthproductinventory.TokenQuotaTotalValidator is a validator for the "token_quota_total" field. It is called by the builders before save.
+	growthproductinventory.TokenQuotaTotalValidator = growthproductinventoryDescTokenQuotaTotal.Validators[0].(func(int64) error)
+	// growthproductinventoryDescTokenQuotaDistributed is the schema descriptor for token_quota_distributed field.
+	growthproductinventoryDescTokenQuotaDistributed := growthproductinventoryFields[7].Descriptor()
+	// growthproductinventory.DefaultTokenQuotaDistributed holds the default value on creation for the token_quota_distributed field.
+	growthproductinventory.DefaultTokenQuotaDistributed = growthproductinventoryDescTokenQuotaDistributed.Default.(int64)
+	// growthproductinventory.TokenQuotaDistributedValidator is a validator for the "token_quota_distributed" field. It is called by the builders before save.
+	growthproductinventory.TokenQuotaDistributedValidator = growthproductinventoryDescTokenQuotaDistributed.Validators[0].(func(int64) error)
+	growthproductversionMixin := schema.GrowthProductVersion{}.Mixin()
+	growthproductversionMixinFields0 := growthproductversionMixin[0].Fields()
+	_ = growthproductversionMixinFields0
+	growthproductversionFields := schema.GrowthProductVersion{}.Fields()
+	_ = growthproductversionFields
+	// growthproductversionDescCreatedAt is the schema descriptor for created_at field.
+	growthproductversionDescCreatedAt := growthproductversionMixinFields0[0].Descriptor()
+	// growthproductversion.DefaultCreatedAt holds the default value on creation for the created_at field.
+	growthproductversion.DefaultCreatedAt = growthproductversionDescCreatedAt.Default.(func() time.Time)
+	// growthproductversionDescUpdatedAt is the schema descriptor for updated_at field.
+	growthproductversionDescUpdatedAt := growthproductversionMixinFields0[1].Descriptor()
+	// growthproductversion.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	growthproductversion.DefaultUpdatedAt = growthproductversionDescUpdatedAt.Default.(func() time.Time)
+	// growthproductversion.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	growthproductversion.UpdateDefaultUpdatedAt = growthproductversionDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// growthproductversionDescVersion is the schema descriptor for version field.
+	growthproductversionDescVersion := growthproductversionFields[1].Descriptor()
+	// growthproductversion.VersionValidator is a validator for the "version" field. It is called by the builders before save.
+	growthproductversion.VersionValidator = growthproductversionDescVersion.Validators[0].(func(int) error)
+	// growthproductversionDescPointsCost is the schema descriptor for points_cost field.
+	growthproductversionDescPointsCost := growthproductversionFields[2].Descriptor()
+	// growthproductversion.PointsCostValidator is a validator for the "points_cost" field. It is called by the builders before save.
+	growthproductversion.PointsCostValidator = growthproductversionDescPointsCost.Validators[0].(func(int64) error)
+	// growthproductversionDescBenefitSummary is the schema descriptor for benefit_summary field.
+	growthproductversionDescBenefitSummary := growthproductversionFields[3].Descriptor()
+	// growthproductversion.DefaultBenefitSummary holds the default value on creation for the benefit_summary field.
+	growthproductversion.DefaultBenefitSummary = growthproductversionDescBenefitSummary.Default.(string)
+	// growthproductversion.BenefitSummaryValidator is a validator for the "benefit_summary" field. It is called by the builders before save.
+	growthproductversion.BenefitSummaryValidator = growthproductversionDescBenefitSummary.Validators[0].(func(string) error)
+	// growthproductversionDescTokenAmount is the schema descriptor for token_amount field.
+	growthproductversionDescTokenAmount := growthproductversionFields[5].Descriptor()
+	// growthproductversion.DefaultTokenAmount holds the default value on creation for the token_amount field.
+	growthproductversion.DefaultTokenAmount = growthproductversionDescTokenAmount.Default.(int64)
+	// growthproductversion.TokenAmountValidator is a validator for the "token_amount" field. It is called by the builders before save.
+	growthproductversion.TokenAmountValidator = growthproductversionDescTokenAmount.Validators[0].(func(int64) error)
+	// growthproductversionDescPerUserLimit is the schema descriptor for per_user_limit field.
+	growthproductversionDescPerUserLimit := growthproductversionFields[6].Descriptor()
+	// growthproductversion.DefaultPerUserLimit holds the default value on creation for the per_user_limit field.
+	growthproductversion.DefaultPerUserLimit = growthproductversionDescPerUserLimit.Default.(int)
+	// growthproductversion.PerUserLimitValidator is a validator for the "per_user_limit" field. It is called by the builders before save.
+	growthproductversion.PerUserLimitValidator = growthproductversionDescPerUserLimit.Validators[0].(func(int) error)
+	growthrewardclaimMixin := schema.GrowthRewardClaim{}.Mixin()
+	growthrewardclaimMixinFields0 := growthrewardclaimMixin[0].Fields()
+	_ = growthrewardclaimMixinFields0
+	growthrewardclaimFields := schema.GrowthRewardClaim{}.Fields()
+	_ = growthrewardclaimFields
+	// growthrewardclaimDescCreatedAt is the schema descriptor for created_at field.
+	growthrewardclaimDescCreatedAt := growthrewardclaimMixinFields0[0].Descriptor()
+	// growthrewardclaim.DefaultCreatedAt holds the default value on creation for the created_at field.
+	growthrewardclaim.DefaultCreatedAt = growthrewardclaimDescCreatedAt.Default.(func() time.Time)
+	// growthrewardclaimDescUpdatedAt is the schema descriptor for updated_at field.
+	growthrewardclaimDescUpdatedAt := growthrewardclaimMixinFields0[1].Descriptor()
+	// growthrewardclaim.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	growthrewardclaim.DefaultUpdatedAt = growthrewardclaimDescUpdatedAt.Default.(func() time.Time)
+	// growthrewardclaim.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	growthrewardclaim.UpdateDefaultUpdatedAt = growthrewardclaimDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// growthrewardclaimDescCycleKey is the schema descriptor for cycle_key field.
+	growthrewardclaimDescCycleKey := growthrewardclaimFields[3].Descriptor()
+	// growthrewardclaim.CycleKeyValidator is a validator for the "cycle_key" field. It is called by the builders before save.
+	growthrewardclaim.CycleKeyValidator = growthrewardclaimDescCycleKey.Validators[0].(func(string) error)
+	// growthrewardclaimDescSequence is the schema descriptor for sequence field.
+	growthrewardclaimDescSequence := growthrewardclaimFields[4].Descriptor()
+	// growthrewardclaim.DefaultSequence holds the default value on creation for the sequence field.
+	growthrewardclaim.DefaultSequence = growthrewardclaimDescSequence.Default.(int)
+	// growthrewardclaim.SequenceValidator is a validator for the "sequence" field. It is called by the builders before save.
+	growthrewardclaim.SequenceValidator = growthrewardclaimDescSequence.Validators[0].(func(int) error)
+	// growthrewardclaimDescIdempotencyKey is the schema descriptor for idempotency_key field.
+	growthrewardclaimDescIdempotencyKey := growthrewardclaimFields[5].Descriptor()
+	// growthrewardclaim.IdempotencyKeyValidator is a validator for the "idempotency_key" field. It is called by the builders before save.
+	growthrewardclaim.IdempotencyKeyValidator = func() func(string) error {
+		validators := growthrewardclaimDescIdempotencyKey.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(idempotency_key string) error {
+			for _, fn := range fns {
+				if err := fn(idempotency_key); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// growthrewardclaimDescPoints is the schema descriptor for points field.
+	growthrewardclaimDescPoints := growthrewardclaimFields[7].Descriptor()
+	// growthrewardclaim.PointsValidator is a validator for the "points" field. It is called by the builders before save.
+	growthrewardclaim.PointsValidator = growthrewardclaimDescPoints.Validators[0].(func(int64) error)
+	// growthrewardclaimDescClaimStatus is the schema descriptor for claim_status field.
+	growthrewardclaimDescClaimStatus := growthrewardclaimFields[8].Descriptor()
+	// growthrewardclaim.DefaultClaimStatus holds the default value on creation for the claim_status field.
+	growthrewardclaim.DefaultClaimStatus = growthrewardclaimDescClaimStatus.Default.(string)
+	// growthrewardclaim.ClaimStatusValidator is a validator for the "claim_status" field. It is called by the builders before save.
+	growthrewardclaim.ClaimStatusValidator = growthrewardclaimDescClaimStatus.Validators[0].(func(string) error)
+	growthtaskMixin := schema.GrowthTask{}.Mixin()
+	growthtaskMixinFields0 := growthtaskMixin[0].Fields()
+	_ = growthtaskMixinFields0
+	growthtaskFields := schema.GrowthTask{}.Fields()
+	_ = growthtaskFields
+	// growthtaskDescCreatedAt is the schema descriptor for created_at field.
+	growthtaskDescCreatedAt := growthtaskMixinFields0[0].Descriptor()
+	// growthtask.DefaultCreatedAt holds the default value on creation for the created_at field.
+	growthtask.DefaultCreatedAt = growthtaskDescCreatedAt.Default.(func() time.Time)
+	// growthtaskDescUpdatedAt is the schema descriptor for updated_at field.
+	growthtaskDescUpdatedAt := growthtaskMixinFields0[1].Descriptor()
+	// growthtask.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	growthtask.DefaultUpdatedAt = growthtaskDescUpdatedAt.Default.(func() time.Time)
+	// growthtask.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	growthtask.UpdateDefaultUpdatedAt = growthtaskDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// growthtaskDescTaskCode is the schema descriptor for task_code field.
+	growthtaskDescTaskCode := growthtaskFields[0].Descriptor()
+	// growthtask.TaskCodeValidator is a validator for the "task_code" field. It is called by the builders before save.
+	growthtask.TaskCodeValidator = func() func(string) error {
+		validators := growthtaskDescTaskCode.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(task_code string) error {
+			for _, fn := range fns {
+				if err := fn(task_code); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// growthtaskDescTitle is the schema descriptor for title field.
+	growthtaskDescTitle := growthtaskFields[1].Descriptor()
+	// growthtask.TitleValidator is a validator for the "title" field. It is called by the builders before save.
+	growthtask.TitleValidator = func() func(string) error {
+		validators := growthtaskDescTitle.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(title string) error {
+			for _, fn := range fns {
+				if err := fn(title); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// growthtaskDescRemark is the schema descriptor for remark field.
+	growthtaskDescRemark := growthtaskFields[2].Descriptor()
+	// growthtask.DefaultRemark holds the default value on creation for the remark field.
+	growthtask.DefaultRemark = growthtaskDescRemark.Default.(string)
+	// growthtask.RemarkValidator is a validator for the "remark" field. It is called by the builders before save.
+	growthtask.RemarkValidator = growthtaskDescRemark.Validators[0].(func(string) error)
+	// growthtaskDescCategory is the schema descriptor for category field.
+	growthtaskDescCategory := growthtaskFields[3].Descriptor()
+	// growthtask.CategoryValidator is a validator for the "category" field. It is called by the builders before save.
+	growthtask.CategoryValidator = func() func(string) error {
+		validators := growthtaskDescCategory.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(category string) error {
+			for _, fn := range fns {
+				if err := fn(category); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// growthtaskDescTaskType is the schema descriptor for task_type field.
+	growthtaskDescTaskType := growthtaskFields[4].Descriptor()
+	// growthtask.TaskTypeValidator is a validator for the "task_type" field. It is called by the builders before save.
+	growthtask.TaskTypeValidator = func() func(string) error {
+		validators := growthtaskDescTaskType.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(task_type string) error {
+			for _, fn := range fns {
+				if err := fn(task_type); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// growthtaskDescIcon is the schema descriptor for icon field.
+	growthtaskDescIcon := growthtaskFields[5].Descriptor()
+	// growthtask.DefaultIcon holds the default value on creation for the icon field.
+	growthtask.DefaultIcon = growthtaskDescIcon.Default.(string)
+	// growthtask.IconValidator is a validator for the "icon" field. It is called by the builders before save.
+	growthtask.IconValidator = growthtaskDescIcon.Validators[0].(func(string) error)
+	// growthtaskDescSortOrder is the schema descriptor for sort_order field.
+	growthtaskDescSortOrder := growthtaskFields[6].Descriptor()
+	// growthtask.DefaultSortOrder holds the default value on creation for the sort_order field.
+	growthtask.DefaultSortOrder = growthtaskDescSortOrder.Default.(int)
+	// growthtaskDescTaskStatus is the schema descriptor for task_status field.
+	growthtaskDescTaskStatus := growthtaskFields[7].Descriptor()
+	// growthtask.DefaultTaskStatus holds the default value on creation for the task_status field.
+	growthtask.DefaultTaskStatus = growthtaskDescTaskStatus.Default.(string)
+	// growthtask.TaskStatusValidator is a validator for the "task_status" field. It is called by the builders before save.
+	growthtask.TaskStatusValidator = func() func(string) error {
+		validators := growthtaskDescTaskStatus.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(task_status string) error {
+			for _, fn := range fns {
+				if err := fn(task_status); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// growthtaskDescAllocatedPoints is the schema descriptor for allocated_points field.
+	growthtaskDescAllocatedPoints := growthtaskFields[10].Descriptor()
+	// growthtask.DefaultAllocatedPoints holds the default value on creation for the allocated_points field.
+	growthtask.DefaultAllocatedPoints = growthtaskDescAllocatedPoints.Default.(int64)
+	// growthtask.AllocatedPointsValidator is a validator for the "allocated_points" field. It is called by the builders before save.
+	growthtask.AllocatedPointsValidator = growthtaskDescAllocatedPoints.Validators[0].(func(int64) error)
+	// growthtaskDescDistributedPoints is the schema descriptor for distributed_points field.
+	growthtaskDescDistributedPoints := growthtaskFields[11].Descriptor()
+	// growthtask.DefaultDistributedPoints holds the default value on creation for the distributed_points field.
+	growthtask.DefaultDistributedPoints = growthtaskDescDistributedPoints.Default.(int64)
+	// growthtask.DistributedPointsValidator is a validator for the "distributed_points" field. It is called by the builders before save.
+	growthtask.DistributedPointsValidator = growthtaskDescDistributedPoints.Validators[0].(func(int64) error)
+	growthtaskruleMixin := schema.GrowthTaskRule{}.Mixin()
+	growthtaskruleMixinFields0 := growthtaskruleMixin[0].Fields()
+	_ = growthtaskruleMixinFields0
+	growthtaskruleFields := schema.GrowthTaskRule{}.Fields()
+	_ = growthtaskruleFields
+	// growthtaskruleDescCreatedAt is the schema descriptor for created_at field.
+	growthtaskruleDescCreatedAt := growthtaskruleMixinFields0[0].Descriptor()
+	// growthtaskrule.DefaultCreatedAt holds the default value on creation for the created_at field.
+	growthtaskrule.DefaultCreatedAt = growthtaskruleDescCreatedAt.Default.(func() time.Time)
+	// growthtaskruleDescUpdatedAt is the schema descriptor for updated_at field.
+	growthtaskruleDescUpdatedAt := growthtaskruleMixinFields0[1].Descriptor()
+	// growthtaskrule.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	growthtaskrule.DefaultUpdatedAt = growthtaskruleDescUpdatedAt.Default.(func() time.Time)
+	// growthtaskrule.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	growthtaskrule.UpdateDefaultUpdatedAt = growthtaskruleDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// growthtaskruleDescVersion is the schema descriptor for version field.
+	growthtaskruleDescVersion := growthtaskruleFields[1].Descriptor()
+	// growthtaskrule.VersionValidator is a validator for the "version" field. It is called by the builders before save.
+	growthtaskrule.VersionValidator = growthtaskruleDescVersion.Validators[0].(func(int) error)
+	// growthtaskruleDescTriggerEvent is the schema descriptor for trigger_event field.
+	growthtaskruleDescTriggerEvent := growthtaskruleFields[2].Descriptor()
+	// growthtaskrule.DefaultTriggerEvent holds the default value on creation for the trigger_event field.
+	growthtaskrule.DefaultTriggerEvent = growthtaskruleDescTriggerEvent.Default.(string)
+	// growthtaskrule.TriggerEventValidator is a validator for the "trigger_event" field. It is called by the builders before save.
+	growthtaskrule.TriggerEventValidator = growthtaskruleDescTriggerEvent.Validators[0].(func(string) error)
+	// growthtaskruleDescTarget is the schema descriptor for target field.
+	growthtaskruleDescTarget := growthtaskruleFields[4].Descriptor()
+	// growthtaskrule.DefaultTarget holds the default value on creation for the target field.
+	growthtaskrule.DefaultTarget = growthtaskruleDescTarget.Default.(int64)
+	// growthtaskrule.TargetValidator is a validator for the "target" field. It is called by the builders before save.
+	growthtaskrule.TargetValidator = growthtaskruleDescTarget.Validators[0].(func(int64) error)
+	// growthtaskruleDescRewardPoints is the schema descriptor for reward_points field.
+	growthtaskruleDescRewardPoints := growthtaskruleFields[5].Descriptor()
+	// growthtaskrule.RewardPointsValidator is a validator for the "reward_points" field. It is called by the builders before save.
+	growthtaskrule.RewardPointsValidator = growthtaskruleDescRewardPoints.Validators[0].(func(int64) error)
+	// growthtaskruleDescPeriodType is the schema descriptor for period_type field.
+	growthtaskruleDescPeriodType := growthtaskruleFields[6].Descriptor()
+	// growthtaskrule.PeriodTypeValidator is a validator for the "period_type" field. It is called by the builders before save.
+	growthtaskrule.PeriodTypeValidator = func() func(string) error {
+		validators := growthtaskruleDescPeriodType.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(period_type string) error {
+			for _, fn := range fns {
+				if err := fn(period_type); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// growthtaskruleDescDailyLimit is the schema descriptor for daily_limit field.
+	growthtaskruleDescDailyLimit := growthtaskruleFields[7].Descriptor()
+	// growthtaskrule.DefaultDailyLimit holds the default value on creation for the daily_limit field.
+	growthtaskrule.DefaultDailyLimit = growthtaskruleDescDailyLimit.Default.(int)
+	// growthtaskrule.DailyLimitValidator is a validator for the "daily_limit" field. It is called by the builders before save.
+	growthtaskrule.DailyLimitValidator = growthtaskruleDescDailyLimit.Validators[0].(func(int) error)
+	// growthtaskruleDescPerUserLimit is the schema descriptor for per_user_limit field.
+	growthtaskruleDescPerUserLimit := growthtaskruleFields[8].Descriptor()
+	// growthtaskrule.DefaultPerUserLimit holds the default value on creation for the per_user_limit field.
+	growthtaskrule.DefaultPerUserLimit = growthtaskruleDescPerUserLimit.Default.(int)
+	// growthtaskrule.PerUserLimitValidator is a validator for the "per_user_limit" field. It is called by the builders before save.
+	growthtaskrule.PerUserLimitValidator = growthtaskruleDescPerUserLimit.Validators[0].(func(int) error)
+	growthtransferMixin := schema.GrowthTransfer{}.Mixin()
+	growthtransferMixinFields0 := growthtransferMixin[0].Fields()
+	_ = growthtransferMixinFields0
+	growthtransferFields := schema.GrowthTransfer{}.Fields()
+	_ = growthtransferFields
+	// growthtransferDescCreatedAt is the schema descriptor for created_at field.
+	growthtransferDescCreatedAt := growthtransferMixinFields0[0].Descriptor()
+	// growthtransfer.DefaultCreatedAt holds the default value on creation for the created_at field.
+	growthtransfer.DefaultCreatedAt = growthtransferDescCreatedAt.Default.(func() time.Time)
+	// growthtransferDescUpdatedAt is the schema descriptor for updated_at field.
+	growthtransferDescUpdatedAt := growthtransferMixinFields0[1].Descriptor()
+	// growthtransfer.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	growthtransfer.DefaultUpdatedAt = growthtransferDescUpdatedAt.Default.(func() time.Time)
+	// growthtransfer.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	growthtransfer.UpdateDefaultUpdatedAt = growthtransferDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// growthtransferDescBizType is the schema descriptor for biz_type field.
+	growthtransferDescBizType := growthtransferFields[0].Descriptor()
+	// growthtransfer.BizTypeValidator is a validator for the "biz_type" field. It is called by the builders before save.
+	growthtransfer.BizTypeValidator = func() func(string) error {
+		validators := growthtransferDescBizType.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(biz_type string) error {
+			for _, fn := range fns {
+				if err := fn(biz_type); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// growthtransferDescIdempotencyKey is the schema descriptor for idempotency_key field.
+	growthtransferDescIdempotencyKey := growthtransferFields[1].Descriptor()
+	// growthtransfer.IdempotencyKeyValidator is a validator for the "idempotency_key" field. It is called by the builders before save.
+	growthtransfer.IdempotencyKeyValidator = func() func(string) error {
+		validators := growthtransferDescIdempotencyKey.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(idempotency_key string) error {
+			for _, fn := range fns {
+				if err := fn(idempotency_key); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// growthtransferDescFromAccountType is the schema descriptor for from_account_type field.
+	growthtransferDescFromAccountType := growthtransferFields[2].Descriptor()
+	// growthtransfer.FromAccountTypeValidator is a validator for the "from_account_type" field. It is called by the builders before save.
+	growthtransfer.FromAccountTypeValidator = func() func(string) error {
+		validators := growthtransferDescFromAccountType.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(from_account_type string) error {
+			for _, fn := range fns {
+				if err := fn(from_account_type); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// growthtransferDescToAccountType is the schema descriptor for to_account_type field.
+	growthtransferDescToAccountType := growthtransferFields[3].Descriptor()
+	// growthtransfer.ToAccountTypeValidator is a validator for the "to_account_type" field. It is called by the builders before save.
+	growthtransfer.ToAccountTypeValidator = func() func(string) error {
+		validators := growthtransferDescToAccountType.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(to_account_type string) error {
+			for _, fn := range fns {
+				if err := fn(to_account_type); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// growthtransferDescPoints is the schema descriptor for points field.
+	growthtransferDescPoints := growthtransferFields[8].Descriptor()
+	// growthtransfer.PointsValidator is a validator for the "points" field. It is called by the builders before save.
+	growthtransfer.PointsValidator = growthtransferDescPoints.Validators[0].(func(int64) error)
+	// growthtransferDescTransferStatus is the schema descriptor for transfer_status field.
+	growthtransferDescTransferStatus := growthtransferFields[9].Descriptor()
+	// growthtransfer.DefaultTransferStatus holds the default value on creation for the transfer_status field.
+	growthtransfer.DefaultTransferStatus = growthtransferDescTransferStatus.Default.(string)
+	// growthtransfer.TransferStatusValidator is a validator for the "transfer_status" field. It is called by the builders before save.
+	growthtransfer.TransferStatusValidator = func() func(string) error {
+		validators := growthtransferDescTransferStatus.Validators
+		fns := [...]func(string) error{
+			validators[0].(func(string) error),
+			validators[1].(func(string) error),
+		}
+		return func(transfer_status string) error {
+			for _, fn := range fns {
+				if err := fn(transfer_status); err != nil {
+					return err
+				}
+			}
+			return nil
+		}
+	}()
+	// growthtransferDescFailureReason is the schema descriptor for failure_reason field.
+	growthtransferDescFailureReason := growthtransferFields[10].Descriptor()
+	// growthtransfer.DefaultFailureReason holds the default value on creation for the failure_reason field.
+	growthtransfer.DefaultFailureReason = growthtransferDescFailureReason.Default.(string)
+	// growthtransfer.FailureReasonValidator is a validator for the "failure_reason" field. It is called by the builders before save.
+	growthtransfer.FailureReasonValidator = growthtransferDescFailureReason.Validators[0].(func(string) error)
+	growthusertaskMixin := schema.GrowthUserTask{}.Mixin()
+	growthusertaskMixinFields0 := growthusertaskMixin[0].Fields()
+	_ = growthusertaskMixinFields0
+	growthusertaskFields := schema.GrowthUserTask{}.Fields()
+	_ = growthusertaskFields
+	// growthusertaskDescCreatedAt is the schema descriptor for created_at field.
+	growthusertaskDescCreatedAt := growthusertaskMixinFields0[0].Descriptor()
+	// growthusertask.DefaultCreatedAt holds the default value on creation for the created_at field.
+	growthusertask.DefaultCreatedAt = growthusertaskDescCreatedAt.Default.(func() time.Time)
+	// growthusertaskDescUpdatedAt is the schema descriptor for updated_at field.
+	growthusertaskDescUpdatedAt := growthusertaskMixinFields0[1].Descriptor()
+	// growthusertask.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	growthusertask.DefaultUpdatedAt = growthusertaskDescUpdatedAt.Default.(func() time.Time)
+	// growthusertask.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	growthusertask.UpdateDefaultUpdatedAt = growthusertaskDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// growthusertaskDescCycleKey is the schema descriptor for cycle_key field.
+	growthusertaskDescCycleKey := growthusertaskFields[3].Descriptor()
+	// growthusertask.CycleKeyValidator is a validator for the "cycle_key" field. It is called by the builders before save.
+	growthusertask.CycleKeyValidator = growthusertaskDescCycleKey.Validators[0].(func(string) error)
+	// growthusertaskDescProgress is the schema descriptor for progress field.
+	growthusertaskDescProgress := growthusertaskFields[4].Descriptor()
+	// growthusertask.DefaultProgress holds the default value on creation for the progress field.
+	growthusertask.DefaultProgress = growthusertaskDescProgress.Default.(int64)
+	// growthusertask.ProgressValidator is a validator for the "progress" field. It is called by the builders before save.
+	growthusertask.ProgressValidator = growthusertaskDescProgress.Validators[0].(func(int64) error)
+	// growthusertaskDescTarget is the schema descriptor for target field.
+	growthusertaskDescTarget := growthusertaskFields[5].Descriptor()
+	// growthusertask.DefaultTarget holds the default value on creation for the target field.
+	growthusertask.DefaultTarget = growthusertaskDescTarget.Default.(int64)
+	// growthusertask.TargetValidator is a validator for the "target" field. It is called by the builders before save.
+	growthusertask.TargetValidator = growthusertaskDescTarget.Validators[0].(func(int64) error)
+	// growthusertaskDescCompletedCount is the schema descriptor for completed_count field.
+	growthusertaskDescCompletedCount := growthusertaskFields[6].Descriptor()
+	// growthusertask.DefaultCompletedCount holds the default value on creation for the completed_count field.
+	growthusertask.DefaultCompletedCount = growthusertaskDescCompletedCount.Default.(int64)
+	// growthusertask.CompletedCountValidator is a validator for the "completed_count" field. It is called by the builders before save.
+	growthusertask.CompletedCountValidator = growthusertaskDescCompletedCount.Validators[0].(func(int64) error)
+	// growthusertaskDescProgressStatus is the schema descriptor for progress_status field.
+	growthusertaskDescProgressStatus := growthusertaskFields[7].Descriptor()
+	// growthusertask.DefaultProgressStatus holds the default value on creation for the progress_status field.
+	growthusertask.DefaultProgressStatus = growthusertaskDescProgressStatus.Default.(string)
+	// growthusertask.ProgressStatusValidator is a validator for the "progress_status" field. It is called by the builders before save.
+	growthusertask.ProgressStatusValidator = growthusertaskDescProgressStatus.Validators[0].(func(string) error)
+	growthwalletMixin := schema.GrowthWallet{}.Mixin()
+	growthwalletMixinFields0 := growthwalletMixin[0].Fields()
+	_ = growthwalletMixinFields0
+	growthwalletFields := schema.GrowthWallet{}.Fields()
+	_ = growthwalletFields
+	// growthwalletDescCreatedAt is the schema descriptor for created_at field.
+	growthwalletDescCreatedAt := growthwalletMixinFields0[0].Descriptor()
+	// growthwallet.DefaultCreatedAt holds the default value on creation for the created_at field.
+	growthwallet.DefaultCreatedAt = growthwalletDescCreatedAt.Default.(func() time.Time)
+	// growthwalletDescUpdatedAt is the schema descriptor for updated_at field.
+	growthwalletDescUpdatedAt := growthwalletMixinFields0[1].Descriptor()
+	// growthwallet.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	growthwallet.DefaultUpdatedAt = growthwalletDescUpdatedAt.Default.(func() time.Time)
+	// growthwallet.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	growthwallet.UpdateDefaultUpdatedAt = growthwalletDescUpdatedAt.UpdateDefault.(func() time.Time)
+	// growthwalletDescAvailablePoints is the schema descriptor for available_points field.
+	growthwalletDescAvailablePoints := growthwalletFields[1].Descriptor()
+	// growthwallet.DefaultAvailablePoints holds the default value on creation for the available_points field.
+	growthwallet.DefaultAvailablePoints = growthwalletDescAvailablePoints.Default.(int64)
+	// growthwallet.AvailablePointsValidator is a validator for the "available_points" field. It is called by the builders before save.
+	growthwallet.AvailablePointsValidator = growthwalletDescAvailablePoints.Validators[0].(func(int64) error)
+	// growthwalletDescEarnedTotal is the schema descriptor for earned_total field.
+	growthwalletDescEarnedTotal := growthwalletFields[2].Descriptor()
+	// growthwallet.DefaultEarnedTotal holds the default value on creation for the earned_total field.
+	growthwallet.DefaultEarnedTotal = growthwalletDescEarnedTotal.Default.(int64)
+	// growthwallet.EarnedTotalValidator is a validator for the "earned_total" field. It is called by the builders before save.
+	growthwallet.EarnedTotalValidator = growthwalletDescEarnedTotal.Validators[0].(func(int64) error)
+	// growthwalletDescSpentTotal is the schema descriptor for spent_total field.
+	growthwalletDescSpentTotal := growthwalletFields[3].Descriptor()
+	// growthwallet.DefaultSpentTotal holds the default value on creation for the spent_total field.
+	growthwallet.DefaultSpentTotal = growthwalletDescSpentTotal.Default.(int64)
+	// growthwallet.SpentTotalValidator is a validator for the "spent_total" field. It is called by the builders before save.
+	growthwallet.SpentTotalValidator = growthwalletDescSpentTotal.Validators[0].(func(int64) error)
+	// growthwalletDescVersion is the schema descriptor for version field.
+	growthwalletDescVersion := growthwalletFields[4].Descriptor()
+	// growthwallet.DefaultVersion holds the default value on creation for the version field.
+	growthwallet.DefaultVersion = growthwalletDescVersion.Default.(int64)
+	// growthwallet.VersionValidator is a validator for the "version" field. It is called by the builders before save.
+	growthwallet.VersionValidator = growthwalletDescVersion.Validators[0].(func(int64) error)
+	// growthwalletDescBalanceUpdatedAt is the schema descriptor for balance_updated_at field.
+	growthwalletDescBalanceUpdatedAt := growthwalletFields[5].Descriptor()
+	// growthwallet.DefaultBalanceUpdatedAt holds the default value on creation for the balance_updated_at field.
+	growthwallet.DefaultBalanceUpdatedAt = growthwalletDescBalanceUpdatedAt.Default.(func() time.Time)
 	idempotencyrecordMixin := schema.IdempotencyRecord{}.Mixin()
 	idempotencyrecordMixinFields0 := idempotencyrecordMixin[0].Fields()
 	_ = idempotencyrecordMixinFields0

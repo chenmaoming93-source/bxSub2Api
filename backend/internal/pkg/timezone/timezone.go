@@ -81,6 +81,38 @@ func Name() string {
 	return tzName
 }
 
+// SQLUTCOffset returns the UTC offset at the given instant as +HH:MM or -HH:MM.
+// MySQL accepts fixed offsets in CONVERT_TZ without requiring timezone tables.
+func SQLUTCOffset(at time.Time) string {
+	_, offset := at.In(Location()).Zone()
+	return formatSQLUTCOffset(offset)
+}
+
+// SQLUTCOffsetRange returns a fixed SQL offset only when both ends of the range
+// use the same UTC offset. This prevents silently incorrect aggregation buckets
+// when a configured timezone crosses a daylight-saving transition.
+func SQLUTCOffsetRange(start, end time.Time) (string, error) {
+	startOffset := SQLUTCOffset(start)
+	endOffset := SQLUTCOffset(end)
+	if startOffset != endOffset {
+		return "", fmt.Errorf(
+			"timezone offset changes within range: %s at start, %s at end",
+			startOffset,
+			endOffset,
+		)
+	}
+	return startOffset, nil
+}
+
+func formatSQLUTCOffset(offset int) string {
+	sign := "+"
+	if offset < 0 {
+		sign = "-"
+		offset = -offset
+	}
+	return fmt.Sprintf("%s%02d:%02d", sign, offset/3600, (offset%3600)/60)
+}
+
 // StartOfDay returns the start of the given day (00:00:00) in the configured timezone.
 func StartOfDay(t time.Time) time.Time {
 	loc := Location()

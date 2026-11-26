@@ -722,6 +722,707 @@ var (
 			},
 		},
 	}
+	// GrowthAccountLedgerColumns holds the columns for the "growth_account_ledger" table.
+	GrowthAccountLedgerColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "transfer_id", Type: field.TypeInt64},
+		{Name: "user_id", Type: field.TypeInt64, Nullable: true},
+		{Name: "account_type", Type: field.TypeString, Size: 32},
+		{Name: "direction", Type: field.TypeString, Size: 8},
+		{Name: "points", Type: field.TypeInt64},
+		{Name: "balance_after", Type: field.TypeInt64, Nullable: true},
+		{Name: "biz_type", Type: field.TypeString, Size: 64},
+		{Name: "title", Type: field.TypeString, Size: 255},
+		{Name: "reference_id", Type: field.TypeInt64, Nullable: true},
+	}
+	// GrowthAccountLedgerTable holds the schema information for the "growth_account_ledger" table.
+	GrowthAccountLedgerTable = &schema.Table{
+		Name:       "growth_account_ledger",
+		Columns:    GrowthAccountLedgerColumns,
+		PrimaryKey: []*schema.Column{GrowthAccountLedgerColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "growthaccountledger_transfer_id",
+				Unique:  false,
+				Columns: []*schema.Column{GrowthAccountLedgerColumns[3]},
+			},
+			{
+				Name:    "growthaccountledger_user_id_created_at_id",
+				Unique:  false,
+				Columns: []*schema.Column{GrowthAccountLedgerColumns[4], GrowthAccountLedgerColumns[1], GrowthAccountLedgerColumns[0]},
+			},
+			{
+				Name:    "growthaccountledger_biz_type_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{GrowthAccountLedgerColumns[9], GrowthAccountLedgerColumns[1]},
+			},
+		},
+	}
+	// GrowthAdminAuditColumns holds the columns for the "growth_admin_audit" table.
+	GrowthAdminAuditColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "action_type", Type: field.TypeString, Size: 64},
+		{Name: "resource_type", Type: field.TypeString, Size: 64},
+		{Name: "resource_id", Type: field.TypeInt64, Nullable: true},
+		{Name: "before_json", Type: field.TypeJSON, Nullable: true},
+		{Name: "after_json", Type: field.TypeJSON, Nullable: true},
+		{Name: "reason", Type: field.TypeString, Size: 512, Default: ""},
+		{Name: "request_id", Type: field.TypeString, Size: 128, Default: ""},
+		{Name: "operator_id", Type: field.TypeInt64},
+	}
+	// GrowthAdminAuditTable holds the schema information for the "growth_admin_audit" table.
+	GrowthAdminAuditTable = &schema.Table{
+		Name:       "growth_admin_audit",
+		Columns:    GrowthAdminAuditColumns,
+		PrimaryKey: []*schema.Column{GrowthAdminAuditColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "growth_admin_audit_users_growth_admin_audits",
+				Columns:    []*schema.Column{GrowthAdminAuditColumns[10]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "growthadminaudit_operator_id_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{GrowthAdminAuditColumns[10], GrowthAdminAuditColumns[1]},
+			},
+			{
+				Name:    "growthadminaudit_resource_type_resource_id_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{GrowthAdminAuditColumns[4], GrowthAdminAuditColumns[5], GrowthAdminAuditColumns[1]},
+			},
+			{
+				Name:    "growthadminaudit_action_type_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{GrowthAdminAuditColumns[3], GrowthAdminAuditColumns[1]},
+			},
+		},
+	}
+	// GrowthBudgetsColumns holds the columns for the "growth_budgets" table.
+	GrowthBudgetsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "total_amount", Type: field.TypeInt64, Default: 0},
+		{Name: "allocated_amount", Type: field.TypeInt64, Default: 0},
+		{Name: "distributed_amount", Type: field.TypeInt64, Default: 0},
+		{Name: "version", Type: field.TypeInt64, Default: 1},
+	}
+	// GrowthBudgetsTable holds the schema information for the "growth_budgets" table.
+	GrowthBudgetsTable = &schema.Table{
+		Name:       "growth_budgets",
+		Columns:    GrowthBudgetsColumns,
+		PrimaryKey: []*schema.Column{GrowthBudgetsColumns[0]},
+	}
+	// GrowthBudgetEntriesColumns holds the columns for the "growth_budget_entries" table.
+	GrowthBudgetEntriesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "budget_id", Type: field.TypeInt64, Default: 1},
+		{Name: "entry_type", Type: field.TypeString, Size: 16},
+		{Name: "points", Type: field.TypeInt64},
+		{Name: "budget_after", Type: field.TypeInt64},
+		{Name: "allocated_after", Type: field.TypeInt64},
+		{Name: "distributed_after", Type: field.TypeInt64, Default: 0},
+		{Name: "task_id", Type: field.TypeInt64, Nullable: true},
+		{Name: "operator_id", Type: field.TypeInt64},
+		{Name: "reason", Type: field.TypeString, Size: 512},
+		{Name: "request_id", Type: field.TypeString, Size: 128, Default: ""},
+	}
+	// GrowthBudgetEntriesTable holds the schema information for the "growth_budget_entries" table.
+	GrowthBudgetEntriesTable = &schema.Table{
+		Name:       "growth_budget_entries",
+		Columns:    GrowthBudgetEntriesColumns,
+		PrimaryKey: []*schema.Column{GrowthBudgetEntriesColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "growthbudgetentry_task_id",
+				Unique:  false,
+				Columns: []*schema.Column{GrowthBudgetEntriesColumns[9]},
+			},
+			{
+				Name:    "growthbudgetentry_entry_type_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{GrowthBudgetEntriesColumns[4], GrowthBudgetEntriesColumns[1]},
+			},
+			{
+				Name:    "growthbudgetentry_operator_id_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{GrowthBudgetEntriesColumns[10], GrowthBudgetEntriesColumns[1]},
+			},
+		},
+	}
+	// GrowthCompletionRequestsColumns holds the columns for the "growth_completion_requests" table.
+	GrowthCompletionRequestsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "task_id", Type: field.TypeInt64},
+		{Name: "completion_ref", Type: field.TypeString, Size: 128},
+		{Name: "request_id", Type: field.TypeString, Size: 128, Default: ""},
+		{Name: "result", Type: field.TypeString, Size: 32},
+		{Name: "transfer_id", Type: field.TypeInt64, Nullable: true},
+		{Name: "awarded_points", Type: field.TypeInt64, Default: 0},
+		{Name: "rule_version", Type: field.TypeInt},
+		{Name: "cycle_key", Type: field.TypeString, Size: 64},
+		{Name: "user_id", Type: field.TypeInt64},
+	}
+	// GrowthCompletionRequestsTable holds the schema information for the "growth_completion_requests" table.
+	GrowthCompletionRequestsTable = &schema.Table{
+		Name:       "growth_completion_requests",
+		Columns:    GrowthCompletionRequestsColumns,
+		PrimaryKey: []*schema.Column{GrowthCompletionRequestsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "growth_completion_requests_users_growth_completion_requests",
+				Columns:    []*schema.Column{GrowthCompletionRequestsColumns[11]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "growthcompletionrequest_user_id_task_id_completion_ref",
+				Unique:  true,
+				Columns: []*schema.Column{GrowthCompletionRequestsColumns[11], GrowthCompletionRequestsColumns[3], GrowthCompletionRequestsColumns[4]},
+			},
+			{
+				Name:    "growthcompletionrequest_user_id_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{GrowthCompletionRequestsColumns[11], GrowthCompletionRequestsColumns[1]},
+			},
+			{
+				Name:    "growthcompletionrequest_task_id_cycle_key",
+				Unique:  false,
+				Columns: []*schema.Column{GrowthCompletionRequestsColumns[3], GrowthCompletionRequestsColumns[10]},
+			},
+			{
+				Name:    "growthcompletionrequest_transfer_id",
+				Unique:  false,
+				Columns: []*schema.Column{GrowthCompletionRequestsColumns[7]},
+			},
+		},
+	}
+	// GrowthExchangeOrdersColumns holds the columns for the "growth_exchange_orders" table.
+	GrowthExchangeOrdersColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "order_no", Type: field.TypeString, Size: 64},
+		{Name: "product_id", Type: field.TypeInt64},
+		{Name: "product_version", Type: field.TypeInt},
+		{Name: "product_snapshot", Type: field.TypeJSON, Nullable: true},
+		{Name: "points_cost", Type: field.TypeInt64},
+		{Name: "order_status", Type: field.TypeString, Size: 20, Default: "CREATED"},
+		{Name: "idempotency_key", Type: field.TypeString, Size: 128},
+		{Name: "expected_version", Type: field.TypeInt, Nullable: true},
+		{Name: "transfer_id", Type: field.TypeInt64, Nullable: true},
+		{Name: "refund_transfer_id", Type: field.TypeInt64, Nullable: true},
+		{Name: "failure_reason", Type: field.TypeString, Size: 1024, Default: ""},
+		{Name: "fulfilled_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "refunded_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "user_id", Type: field.TypeInt64},
+	}
+	// GrowthExchangeOrdersTable holds the schema information for the "growth_exchange_orders" table.
+	GrowthExchangeOrdersTable = &schema.Table{
+		Name:       "growth_exchange_orders",
+		Columns:    GrowthExchangeOrdersColumns,
+		PrimaryKey: []*schema.Column{GrowthExchangeOrdersColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "growth_exchange_orders_users_growth_exchange_orders",
+				Columns:    []*schema.Column{GrowthExchangeOrdersColumns[16]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "growthexchangeorder_order_no",
+				Unique:  true,
+				Columns: []*schema.Column{GrowthExchangeOrdersColumns[3]},
+			},
+			{
+				Name:    "growthexchangeorder_user_id_idempotency_key",
+				Unique:  true,
+				Columns: []*schema.Column{GrowthExchangeOrdersColumns[16], GrowthExchangeOrdersColumns[9]},
+			},
+			{
+				Name:    "growthexchangeorder_user_id_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{GrowthExchangeOrdersColumns[16], GrowthExchangeOrdersColumns[1]},
+			},
+			{
+				Name:    "growthexchangeorder_product_id_order_status",
+				Unique:  false,
+				Columns: []*schema.Column{GrowthExchangeOrdersColumns[4], GrowthExchangeOrdersColumns[8]},
+			},
+			{
+				Name:    "growthexchangeorder_order_status_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{GrowthExchangeOrdersColumns[8], GrowthExchangeOrdersColumns[1]},
+			},
+		},
+	}
+	// GrowthFulfillmentJobsColumns holds the columns for the "growth_fulfillment_jobs" table.
+	GrowthFulfillmentJobsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "order_id", Type: field.TypeInt64},
+		{Name: "job_type", Type: field.TypeString, Size: 32, Default: "FULFILL"},
+		{Name: "job_status", Type: field.TypeString, Size: 20, Default: "PENDING"},
+		{Name: "attempt_count", Type: field.TypeInt, Default: 0},
+		{Name: "max_attempts", Type: field.TypeInt, Default: 3},
+		{Name: "next_retry_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "locked_until", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "last_error", Type: field.TypeString, Size: 1024, Default: ""},
+		{Name: "provider_reference", Type: field.TypeString, Size: 255, Default: ""},
+		{Name: "completed_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+	}
+	// GrowthFulfillmentJobsTable holds the schema information for the "growth_fulfillment_jobs" table.
+	GrowthFulfillmentJobsTable = &schema.Table{
+		Name:       "growth_fulfillment_jobs",
+		Columns:    GrowthFulfillmentJobsColumns,
+		PrimaryKey: []*schema.Column{GrowthFulfillmentJobsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "growthfulfillmentjob_order_id",
+				Unique:  true,
+				Columns: []*schema.Column{GrowthFulfillmentJobsColumns[3]},
+			},
+			{
+				Name:    "growthfulfillmentjob_job_status_next_retry_at",
+				Unique:  false,
+				Columns: []*schema.Column{GrowthFulfillmentJobsColumns[5], GrowthFulfillmentJobsColumns[8]},
+			},
+			{
+				Name:    "growthfulfillmentjob_locked_until",
+				Unique:  false,
+				Columns: []*schema.Column{GrowthFulfillmentJobsColumns[9]},
+			},
+		},
+	}
+	// GrowthInventoryLedgerColumns holds the columns for the "growth_inventory_ledger" table.
+	GrowthInventoryLedgerColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "business_key", Type: field.TypeString, Size: 128},
+		{Name: "product_id", Type: field.TypeInt64},
+		{Name: "inventory_id", Type: field.TypeInt64},
+		{Name: "operation_type", Type: field.TypeString, Size: 32},
+		{Name: "delta_available", Type: field.TypeInt64, Default: 0},
+		{Name: "delta_reserved", Type: field.TypeInt64, Default: 0},
+		{Name: "delta_sold", Type: field.TypeInt64, Default: 0},
+		{Name: "available_after", Type: field.TypeInt64},
+		{Name: "reserved_after", Type: field.TypeInt64},
+		{Name: "sold_after", Type: field.TypeInt64},
+		{Name: "order_id", Type: field.TypeInt64, Nullable: true},
+		{Name: "operator_id", Type: field.TypeInt64, Nullable: true},
+		{Name: "reason", Type: field.TypeString, Size: 512, Default: ""},
+	}
+	// GrowthInventoryLedgerTable holds the schema information for the "growth_inventory_ledger" table.
+	GrowthInventoryLedgerTable = &schema.Table{
+		Name:       "growth_inventory_ledger",
+		Columns:    GrowthInventoryLedgerColumns,
+		PrimaryKey: []*schema.Column{GrowthInventoryLedgerColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "growthinventoryledger_business_key",
+				Unique:  true,
+				Columns: []*schema.Column{GrowthInventoryLedgerColumns[3]},
+			},
+			{
+				Name:    "growthinventoryledger_product_id_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{GrowthInventoryLedgerColumns[4], GrowthInventoryLedgerColumns[1]},
+			},
+			{
+				Name:    "growthinventoryledger_order_id",
+				Unique:  false,
+				Columns: []*schema.Column{GrowthInventoryLedgerColumns[13]},
+			},
+		},
+	}
+	// GrowthProductsColumns holds the columns for the "growth_products" table.
+	GrowthProductsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "product_code", Type: field.TypeString, Size: 64},
+		{Name: "title", Type: field.TypeString, Size: 255},
+		{Name: "product_type", Type: field.TypeString, Size: 32},
+		{Name: "icon", Type: field.TypeString, Size: 128, Default: ""},
+		{Name: "fulfillment_mode", Type: field.TypeString, Size: 32},
+		{Name: "sort_order", Type: field.TypeInt, Default: 0},
+		{Name: "product_status", Type: field.TypeString, Size: 20, Default: "DRAFT"},
+		{Name: "current_version", Type: field.TypeInt, Default: 0},
+	}
+	// GrowthProductsTable holds the schema information for the "growth_products" table.
+	GrowthProductsTable = &schema.Table{
+		Name:       "growth_products",
+		Columns:    GrowthProductsColumns,
+		PrimaryKey: []*schema.Column{GrowthProductsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "growthproduct_product_code",
+				Unique:  true,
+				Columns: []*schema.Column{GrowthProductsColumns[3]},
+			},
+			{
+				Name:    "growthproduct_product_status_sort_order",
+				Unique:  false,
+				Columns: []*schema.Column{GrowthProductsColumns[9], GrowthProductsColumns[8]},
+			},
+			{
+				Name:    "growthproduct_product_type_product_status",
+				Unique:  false,
+				Columns: []*schema.Column{GrowthProductsColumns[5], GrowthProductsColumns[9]},
+			},
+		},
+	}
+	// GrowthProductInventoryColumns holds the columns for the "growth_product_inventory" table.
+	GrowthProductInventoryColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "product_id", Type: field.TypeInt64},
+		{Name: "stock_mode", Type: field.TypeString, Size: 20, Default: "LIMITED"},
+		{Name: "available", Type: field.TypeInt64, Default: 0},
+		{Name: "reserved", Type: field.TypeInt64, Default: 0},
+		{Name: "sold", Type: field.TypeInt64, Default: 0},
+		{Name: "lock_version", Type: field.TypeInt64, Default: 1},
+		{Name: "token_quota_total", Type: field.TypeInt64, Default: 0},
+		{Name: "token_quota_distributed", Type: field.TypeInt64, Default: 0},
+	}
+	// GrowthProductInventoryTable holds the schema information for the "growth_product_inventory" table.
+	GrowthProductInventoryTable = &schema.Table{
+		Name:       "growth_product_inventory",
+		Columns:    GrowthProductInventoryColumns,
+		PrimaryKey: []*schema.Column{GrowthProductInventoryColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "growthproductinventory_product_id",
+				Unique:  true,
+				Columns: []*schema.Column{GrowthProductInventoryColumns[3]},
+			},
+		},
+	}
+	// GrowthProductVersionsColumns holds the columns for the "growth_product_versions" table.
+	GrowthProductVersionsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "product_id", Type: field.TypeInt64},
+		{Name: "version", Type: field.TypeInt},
+		{Name: "points_cost", Type: field.TypeInt64},
+		{Name: "benefit_summary", Type: field.TypeString, Size: 512, Default: ""},
+		{Name: "benefit_detail", Type: field.TypeJSON, Nullable: true},
+		{Name: "token_amount", Type: field.TypeInt64, Default: 0},
+		{Name: "per_user_limit", Type: field.TypeInt, Default: 0},
+		{Name: "created_by", Type: field.TypeInt64},
+		{Name: "published_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "effective_from", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "effective_to", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+	}
+	// GrowthProductVersionsTable holds the schema information for the "growth_product_versions" table.
+	GrowthProductVersionsTable = &schema.Table{
+		Name:       "growth_product_versions",
+		Columns:    GrowthProductVersionsColumns,
+		PrimaryKey: []*schema.Column{GrowthProductVersionsColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "growthproductversion_product_id_version",
+				Unique:  true,
+				Columns: []*schema.Column{GrowthProductVersionsColumns[3], GrowthProductVersionsColumns[4]},
+			},
+			{
+				Name:    "growthproductversion_product_id_published_at",
+				Unique:  false,
+				Columns: []*schema.Column{GrowthProductVersionsColumns[3], GrowthProductVersionsColumns[11]},
+			},
+		},
+	}
+	// GrowthRewardClaimsColumns holds the columns for the "growth_reward_claims" table.
+	GrowthRewardClaimsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "task_id", Type: field.TypeInt64},
+		{Name: "rule_id", Type: field.TypeInt64},
+		{Name: "cycle_key", Type: field.TypeString, Size: 64},
+		{Name: "sequence", Type: field.TypeInt, Default: 1},
+		{Name: "idempotency_key", Type: field.TypeString, Size: 128},
+		{Name: "transfer_id", Type: field.TypeInt64},
+		{Name: "points", Type: field.TypeInt64},
+		{Name: "claim_status", Type: field.TypeString, Size: 20, Default: "SUCCEEDED"},
+		{Name: "claimed_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "user_id", Type: field.TypeInt64},
+	}
+	// GrowthRewardClaimsTable holds the schema information for the "growth_reward_claims" table.
+	GrowthRewardClaimsTable = &schema.Table{
+		Name:       "growth_reward_claims",
+		Columns:    GrowthRewardClaimsColumns,
+		PrimaryKey: []*schema.Column{GrowthRewardClaimsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "growth_reward_claims_users_growth_reward_claims",
+				Columns:    []*schema.Column{GrowthRewardClaimsColumns[12]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "growthrewardclaim_user_id_idempotency_key",
+				Unique:  true,
+				Columns: []*schema.Column{GrowthRewardClaimsColumns[12], GrowthRewardClaimsColumns[7]},
+			},
+			{
+				Name:    "growthrewardclaim_user_id_task_id_cycle_key_sequence",
+				Unique:  true,
+				Columns: []*schema.Column{GrowthRewardClaimsColumns[12], GrowthRewardClaimsColumns[3], GrowthRewardClaimsColumns[5], GrowthRewardClaimsColumns[6]},
+			},
+			{
+				Name:    "growthrewardclaim_transfer_id",
+				Unique:  false,
+				Columns: []*schema.Column{GrowthRewardClaimsColumns[8]},
+			},
+			{
+				Name:    "growthrewardclaim_user_id_claimed_at",
+				Unique:  false,
+				Columns: []*schema.Column{GrowthRewardClaimsColumns[12], GrowthRewardClaimsColumns[11]},
+			},
+		},
+	}
+	// GrowthTasksColumns holds the columns for the "growth_tasks" table.
+	GrowthTasksColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "task_code", Type: field.TypeString, Size: 64},
+		{Name: "title", Type: field.TypeString, Size: 255},
+		{Name: "remark", Type: field.TypeString, Size: 2048, Default: ""},
+		{Name: "category", Type: field.TypeString, Size: 32},
+		{Name: "task_type", Type: field.TypeString, Size: 32},
+		{Name: "icon", Type: field.TypeString, Size: 128, Default: ""},
+		{Name: "sort_order", Type: field.TypeInt, Default: 0},
+		{Name: "task_status", Type: field.TypeString, Size: 20, Default: "DRAFT"},
+		{Name: "effective_from", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "effective_to", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "allocated_points", Type: field.TypeInt64, Default: 0},
+		{Name: "distributed_points", Type: field.TypeInt64, Default: 0},
+	}
+	// GrowthTasksTable holds the schema information for the "growth_tasks" table.
+	GrowthTasksTable = &schema.Table{
+		Name:       "growth_tasks",
+		Columns:    GrowthTasksColumns,
+		PrimaryKey: []*schema.Column{GrowthTasksColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "growthtask_task_code",
+				Unique:  true,
+				Columns: []*schema.Column{GrowthTasksColumns[3]},
+			},
+			{
+				Name:    "growthtask_task_status_sort_order",
+				Unique:  false,
+				Columns: []*schema.Column{GrowthTasksColumns[10], GrowthTasksColumns[9]},
+			},
+			{
+				Name:    "growthtask_category_task_status",
+				Unique:  false,
+				Columns: []*schema.Column{GrowthTasksColumns[6], GrowthTasksColumns[10]},
+			},
+		},
+	}
+	// GrowthTaskRulesColumns holds the columns for the "growth_task_rules" table.
+	GrowthTaskRulesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "task_id", Type: field.TypeInt64},
+		{Name: "version", Type: field.TypeInt},
+		{Name: "trigger_event", Type: field.TypeString, Size: 64, Default: "COMPLETION"},
+		{Name: "conditions", Type: field.TypeJSON, Nullable: true},
+		{Name: "target", Type: field.TypeInt64, Default: 1},
+		{Name: "reward_points", Type: field.TypeInt64},
+		{Name: "period_type", Type: field.TypeString, Size: 20},
+		{Name: "daily_limit", Type: field.TypeInt, Default: 0},
+		{Name: "per_user_limit", Type: field.TypeInt, Default: 0},
+		{Name: "created_by", Type: field.TypeInt64},
+		{Name: "effective_from", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "effective_to", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "published_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+	}
+	// GrowthTaskRulesTable holds the schema information for the "growth_task_rules" table.
+	GrowthTaskRulesTable = &schema.Table{
+		Name:       "growth_task_rules",
+		Columns:    GrowthTaskRulesColumns,
+		PrimaryKey: []*schema.Column{GrowthTaskRulesColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "growthtaskrule_task_id_version",
+				Unique:  true,
+				Columns: []*schema.Column{GrowthTaskRulesColumns[3], GrowthTaskRulesColumns[4]},
+			},
+			{
+				Name:    "growthtaskrule_task_id_effective_from_effective_to",
+				Unique:  false,
+				Columns: []*schema.Column{GrowthTaskRulesColumns[3], GrowthTaskRulesColumns[13], GrowthTaskRulesColumns[14]},
+			},
+			{
+				Name:    "growthtaskrule_published_at",
+				Unique:  false,
+				Columns: []*schema.Column{GrowthTaskRulesColumns[15]},
+			},
+		},
+	}
+	// GrowthTransfersColumns holds the columns for the "growth_transfers" table.
+	GrowthTransfersColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "biz_type", Type: field.TypeString, Size: 64},
+		{Name: "idempotency_key", Type: field.TypeString, Size: 128},
+		{Name: "from_account_type", Type: field.TypeString, Size: 32},
+		{Name: "to_account_type", Type: field.TypeString, Size: 32},
+		{Name: "from_user_id", Type: field.TypeInt64, Nullable: true},
+		{Name: "to_user_id", Type: field.TypeInt64, Nullable: true},
+		{Name: "task_id", Type: field.TypeInt64, Nullable: true},
+		{Name: "order_id", Type: field.TypeInt64, Nullable: true},
+		{Name: "points", Type: field.TypeInt64},
+		{Name: "transfer_status", Type: field.TypeString, Size: 20, Default: "PENDING"},
+		{Name: "failure_reason", Type: field.TypeString, Size: 512, Default: ""},
+		{Name: "completed_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+	}
+	// GrowthTransfersTable holds the schema information for the "growth_transfers" table.
+	GrowthTransfersTable = &schema.Table{
+		Name:       "growth_transfers",
+		Columns:    GrowthTransfersColumns,
+		PrimaryKey: []*schema.Column{GrowthTransfersColumns[0]},
+		Indexes: []*schema.Index{
+			{
+				Name:    "growthtransfer_biz_type_idempotency_key",
+				Unique:  true,
+				Columns: []*schema.Column{GrowthTransfersColumns[3], GrowthTransfersColumns[4]},
+			},
+			{
+				Name:    "growthtransfer_from_user_id_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{GrowthTransfersColumns[7], GrowthTransfersColumns[1]},
+			},
+			{
+				Name:    "growthtransfer_to_user_id_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{GrowthTransfersColumns[8], GrowthTransfersColumns[1]},
+			},
+			{
+				Name:    "growthtransfer_task_id",
+				Unique:  false,
+				Columns: []*schema.Column{GrowthTransfersColumns[9]},
+			},
+			{
+				Name:    "growthtransfer_order_id",
+				Unique:  false,
+				Columns: []*schema.Column{GrowthTransfersColumns[10]},
+			},
+			{
+				Name:    "growthtransfer_transfer_status",
+				Unique:  false,
+				Columns: []*schema.Column{GrowthTransfersColumns[12]},
+			},
+		},
+	}
+	// GrowthUserTasksColumns holds the columns for the "growth_user_tasks" table.
+	GrowthUserTasksColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "task_id", Type: field.TypeInt64},
+		{Name: "rule_id", Type: field.TypeInt64},
+		{Name: "cycle_key", Type: field.TypeString, Size: 64},
+		{Name: "progress", Type: field.TypeInt64, Default: 0},
+		{Name: "target", Type: field.TypeInt64, Default: 1},
+		{Name: "completed_count", Type: field.TypeInt64, Default: 0},
+		{Name: "progress_status", Type: field.TypeString, Size: 32, Default: "IN_PROGRESS"},
+		{Name: "completed_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "rewarded_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "user_id", Type: field.TypeInt64},
+	}
+	// GrowthUserTasksTable holds the schema information for the "growth_user_tasks" table.
+	GrowthUserTasksTable = &schema.Table{
+		Name:       "growth_user_tasks",
+		Columns:    GrowthUserTasksColumns,
+		PrimaryKey: []*schema.Column{GrowthUserTasksColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "growth_user_tasks_users_growth_user_tasks",
+				Columns:    []*schema.Column{GrowthUserTasksColumns[12]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "growthusertask_user_id_task_id_rule_id_cycle_key",
+				Unique:  true,
+				Columns: []*schema.Column{GrowthUserTasksColumns[12], GrowthUserTasksColumns[3], GrowthUserTasksColumns[4], GrowthUserTasksColumns[5]},
+			},
+			{
+				Name:    "growthusertask_user_id_created_at",
+				Unique:  false,
+				Columns: []*schema.Column{GrowthUserTasksColumns[12], GrowthUserTasksColumns[1]},
+			},
+			{
+				Name:    "growthusertask_task_id_cycle_key",
+				Unique:  false,
+				Columns: []*schema.Column{GrowthUserTasksColumns[3], GrowthUserTasksColumns[5]},
+			},
+		},
+	}
+	// GrowthWalletsColumns holds the columns for the "growth_wallets" table.
+	GrowthWalletsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "available_points", Type: field.TypeInt64, Default: 0},
+		{Name: "earned_total", Type: field.TypeInt64, Default: 0},
+		{Name: "spent_total", Type: field.TypeInt64, Default: 0},
+		{Name: "version", Type: field.TypeInt64, Default: 1},
+		{Name: "balance_updated_at", Type: field.TypeTime, SchemaType: map[string]string{"mysql": "datetime(6)"}},
+		{Name: "user_id", Type: field.TypeInt64, Unique: true},
+	}
+	// GrowthWalletsTable holds the schema information for the "growth_wallets" table.
+	GrowthWalletsTable = &schema.Table{
+		Name:       "growth_wallets",
+		Columns:    GrowthWalletsColumns,
+		PrimaryKey: []*schema.Column{GrowthWalletsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "growth_wallets_users_growth_wallet",
+				Columns:    []*schema.Column{GrowthWalletsColumns[8]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "growthwallet_user_id",
+				Unique:  true,
+				Columns: []*schema.Column{GrowthWalletsColumns[8]},
+			},
+		},
+	}
 	// IdempotencyRecordsColumns holds the columns for the "idempotency_records" table.
 	IdempotencyRecordsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt64, Increment: true},
@@ -2451,6 +3152,23 @@ var (
 		ChannelMonitorRequestTemplatesTable,
 		ErrorPassthroughRulesTable,
 		GroupsTable,
+		GrowthAccountLedgerTable,
+		GrowthAdminAuditTable,
+		GrowthBudgetsTable,
+		GrowthBudgetEntriesTable,
+		GrowthCompletionRequestsTable,
+		GrowthExchangeOrdersTable,
+		GrowthFulfillmentJobsTable,
+		GrowthInventoryLedgerTable,
+		GrowthProductsTable,
+		GrowthProductInventoryTable,
+		GrowthProductVersionsTable,
+		GrowthRewardClaimsTable,
+		GrowthTasksTable,
+		GrowthTaskRulesTable,
+		GrowthTransfersTable,
+		GrowthUserTasksTable,
+		GrowthWalletsTable,
 		IdempotencyRecordsTable,
 		IdentityAdoptionDecisionsTable,
 		ObservabilityConcurrencyBucketTable,
@@ -2542,6 +3260,63 @@ func init() {
 	}
 	GroupsTable.Annotation = &entsql.Annotation{
 		Table: "groups",
+	}
+	GrowthAccountLedgerTable.Annotation = &entsql.Annotation{
+		Table: "growth_account_ledger",
+	}
+	GrowthAdminAuditTable.ForeignKeys[0].RefTable = UsersTable
+	GrowthAdminAuditTable.Annotation = &entsql.Annotation{
+		Table: "growth_admin_audit",
+	}
+	GrowthBudgetsTable.Annotation = &entsql.Annotation{
+		Table: "growth_budgets",
+	}
+	GrowthBudgetEntriesTable.Annotation = &entsql.Annotation{
+		Table: "growth_budget_entries",
+	}
+	GrowthCompletionRequestsTable.ForeignKeys[0].RefTable = UsersTable
+	GrowthCompletionRequestsTable.Annotation = &entsql.Annotation{
+		Table: "growth_completion_requests",
+	}
+	GrowthExchangeOrdersTable.ForeignKeys[0].RefTable = UsersTable
+	GrowthExchangeOrdersTable.Annotation = &entsql.Annotation{
+		Table: "growth_exchange_orders",
+	}
+	GrowthFulfillmentJobsTable.Annotation = &entsql.Annotation{
+		Table: "growth_fulfillment_jobs",
+	}
+	GrowthInventoryLedgerTable.Annotation = &entsql.Annotation{
+		Table: "growth_inventory_ledger",
+	}
+	GrowthProductsTable.Annotation = &entsql.Annotation{
+		Table: "growth_products",
+	}
+	GrowthProductInventoryTable.Annotation = &entsql.Annotation{
+		Table: "growth_product_inventory",
+	}
+	GrowthProductVersionsTable.Annotation = &entsql.Annotation{
+		Table: "growth_product_versions",
+	}
+	GrowthRewardClaimsTable.ForeignKeys[0].RefTable = UsersTable
+	GrowthRewardClaimsTable.Annotation = &entsql.Annotation{
+		Table: "growth_reward_claims",
+	}
+	GrowthTasksTable.Annotation = &entsql.Annotation{
+		Table: "growth_tasks",
+	}
+	GrowthTaskRulesTable.Annotation = &entsql.Annotation{
+		Table: "growth_task_rules",
+	}
+	GrowthTransfersTable.Annotation = &entsql.Annotation{
+		Table: "growth_transfers",
+	}
+	GrowthUserTasksTable.ForeignKeys[0].RefTable = UsersTable
+	GrowthUserTasksTable.Annotation = &entsql.Annotation{
+		Table: "growth_user_tasks",
+	}
+	GrowthWalletsTable.ForeignKeys[0].RefTable = UsersTable
+	GrowthWalletsTable.Annotation = &entsql.Annotation{
+		Table: "growth_wallets",
 	}
 	IdempotencyRecordsTable.Annotation = &entsql.Annotation{
 		Table: "idempotency_records",

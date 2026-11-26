@@ -103,6 +103,23 @@ type Config struct {
 	Idempotency                IdempotencyConfig                `mapstructure:"idempotency"`
 	ExternalAPIKeyProvisioning ExternalAPIKeyProvisioningConfig `mapstructure:"external_api_key_provisioning"`
 	RBAC                       RBACConfig                       `mapstructure:"rbac"`
+	Growth                     GrowthConfig                     `mapstructure:"growth"`
+}
+
+type GrowthConfig struct {
+	Crypto GrowthCryptoConfig `mapstructure:"crypto"`
+}
+
+type GrowthCryptoConfig struct {
+	TimeWindow string `mapstructure:"time_window"`
+}
+
+func (c GrowthCryptoConfig) WindowDuration() time.Duration {
+	window, err := time.ParseDuration(strings.TrimSpace(c.TimeWindow))
+	if err != nil || window <= 0 {
+		return 5 * time.Minute
+	}
+	return window
 }
 
 // RBACConfig controls authorization rollout and distributed permission caching.
@@ -1714,6 +1731,7 @@ func load(allowMissingJWTSecret bool) (*Config, error) {
 
 func setDefaults() {
 	viper.SetDefault("run_mode", RunModeStandard)
+	viper.SetDefault("growth.crypto.time_window", "5m")
 	viper.SetDefault("external_api_key_provisioning.enabled", false)
 	viper.SetDefault("external_api_key_provisioning.access_token", "")
 
@@ -2197,6 +2215,9 @@ func setDefaults() {
 }
 
 func (c *Config) Validate() error {
+	if err := ValidateGrowthConfig(c.Growth); err != nil {
+		return err
+	}
 	if err := ValidateRBACConfig(c.RBAC); err != nil {
 		return err
 	}
@@ -3081,6 +3102,16 @@ func (c *Config) Validate() error {
 	}
 	if err := ValidateDingTalkConfig(c.DingTalk); err != nil {
 		return fmt.Errorf("dingtalk_connect: %w", err)
+	}
+	return nil
+}
+
+func ValidateGrowthConfig(cfg GrowthConfig) error {
+	if raw := strings.TrimSpace(cfg.Crypto.TimeWindow); raw != "" {
+		window, err := time.ParseDuration(raw)
+		if err != nil || window <= 0 {
+			return fmt.Errorf("growth.crypto.time_window must be a positive duration")
+		}
 	}
 	return nil
 }

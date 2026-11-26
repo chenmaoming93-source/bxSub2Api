@@ -15,6 +15,12 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/apikey"
 	"github.com/Wei-Shaw/sub2api/ent/authidentity"
 	"github.com/Wei-Shaw/sub2api/ent/group"
+	"github.com/Wei-Shaw/sub2api/ent/growthadminaudit"
+	"github.com/Wei-Shaw/sub2api/ent/growthcompletionrequest"
+	"github.com/Wei-Shaw/sub2api/ent/growthexchangeorder"
+	"github.com/Wei-Shaw/sub2api/ent/growthrewardclaim"
+	"github.com/Wei-Shaw/sub2api/ent/growthusertask"
+	"github.com/Wei-Shaw/sub2api/ent/growthwallet"
 	"github.com/Wei-Shaw/sub2api/ent/paymentorder"
 	"github.com/Wei-Shaw/sub2api/ent/pendingauthsession"
 	"github.com/Wei-Shaw/sub2api/ent/predicate"
@@ -687,6 +693,100 @@ func (_u *UserUpdate) AddRbacAuditLogs(v ...*RBACAuditLog) *UserUpdate {
 	return _u.AddRbacAuditLogIDs(ids...)
 }
 
+// SetGrowthWalletID sets the "growth_wallet" edge to the GrowthWallet entity by ID.
+func (_u *UserUpdate) SetGrowthWalletID(id int64) *UserUpdate {
+	_u.mutation.SetGrowthWalletID(id)
+	return _u
+}
+
+// SetNillableGrowthWalletID sets the "growth_wallet" edge to the GrowthWallet entity by ID if the given value is not nil.
+func (_u *UserUpdate) SetNillableGrowthWalletID(id *int64) *UserUpdate {
+	if id != nil {
+		_u = _u.SetGrowthWalletID(*id)
+	}
+	return _u
+}
+
+// SetGrowthWallet sets the "growth_wallet" edge to the GrowthWallet entity.
+func (_u *UserUpdate) SetGrowthWallet(v *GrowthWallet) *UserUpdate {
+	return _u.SetGrowthWalletID(v.ID)
+}
+
+// AddGrowthUserTaskIDs adds the "growth_user_tasks" edge to the GrowthUserTask entity by IDs.
+func (_u *UserUpdate) AddGrowthUserTaskIDs(ids ...int64) *UserUpdate {
+	_u.mutation.AddGrowthUserTaskIDs(ids...)
+	return _u
+}
+
+// AddGrowthUserTasks adds the "growth_user_tasks" edges to the GrowthUserTask entity.
+func (_u *UserUpdate) AddGrowthUserTasks(v ...*GrowthUserTask) *UserUpdate {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddGrowthUserTaskIDs(ids...)
+}
+
+// AddGrowthCompletionRequestIDs adds the "growth_completion_requests" edge to the GrowthCompletionRequest entity by IDs.
+func (_u *UserUpdate) AddGrowthCompletionRequestIDs(ids ...int64) *UserUpdate {
+	_u.mutation.AddGrowthCompletionRequestIDs(ids...)
+	return _u
+}
+
+// AddGrowthCompletionRequests adds the "growth_completion_requests" edges to the GrowthCompletionRequest entity.
+func (_u *UserUpdate) AddGrowthCompletionRequests(v ...*GrowthCompletionRequest) *UserUpdate {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddGrowthCompletionRequestIDs(ids...)
+}
+
+// AddGrowthRewardClaimIDs adds the "growth_reward_claims" edge to the GrowthRewardClaim entity by IDs.
+func (_u *UserUpdate) AddGrowthRewardClaimIDs(ids ...int64) *UserUpdate {
+	_u.mutation.AddGrowthRewardClaimIDs(ids...)
+	return _u
+}
+
+// AddGrowthRewardClaims adds the "growth_reward_claims" edges to the GrowthRewardClaim entity.
+func (_u *UserUpdate) AddGrowthRewardClaims(v ...*GrowthRewardClaim) *UserUpdate {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddGrowthRewardClaimIDs(ids...)
+}
+
+// AddGrowthExchangeOrderIDs adds the "growth_exchange_orders" edge to the GrowthExchangeOrder entity by IDs.
+func (_u *UserUpdate) AddGrowthExchangeOrderIDs(ids ...int64) *UserUpdate {
+	_u.mutation.AddGrowthExchangeOrderIDs(ids...)
+	return _u
+}
+
+// AddGrowthExchangeOrders adds the "growth_exchange_orders" edges to the GrowthExchangeOrder entity.
+func (_u *UserUpdate) AddGrowthExchangeOrders(v ...*GrowthExchangeOrder) *UserUpdate {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddGrowthExchangeOrderIDs(ids...)
+}
+
+// AddGrowthAdminAuditIDs adds the "growth_admin_audits" edge to the GrowthAdminAudit entity by IDs.
+func (_u *UserUpdate) AddGrowthAdminAuditIDs(ids ...int64) *UserUpdate {
+	_u.mutation.AddGrowthAdminAuditIDs(ids...)
+	return _u
+}
+
+// AddGrowthAdminAudits adds the "growth_admin_audits" edges to the GrowthAdminAudit entity.
+func (_u *UserUpdate) AddGrowthAdminAudits(v ...*GrowthAdminAudit) *UserUpdate {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddGrowthAdminAuditIDs(ids...)
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (_u *UserUpdate) Mutation() *UserMutation {
 	return _u.mutation
@@ -1032,6 +1132,117 @@ func (_u *UserUpdate) RemoveRbacAuditLogs(v ...*RBACAuditLog) *UserUpdate {
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveRbacAuditLogIDs(ids...)
+}
+
+// ClearGrowthWallet clears the "growth_wallet" edge to the GrowthWallet entity.
+func (_u *UserUpdate) ClearGrowthWallet() *UserUpdate {
+	_u.mutation.ClearGrowthWallet()
+	return _u
+}
+
+// ClearGrowthUserTasks clears all "growth_user_tasks" edges to the GrowthUserTask entity.
+func (_u *UserUpdate) ClearGrowthUserTasks() *UserUpdate {
+	_u.mutation.ClearGrowthUserTasks()
+	return _u
+}
+
+// RemoveGrowthUserTaskIDs removes the "growth_user_tasks" edge to GrowthUserTask entities by IDs.
+func (_u *UserUpdate) RemoveGrowthUserTaskIDs(ids ...int64) *UserUpdate {
+	_u.mutation.RemoveGrowthUserTaskIDs(ids...)
+	return _u
+}
+
+// RemoveGrowthUserTasks removes "growth_user_tasks" edges to GrowthUserTask entities.
+func (_u *UserUpdate) RemoveGrowthUserTasks(v ...*GrowthUserTask) *UserUpdate {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveGrowthUserTaskIDs(ids...)
+}
+
+// ClearGrowthCompletionRequests clears all "growth_completion_requests" edges to the GrowthCompletionRequest entity.
+func (_u *UserUpdate) ClearGrowthCompletionRequests() *UserUpdate {
+	_u.mutation.ClearGrowthCompletionRequests()
+	return _u
+}
+
+// RemoveGrowthCompletionRequestIDs removes the "growth_completion_requests" edge to GrowthCompletionRequest entities by IDs.
+func (_u *UserUpdate) RemoveGrowthCompletionRequestIDs(ids ...int64) *UserUpdate {
+	_u.mutation.RemoveGrowthCompletionRequestIDs(ids...)
+	return _u
+}
+
+// RemoveGrowthCompletionRequests removes "growth_completion_requests" edges to GrowthCompletionRequest entities.
+func (_u *UserUpdate) RemoveGrowthCompletionRequests(v ...*GrowthCompletionRequest) *UserUpdate {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveGrowthCompletionRequestIDs(ids...)
+}
+
+// ClearGrowthRewardClaims clears all "growth_reward_claims" edges to the GrowthRewardClaim entity.
+func (_u *UserUpdate) ClearGrowthRewardClaims() *UserUpdate {
+	_u.mutation.ClearGrowthRewardClaims()
+	return _u
+}
+
+// RemoveGrowthRewardClaimIDs removes the "growth_reward_claims" edge to GrowthRewardClaim entities by IDs.
+func (_u *UserUpdate) RemoveGrowthRewardClaimIDs(ids ...int64) *UserUpdate {
+	_u.mutation.RemoveGrowthRewardClaimIDs(ids...)
+	return _u
+}
+
+// RemoveGrowthRewardClaims removes "growth_reward_claims" edges to GrowthRewardClaim entities.
+func (_u *UserUpdate) RemoveGrowthRewardClaims(v ...*GrowthRewardClaim) *UserUpdate {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveGrowthRewardClaimIDs(ids...)
+}
+
+// ClearGrowthExchangeOrders clears all "growth_exchange_orders" edges to the GrowthExchangeOrder entity.
+func (_u *UserUpdate) ClearGrowthExchangeOrders() *UserUpdate {
+	_u.mutation.ClearGrowthExchangeOrders()
+	return _u
+}
+
+// RemoveGrowthExchangeOrderIDs removes the "growth_exchange_orders" edge to GrowthExchangeOrder entities by IDs.
+func (_u *UserUpdate) RemoveGrowthExchangeOrderIDs(ids ...int64) *UserUpdate {
+	_u.mutation.RemoveGrowthExchangeOrderIDs(ids...)
+	return _u
+}
+
+// RemoveGrowthExchangeOrders removes "growth_exchange_orders" edges to GrowthExchangeOrder entities.
+func (_u *UserUpdate) RemoveGrowthExchangeOrders(v ...*GrowthExchangeOrder) *UserUpdate {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveGrowthExchangeOrderIDs(ids...)
+}
+
+// ClearGrowthAdminAudits clears all "growth_admin_audits" edges to the GrowthAdminAudit entity.
+func (_u *UserUpdate) ClearGrowthAdminAudits() *UserUpdate {
+	_u.mutation.ClearGrowthAdminAudits()
+	return _u
+}
+
+// RemoveGrowthAdminAuditIDs removes the "growth_admin_audits" edge to GrowthAdminAudit entities by IDs.
+func (_u *UserUpdate) RemoveGrowthAdminAuditIDs(ids ...int64) *UserUpdate {
+	_u.mutation.RemoveGrowthAdminAuditIDs(ids...)
+	return _u
+}
+
+// RemoveGrowthAdminAudits removes "growth_admin_audits" edges to GrowthAdminAudit entities.
+func (_u *UserUpdate) RemoveGrowthAdminAudits(v ...*GrowthAdminAudit) *UserUpdate {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveGrowthAdminAuditIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -1991,6 +2202,260 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.GrowthWalletCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   user.GrowthWalletTable,
+			Columns: []string{user.GrowthWalletColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(growthwallet.FieldID, field.TypeInt64),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.GrowthWalletIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   user.GrowthWalletTable,
+			Columns: []string{user.GrowthWalletColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(growthwallet.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.GrowthUserTasksCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.GrowthUserTasksTable,
+			Columns: []string{user.GrowthUserTasksColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(growthusertask.FieldID, field.TypeInt64),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedGrowthUserTasksIDs(); len(nodes) > 0 && !_u.mutation.GrowthUserTasksCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.GrowthUserTasksTable,
+			Columns: []string{user.GrowthUserTasksColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(growthusertask.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.GrowthUserTasksIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.GrowthUserTasksTable,
+			Columns: []string{user.GrowthUserTasksColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(growthusertask.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.GrowthCompletionRequestsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.GrowthCompletionRequestsTable,
+			Columns: []string{user.GrowthCompletionRequestsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(growthcompletionrequest.FieldID, field.TypeInt64),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedGrowthCompletionRequestsIDs(); len(nodes) > 0 && !_u.mutation.GrowthCompletionRequestsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.GrowthCompletionRequestsTable,
+			Columns: []string{user.GrowthCompletionRequestsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(growthcompletionrequest.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.GrowthCompletionRequestsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.GrowthCompletionRequestsTable,
+			Columns: []string{user.GrowthCompletionRequestsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(growthcompletionrequest.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.GrowthRewardClaimsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.GrowthRewardClaimsTable,
+			Columns: []string{user.GrowthRewardClaimsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(growthrewardclaim.FieldID, field.TypeInt64),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedGrowthRewardClaimsIDs(); len(nodes) > 0 && !_u.mutation.GrowthRewardClaimsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.GrowthRewardClaimsTable,
+			Columns: []string{user.GrowthRewardClaimsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(growthrewardclaim.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.GrowthRewardClaimsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.GrowthRewardClaimsTable,
+			Columns: []string{user.GrowthRewardClaimsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(growthrewardclaim.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.GrowthExchangeOrdersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.GrowthExchangeOrdersTable,
+			Columns: []string{user.GrowthExchangeOrdersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(growthexchangeorder.FieldID, field.TypeInt64),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedGrowthExchangeOrdersIDs(); len(nodes) > 0 && !_u.mutation.GrowthExchangeOrdersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.GrowthExchangeOrdersTable,
+			Columns: []string{user.GrowthExchangeOrdersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(growthexchangeorder.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.GrowthExchangeOrdersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.GrowthExchangeOrdersTable,
+			Columns: []string{user.GrowthExchangeOrdersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(growthexchangeorder.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.GrowthAdminAuditsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.GrowthAdminAuditsTable,
+			Columns: []string{user.GrowthAdminAuditsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(growthadminaudit.FieldID, field.TypeInt64),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedGrowthAdminAuditsIDs(); len(nodes) > 0 && !_u.mutation.GrowthAdminAuditsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.GrowthAdminAuditsTable,
+			Columns: []string{user.GrowthAdminAuditsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(growthadminaudit.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.GrowthAdminAuditsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.GrowthAdminAuditsTable,
+			Columns: []string{user.GrowthAdminAuditsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(growthadminaudit.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{user.Label}
@@ -2655,6 +3120,100 @@ func (_u *UserUpdateOne) AddRbacAuditLogs(v ...*RBACAuditLog) *UserUpdateOne {
 	return _u.AddRbacAuditLogIDs(ids...)
 }
 
+// SetGrowthWalletID sets the "growth_wallet" edge to the GrowthWallet entity by ID.
+func (_u *UserUpdateOne) SetGrowthWalletID(id int64) *UserUpdateOne {
+	_u.mutation.SetGrowthWalletID(id)
+	return _u
+}
+
+// SetNillableGrowthWalletID sets the "growth_wallet" edge to the GrowthWallet entity by ID if the given value is not nil.
+func (_u *UserUpdateOne) SetNillableGrowthWalletID(id *int64) *UserUpdateOne {
+	if id != nil {
+		_u = _u.SetGrowthWalletID(*id)
+	}
+	return _u
+}
+
+// SetGrowthWallet sets the "growth_wallet" edge to the GrowthWallet entity.
+func (_u *UserUpdateOne) SetGrowthWallet(v *GrowthWallet) *UserUpdateOne {
+	return _u.SetGrowthWalletID(v.ID)
+}
+
+// AddGrowthUserTaskIDs adds the "growth_user_tasks" edge to the GrowthUserTask entity by IDs.
+func (_u *UserUpdateOne) AddGrowthUserTaskIDs(ids ...int64) *UserUpdateOne {
+	_u.mutation.AddGrowthUserTaskIDs(ids...)
+	return _u
+}
+
+// AddGrowthUserTasks adds the "growth_user_tasks" edges to the GrowthUserTask entity.
+func (_u *UserUpdateOne) AddGrowthUserTasks(v ...*GrowthUserTask) *UserUpdateOne {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddGrowthUserTaskIDs(ids...)
+}
+
+// AddGrowthCompletionRequestIDs adds the "growth_completion_requests" edge to the GrowthCompletionRequest entity by IDs.
+func (_u *UserUpdateOne) AddGrowthCompletionRequestIDs(ids ...int64) *UserUpdateOne {
+	_u.mutation.AddGrowthCompletionRequestIDs(ids...)
+	return _u
+}
+
+// AddGrowthCompletionRequests adds the "growth_completion_requests" edges to the GrowthCompletionRequest entity.
+func (_u *UserUpdateOne) AddGrowthCompletionRequests(v ...*GrowthCompletionRequest) *UserUpdateOne {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddGrowthCompletionRequestIDs(ids...)
+}
+
+// AddGrowthRewardClaimIDs adds the "growth_reward_claims" edge to the GrowthRewardClaim entity by IDs.
+func (_u *UserUpdateOne) AddGrowthRewardClaimIDs(ids ...int64) *UserUpdateOne {
+	_u.mutation.AddGrowthRewardClaimIDs(ids...)
+	return _u
+}
+
+// AddGrowthRewardClaims adds the "growth_reward_claims" edges to the GrowthRewardClaim entity.
+func (_u *UserUpdateOne) AddGrowthRewardClaims(v ...*GrowthRewardClaim) *UserUpdateOne {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddGrowthRewardClaimIDs(ids...)
+}
+
+// AddGrowthExchangeOrderIDs adds the "growth_exchange_orders" edge to the GrowthExchangeOrder entity by IDs.
+func (_u *UserUpdateOne) AddGrowthExchangeOrderIDs(ids ...int64) *UserUpdateOne {
+	_u.mutation.AddGrowthExchangeOrderIDs(ids...)
+	return _u
+}
+
+// AddGrowthExchangeOrders adds the "growth_exchange_orders" edges to the GrowthExchangeOrder entity.
+func (_u *UserUpdateOne) AddGrowthExchangeOrders(v ...*GrowthExchangeOrder) *UserUpdateOne {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddGrowthExchangeOrderIDs(ids...)
+}
+
+// AddGrowthAdminAuditIDs adds the "growth_admin_audits" edge to the GrowthAdminAudit entity by IDs.
+func (_u *UserUpdateOne) AddGrowthAdminAuditIDs(ids ...int64) *UserUpdateOne {
+	_u.mutation.AddGrowthAdminAuditIDs(ids...)
+	return _u
+}
+
+// AddGrowthAdminAudits adds the "growth_admin_audits" edges to the GrowthAdminAudit entity.
+func (_u *UserUpdateOne) AddGrowthAdminAudits(v ...*GrowthAdminAudit) *UserUpdateOne {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddGrowthAdminAuditIDs(ids...)
+}
+
 // Mutation returns the UserMutation object of the builder.
 func (_u *UserUpdateOne) Mutation() *UserMutation {
 	return _u.mutation
@@ -3000,6 +3559,117 @@ func (_u *UserUpdateOne) RemoveRbacAuditLogs(v ...*RBACAuditLog) *UserUpdateOne 
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveRbacAuditLogIDs(ids...)
+}
+
+// ClearGrowthWallet clears the "growth_wallet" edge to the GrowthWallet entity.
+func (_u *UserUpdateOne) ClearGrowthWallet() *UserUpdateOne {
+	_u.mutation.ClearGrowthWallet()
+	return _u
+}
+
+// ClearGrowthUserTasks clears all "growth_user_tasks" edges to the GrowthUserTask entity.
+func (_u *UserUpdateOne) ClearGrowthUserTasks() *UserUpdateOne {
+	_u.mutation.ClearGrowthUserTasks()
+	return _u
+}
+
+// RemoveGrowthUserTaskIDs removes the "growth_user_tasks" edge to GrowthUserTask entities by IDs.
+func (_u *UserUpdateOne) RemoveGrowthUserTaskIDs(ids ...int64) *UserUpdateOne {
+	_u.mutation.RemoveGrowthUserTaskIDs(ids...)
+	return _u
+}
+
+// RemoveGrowthUserTasks removes "growth_user_tasks" edges to GrowthUserTask entities.
+func (_u *UserUpdateOne) RemoveGrowthUserTasks(v ...*GrowthUserTask) *UserUpdateOne {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveGrowthUserTaskIDs(ids...)
+}
+
+// ClearGrowthCompletionRequests clears all "growth_completion_requests" edges to the GrowthCompletionRequest entity.
+func (_u *UserUpdateOne) ClearGrowthCompletionRequests() *UserUpdateOne {
+	_u.mutation.ClearGrowthCompletionRequests()
+	return _u
+}
+
+// RemoveGrowthCompletionRequestIDs removes the "growth_completion_requests" edge to GrowthCompletionRequest entities by IDs.
+func (_u *UserUpdateOne) RemoveGrowthCompletionRequestIDs(ids ...int64) *UserUpdateOne {
+	_u.mutation.RemoveGrowthCompletionRequestIDs(ids...)
+	return _u
+}
+
+// RemoveGrowthCompletionRequests removes "growth_completion_requests" edges to GrowthCompletionRequest entities.
+func (_u *UserUpdateOne) RemoveGrowthCompletionRequests(v ...*GrowthCompletionRequest) *UserUpdateOne {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveGrowthCompletionRequestIDs(ids...)
+}
+
+// ClearGrowthRewardClaims clears all "growth_reward_claims" edges to the GrowthRewardClaim entity.
+func (_u *UserUpdateOne) ClearGrowthRewardClaims() *UserUpdateOne {
+	_u.mutation.ClearGrowthRewardClaims()
+	return _u
+}
+
+// RemoveGrowthRewardClaimIDs removes the "growth_reward_claims" edge to GrowthRewardClaim entities by IDs.
+func (_u *UserUpdateOne) RemoveGrowthRewardClaimIDs(ids ...int64) *UserUpdateOne {
+	_u.mutation.RemoveGrowthRewardClaimIDs(ids...)
+	return _u
+}
+
+// RemoveGrowthRewardClaims removes "growth_reward_claims" edges to GrowthRewardClaim entities.
+func (_u *UserUpdateOne) RemoveGrowthRewardClaims(v ...*GrowthRewardClaim) *UserUpdateOne {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveGrowthRewardClaimIDs(ids...)
+}
+
+// ClearGrowthExchangeOrders clears all "growth_exchange_orders" edges to the GrowthExchangeOrder entity.
+func (_u *UserUpdateOne) ClearGrowthExchangeOrders() *UserUpdateOne {
+	_u.mutation.ClearGrowthExchangeOrders()
+	return _u
+}
+
+// RemoveGrowthExchangeOrderIDs removes the "growth_exchange_orders" edge to GrowthExchangeOrder entities by IDs.
+func (_u *UserUpdateOne) RemoveGrowthExchangeOrderIDs(ids ...int64) *UserUpdateOne {
+	_u.mutation.RemoveGrowthExchangeOrderIDs(ids...)
+	return _u
+}
+
+// RemoveGrowthExchangeOrders removes "growth_exchange_orders" edges to GrowthExchangeOrder entities.
+func (_u *UserUpdateOne) RemoveGrowthExchangeOrders(v ...*GrowthExchangeOrder) *UserUpdateOne {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveGrowthExchangeOrderIDs(ids...)
+}
+
+// ClearGrowthAdminAudits clears all "growth_admin_audits" edges to the GrowthAdminAudit entity.
+func (_u *UserUpdateOne) ClearGrowthAdminAudits() *UserUpdateOne {
+	_u.mutation.ClearGrowthAdminAudits()
+	return _u
+}
+
+// RemoveGrowthAdminAuditIDs removes the "growth_admin_audits" edge to GrowthAdminAudit entities by IDs.
+func (_u *UserUpdateOne) RemoveGrowthAdminAuditIDs(ids ...int64) *UserUpdateOne {
+	_u.mutation.RemoveGrowthAdminAuditIDs(ids...)
+	return _u
+}
+
+// RemoveGrowthAdminAudits removes "growth_admin_audits" edges to GrowthAdminAudit entities.
+func (_u *UserUpdateOne) RemoveGrowthAdminAudits(v ...*GrowthAdminAudit) *UserUpdateOne {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveGrowthAdminAuditIDs(ids...)
 }
 
 // Where appends a list predicates to the UserUpdate builder.
@@ -3982,6 +4652,260 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(rbacauditlog.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.GrowthWalletCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   user.GrowthWalletTable,
+			Columns: []string{user.GrowthWalletColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(growthwallet.FieldID, field.TypeInt64),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.GrowthWalletIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2O,
+			Inverse: false,
+			Table:   user.GrowthWalletTable,
+			Columns: []string{user.GrowthWalletColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(growthwallet.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.GrowthUserTasksCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.GrowthUserTasksTable,
+			Columns: []string{user.GrowthUserTasksColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(growthusertask.FieldID, field.TypeInt64),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedGrowthUserTasksIDs(); len(nodes) > 0 && !_u.mutation.GrowthUserTasksCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.GrowthUserTasksTable,
+			Columns: []string{user.GrowthUserTasksColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(growthusertask.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.GrowthUserTasksIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.GrowthUserTasksTable,
+			Columns: []string{user.GrowthUserTasksColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(growthusertask.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.GrowthCompletionRequestsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.GrowthCompletionRequestsTable,
+			Columns: []string{user.GrowthCompletionRequestsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(growthcompletionrequest.FieldID, field.TypeInt64),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedGrowthCompletionRequestsIDs(); len(nodes) > 0 && !_u.mutation.GrowthCompletionRequestsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.GrowthCompletionRequestsTable,
+			Columns: []string{user.GrowthCompletionRequestsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(growthcompletionrequest.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.GrowthCompletionRequestsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.GrowthCompletionRequestsTable,
+			Columns: []string{user.GrowthCompletionRequestsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(growthcompletionrequest.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.GrowthRewardClaimsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.GrowthRewardClaimsTable,
+			Columns: []string{user.GrowthRewardClaimsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(growthrewardclaim.FieldID, field.TypeInt64),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedGrowthRewardClaimsIDs(); len(nodes) > 0 && !_u.mutation.GrowthRewardClaimsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.GrowthRewardClaimsTable,
+			Columns: []string{user.GrowthRewardClaimsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(growthrewardclaim.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.GrowthRewardClaimsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.GrowthRewardClaimsTable,
+			Columns: []string{user.GrowthRewardClaimsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(growthrewardclaim.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.GrowthExchangeOrdersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.GrowthExchangeOrdersTable,
+			Columns: []string{user.GrowthExchangeOrdersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(growthexchangeorder.FieldID, field.TypeInt64),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedGrowthExchangeOrdersIDs(); len(nodes) > 0 && !_u.mutation.GrowthExchangeOrdersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.GrowthExchangeOrdersTable,
+			Columns: []string{user.GrowthExchangeOrdersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(growthexchangeorder.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.GrowthExchangeOrdersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.GrowthExchangeOrdersTable,
+			Columns: []string{user.GrowthExchangeOrdersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(growthexchangeorder.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.GrowthAdminAuditsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.GrowthAdminAuditsTable,
+			Columns: []string{user.GrowthAdminAuditsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(growthadminaudit.FieldID, field.TypeInt64),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedGrowthAdminAuditsIDs(); len(nodes) > 0 && !_u.mutation.GrowthAdminAuditsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.GrowthAdminAuditsTable,
+			Columns: []string{user.GrowthAdminAuditsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(growthadminaudit.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.GrowthAdminAuditsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.GrowthAdminAuditsTable,
+			Columns: []string{user.GrowthAdminAuditsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(growthadminaudit.FieldID, field.TypeInt64),
 			},
 		}
 		for _, k := range nodes {

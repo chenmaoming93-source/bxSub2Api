@@ -40,6 +40,40 @@ type Tx struct {
 	ErrorPassthroughRule *ErrorPassthroughRuleClient
 	// Group is the client for interacting with the Group builders.
 	Group *GroupClient
+	// GrowthAccountLedger is the client for interacting with the GrowthAccountLedger builders.
+	GrowthAccountLedger *GrowthAccountLedgerClient
+	// GrowthAdminAudit is the client for interacting with the GrowthAdminAudit builders.
+	GrowthAdminAudit *GrowthAdminAuditClient
+	// GrowthBudget is the client for interacting with the GrowthBudget builders.
+	GrowthBudget *GrowthBudgetClient
+	// GrowthBudgetEntry is the client for interacting with the GrowthBudgetEntry builders.
+	GrowthBudgetEntry *GrowthBudgetEntryClient
+	// GrowthCompletionRequest is the client for interacting with the GrowthCompletionRequest builders.
+	GrowthCompletionRequest *GrowthCompletionRequestClient
+	// GrowthExchangeOrder is the client for interacting with the GrowthExchangeOrder builders.
+	GrowthExchangeOrder *GrowthExchangeOrderClient
+	// GrowthFulfillmentJob is the client for interacting with the GrowthFulfillmentJob builders.
+	GrowthFulfillmentJob *GrowthFulfillmentJobClient
+	// GrowthInventoryLedger is the client for interacting with the GrowthInventoryLedger builders.
+	GrowthInventoryLedger *GrowthInventoryLedgerClient
+	// GrowthProduct is the client for interacting with the GrowthProduct builders.
+	GrowthProduct *GrowthProductClient
+	// GrowthProductInventory is the client for interacting with the GrowthProductInventory builders.
+	GrowthProductInventory *GrowthProductInventoryClient
+	// GrowthProductVersion is the client for interacting with the GrowthProductVersion builders.
+	GrowthProductVersion *GrowthProductVersionClient
+	// GrowthRewardClaim is the client for interacting with the GrowthRewardClaim builders.
+	GrowthRewardClaim *GrowthRewardClaimClient
+	// GrowthTask is the client for interacting with the GrowthTask builders.
+	GrowthTask *GrowthTaskClient
+	// GrowthTaskRule is the client for interacting with the GrowthTaskRule builders.
+	GrowthTaskRule *GrowthTaskRuleClient
+	// GrowthTransfer is the client for interacting with the GrowthTransfer builders.
+	GrowthTransfer *GrowthTransferClient
+	// GrowthUserTask is the client for interacting with the GrowthUserTask builders.
+	GrowthUserTask *GrowthUserTaskClient
+	// GrowthWallet is the client for interacting with the GrowthWallet builders.
+	GrowthWallet *GrowthWalletClient
 	// IdempotencyRecord is the client for interacting with the IdempotencyRecord builders.
 	IdempotencyRecord *IdempotencyRecordClient
 	// IdentityAdoptionDecision is the client for interacting with the IdentityAdoptionDecision builders.
@@ -258,6 +292,23 @@ func (tx *Tx) init() {
 	tx.ChannelMonitorRequestTemplate = NewChannelMonitorRequestTemplateClient(tx.config)
 	tx.ErrorPassthroughRule = NewErrorPassthroughRuleClient(tx.config)
 	tx.Group = NewGroupClient(tx.config)
+	tx.GrowthAccountLedger = NewGrowthAccountLedgerClient(tx.config)
+	tx.GrowthAdminAudit = NewGrowthAdminAuditClient(tx.config)
+	tx.GrowthBudget = NewGrowthBudgetClient(tx.config)
+	tx.GrowthBudgetEntry = NewGrowthBudgetEntryClient(tx.config)
+	tx.GrowthCompletionRequest = NewGrowthCompletionRequestClient(tx.config)
+	tx.GrowthExchangeOrder = NewGrowthExchangeOrderClient(tx.config)
+	tx.GrowthFulfillmentJob = NewGrowthFulfillmentJobClient(tx.config)
+	tx.GrowthInventoryLedger = NewGrowthInventoryLedgerClient(tx.config)
+	tx.GrowthProduct = NewGrowthProductClient(tx.config)
+	tx.GrowthProductInventory = NewGrowthProductInventoryClient(tx.config)
+	tx.GrowthProductVersion = NewGrowthProductVersionClient(tx.config)
+	tx.GrowthRewardClaim = NewGrowthRewardClaimClient(tx.config)
+	tx.GrowthTask = NewGrowthTaskClient(tx.config)
+	tx.GrowthTaskRule = NewGrowthTaskRuleClient(tx.config)
+	tx.GrowthTransfer = NewGrowthTransferClient(tx.config)
+	tx.GrowthUserTask = NewGrowthUserTaskClient(tx.config)
+	tx.GrowthWallet = NewGrowthWalletClient(tx.config)
 	tx.IdempotencyRecord = NewIdempotencyRecordClient(tx.config)
 	tx.IdentityAdoptionDecision = NewIdentityAdoptionDecisionClient(tx.config)
 	tx.ObservabilityConcurrencyBucket = NewObservabilityConcurrencyBucketClient(tx.config)

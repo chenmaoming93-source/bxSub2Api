@@ -39,19 +39,27 @@ describe('ModelObservabilityView foundation', () => {
     expect(source).toContain('<AppLayout>')
     expect(source).toContain("import AppLayout from '@/components/layout/AppLayout.vue'")
     expect(source).toContain('sm:grid-cols-2')
-    expect(source).toContain('xl:grid-cols-7')
-    expect(source).toContain('xl:grid-cols-[minmax(0,1.7fr)_minmax(300px,.9fr)]')
+    expect(source).toContain('xl:grid-cols-8')
     expect(source).toContain('dark:bg-dark-800')
     expect(heatmapSource).toContain('overflow-x-auto')
   })
 
-  it('renders the Demo-style shell, selector workbench and seven KPIs', () => {
+  it('renders the Demo-style shell, selector workbench and eight KPIs', () => {
     expect(source).toContain("t('admin.observability.heroEyebrow')")
     expect(source).toContain("t('admin.observability.workbenchTitle')")
-    expect(source).toContain("t('admin.observability.scopeTitle')")
+    expect(source).not.toContain("t('admin.observability.scopeTitle')")
     expect(source).toContain("t('admin.observability.capacityAttention')")
     expect(source).toContain('autoRefresh.value')
     expect(source).toContain('avg_first_token_ms')
+  })
+
+  it('keeps the scope card distinct from the KPI cards', () => {
+    const kpiStart = source.indexOf('const kpis = computed')
+    expect(kpiStart).toBeGreaterThan(-1)
+    expect(source).not.toContain('const scopeValues = computed')
+    const kpiSource = source.slice(kpiStart, source.indexOf('const bucketSeconds = computed'))
+    expect(kpiSource).toContain("t('admin.observability.tokenUsage')")
+    expect(kpiSource).toContain("t('admin.observability.currentTokenRate')")
   })
 
   it('restores canonical object filters from alert deep links', () => {
@@ -74,5 +82,21 @@ describe('ModelObservabilityView foundation', () => {
     expect(source).toContain('selectQuickRange')
     expect(source).toContain('applyCustomTime')
     expect(source).toContain("t('admin.observability.endAfterStart')")
+  })
+
+  it('places capacity below the real pressure ranking', () => {
+    const rankingIndex = source.indexOf('<PressureRanking')
+    const capacityIndex = source.indexOf('<ConcurrencyCapacityCard')
+    const qualityTopIndex = source.indexOf('<QualityTopPeriods')
+    expect(rankingIndex).toBeGreaterThan(-1)
+    expect(capacityIndex).toBeGreaterThan(rankingIndex)
+    expect(qualityTopIndex).toBeGreaterThan(capacityIndex)
+  })
+
+  it('stages object selections and applies them from an explicit confirm action', () => {
+    expect(source).toContain('const pendingSelections = reactive<PendingSelections>')
+    expect(source).toContain('const hasPendingSelectionChanges = computed')
+    expect(source).toContain('function confirmObjectSelection()')
+    expect(source).toContain("t('admin.observability.applySelection')")
   })
 })

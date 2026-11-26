@@ -90,6 +90,11 @@ external_api_key_provisioning:
 run_mode: "standard"
 timezone: "Asia/Shanghai"
 
+growth:
+  crypto:
+    # AIWork envelope issued_at acceptance window. Keep both hosts on NTP.
+    time_window: "5m"
+
 gateway:
   # 候选分时段最大并发配置的全量刷新锁。默认 5 分钟租约，每 30 秒续租。
   model_route_schedule:

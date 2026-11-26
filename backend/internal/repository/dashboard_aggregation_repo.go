@@ -281,7 +281,10 @@ func (r *dashboardAggregationRepository) EnsureUsageLogsPartitions(ctx context.C
 }
 
 func (r *dashboardAggregationRepository) insertHourlyActiveUsers(ctx context.Context, start, end time.Time) error {
-	tzName := timezone.Name()
+	tzOffset, err := timezone.SQLUTCOffsetRange(start, end)
+	if err != nil {
+		return err
+	}
 	query := `
 		INSERT IGNORE INTO usage_dashboard_hourly_users (bucket_start, user_id)
 		SELECT DISTINCT
@@ -290,12 +293,15 @@ func (r *dashboardAggregationRepository) insertHourlyActiveUsers(ctx context.Con
 		FROM usage_logs
 		WHERE created_at >= ? AND created_at < ?
 	`
-	_, err := r.sql.ExecContext(ctx, query, tzName, tzName, start, end)
+	_, err = r.sql.ExecContext(ctx, query, tzOffset, tzOffset, start, end)
 	return err
 }
 
 func (r *dashboardAggregationRepository) insertDailyActiveUsers(ctx context.Context, start, end time.Time) error {
-	tzName := timezone.Name()
+	tzOffset, err := timezone.SQLUTCOffsetRange(start, end)
+	if err != nil {
+		return err
+	}
 	query := `
 		INSERT IGNORE INTO usage_dashboard_daily_users (bucket_date, user_id)
 		SELECT DISTINCT
@@ -304,12 +310,15 @@ func (r *dashboardAggregationRepository) insertDailyActiveUsers(ctx context.Cont
 		FROM usage_dashboard_hourly_users
 		WHERE bucket_start >= ? AND bucket_start < ?
 	`
-	_, err := r.sql.ExecContext(ctx, query, tzName, start, end)
+	_, err = r.sql.ExecContext(ctx, query, tzOffset, start, end)
 	return err
 }
 
 func (r *dashboardAggregationRepository) upsertHourlyAggregates(ctx context.Context, start, end time.Time) error {
-	tzName := timezone.Name()
+	tzOffset, err := timezone.SQLUTCOffsetRange(start, end)
+	if err != nil {
+		return err
+	}
 	query := `
 		INSERT INTO usage_dashboard_hourly (
 			bucket_start, total_requests, input_tokens, output_tokens,
@@ -350,12 +359,15 @@ func (r *dashboardAggregationRepository) upsertHourlyAggregates(ctx context.Cont
 			total_duration_ms = VALUES(total_duration_ms), active_users = VALUES(active_users),
 			computed_at = VALUES(computed_at)
 	`
-	_, err := r.sql.ExecContext(ctx, query, tzName, tzName, start, end, start, end)
+	_, err = r.sql.ExecContext(ctx, query, tzOffset, tzOffset, start, end, start, end)
 	return err
 }
 
 func (r *dashboardAggregationRepository) upsertDailyAggregates(ctx context.Context, start, end time.Time) error {
-	tzName := timezone.Name()
+	tzOffset, err := timezone.SQLUTCOffsetRange(start, end)
+	if err != nil {
+		return err
+	}
 	query := `
 		INSERT INTO usage_dashboard_daily (
 			bucket_date, total_requests, input_tokens, output_tokens,
@@ -396,7 +408,7 @@ func (r *dashboardAggregationRepository) upsertDailyAggregates(ctx context.Conte
 			total_duration_ms = VALUES(total_duration_ms), active_users = VALUES(active_users),
 			computed_at = VALUES(computed_at)
 	`
-	_, err := r.sql.ExecContext(ctx, query, tzName, start, end, start, end)
+	_, err = r.sql.ExecContext(ctx, query, tzOffset, start, end, start, end)
 	return err
 }
 

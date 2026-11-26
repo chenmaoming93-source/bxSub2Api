@@ -45,6 +45,57 @@ type ErrorPassthroughRule func(*sql.Selector)
 // Group is the predicate function for group builders.
 type Group func(*sql.Selector)
 
+// GrowthAccountLedger is the predicate function for growthaccountledger builders.
+type GrowthAccountLedger func(*sql.Selector)
+
+// GrowthAdminAudit is the predicate function for growthadminaudit builders.
+type GrowthAdminAudit func(*sql.Selector)
+
+// GrowthBudget is the predicate function for growthbudget builders.
+type GrowthBudget func(*sql.Selector)
+
+// GrowthBudgetEntry is the predicate function for growthbudgetentry builders.
+type GrowthBudgetEntry func(*sql.Selector)
+
+// GrowthCompletionRequest is the predicate function for growthcompletionrequest builders.
+type GrowthCompletionRequest func(*sql.Selector)
+
+// GrowthExchangeOrder is the predicate function for growthexchangeorder builders.
+type GrowthExchangeOrder func(*sql.Selector)
+
+// GrowthFulfillmentJob is the predicate function for growthfulfillmentjob builders.
+type GrowthFulfillmentJob func(*sql.Selector)
+
+// GrowthInventoryLedger is the predicate function for growthinventoryledger builders.
+type GrowthInventoryLedger func(*sql.Selector)
+
+// GrowthProduct is the predicate function for growthproduct builders.
+type GrowthProduct func(*sql.Selector)
+
+// GrowthProductInventory is the predicate function for growthproductinventory builders.
+type GrowthProductInventory func(*sql.Selector)
+
+// GrowthProductVersion is the predicate function for growthproductversion builders.
+type GrowthProductVersion func(*sql.Selector)
+
+// GrowthRewardClaim is the predicate function for growthrewardclaim builders.
+type GrowthRewardClaim func(*sql.Selector)
+
+// GrowthTask is the predicate function for growthtask builders.
+type GrowthTask func(*sql.Selector)
+
+// GrowthTaskRule is the predicate function for growthtaskrule builders.
+type GrowthTaskRule func(*sql.Selector)
+
+// GrowthTransfer is the predicate function for growthtransfer builders.
+type GrowthTransfer func(*sql.Selector)
+
+// GrowthUserTask is the predicate function for growthusertask builders.
+type GrowthUserTask func(*sql.Selector)
+
+// GrowthWallet is the predicate function for growthwallet builders.
+type GrowthWallet func(*sql.Selector)
+
 // IdempotencyRecord is the predicate function for idempotencyrecord builders.
 type IdempotencyRecord func(*sql.Selector)
 

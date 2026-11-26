@@ -25,6 +25,7 @@ func RegisterUserRoutes(
 		// 用户接口
 		user := authenticated.Group("/user")
 		{
+			registerGrowthUserRoutes(user, h, rbacRoutes)
 			rbacRoutes.GET(user, "/profile", rbac.PermissionProfileSelfRead, h.User.GetProfile)
 			rbacRoutes.PUT(user, "/password", rbac.PermissionProfileSelfSecure, h.User.ChangePassword)
 			rbacRoutes.PUT(user, "", rbac.PermissionProfileSelfUpdate, h.User.UpdateProfile)

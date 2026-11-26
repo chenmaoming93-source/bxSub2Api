@@ -9,6 +9,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
+	"github.com/Wei-Shaw/sub2api/ent/growthwallet"
 	"github.com/Wei-Shaw/sub2api/ent/rbacuserversion"
 	"github.com/Wei-Shaw/sub2api/ent/user"
 )
@@ -108,11 +109,23 @@ type UserEdges struct {
 	RbacUserVersion *RBACUserVersion `json:"rbac_user_version,omitempty"`
 	// RbacAuditLogs holds the value of the rbac_audit_logs edge.
 	RbacAuditLogs []*RBACAuditLog `json:"rbac_audit_logs,omitempty"`
+	// GrowthWallet holds the value of the growth_wallet edge.
+	GrowthWallet *GrowthWallet `json:"growth_wallet,omitempty"`
+	// GrowthUserTasks holds the value of the growth_user_tasks edge.
+	GrowthUserTasks []*GrowthUserTask `json:"growth_user_tasks,omitempty"`
+	// GrowthCompletionRequests holds the value of the growth_completion_requests edge.
+	GrowthCompletionRequests []*GrowthCompletionRequest `json:"growth_completion_requests,omitempty"`
+	// GrowthRewardClaims holds the value of the growth_reward_claims edge.
+	GrowthRewardClaims []*GrowthRewardClaim `json:"growth_reward_claims,omitempty"`
+	// GrowthExchangeOrders holds the value of the growth_exchange_orders edge.
+	GrowthExchangeOrders []*GrowthExchangeOrder `json:"growth_exchange_orders,omitempty"`
+	// GrowthAdminAudits holds the value of the growth_admin_audits edge.
+	GrowthAdminAudits []*GrowthAdminAudit `json:"growth_admin_audits,omitempty"`
 	// UserAllowedGroups holds the value of the user_allowed_groups edge.
 	UserAllowedGroups []*UserAllowedGroup `json:"user_allowed_groups,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [18]bool
+	loadedTypes [24]bool
 }
 
 // APIKeysOrErr returns the APIKeys value or an error if the edge
@@ -270,10 +283,66 @@ func (e UserEdges) RbacAuditLogsOrErr() ([]*RBACAuditLog, error) {
 	return nil, &NotLoadedError{edge: "rbac_audit_logs"}
 }
 
+// GrowthWalletOrErr returns the GrowthWallet value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e UserEdges) GrowthWalletOrErr() (*GrowthWallet, error) {
+	if e.GrowthWallet != nil {
+		return e.GrowthWallet, nil
+	} else if e.loadedTypes[17] {
+		return nil, &NotFoundError{label: growthwallet.Label}
+	}
+	return nil, &NotLoadedError{edge: "growth_wallet"}
+}
+
+// GrowthUserTasksOrErr returns the GrowthUserTasks value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) GrowthUserTasksOrErr() ([]*GrowthUserTask, error) {
+	if e.loadedTypes[18] {
+		return e.GrowthUserTasks, nil
+	}
+	return nil, &NotLoadedError{edge: "growth_user_tasks"}
+}
+
+// GrowthCompletionRequestsOrErr returns the GrowthCompletionRequests value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) GrowthCompletionRequestsOrErr() ([]*GrowthCompletionRequest, error) {
+	if e.loadedTypes[19] {
+		return e.GrowthCompletionRequests, nil
+	}
+	return nil, &NotLoadedError{edge: "growth_completion_requests"}
+}
+
+// GrowthRewardClaimsOrErr returns the GrowthRewardClaims value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) GrowthRewardClaimsOrErr() ([]*GrowthRewardClaim, error) {
+	if e.loadedTypes[20] {
+		return e.GrowthRewardClaims, nil
+	}
+	return nil, &NotLoadedError{edge: "growth_reward_claims"}
+}
+
+// GrowthExchangeOrdersOrErr returns the GrowthExchangeOrders value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) GrowthExchangeOrdersOrErr() ([]*GrowthExchangeOrder, error) {
+	if e.loadedTypes[21] {
+		return e.GrowthExchangeOrders, nil
+	}
+	return nil, &NotLoadedError{edge: "growth_exchange_orders"}
+}
+
+// GrowthAdminAuditsOrErr returns the GrowthAdminAudits value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) GrowthAdminAuditsOrErr() ([]*GrowthAdminAudit, error) {
+	if e.loadedTypes[22] {
+		return e.GrowthAdminAudits, nil
+	}
+	return nil, &NotLoadedError{edge: "growth_admin_audits"}
+}
+
 // UserAllowedGroupsOrErr returns the UserAllowedGroups value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) UserAllowedGroupsOrErr() ([]*UserAllowedGroup, error) {
-	if e.loadedTypes[17] {
+	if e.loadedTypes[23] {
 		return e.UserAllowedGroups, nil
 	}
 	return nil, &NotLoadedError{edge: "user_allowed_groups"}
@@ -561,6 +630,36 @@ func (_m *User) QueryRbacUserVersion() *RBACUserVersionQuery {
 // QueryRbacAuditLogs queries the "rbac_audit_logs" edge of the User entity.
 func (_m *User) QueryRbacAuditLogs() *RBACAuditLogQuery {
 	return NewUserClient(_m.config).QueryRbacAuditLogs(_m)
+}
+
+// QueryGrowthWallet queries the "growth_wallet" edge of the User entity.
+func (_m *User) QueryGrowthWallet() *GrowthWalletQuery {
+	return NewUserClient(_m.config).QueryGrowthWallet(_m)
+}
+
+// QueryGrowthUserTasks queries the "growth_user_tasks" edge of the User entity.
+func (_m *User) QueryGrowthUserTasks() *GrowthUserTaskQuery {
+	return NewUserClient(_m.config).QueryGrowthUserTasks(_m)
+}
+
+// QueryGrowthCompletionRequests queries the "growth_completion_requests" edge of the User entity.
+func (_m *User) QueryGrowthCompletionRequests() *GrowthCompletionRequestQuery {
+	return NewUserClient(_m.config).QueryGrowthCompletionRequests(_m)
+}
+
+// QueryGrowthRewardClaims queries the "growth_reward_claims" edge of the User entity.
+func (_m *User) QueryGrowthRewardClaims() *GrowthRewardClaimQuery {
+	return NewUserClient(_m.config).QueryGrowthRewardClaims(_m)
+}
+
+// QueryGrowthExchangeOrders queries the "growth_exchange_orders" edge of the User entity.
+func (_m *User) QueryGrowthExchangeOrders() *GrowthExchangeOrderQuery {
+	return NewUserClient(_m.config).QueryGrowthExchangeOrders(_m)
+}
+
+// QueryGrowthAdminAudits queries the "growth_admin_audits" edge of the User entity.
+func (_m *User) QueryGrowthAdminAudits() *GrowthAdminAuditQuery {
+	return NewUserClient(_m.config).QueryGrowthAdminAudits(_m)
 }
 
 // QueryUserAllowedGroups queries the "user_allowed_groups" edge of the User entity.

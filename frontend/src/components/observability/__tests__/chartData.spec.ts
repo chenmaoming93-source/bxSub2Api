@@ -32,6 +32,25 @@ describe('observability chart adapters', () => {
     expect(tokenChartDatasets(['10:00', '10:05'], payload)).toEqual([])
   })
 
+  it('derives cache hit rate from cache divided by input plus cache', () => {
+    const labels = ['10:00', '10:05', '10:10']
+    const payload = response({
+      series: [
+        { key: 'total_tokens', name: 'Tokens', points: [100, 10, 0] },
+        { key: 'input_tokens', name: 'Input', points: [30, 0, 0] },
+        { key: 'output_tokens', name: 'Output', points: [50, 10, 0] },
+        { key: 'cache_tokens', name: 'Cache', points: [10, 5, 0] },
+        { key: 'total_requests', name: 'Requests', points: [1, 1, 0] },
+      ],
+    })
+
+    const hitRate = tokenChartDatasets(labels, payload).find((item) => item.key === 'cache_hit_rate')
+    expect(hitRate).toMatchObject({
+      data: [0.25, 1, 0],
+      yAxisID: 'yRate',
+    })
+  })
+
   it('renders all supported Token metrics as named dimension series', () => {
     const labels = ['10:00', '10:05']
     const metrics = [

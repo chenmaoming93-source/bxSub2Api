@@ -1,3 +1,5 @@
+import growth from './growth.zh'
+
 export default {
   // Home Page
   home: {
@@ -1500,6 +1502,7 @@ export default {
       noDepartment: '未设置部门',
       unknownModel: '模型归属未知',
       totalTokens: '窗口 Token',
+      tokenRateDetail: '按时间桶换算',
       tokenRate: 'Token 速率',
       requests: '请求数',
       clientFailureRate: '最终失败率',
@@ -1548,12 +1551,10 @@ export default {
       searchDimension: '搜索当前维度对象...',
       selectAllScope: '全选当前范围',
       clearDimension: '清空当前维度',
+      applySelection: '确定',
       highPressureOnlyLabel: '仅看高压对象',
       noMatchingObjects: '当前筛选组合下没有匹配对象',
       clearAll: '清除全部',
-      scopeTitle: '当前观测范围',
-      scopeSummary: 'Token 路径求和 · 并发按账号去重',
-      pathsCount: '{count} 路径',
       tokenUsage: 'Token 用量',
       concurrencyLimit: '并发 / 上限',
       saturation: '饱和度',
@@ -1566,6 +1567,8 @@ export default {
       latestValue: '{label}最新值 {value}',
       accountCapacityWarning: '账号 #{id} 当前并发 {current}/{limit}，等待 {waiting}，饱和度 {percent}%。请人工核查账号容量。',
       tokenRequestTrend: 'Token 用量与请求趋势',
+      cacheHitRate: '缓存命中率',
+      cacheHitRateHelp: '缓存命中率 = 缓存 / (输入 + 缓存)',
       dimensionOther: '其他',
       overallToken: '整体 Token',
       buckets: '{count} 个时间桶',
@@ -7871,5 +7874,5 @@ export default {
       },
     },
   },
-
+  growth,
 }

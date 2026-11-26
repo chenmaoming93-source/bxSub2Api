@@ -28,6 +28,7 @@ func SetupRouter(
 	adminAuth middleware2.AdminAuthMiddleware,
 	adminIdentityAuth middleware2.AdminIdentityAuthMiddleware,
 	apiKeyAuth middleware2.APIKeyAuthMiddleware,
+	growthDecryptor middleware2.GrowthPayloadDecryptor,
 	apiKeyService *service.APIKeyService,
 	subscriptionService *service.SubscriptionService,
 	opsService *service.OpsService,
@@ -85,7 +86,7 @@ func SetupRouter(
 	}
 
 	// 注册路由
-	registerRoutes(r, handlers, jwtAuth, adminAuth, adminIdentityAuth, apiKeyAuth, apiKeyService, subscriptionService, opsService, settingService, cfg, redisClient, rbacPermissionService, rbacRegistry)
+	registerRoutes(r, handlers, jwtAuth, adminAuth, adminIdentityAuth, apiKeyAuth, growthDecryptor, apiKeyService, subscriptionService, opsService, settingService, cfg, redisClient, rbacPermissionService, rbacRegistry)
 
 	return r
 }
@@ -98,6 +99,7 @@ func registerRoutes(
 	adminAuth middleware2.AdminAuthMiddleware,
 	adminIdentityAuth middleware2.AdminIdentityAuthMiddleware,
 	apiKeyAuth middleware2.APIKeyAuthMiddleware,
+	growthDecryptor middleware2.GrowthPayloadDecryptor,
 	apiKeyService *service.APIKeyService,
 	subscriptionService *service.SubscriptionService,
 	opsService *service.OpsService,
@@ -124,6 +126,7 @@ func registerRoutes(
 	// 注册各模块路由
 	routes.RegisterAuthRoutes(v1, h, jwtAuth, redisClient, settingService, rbacRegistrar)
 	routes.RegisterUserRoutes(v1, h, jwtAuth, settingService, rbacRegistrar)
+	routes.RegisterGrowthRoutes(v1, h, growthDecryptor)
 	routes.RegisterAdminRoutes(v1, h, adminAuth, settingService, routes.AdminRBACOptions{
 		IdentityAuth: adminIdentityAuth,
 		Registrar:    rbacRegistrar,

@@ -21,6 +21,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/internal/server"
 	"github.com/Wei-Shaw/sub2api/internal/server/middleware"
 	"github.com/Wei-Shaw/sub2api/internal/service"
+	growthservice "github.com/Wei-Shaw/sub2api/internal/service/growth"
 	tokenstat "github.com/Wei-Shaw/sub2api/internal/service/tokenstat"
 
 	"github.com/google/wire"
@@ -195,6 +196,7 @@ func provideCleanup(
 	paymentOrderExpiry *service.PaymentOrderExpiryService,
 	channelMonitorRunner *service.ChannelMonitorRunner,
 	quotaFlusher *service.UserPlatformQuotaUsageFlusher,
+	growthFulfillment *growthservice.FulfillmentService,
 ) func() {
 	return func() {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -368,6 +370,12 @@ func provideCleanup(
 			{"UserPlatformQuotaUsageFlusher", func() error {
 				if quotaFlusher != nil {
 					quotaFlusher.Stop()
+				}
+				return nil
+			}},
+			{"GrowthFulfillmentService", func() error {
+				if growthFulfillment != nil {
+					growthFulfillment.Stop()
 				}
 				return nil
 			}},

@@ -8,11 +8,13 @@ START TRANSACTION;
 
 DROP TEMPORARY TABLE IF EXISTS rbac_seed_role_guard;
 CREATE TEMPORARY TABLE rbac_seed_role_guard (
-    invalid_count BIGINT NOT NULL,
-    CONSTRAINT chk_rbac_seed_known_roles CHECK (invalid_count = 0)
+    guard_id TINYINT NOT NULL PRIMARY KEY
 );
-INSERT INTO rbac_seed_role_guard (invalid_count)
-SELECT COUNT(*) FROM users WHERE role IS NULL OR role NOT IN ('admin', 'user');
+INSERT INTO rbac_seed_role_guard (guard_id) VALUES (1);
+INSERT INTO rbac_seed_role_guard (guard_id)
+SELECT 1 FROM users
+WHERE role IS NULL OR role NOT IN ('admin', 'user')
+LIMIT 1;
 
 INSERT INTO rbac_permissions
     (code, name, module, description, risk_level, is_system, status, created_at, updated_at, deleted_at)
@@ -54,6 +56,11 @@ VALUES
     ('dashboard.read', '查看管理仪表盘', 'dashboard', '查看管理统计和趋势', 'low', TRUE, 'active', CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), NULL),
     ('data_management.read', '查看数据管理', 'data_management', '查看数据源和任务', 'low', TRUE, 'active', CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), NULL),
     ('data_management.update', '修改数据管理', 'data_management', '修改数据源或执行任务', 'high', TRUE, 'active', CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), NULL),
+    ('growth.adjust', '调整用户积分', 'growth', '对用户成长积分执行受审计调账', 'critical', TRUE, 'active', CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), NULL),
+    ('growth.manage', '管理成长计划', 'growth', '管理预算额度、任务、商品和订单履约', 'high', TRUE, 'active', CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), NULL),
+    ('growth.read', '查看成长计划', 'growth', '查看总预算、任务、商品、订单和用户积分', 'low', TRUE, 'active', CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), NULL),
+    ('growth.self.exchange', '兑换成长商品', 'growth', '使用当前用户积分兑换商品', 'high', TRUE, 'active', CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), NULL),
+    ('growth.self.read', '查看我的积分', 'growth', '查看当前用户成长积分、任务、商品和流水', 'low', TRUE, 'active', CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), NULL),
     ('groups.create', '创建分组', 'groups', '创建分组', 'medium', TRUE, 'active', CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), NULL),
     ('groups.delete', '删除分组', 'groups', '删除分组', 'critical', TRUE, 'active', CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), NULL),
     ('groups.read', '查看分组', 'groups', '查看分组信息', 'low', TRUE, 'active', CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6), NULL),
@@ -157,6 +164,15 @@ INSERT INTO rbac_role_permissions (role_id, permission_id, created_at, updated_a
 SELECT role_row.id, permission_row.id, CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6)
 FROM rbac_roles AS role_row
 JOIN rbac_permissions AS permission_row ON permission_row.module = 'self' AND permission_row.deleted_at IS NULL
+WHERE role_row.code = 'user'
+ON DUPLICATE KEY UPDATE updated_at = CURRENT_TIMESTAMP(6);
+
+INSERT INTO rbac_role_permissions (role_id, permission_id, created_at, updated_at)
+SELECT role_row.id, permission_row.id, CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6)
+FROM rbac_roles AS role_row
+JOIN rbac_permissions AS permission_row
+  ON permission_row.code IN ('growth.self.read', 'growth.self.exchange')
+ AND permission_row.deleted_at IS NULL
 WHERE role_row.code = 'user'
 ON DUPLICATE KEY UPDATE updated_at = CURRENT_TIMESTAMP(6);
 

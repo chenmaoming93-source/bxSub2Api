@@ -1,0 +1,824 @@
+===== GROWTH_PLAN_DESIGN.md =====
+--- E:/code/vs/bxsub2api/bxSub2Api/.growth_docs_baseline/GROWTH_PLAN_DESIGN.md	2026-11-17 19:09:19.303957500 +0800
++++ E:/code/vs/bxsub2api/bxSub2Api/docs/GROWTH_PLAN_DESIGN.md	2026-11-17 19:12:38.217795600 +0800
+@@ -1,22 +1,22 @@
+-# AIWork 用户成长计划｜优化设计 v5.1（内部系统·国密 SM2 加密报文互信）
++# AIWork 用户成长计划｜优化设计 v6.0（内部系统·国密 SM2 加密报文互信·完成判定在 AIWork）
+ 
+ > 基线：《AIWork 用户成长计划：后端与 GoldenDB 数据设计》v1
+ > 日期：2026-11-17 ｜ 代码基线：`bxSub2Api`（Go + Gin + Ent + MySQL 8 / GoldenDB 兼容模式）
+-> 配套契约：[GROWTH_PLAN_AIWORK_API.md](GROWTH_PLAN_AIWORK_API.md)（AIWork 唯一对接依据）
++> 配套契约：[GROWTH_PLAN_AIWORK_API.md](GROWTH_PLAN_AIWORK_API.md) **v4.0（冻结，AIWork 唯一对接依据）**
+ 
+ ---
+ 
+ ## 0. 优化摘要
+ 
+-| # | v1 的问题 | v2 结论 |
++| # | v1 的问题 | 现行结论 |
+ |---|---|---|
+ | 1 | 抽象出「成长计划服务」+「模型平台」两方，AIWork 需经平台中转，且声明「不假定平台已有接口」 | **sub2api 就是成长计划服务**，同时它就是模型网关。全局只有两方：sub2api ↔ AIWork。Token 发放是 sub2api **内部 service 调用**，不是跨系统 HTTP |
+ | 2 | 「用户级凭证」列为上线阻塞项，但未给出落地路径 | **内部系统不做任何服务间身份校验，不改 AIWork 登录**：请求报文用**国密 SM2 非对称数字信封**加密（sub2api 持私钥、AIWork 持公钥；SM2 封装 SM4 会话密钥 + SM4 加密 + SM3-HMAC），服务端能解封装即可信；报文中带业务用户名，仅映射为 `users.id` 做账务，不验签、不校验账号状态 |
+-| 3 | 任务完成依赖「可信任务服务 / Orange 事件」，而 sub2api 侧不存在该组件 | 首选复用现有只追加表 `usage_logs`（含网关认证后的真实 `user_id`、`request_id`）作权威证据；非网关任务走 I 面签名事件 |
++| 3 | 任务完成依赖「可信任务服务 / Orange 事件」，而 sub2api 侧不存在该组件 | **v6.0 定稿：任务/签到是否完成由 AIWork 侧判定**，提交完成请求时带 `completion_ref`；sub2api **不回查 `usage_logs`、不接 I 面事件、不做证据核验**，收到完成请求即按当前规则算分并发放（账务防重仍由服务端负责） |
+ | 4 | `idempotency_key` 同时用于接口去重与账务防重，语义混淆 | 拆成 **L1 请求幂等**（复用 `idempotency_records`）+ **L2 账务唯一约束**（DB 唯一键），两层都不可省 |
+ | 5 | 游标分页、REST 路径、`/growth/*` 裸前缀、分布式 ID 等与项目规约不一致 | 对齐 `response.Response` envelope、`/api/v1/*` 前缀、`AUTO_INCREMENT BIGINT`、`sqlArchiving/182_*.sql`、RBAC coverage、`config.yaml` 同步 |
+-| 6 | API 清单缺「我的订单列表」和「完成请求状态查询」，异步核验无法闭环 | 补齐为 **12 个接口**（读 7 / 命令 3 / 状态 2），见配套契约 |
+-| 7 | 后管能力与给 AIWork 的接口混在同一节 | **三平面隔离**（U / M / I），M 面永不暴露给 AIWork，AIWork 也不得持有管理凭证 |
++| 6 | API 清单缺「我的订单列表」和「完成请求状态查询」，异步核验无法闭环 | 接口清单随模型演进；**v6.0 完成请求改为同步发分，删除异步核验状态查询接口**，U 面收敛为 **11 个接口**（读 7 / 命令 3 / 状态 1），见配套契约 v4.0 |
++| 7 | 后管能力与给 AIWork 的接口混在同一节 | **两平面隔离**（U / M），M 面永不暴露给 AIWork，AIWork 也不得持有管理凭证；v6.0 删除 I 面 |
+ 
+ ---
+ 
+@@ -24,8 +24,8 @@
+ 
+ ### 1.1 一句话定义
+ 
+-- **sub2api = 唯一权威**：积分池与预算、钱包与双边总账、任务与规则版本、商品与版本定价、库存/Token 预算、兑换订单与履约、运营后管、审计与对账。**所有「事实」只在 sub2api 产生。**
+-- **AIWork = 用户入口**：展示 + 发起请求。不产生事实、不计算奖励、不本地改余额、不缓存权威数据、不判定任务完成。
++- **sub2api = 账务与规则权威**：积分池与预算、钱包与双边总账、任务与规则版本、商品与版本定价、库存/Token 预算、兑换订单与履约、运营后管、审计与对账。**所有「账事实」只在 sub2api 产生。**
++- **AIWork = 用户入口 + 完成判定方**：展示 + 发起请求 + **判定任务/签到是否完成**（本地业务规则）。不计算奖励、不本地改余额、不缓存权威数据。**v6.0 职责反转**：任务是否完成由 AIWork 判定并声明，sub2api 不再核验完成证据，仅按当前生效规则计算应发积分、执行防重并发分。
+ 
+ ### 1.2 职责矩阵
+ 
+@@ -34,24 +34,25 @@
+ | 用户映射 | **OWN**：SM2 解封装报文后按业务用户名查 `users.id` 做账务关联（纯映射，非身份校验）；写 `AuthSubject` 仅为幂等隔离 | Main 从既有登录态读用户名塞进加密报文；登录功能零改动；Renderer 不接触私钥 |
+ | 积分余额 / 流水 | **OWN**：事务内维护，流水不可变 | 只渲染响应字段；余额为空则查 `POST /growth/me` |
+ | 任务目录 / 规则 / 周期 / 上限 | **OWN**：后台配置、版本发布 | 只展示服务端下发的文案、进度、奖励说明 |
+-| 任务完成判定 | **OWN**：回查可信证据后判定 | 只提交 `run_id` + 幂等键，不声明成功、不上报积分 |
+-| 奖励结算 / 积分转账 | **OWN**：池→钱包双边入账 | 无；禁止乐观加积分 |
++| **任务/签到完成判定** | **不判定、不核验**：收到完成请求即视为「已完成」，不做证据回查 | **OWN**：本地/业务侧判定任务或签到动作是否完成，完成后提交完成请求并声明 `completion_ref` |
++| 奖励计算 / 积分转账 | **OWN**：按当前生效规则算分、池→钱包双边入账、周期/上限防重 | 无；禁止乐观加积分，不得指定分数/周期/来源池 |
+ | 商品 / 定价版本 / 库存 / 限购 | **OWN**：按当前有效版本定价 | 只展示服务端价格；`expected_version` 仅用于发现目录过期 |
+ | 兑换下单 / 扣分 / 履约 / 退款 | **OWN**：事务 + Outbox 重试 | 只提交 `product_id` + 幂等键，展示订单状态 |
+ | 后管 UI（预算、任务、商品、订单、调账） | **OWN**：sub2api frontend + M 面 | **禁止**提供或调用 |
+ | 审计 / 对账 / 报表 | **OWN** | 无 |
+ 
+-**边界铁律**：AIWork 的每次点击只是「一次待服务端裁决的请求」。只有收到 sub2api 的业务响应，界面才能更新余额、任务进度和订单状态。
++**边界铁律（v6.0 修订）**：AIWork 判定「任务是否完成」并声明，sub2api 信任该声明、按规则裁决「发多少、归哪个周期、是否超上限」。AIWork 仍**不得本地加分**——只有收到 sub2api 的业务响应，界面才能更新余额与订单状态。「判定完成」和「积分到账」是两个动作，分属两侧。
+ 
+-### 1.3 三平面接口（职责分离的物理体现）
++### 1.3 两平面接口（职责分离的物理体现）
+ 
+ | 平面 | 路径前缀 | 调用方 | 信任方式 | 说明 |
+ |---|---|---|---|---|
+-| **U 面**（用户面） | `/api/v1/growth/*` | AIWork Electron **Main**（用户态） | 请求体 SM2 数字信封（SM2 封装 + SM4 加密 + SM3-HMAC）；服务端私钥解封装成功即可信 | 12 个接口，本文配套契约全文定义；挂 `GrowthPayloadDecryptor` 解封装并映射 `AuthSubject.UserID`；**无 JWT、无令牌交换、无身份头** |
++| **U 面**（用户面） | `/api/v1/growth/*` | AIWork Electron **Main**（用户态） | 请求体 SM2 数字信封（SM2 封装 + SM4 加密 + SM3-HMAC）；服务端私钥解封装成功即可信 | **11 个接口**，配套契约 v4.0 全文定义；挂 `GrowthPayloadDecryptor` 解封装并映射 `AuthSubject.UserID`；**无 JWT、无令牌交换、无身份头**；任务完成声明也在此 |
+ | **M 面**（管理面） | `/api/v1/admin/growth/*` | 仅 sub2api 后管 Vue | `AdminIdentityAuth` + RBAC permission | 积分池/任务/商品/订单/调账/报表；**不对 AIWork 开放** |
+-| **I 面**（集成面） | `/api/v1/integrations/growth/*` | AIWork 服务端 / Orange 等可信系统 | 同一套加密信封 + `path` 绑定 | 仅保留可信任务事件接收；不再做服务间签名或集成 Bearer |
+ 
+-> AIWork Renderer 只经类型化 `window.aiwork` preload API 发起调用，不直接请求任何平面、不接触密钥；密钥仅 Electron Main（及 AIWork 服务端）持有。切换账号时 Main 从新登录态读取用户名放入报文，并清除界面用户数据。
++> **v6.0 删除 I 面**（原 `/api/v1/integrations/growth/*`）：任务完成判定归属 AIWork、经 U 面完成请求直接声明，不再有可信事件接入需求。原 `task-events` 接口与 `growth_task_events` 表作废。
++>
++> AIWork Renderer 只经类型化 `window.aiwork` preload API 发起调用，不直接请求任何平面、不接触密钥；密钥仅 Electron Main 持有。切换账号时 Main 从新登录态读取用户名放入报文，并清除界面用户数据。
+ 
+ ### 1.4 资金流（v2：单库事务，无跨系统 HTTP 长事务）
+ 
+@@ -69,17 +70,20 @@
+ 
+ ---
+ 
+-## 2. 信任模型（v5.1：内部系统，国密 SM2 加密报文互信）
++## 2. 信任模型（v6.0：内部系统，国密 SM2 加密报文互信 + 完成判定在 AIWork）
+ 
+ > **决策变更（2026-11-17，第三次调整）**：在 v4「共享对称密钥」基础上升级为**国密 SM2 非对称加密**。仍然**不做任何服务间身份校验，不改 AIWork 登录**。原 v2 的 JWT 令牌交换、v3 的 `X-Growth-User` 身份头校验、v4 的共享对称密钥均整体作废。
+ >
+ > **v5 → v5.1（密钥管理简化，非破坏性）**：SM2 密钥对改为**直接分配、双方写死固定值**——sub2api 侧生成密钥对，私钥写死服务端、公钥写死 AIWork Main；**取消 `kid` 轮换、取消公钥 SM3 指纹校验、取消 KMS / 配置密文**。信封格式、算法、接口、账务事务均不变。
++>
++> **v5.1 → v6.0（任务完成判定职责反转，破坏性；配套契约 v4.0）**：任务/签到是否完成由 **AIWork 判定并在 U 面声明**（带 `completion_ref`），sub2api **不再回查 `usage_logs`、不接 I 面事件、不做证据核验**，收到完成请求即视为「已完成」，仅按当前规则算分并发分。I 面整体删除、完成请求状态机改为同步、U 面 12 → 11 个接口。**加密、密钥、账务事务、商品/兑换均不变。**
+ 
+ ### 2.1 核心原则：私钥解封装即信任
+ 
+ - **信任根**：SM2 非对称密钥对——**sub2api 持私钥（永不出服务端）**，AIWork 持公钥。AIWork 用公钥封装报文，sub2api 用私钥解封装成功 + SM3-HMAC 校验通过即视为可信调用。**没有令牌、没有身份头、没有账号状态校验。**
+ - **算法组合**：SM2 封装 SM4 会话密钥 + SM4-CBC 加密 payload + SM3-HMAC 完整性（详见契约 1.3）。纯 SM2 加密明文有长度限制，故用混合信封。
+ - **用户标识**：报文里带业务用户名（email），服务端解封装后仅做 `GetByEmail → users.id` 的**账务映射**——这不是身份校验，不验签、不查 `IsActive()`、不核对凭证；用户不存在按数据错误返回，不发奖。
++- **完成声明（v6.0 新增）**：任务/签到是否完成由 AIWork 判定，完成请求携带 `completion_ref`；sub2api 信任「解封装成功即代表可信调用方」这一前提，**不再独立验证任务是否真的完成**。发分数额、周期、上限仍由 sub2api 规则裁决。
+ - **账务不变**：所有账表仍用 `users.id`（int64）关联；幂等 `ActorScope` 仍显式构造，避免退化 `user:0`。
+ - **AIWork 登录零改动**：Main 从既有登录态读用户名塞进加密报文即可，不新增登录步骤、不引入令牌、Renderer 不接触私钥。
+ 
+@@ -104,19 +108,19 @@
+   participant D as sub2api 解封装中间件
+   participant G as sub2api U 面成长域
+   participant R as userRepository
+-  U->>AM: 在 AIWork 内点击签到 / 做任务 / 兑换
+-  AM->>AM: 读当前登录用户名 → 构造 payload<br/>SM2 公钥封装 SM4 会话密钥 + SM4 加密 + SM3-HMAC
++  U->>AM: 在 AIWork 内签到 / 做任务 / 兑换
++  AM->>AM: 本地判定任务/签到是否完成（v6.0）<br/>读登录用户名 → 构造 payload（含 completion_ref）<br/>SM2 公钥封装 SM4 会话密钥 + SM4 加密 + SM3-HMAC
+   AM->>D: POST /growth/*（信封 body：kid/encrypted_key/iv/ciphertext/mac）
+   D->>D: 按 kid 取私钥 → SM2 解封会话密钥 → 校验 MAC → SM4 解密 → 校验时间窗/nonce/path
+   D->>R: 按 payload.username 查 users.id（纯映射，不校验状态）
+   D->>G: c.Set(ContextKeyUser, AuthSubject{UserID}) → 业务 handler
+-  G->>G: 业务裁决 + 幂等 + 双边入账事务
+-  G-->>AM: 明文业务响应（余额/状态/订单）
++  G->>G: 按当前规则算分 + 幂等/周期防重 + 双边入账事务<br/>（v6.0：不回查证据、不做完成核验）
++  G-->>AM: 明文业务响应（余额/发分结果/订单）同步返回
+ ```
+ 
+ 要点：
+ 1. **解封装中间件前置**：`GrowthPayloadDecryptor` 在所有 U 面 handler 之前执行，SM2 解封/MAC/SM4 解密/防重放/`path` 绑定任一失败即早退（`CRYPTO_*` 错误码），不进业务层。**顺序固定**：先 MAC 后解密，防填充/oracle 攻击。
+-2. **统一 POST**：12 个接口全部 `POST`，业务参数放加密 payload 的 `params`，避免 GET 明文 query 泄露用户名。
++2. **统一 POST**：11 个接口全部 `POST`，业务参数放加密 payload 的 `params`，避免 GET 明文 query 泄露用户名。
+ 3. **会话密钥/IV 每次随机**：重试复用幂等键但**重新生成 SM4 会话密钥 + IV 并重新完整加密**；绝不复用。
+ 4. **必须写 `AuthSubject`**：映射出的 `users.id` 写入 context，否则幂等组件 `ActorScope` 退化为 `user:0`，不同用户幂等键互相踩踏。
+ 5. **SM2 密文编码统一 C1C3C2**：tjfoc/gmsm 与 sm-crypto 都需显式确认，禁止一端 DER 一端裸拼接。
+@@ -140,41 +144,48 @@
+ ### 2.5 不变式
+ 
+ - 服务端信任边界 = 私钥持有 + 报文机密性/完整性；业务用户名只做 `users.id` 映射，不做身份裁决。
+-- 报文/请求体出现 `user_id`（I 面归属字段除外）/ `points` / `awarded_points` / `token_amount` / `pool_code` / `rule_version` / `business_date` 一律忽略或拒绝（见契约第 6 节）。
+-- 签到日期由服务端按业务时区生成；奖励数额、来源池、上限由当前生效规则决定。
++- 报文/请求体出现 `user_id` / `points` / `awarded_points` / `token_amount` / `pool_code` / `rule_version` / `business_date` / `cycle_key` 一律忽略或拒绝（见契约第 6 节）。
++- **完成判定在 AIWork，发分裁决在 sub2api**：AIWork 声明「已完成」（`completion_ref`），sub2api 决定「发多少、归哪个周期、是否超上限」；sub2api 不做完成证据核验。
++- 签到日期/`cycle_key` 由服务端按业务时区生成；奖励数额、来源池、上限由当前生效规则决定。
+ - AIWork 本地 Orange 通道随机 token、LDAP 密码均不进成长接口。
+ 
+ ---
+ 
+-## 3. 任务完成的「可信证据源」（v1 假设的组件在 sub2api 不存在）
+-
+-### 3.1 首选：回查 `usage_logs`（已有、只追加、含网关认证后的真实用户）
++## 3. 任务完成判定归属（v6.0：AIWork 完成判定，sub2api 只算分发放）
+ 
+-`usage_logs` 关键字段：`user_id`、`api_key_id`、`request_id`、`model`、`group_id`、`route_alias`、`created_at`，且注释明确「只追加，不支持更新和删除」。
++> **v6.0 职责反转**：旧版「sub2api 回查 `usage_logs` / I 面事件做可信证据核验」整体作废。任务/签到是否完成由 **AIWork 判定**，sub2api 收到完成请求即视为「已完成」，**只按当前生效规则计算并发放积分**。
+ 
+-AIWork 提交完成请求仅携带 `run_id`（建议直接取网关 `X-Client-Request-ID` / `request_id`）与幂等键。sub2api 回查并同时满足才判定：
++### 3.1 AIWork 侧：判定完成并声明
+ 
+-1. 该 `request_id` 的 `user_id` == 本次请求报文 `username` 映射出的 `users.id`；
+-2. 落在规则允许的时间窗与周期 `cycle_key` 内；
+-3. 对应请求成功（排除失败、停止、中断、取消）；
+-4. 该业务键未计入过奖励（`growth_reward_claims` 唯一键兜底）。
++- **判定职责**：每类任务由 AIWork 按自身业务规则判定是否完成（如「完成一次模型请求」「浏览某页面满 30 秒」「每日首次打开即签到」）。判定逻辑在 AIWork，不入本仓库。
++- **完成声明**：判定完成后调用 `POST /growth/tasks/{task_id}/completion-requests`，`params.completion_ref` 为该任务本次完成的实例标识（AIWork 自行生成，用于业务去重与审计）；签到走 `POST /growth/checkins`。
++- **不可越界**：AIWork 只声明「完成了什么任务」，**不得**指定得多少分、归哪个周期、走哪个池、是否成功到账——这些是账务字段，服务端忽略或拒绝契约第 6 节列举的字段。
+ 
+-满足后由服务端执行 `TASK 池 → 用户账户` 转账。**回查在 SQL 层按 `request_id` + `user_id` 过滤下推，不做全表捞出后应用层过滤。**
++### 3.2 sub2api 侧：按规则算分发放（无证据核验）
+ 
+-### 3.2 非网关任务（纯本地功能体验等）
++sub2api 收到完成请求后，**不回查 `usage_logs`、不接收任何外部事件、不判断任务是否真的完成**，只做以下裁决：
+ 
+-走 I 面 `POST /api/v1/integrations/growth/task-events`：同一套加密信封（`path` 绑定） + 事件归属校验 + `(source_system, source_event_id)` 去重。客户端伪报一律落 `PENDING_VERIFICATION` 或 `NOT_ELIGIBLE`，**不发积分**。
++1. 用户映射（`username → users.id`）+ L1 请求幂等；
++2. 查当前生效任务/签到规则（规则版本、奖励分、来源池、周期、每日/总上限）；
++3. 周期/上限防重：同一 `completion_ref` 不重复发分，超周期上限返回 `NOT_ELIGIBLE`；
++4. 同一 GoldenDB 事务内执行 `POOL → 钱包` 双边入账（详见 §4.2）；
++5. 同步返回发分结果（`AWARDED` / `ALREADY_COMPLETED` / `NOT_ELIGIBLE`），带 `transfer_id` / `awarded_points` / `current_balance`。
+ 
+-### 3.3 完成请求状态机
++### 3.3 完成请求状态机（v6.0：同步发分）
+ 
+ ```text
+-PENDING_VERIFICATION ──► COMPLETED ──► 已发奖（返回 transfer_id / awarded_points）
+-        │               ├──► ALREADY_COMPLETED（幂等重放，返回原结果）
+-        │               ├──► NOT_ELIGIBLE（不满足规则，不发奖）
+-        │               └──► REJECTED（证据不可信，记录审计，不发奖）
+-        └──► 超时/异步核验：AIWork 用 request_id 轮询状态接口
++AIWork 判定完成 → 提交完成请求（completion_ref + 幂等键）
++        ├──► AWARDED          按规则已发分（返回 transfer_id / awarded_points / current_balance）
++        ├──► ALREADY_COMPLETED 幂等重放（同 completion_ref / 同周期已领），返回原结果
++        └──► NOT_ELIGIBLE      任务暂停 / 周期或每日上限已满 / 规则不适用，不发分
+ ```
+ 
++> **删除的状态**：`PENDING_VERIFICATION`、`REJECTED`、异步核验轮询、`POST /growth/completion-requests/{request_id}` 状态查询接口——均无证据核验后不再需要。历史发分记录查 `/growth/ledger`（`type=EARN`、`biz_type=TASK`）。
++
++### 3.4 风险书面化（可信调用方模型的直接推论）
++
++AIWork 判定完成 + 不做服务间身份校验 ⇒ **sub2api 无法独立证明任务真的完成**，持有公钥的调用方可声明任意任务完成并获发分。这是内部系统可信调用方模型的取舍，非缺陷。缓解手段（不引入身份体系的前提下）：服务端强约束周期/每日/总量上限、L1/L2 幂等、`completion_ref` 业务去重、完整审计流水 + 每日对账告警、U 面内网/VPN + IP 白名单。若将来要求服务端独立验证完成事实，需重新评审为破坏性变更。
++
+ ---
+ 
+ ## 4. 账务与幂等（两层分离）
+@@ -190,7 +201,7 @@
+ 
+ ### 4.2 签到原子事务（服务端）
+ 
+-校验令牌与账号状态 → 按业务时区生成 `cycle_key` → 查当前生效 `CHECKIN` 规则 → 在**同一 GoldenDB 事务**内：原子扣减 `CHECKIN` 池（`available_points >= points` 条件更新）→ 增加钱包 → 写 `growth_user_tasks` / `growth_reward_claims` / `growth_transfers` / **恰好两条** `growth_account_ledger` 分录。任一失败整体回滚。唯一键冲突时读取并返回既有结果，不依赖「先查后写」。
++（v6.0）解封装映射用户 + 幂等 → **信任 AIWork 已判定签到完成，不核验证据** → 服务端按业务时区生成 `cycle_key` → 查当前生效 `CHECKIN` 规则算分 → 在**同一 GoldenDB 事务**内：原子扣减 `CHECKIN` 池（`available_points >= points` 条件更新）→ 增加钱包 → 写 `growth_user_tasks` / `growth_reward_claims` / `growth_transfers` / **恰好两条** `growth_account_ledger` 分录。任一失败整体回滚。唯一键冲突时读取并返回既有结果（`ALREADY_CLAIMED`），不依赖「先查后写」。
+ 
+ ### 4.3 兑换履约（v2 简化）
+ 
+@@ -202,13 +213,13 @@
+ 
+ | 项 | v1 | 项目现状 / 规约 | v2 调整 |
+ |---|---|---|---|
+-| 路径 | `/growth/checkins` | 全部 `/api/v1/...` | U 面统一 `/api/v1/growth/*`；I 面 `/api/v1/integrations/growth/*` |
++| 路径 | `/growth/checkins` | 全部 `/api/v1/...` | U 面统一 `/api/v1/growth/*`；v6.0 删除 I 面 |
+ | 响应 | 自定义 JSON | `response.Response{code,message,reason,metadata,data}`；中间件早退另有一套 `{code:string,message}` | 契约中同时定义两套，AIWork 必须兼容 |
+ | 分页 | 「游标分页」，无组件 | 仅 `response.Paginated` (page/page_size) | 流水用**轻量游标** `before_entry_id + limit`（append-only 避免 offset 漂移），不新增分页包；其他列表用 `page/page_size` |
+ | 主键 | 应用生成分布式唯一 ID | Ent + `AUTO_INCREMENT BIGINT` | 沿用 Ent 自动生成；确需全局唯一 ID 时单独评估，避免与 Ent 冲突 |
+ | DDL | 未指定 | 必须放 `backend/sqlArchiving/NNN_*.sql`，当前最大 `181` → 下一个 `182`；**禁止**改 `backend/migrations/` | 新建 `182_create_growth_tables.sql` 等，方言固定「MySQL 8 / GoldenDB（MySQL 兼容模式）」 |
+ | JSON 字段 | 允许 JSONB/UUID | 禁 PG 专属语法；`JSON` 或 `LONGTEXT` | 规则条件用 `JSON`，兼容不确定时 `LONGTEXT` + 应用层 schema 校验（禁止任意脚本） |
+-| RBAC | 未提 | 新路由须登记 `RBAC_ENDPOINT_INVENTORY.md` 与 `rbac/coverage.go`，否则启动 `ValidateRouteCoverage` panic | M 面逐路由登记 permission；U / I 面按 known exclusion 登记（U 面理由：内部系统加密报文互信边界） |
++| RBAC | 未提 | 新路由须登记 `RBAC_ENDPOINT_INVENTORY.md` 与 `rbac/coverage.go`，否则启动 `ValidateRouteCoverage` panic | M 面逐路由登记 permission；U 面按 known exclusion 登记（理由：内部系统加密报文互信边界）；I 面已删除 |
+ | 配置 | 未提 | 配置项变更必须同步 `backend/config/config.yaml` | 新增 `growth.*`（时区、开关、限流、时间窗）时同步三处配置；SM2 密钥对写死为代码常量，**不进配置**（**无令牌 TTL、无私钥密文配置**） |
+ | 表名 | `growth_*` | 无全局前缀，按模块语义分组 | 保留 `growth_*` 前缀，符合规约；`user_id` 一律外键语义指向 `users.id` |
+ | 分片 | 建议 user_id | 规约未强制 | 用户范围表带 `user_id` 分片键；池↔钱包跨分片事务需 DBA 在目标 GoldenDB 集群验证锁与唯一索引行为 |
+@@ -237,7 +248,7 @@
+ |---|---|---|---|
+ | 1 | **SM2 密钥写死与边界落地**：由 sub2api 侧生成密钥对、直接分配双方写死（私钥仅 sub2api 常量、公钥仅 AIWork Main 常量），确认二者配对正确；确认国密库选型（Go `tjfoc/gmsm` / Node `sm-crypto`）与安全团队审批；确认代码库访问受控、构建产物不被篡改、U 面仅内网/VPN + IP 白名单、NTP 同步；接受"公钥可公开 ⇒ 只保证机密性不保证来源""写死无热轮换"的取舍并签字 | AIWork + sub2api + 平台安全 + 运维 | **阻塞发奖**（不做则不允许上线） |
+ | 2 | 签到业务时区（建议 `Asia/Shanghai`）与「自然日」口径 | 产品 | 阻塞签到 |
+-| 3 | 任务完成的可信证据源范围：哪些任务能用 `usage_logs.request_id` 关联，哪些必须走 I 面签名事件 | AIWork + sub2api | 阻塞任务奖励 |
++| 3 | **任务完成判定规则由 AIWork 定义**：每类任务的完成判定逻辑、完成事件边界、`completion_ref` 生成规则由 AIWork 明确；sub2api 只按规则发分、不核验。双方确认「完成判定在 AIWork、发分裁决在 sub2api」的边界及风险接受（见 §3.4） | AIWork（判定规则）+ sub2api（发分） | 阻塞任务奖励 |
+ | 4 | Token 发放幂等能力：`user_platform_quotas` / 兑换码 service 是否支持按 `order_id` 幂等重试与对账 | sub2api | 阻塞兑换 |
+ | 5 | GoldenDB 版本/兼容模式、`user_id` 分片键、跨分片转账事务与全局唯一索引行为 | DBA | 阻塞压测与上线 |
+ 
+@@ -254,7 +265,7 @@
+ | P0 契约 | 两份文档冻结 + OpenAPI 定义 + U 面网络边界确认 | 前后端字段、错误码、状态机、白名单签字 |
+ | P1 账务内核 | `182_*.sql` 建表、池/钱包/转账/分录、L2 唯一约束、对账脚本 | 并发与重放不重复记账，余额=分录之和 |
+ | P2 解封装与 U 面读接口 | `GrowthPayloadDecryptor`（SM2 解封 + SM4 解密 + SM3-HMAC）中间件 + U 面挂载、`/me` `/tasks` `/ledger` `/products` | 密文正确解封、MAC/防重放生效，用户名映射为 `users.id`，`ActorScope` 不为 `user:0`，只读数据全来自服务端 |
+-| P3 命令与核验 | 签到、完成请求 + `usage_logs` 回查、I 面事件接收 | 客户端自证不发奖，超时重放幂等 |
++| P3 命令与发分 | 签到、完成请求（**AIWork 判定完成、sub2api 按规则同步发分**，无证据核验）、`growth_completion_requests` 去重 | 完成请求同步返回发分结果，`completion_ref` 防重复，超时重放幂等，周期/上限防重 |
+ | P4 兑换与后管 | 商品版本、库存/预算、订单、Outbox 履约、M 面 + 后管 UI | 并发不超卖，失败可退款，审计完整 |
+ 
+ 按项目规约，若进入开发需另建 `.mvp-list/growth-plan-mvp-list/` 分阶段 MVP 与 `mvp-progress.md`；本文只定义设计契约，不替代 MVP 拆分。
+===== GROWTH_PLAN_AIWORK_API.md =====
+--- E:/code/vs/bxsub2api/bxSub2Api/.growth_docs_baseline/GROWTH_PLAN_AIWORK_API.md	2026-11-17 19:09:19.405762400 +0800
++++ E:/code/vs/bxsub2api/bxSub2Api/docs/GROWTH_PLAN_AIWORK_API.md	2026-11-17 19:11:08.962627100 +0800
+@@ -1,4 +1,4 @@
+-# AIWork ↔ sub2api 成长计划接口契约 v3.1（冻结）
++# AIWork ↔ sub2api 成长计划接口契约 v4.0（冻结）
+ 
+ > 配套设计：[GROWTH_PLAN_DESIGN.md](GROWTH_PLAN_DESIGN.md) ｜ 冻结日期：2026-11-17
+ > 本文是 **AIWork 与 sub2api 并行开发的唯一接口真相源**。sub2api 后管接口（`/api/v1/admin/growth/*`）不在本文范围。
+@@ -8,9 +8,9 @@
+ 
+ | 项 | 约定 |
+ |---|---|
+-| 版本 | `v3.1`，冻结于 2026-11-17。v2.0 → v3.0 为破坏性变更（对称 → 国密 SM2 数字信封）；**v3.0 → v3.1 为非破坏性变更**（仅密钥管理约定简化：密钥对直接分配写死、取消轮换与指纹校验，信封格式/接口/算法均不变） |
++| 版本 | `v4.0`，冻结于 2026-11-17。v2.0 → v3.0 为破坏性变更（对称 → 国密 SM2 数字信封）；v3.0 → v3.1 为非破坏性变更（密钥管理简化）；**v3.1 → v4.0 为破坏性变更**（**任务完成判定职责反转**：由 AIWork 判定完成、sub2api 只按规则计算发分；删除 I 面事件接口；完成请求状态机简化为同步发分） |
+ | 唯一来源 | 请求/响应字段、路径、状态枚举、错误码、加密信封**只以本文为准**；两侧文档不一致时以本文为准并提 issue |
+-| 变更流程 | 字段增删改、算法/信封调整需提变更单 → 双方确认 → 版本升位（`v3.1`…）→ 同步两侧设计；**禁止单边偷改** |
++| 变更流程 | 字段增删改、算法/信封调整需提变更单 → 双方确认 → 版本升位（`v4.0`…）→ 同步两侧设计；**禁止单边偷改** |
+ | 兼容策略 | 新增响应字段算兼容；删除/重命名字段、改枚举语义、改信封格式算破坏性变更，需升 minor 并约定切换日 |
+ | Mock 依据 | AIWork Mock Server 与 sub2api 契约测试均按本文第 3 章 + 第 1.3 节加密规范实现；密钥用测试专用固定值 |
+ | 验收口径 | 「Mock 通过 → 真实 sub2api 通过」两阶段，字段级 diff 为零才算对齐 |
+@@ -18,6 +18,8 @@
+ > **v2.0 → v3.0 变更摘要**：加密算法由双方共享的 AES-256-GCM 对称密钥，替换为**国密 SM2 非对称数字信封**——sub2api 持 SM2 私钥（永不出服务端），AIWork Main 持 SM2 公钥；每次请求随机生成 SM4 会话密钥，SM2 公钥加密会话密钥、SM4 加密 payload、SM3-HMAC 保障完整性。接口路径、方法（全 `POST`）、响应字段与业务码**均不变**，仅请求信封与加解密流程替换。「不做服务间身份校验、不改 AIWork 登录」的边界保持不变。
+ >
+ > **v3.0 → v3.1 变更摘要**：SM2 密钥对改为**直接分配、双方写死固定值**——由 sub2api 侧生成一对密钥，私钥写死在服务端、公钥写死在 AIWork Main；**取消 `kid` 轮换、取消公钥 SM3 指纹校验、取消 KMS / 配置密文注入**。信封五字段、SM2/SM4/SM3-HMAC 算法、12 个接口、响应与业务码全部不变；`kid` 字段仍保留（固定为 `growth-sm2-v1`），仅作信封版本标识与将来万一需要换密钥时的扩展位，服务端按固定映射取私钥。
++>
++> **v3.1 → v4.0 变更摘要（职责反转，破坏性）**：**任务/签到是否完成改由 AIWork 侧判定**；AIWork 提交完成请求时携带完成凭据 `completion_ref`，**sub2api 不再回查 `usage_logs`、不接收 I 面事件、不做证据核验**，收到完成请求即视为「任务已完成」，仅按当前生效规则计算应发积分、执行账务防重并发分。具体影响：① 完成请求 #9 的 `params` 由 `run_id`（证据回查键）改为 `completion_ref`（AIWork 侧完成实例标识，仅用于业务去重/审计）；② 完成请求状态机由「异步核验 `PENDING_VERIFICATION` → 轮询」简化为**同步发分**（`AWARDED` / `ALREADY_COMPLETED` / `NOT_ELIGIBLE`），删除 `REJECTED`（无证据核验即无「证据不可信」态）；③ **删除 I 面 `POST /integrations/growth/task-events`**（不再有可信事件接入），三平面收敛为 U + M 两平面；④ `growth_task_events` 表删除，新增 `growth_completion_requests` 表承接完成请求记录与业务去重；⑤ 签到 #8 语义调整为「AIWork 判定签到完成后提交，sub2api 按服务端业务时区算 `cycle_key` + 规则发分 + 防重复」。**加密信封、SM2 密钥模型、账务/幂等双层、商品/兑换接口、响应封装、错误码体系全部不变。**
+ 
+ ---
+ 
+@@ -28,8 +30,8 @@
+ | 项 | 值 |
+ |---|---|
+ | U 面 Base URL | `https://<sub2api-host>/api/v1/growth` |
+-| I 面 Base URL | `https://<sub2api-host>/api/v1/integrations/growth` |
+-| 调用方 | AIWork Electron **Main**（U 面）/ AIWork 服务端（I 面）；Renderer 经类型化 `window.aiwork` preload API 间接访问 |
++| 调用方 | AIWork Electron **Main**；Renderer 经类型化 `window.aiwork` preload API 间接访问 |
++| ~~I 面 Base URL~~ | **v4.0 起删除 I 面**（原 `/api/v1/integrations/growth`），任务完成判定与提交全部收敛到 U 面完成请求接口 |
+ | 协议 | HTTPS + `Content-Type: application/json`；**所有接口统一 `POST`** |
+ 
+ ### 1.2 信任模型：SM2 加密报文互信（无身份校验）
+@@ -38,10 +40,11 @@
+ 
+ | 平面 | 信任方式 | 说明 |
+ |---|---|---|
+-| U 面 | 请求体 SM2 数字信封（SM2 封装会话密钥 + SM4 加密 + SM3-HMAC） | 服务端用 SM2 私钥成功解封装且 MAC 校验通过即信任；无 `Authorization` / `X-Growth-User` 头 |
+-| I 面 | 同一套加密信封 | 上报可信任务事件，不再额外做服务间签名或 Bearer |
++| U 面 | 请求体 SM2 数字信封（SM2 封装会话密钥 + SM4 加密 + SM3-HMAC） | 服务端用 SM2 私钥成功解封装且 MAC 校验通过即信任；无 `Authorization` / `X-Growth-User` 头。**任务完成也在此声明** |
+ | M 面 | 沿用 sub2api `AdminIdentityAuth` + RBAC | **仅 sub2api 后管自用**，不对外、不属两服务往来范围 |
+ 
++> **v4.0 信任边界变化**：任务是否完成由 **AIWork 判定并在 U 面声明**，sub2api 不再做「完成证据核验」。信任根仍是「私钥解封装成功即可信调用方」——这一原则现在同时覆盖「调用合法性」与「任务完成声明」。这意味着 sub2api 无法独立证明任务真的完成，**这是可信调用方模型的直接推论，属产品明确取舍**（见总体设计第 2.4 节风险书面化）。
++
+ **密钥归属与保管（v3.1：直接分配、双方写死）**：
+ 
+ | 密钥 | 持有方 | 保管要求 |
+@@ -216,16 +219,16 @@
+ - 命令接口幂等记录保留 24h；命中重放返回首次结果并带 `X-Idempotency-Replayed: true`。
+ - `issued_at` 时间窗默认 ±5 分钟、`nonce` 窗口内去重，拒绝重放；时钟偏移会导致合法请求被拒，双方需 NTP 同步。
+ - 服务端按配置业务时区（默认 `Asia/Shanghai`）生成 `business_date` / `cycle_key`；客户端不传日期。
+-- U 面按映射得到的 `users.id` 限流；I 面按来源 + 业务限流。
++- U 面按映射得到的 `users.id` 限流（v4.0 起 I 面已删除，无集成面限流）。
+ - 所有余额、价格、库存、状态字段以响应为准；客户端不得本地推算权威值。
+ 
+ ---
+ 
+ ## 2. 接口总表
+ 
+-> 原令牌交换与身份头相关接口/字段已随本模型整体取消。**全部 12 个 U 面接口统一 `POST`，业务参数放加密 payload 的 `params`。**
++> 原令牌交换与身份头相关接口/字段已随模型整体取消；**v4.0 起 I 面 `task-events` 接口亦删除**（任务完成判定收敛到 AIWork）。**U 面 11 个接口统一 `POST`，业务参数放加密 payload 的 `params`。**
+ 
+-### 2.1 U 面 12 个接口
++### 2.1 U 面 11 个接口
+ 
+ | # | 分类 | Path（均 POST） | 用途 | 幂等键 |
+ |---|---|---|---|---|
+@@ -236,17 +239,16 @@
+ | 5 | 读 | `/growth/products` | 当前可兑换商品列表 | — |
+ | 6 | 读 | `/growth/products/{product_id}` | 商品详情与兑换条件 | — |
+ | 7 | 读 | `/growth/exchanges` | 我的兑换订单列表 | — |
+-| 8 | 命令 | `/growth/checkins` | 发起签到（服务端裁决发奖） | **必填** |
+-| 9 | 命令 | `/growth/tasks/{task_id}/completion-requests` | 提交任务完成请求（仅业务引用） | **必填** |
++| 8 | 命令 | `/growth/checkins` | 签到（AIWork 判定完成后提交，sub2api 按规则发分） | **必填** |
++| 9 | 命令 | `/growth/tasks/{task_id}/completion-requests` | 提交任务完成（AIWork 判定完成并声明，sub2api 按规则发分） | **必填** |
+ | 10 | 命令 | `/growth/exchanges` | 提交兑换请求 | **必填** |
+-| 11 | 状态 | `/growth/completion-requests/{request_id}` | 查询完成请求核验结果 | — |
+-| 12 | 状态 | `/growth/exchanges/{order_id}` | 查询订单扣分与履约状态 | — |
++| 11 | 状态 | `/growth/exchanges/{order_id}` | 查询订单扣分与履约状态 | — |
+ 
+-### 2.2 服务间（I 面，AIWork **服务端**调用）
++> **v4.0 删除的接口**：原 #11 `POST /growth/completion-requests/{request_id}`（完成请求核验状态查询）——完成请求改为**同步发分**，响应即最终结果，无需异步轮询；如需追溯历史完成记录，用 `/growth/ledger` 的 `biz_type=TASK` 流水。原 I 面 `task-events` 一并删除。U 面由 12 个收敛为 11 个。
+ 
+-| Method | Path | 用途 |
+-|---|---|---|
+-| `POST` | `/api/v1/integrations/growth/task-events` | 上报可信任务事件（同一套加密信封 + `path` 绑定 + 事件去重） |
++### 2.2 服务间接口：无
++
++> **v4.0 起 I 面整体删除**。任务是否完成由 AIWork 判定、经 U 面完成请求直接声明，sub2api 不再接收可信事件、不做证据核验。原 `POST /api/v1/integrations/growth/task-events` 作废，不得实现或调用。
+ 
+ ---
+ 
+@@ -288,7 +290,7 @@
+ 
+ ### 3.3 `POST /growth/tasks/{task_id}`
+ 
+-`params`：`{ "task_id": number }`。在 3.2 字段基础上增加 `description`、`effective_from/to`、`period_type`、`daily_limit`、`per_user_limit`、`my_completed_count`、`completion_request_endpoint`；若任务要求业务引用，返回 `required_references`（如 `["run_id"]`）。
++`params`：`{ "task_id": number }`。在 3.2 字段基础上增加 `description`、`effective_from/to`、`period_type`、`daily_limit`、`per_user_limit`、`my_completed_count`、`completion_request_endpoint`；任务详情可返回 `completion_hint` 说明 AIWork 如何判定该任务完成（如「用户完成一次模型请求」「浏览页面满 30 秒」），但**不对 completion_ref 取值做强约束**——该值由 AIWork 自行生成并声明。
+ 
+ ### 3.4 `POST /growth/ledger`
+ 
+@@ -336,23 +338,26 @@
+   "server_time": "2026-11-17T15:43:00+08:00" }
+ ```
+ 
+-`result`：`AWARDED` / `ALREADY_CLAIMED` / `NOT_ELIGIBLE` / `UNAVAILABLE`。重复签到返回 `ALREADY_CLAIMED` 且 `awarded_points=0`，不创建第二笔转账。`current_balance` 可能为 `null`，此时调 `/growth/me` 刷新。
++`result`：`AWARDED` / `ALREADY_CLAIMED` / `NOT_ELIGIBLE` / `UNAVAILABLE`。**v4.0 语义**：签到动作是否完成由 **AIWork 判定**（本地业务规则），完成后提交本接口；sub2api 按服务端业务时区生成 `cycle_key`、查当前生效 `CHECKIN` 规则计算发分并用 `(user_id, task_id, cycle_key)` 防重复。重复/跨周期重复提交返回 `ALREADY_CLAIMED` 且 `awarded_points=0`，不创建第二笔转账。**禁止**在 `params` 携带 `business_date` / `cycle_key` / `points` 等由服务端生成的账务字段。`current_balance` 可能为 `null`，此时调 `/growth/me` 刷新。
+ 
+-### 3.9 `POST /growth/tasks/{task_id}/completion-requests` — 命令
++### 3.9 `POST /growth/tasks/{task_id}/completion-requests` — 命令（v4.0 重写）
+ 
+-`params`：`{ "task_id": number, "run_id": string, "request_id"?: string }`。
++`params`：`{ "task_id": number, "completion_ref": string, "request_id"?: string }`。
+ 
+-> `run_id` 建议取网关 `X-Client-Request-ID` / `usage_logs.request_id`，供 sub2api 回查可信证据。**禁止**携带 `user_id`、`points`、`reward`、`rule_version`、成功标志等自证字段。
++- `completion_ref`（**必填**）：**AIWork 侧判定该任务本次已完成**后生成的完成实例标识（建议 AIWork 业务侧唯一，如任务实例 ID / 本地完成事件 ID）。sub2api **不校验其真实性、不据此回查任何外部证据**，仅用于：① 业务去重（同一 `completion_ref` 不重复发分，配合幂等键）；② 写入完成记录供对账审计。
++- **v4.0 变更**：原 `run_id`（供 sub2api 回查 `usage_logs` 证据）**删除**——证据核验职责已移除。
++- **禁止**携带 `user_id`、`points`、`awarded_points`、`reward`、`rule_version`、成功标志等自证或账务字段（见第 6 节）。
+ 
+-响应 `data`：
++响应 `data`（**同步发分**，无异步核验态）：
+ 
+ ```json
+-{ "request_id": "cr-88001", "result": "PENDING_VERIFICATION",
+-  "task_id": 9002, "status": "PENDING_VERIFICATION",
+-  "poll_after_ms": 1500, "server_time": "..." }
++{ "request_id": "cr-88001", "result": "AWARDED",
++  "task_id": 9002, "completion_ref": "local-task-12345",
++  "transfer_id": 77003, "awarded_points": 2, "current_balance": 262,
++  "rule_version": 7, "cycle_key": "2026-11-17", "server_time": "..." }
+ ```
+ 
+-`result`：`PENDING_VERIFICATION` / `COMPLETED` / `ALREADY_COMPLETED` / `NOT_ELIGIBLE` / `REJECTED`。同步发奖时附带 `transfer_id`、`awarded_points`、`current_balance`；异步时用 #11 轮询。
++`result`：`AWARDED`（已按规则发分，附带 `transfer_id` / `awarded_points` / `current_balance`）/ `ALREADY_COMPLETED`（同一 `completion_ref` 或同周期已达上限的幂等重放，返回原结果，`awarded_points` 按首次结果，可能为 0）/ `NOT_ELIGIBLE`（任务已暂停/周期上限已满/规则不适用，不发分）。**v4.0 删除 `PENDING_VERIFICATION` 与 `REJECTED`**：不再异步核验，也不存在「证据不可信」判定。网关任务原本的 `X-Client-Request-ID` 如需保留追溯，可放入 `request_id`，但不作为发奖依据。
+ 
+ ### 3.10 `POST /growth/exchanges` — 命令
+ 
+@@ -368,17 +373,9 @@
+ 
+ 失败业务码见 1.6（版本变化/下架/售罄/余额不足/限购），失败时不创建扣分订单。
+ 
+-### 3.11 `POST /growth/completion-requests/{request_id}`
+-
+-`params`：`{ "request_id": string }`。响应：
+-
+-```json
+-{ "request_id": "cr-88001", "task_id": 9002, "status": "COMPLETED",
+-  "result": "COMPLETED", "verified_at": "...", "transfer_id": 77003,
+-  "awarded_points": 2, "current_balance": 262, "reject_reason": null }
+-```
++### 3.11 ~~`POST /growth/completion-requests/{request_id}`~~ — v4.0 删除
+ 
+-`status`：`PENDING_VERIFICATION` → `COMPLETED` / `ALREADY_COMPLETED` / `NOT_ELIGIBLE` / `REJECTED`。AIWork 按 `poll_after_ms` 有限次数轮询。
++> **删除**：完成请求改为同步发分（见 3.9），响应 `data` 即最终结果，无需异步核验状态查询。历史发分记录通过 `/growth/ledger`（`type=EARN`、`biz_type=TASK`）查询。若 AIWork 已有对接代码调用本接口，v4.0 起收到 404，应移除轮询逻辑。
+ 
+ ### 3.12 `POST /growth/exchanges/{order_id}`
+ 
+@@ -393,21 +390,21 @@
+ 
+ `status`：`CREATED` / `FULFILLING` / `SUCCEEDED` / `FAILED` / `REFUNDED`。最终失败时 `refund_transfer_id` 非空。
+ 
+-### 3.13 I 面 `POST /api/v1/integrations/growth/task-events`
++### 3.13 ~~I 面 `POST /api/v1/integrations/growth/task-events`~~ — v4.0 删除
+ 
+-同一套加密信封；明文 payload 的 `params`：`source_system`、`source_event_id`、`user_id`、`task_id`、`run_id`、`event_type`、`result`、`occurred_at`、`payload_digest`（`username` 仍是 AIWork 服务端侧业务标识，服务端映射后校验 `user_id` 归属）。服务端按 `(user_id, source_system, source_event_id)` 去重；`path` 绑定为本接口，防止密文错投。
++> **删除**：v4.0 起任务完成判定归属 AIWork、经 U 面完成请求直接声明，sub2api 不接收可信任务事件、不做证据核验。原接口的 `source_system` / `source_event_id` / `payload_digest` / 归属校验等语义整体作废，不得实现或调用。
+ 
+ ---
+ 
+-## 4. 状态机与 UI 展示规则
++## 4. 状态机与 UI 展示规则（v4.0：完成判定在 AIWork，发分同步返回）
+ 
+-| 场景 | 允许展示的状态 | 何时可更新界面数据 |
+-|---|---|---|
+-| 签到 | 加载/待确认、已签到（日期+奖励）、不符合条件、暂不可用（可重试） | **仅在收到 #8 服务端响应后** |
+-| 完成请求 | 待校验、已完成、已完成过、不符合条件、被拒绝 | 收到 #9 / #11 服务端结果后 |
+-| 兑换订单 | 创建中、履约中、成功、失败、已退款 | 收到 #10 / #12 服务端结果后 |
++| 场景 | 允许展示的状态 | 判定归属 | 何时可更新界面数据 |
++|---|---|---|---|
++| 签到 | 加载/待确认、已签到（日期+奖励）、不符合条件、暂不可用（可重试） | **AIWork 判定签到动作完成**，周期/发分由 sub2api | **仅在收到 #8 服务端响应后** |
++| 任务完成 | 待提交、已发分、已完成过、不符合条件 | **AIWork 判定任务完成**并声明 `completion_ref`；发分由 sub2api | 收到 #9 服务端响应后（同步发分，无轮询） |
++| 兑换订单 | 创建中、履约中、成功、失败、已退款 | 用户操作触发，sub2api 裁决 | 收到 #10 / #11 服务端结果后 |
+ 
+-**禁止乐观更新**：点击后不得本地加分、不得把本地 UI 事件标记为「已完成/已发奖」、不得按本地时间判定签到周期。失败时保留上一次服务端确认的余额。
++**禁止乐观更新（v4.0 修订）**：AIWork 可以（且应当）在本地判定「任务是否完成」，但**不得在本地直接加分或把余额标记为已到账**——积分数额、周期归属、上限、池预算仍由 sub2api 按规则裁决，UI 的余额/积分进度只在收到服务端响应后更新。任务卡可以依据 AIWork 本地判定显示「已完成（待发分）」，但「已发分/积分到账」必须以 #9 响应为准。失败时保留上一次服务端确认的余额。
+ 
+ ---
+ 
+@@ -415,7 +412,7 @@
+ 
+ 1. 网络错误 / 429 / 503：指数退避、**有上限**重试；命令接口**复用同一 `idempotency_key`**，但每次重发**重新生成 SM4 会话密钥 / IV / nonce / issued_at 并重新走完整加密**（会话密钥与 IV 绝不复用，密钥本身写死不变）。
+ 2. 明确业务响应（已签到、不符合条件、余额不足、池无预算、版本变化）：**不按网络错误无限重试**。
+-3. 超时等结果不确定：不得认定已成功；用原幂等键重新加密发送，或调状态查询接口（#11 / #12 / `/growth/me`）。
++3. 超时等结果不确定：不得认定已成功；用原幂等键重新加密发送（完成请求靠 `completion_ref` 业务去重、签到靠服务端 `cycle_key`，不会重复发分），或调 `/growth/me` / `/growth/ledger` 核实。**v4.0 起完成请求同步发分，无 #11 状态轮询接口。**
+ 4. 加密类错误（`CRYPTO_*`）**一律不重试**：先核对 SM2 公私钥配对、`kid`、MAC 拼接顺序、客户端时钟与信封构造；这类错误是配置问题不是瞬时故障。
+ 5. **SM2 密钥写死，无热轮换**：密钥对一次性生成后直接分配到两个项目写死。需要变更密钥（如泄露、配错）时**没有过渡窗口**——必须由 sub2api 侧重新生成密钥对、双方同步修改代码常量并发版；双方发版完成前跨版本请求会因密钥不匹配返回 `CRYPTO_KEY_UNWRAP_FAILED`。因此上线前必须确认密钥对配对正确，且双方发版可同步协调。
+ 6. 切账号：AIWork 从新登录态读取新的 `username` 放入 payload；清 Renderer store 与幂等上下文；不得用旧账号的幂等键重放。
+@@ -435,12 +432,14 @@
+ **请求体禁止字段**：以下字段不得出现在明文 payload 的 `params` 顶层或作为身份字段（服务端忽略或拒绝）：
+ 
+ ```text
+-user_id（I 面 task-events 的归属校验字段除外）, points, awarded_points,
+-balance, current_balance, token_amount, token_quota, pool_code, pool_balance,
+-rule_id, rule_version, reward, business_date, cycle_key, is_completed, success,
++user_id, points, awarded_points, balance, current_balance,
++token_amount, token_quota, pool_code, pool_balance,
++rule_id, rule_version, reward, business_date, cycle_key, success,
+ price, points_cost, product_version（仅允许 expected_version 作版本探测）
+ ```
+ 
++> **v4.0 变化**：`is_completed` 从禁止列表移除——完成声明本身由 `completion_ref` 表达（提交完成请求即等于声明完成），无需布尔成功标志；但**账务字段仍全部禁止**。原 `user_id（I 面归属校验除外）` 例外删除（I 面已移除）。
++
+ 同时禁止：
+ - 把展示用的 `points_cost` / `benefit_detail` 回传下单接口作为定价依据；
+ - 用 `username` 之外的方式声明身份，或在明文头里放身份信息（身份相关的只有加密 payload 里的 `username`）；
+@@ -448,3 +447,5 @@
+ - 用 ASN.1 DER 与 C1C3C2 混用（SM2 密文编码必须双方统一为 C1C3C2 裸拼接）；
+ - 调用或探测 `/api/v1/admin/growth/*`；
+ - 在 Renderer 中持久化公钥、积分余额或幂等键。
++
++**v4.0 完成判定边界**：AIWork 在**本地/业务侧**判定任务是否完成后再提交——这是 AIWork 的职责，不违反上表。禁止的是让 AIWork 决定「发多少分、归哪个周期、走哪个池」，这些始终由 sub2api 按当前生效规则裁决。
+===== GROWTH_PLAN_AIWORK_DEV.md =====
+--- E:/code/vs/bxsub2api/bxSub2Api/.growth_docs_baseline/GROWTH_PLAN_AIWORK_DEV.md	2026-11-17 19:09:19.509827700 +0800
++++ E:/code/vs/bxsub2api/bxSub2Api/docs/GROWTH_PLAN_AIWORK_DEV.md	2026-11-17 19:13:34.105023600 +0800
+@@ -1,9 +1,11 @@
+-# AIWork 侧开发设计｜成长计划（用户入口）
++# AIWork 侧开发设计｜成长计划（用户入口 + 完成判定方）
+ 
+-> 日期：2026-11-17 ｜ 对接契约：[GROWTH_PLAN_AIWORK_API.md](GROWTH_PLAN_AIWORK_API.md) **v3.1（冻结，唯一接口真相源）**
++> 日期：2026-11-17 ｜ 对接契约：[GROWTH_PLAN_AIWORK_API.md](GROWTH_PLAN_AIWORK_API.md) **v4.0（冻结，唯一接口真相源）**
+ > 总体设计：[GROWTH_PLAN_DESIGN.md](GROWTH_PLAN_DESIGN.md) ｜ 对端开发设计：[GROWTH_PLAN_SUB2API_DEV.md](GROWTH_PLAN_SUB2API_DEV.md)
+ >
+-> 本文是 **AIWork 团队内部开发设计**。所有请求/响应字段、路径、状态枚举、错误码**不在本文重复定义**，一律引用冻结契约；本文只描述 AIWork 侧如何组织代码、管理状态、处理异常与拆分任务。
++> 本文是 **AIWork 团队内部开发设计**。所有请求/响应字段、路径、状态枚举、错误码**不在本文重复定义**，一律引用冻结契约 v4.0；本文只描述 AIWork 侧如何组织代码、管理状态、处理异常与拆分任务。
++>
++> **v4.0 职责反转**：任务/签到是否完成改由 **AIWork 侧判定**，完成后提交完成请求（带 `completion_ref`），sub2api 只按规则发分、不再核验。AIWork 从「只提交业务引用、不声明完成」变为「判定完成并声明」。
+ 
+ ---
+ 
+@@ -16,17 +18,18 @@
+ | 展示积分概览 | 可用积分、累计获得/消耗、服务端更新时间 |
+ | 展示积分流水 | 分页列表，游标 `before_entry_id` |
+ | 展示任务列表/详情 | 服务端下发的文案、进度、周期、奖励说明、操作入口 |
+-| 发起签到 | 点击后提交请求，展示服务端裁决结果 |
+-| 发起任务完成请求 | 只提交业务引用 `run_id` + 幂等键，展示核验状态 |
++| **判定任务/签到是否完成**（v4.0 新增） | 按本地业务规则判定完成；为每次完成生成 `completion_ref`（完成实例标识） |
++| 发起签到 | 判定签到完成后提交请求，展示服务端发分结果 |
++| 发起任务完成请求 | 判定完成后提交 `completion_ref` + 幂等键，展示同步发分结果 |
+ | 展示商品 / 发起兑换 | 展示服务端价格与权益，只提交 `product_id` + 幂等键 |
+ | 展示订单 | 扣分与履约状态、失败/退款原因 |
+ 
+ ### 0.2 AIWork 不做什么（红线）
+ 
+-- 不判定任务是否完成、不计算积分、不决定奖励数额/来源池/签到日期。
+-- 不本地加分、不缓存权威余额；余额与状态只认服务端响应。
++- **v4.0 修订**：**判定任务是否完成是 AIWork 的职责**（见 0.1），但**不计算积分、不决定奖励数额/来源池/周期/上限/签到日期**——这些是 sub2api 裁决的账务字段。
++- 不本地加分、不缓存权威余额；余额与「积分已到账」只认服务端响应。任务卡可依本地判定显示「已完成（待发分）」，但不得显示「已发分」。
+ - 不提供任何运营管理界面，不调用 `/api/v1/admin/growth/*`。
+-- 不构造 `user_id` / `points` / `awarded_points` 等账务或金额字段（契约第 6 节）；`username` 仅由 Main 从既有登录态读取后放入加密报文。
++- 不构造 `user_id` / `points` / `awarded_points` / `business_date` / `cycle_key` 等账务字段（契约第 6 节）；`username` 仅由 Main 从既有登录态读取后放入加密报文。
+ - Renderer 不直接接触 sub2api、不接触密钥、不持久化幂等键。
+ - **不改动现有登录功能**：不新增登录步骤、不引入令牌；只复用既有登录态里的用户名。
+ - **只持有 SM2 公钥**（私钥永不在客户端）：公钥由 sub2api 侧生成后直接分配，**写死为 Main 代码常量**（无构建期注入、无指纹校验、无运行时下发）；公钥只进 Main、不进 Renderer、不进日志。
+@@ -162,14 +165,15 @@
+ }
+ ```
+ 
+-**更新规则**（防止乐观更新）：
++**更新规则**（防止乐观更新；v4.0 完成判定在 AIWork）：
+ 
+ | 操作 | 何时更新 store |
+ |---|---|
++| 任务完成判定 | AIWork 本地判定完成后，任务卡可标记「已完成（待发分）」并生成 `completion_ref`；**此时不改余额** |
+ | 签到 | 收到契约 3.8 响应后，用返回的 `current_balance` / `business_date` 更新；为空则重拉 `/me` |
+-| 完成请求 | 收到 3.9 响应先更新请求状态；异步时轮询 3.11，按最终结果更新任务卡 |
++| 完成请求 | 收到 3.9 同步响应（`AWARDED` / `ALREADY_COMPLETED` / `NOT_ELIGIBLE`）后，按 `awarded_points` / `current_balance` 更新任务卡与余额；**v4.0 无轮询、无 3.11** |
+ | 兑换 | 收到 3.10 响应后更新订单列表与余额；履约状态轮询 3.12 |
+-| 任何失败 | **保留上次服务端确认的余额与状态**，只展示错误提示 |
++| 任何失败 | **保留上次服务端确认的余额与状态**，只展示错误提示；任务完成已判定的本地状态可保留，供下次重试发分 |
+ 
+ ---
+ 
+@@ -191,28 +195,36 @@
+ 
+ ```text
+ 用户点签到
++  → AIWork 本地判定签到动作完成（如首次打开/每日首次点击，业务侧规则）
+   → Main 生成 Idempotency-Key（本次逻辑请求唯一）
+-  → POST /growth/checkins
++  → POST /growth/checkins（params 不含 business_date/cycle_key，由服务端算）
+   → 结果 AWARDED / ALREADY_CLAIMED → 更新余额与签到卡（ALREADY_CLAIMED 显示今日已完成，不加分）
+   → NOT_ELIGIBLE / UNAVAILABLE     → 展示原因，不重试
+   → 网络/429/503                   → 有上限退避，复用同一幂等键（见 5.3）
+   → 超时                           → 用原幂等键重放，或重拉 /me + 签到状态
+ ```
+ 
+-UI 状态：`加载/待确认` → `已签到（日期+奖励）` / `今日已完成` / `不符合条件` / `暂不可用（可重试）`。**只有收到服务端响应才显示"签到成功"**。
++UI 状态：`加载/待确认` → `已签到（日期+奖励）` / `今日已完成` / `不符合条件` / `暂不可用（可重试）`。**只有收到服务端响应才显示"签到成功"**；周期与日期一律服务端下发，本地不按日期推断 `cycle_key`。
+ 
+-### 4.3 任务完成请求
++### 4.3 任务完成请求（v4.0 重写：AIWork 判定完成并声明）
+ 
+ ```text
+-用户完成任务（AIWork 内部动作，产生 run_id）
+-  → POST /growth/tasks/{id}/completion-requests  payload.params 只含 { task_id, run_id, request_id? } + 幂等键，整体 seal() 加密
+-  → 同步 COMPLETED / ALREADY_COMPLETED → 更新任务卡与余额
+-  → PENDING_VERIFICATION → 按 poll_after_ms 轮询 3.11（有限次数，如 10 次）
+-  → NOT_ELIGIBLE / REJECTED → 展示"暂不符合条件"，不重试
+-  → 超限仍 pending → 展示"处理中，请稍后刷新"，停止轮询
++AIWork 按本任务业务规则判定「已完成」（判定逻辑在 AIWork 侧，不入 sub2api）
++  → 生成本次完成实例标识 completion_ref（建议任务实例 ID / 本地完成事件 ID，AIWork 内唯一）
++  → Main 生成 Idempotency-Key；同一 completion_ref 重试复用同一幂等键
++  → POST /growth/tasks/{id}/completion-requests
++       payload.params = { task_id, completion_ref, request_id? } + 幂等键，整体 seal() 加密
++  → AWARDED           → 用 awarded_points / current_balance 更新任务卡与余额
++  → ALREADY_COMPLETED → 幂等重放，按首次结果展示，不重复加分
++  → NOT_ELIGIBLE      → 展示"暂不符合条件"（任务暂停/上限已满），不重试
++  → 网络/429/503/超时 → 有上限退避，复用同一 completion_ref 与幂等键重发（服务端按 completion_ref 去重）
+ ```
+ 
+-**注意**：`run_id` 对网关任务应取网关 `X-Client-Request-ID` / `usage_logs.request_id`（见设计文档 3.1）；非网关任务（纯本地功能体验）由对端 I 面 `task-events` 上报，**AIWork Main 不直接判定成功**。若某任务类型无 `run_id` 来源，禁用完成按钮并提示。
++**要点（v4.0）**：
++- **完成判定在 AIWork**：由 AIWork 决定任务何时算完成，不再依赖网关 `run_id` / `usage_logs` 回查，也不再有 I 面 `task-events` 上报。
++- **`completion_ref` 必须稳定**：同一任务完成实例多次重试要用同一 `completion_ref`（配合幂等键双重防重）；用户重新完成一次任务则生成新的 `completion_ref`。
++- **同步发分**：#9 响应即最终结果，无 `PENDING_VERIFICATION`、无轮询（原 3.11 接口已删除）。
++- **不可越界**：`params` 只放 `task_id` / `completion_ref` / `request_id?`，不得放积分、周期、成功标志等字段。
+ 
+ ### 4.4 兑换
+ 
+@@ -258,13 +270,14 @@
+ |---|---|
+ | 网络错误 / 429 / 503 | 指数退避（如 300ms → 600ms → 1.2s），最多 3 次，**复用同一幂等键** |
+ | 业务明确响应（已签到、不符合条件、余额不足、版本变化、池无预算） | **不重试**，展示原因 |
+-| 超时（结果未知） | 不生成新请求、不认定成功；用原键重放，或调状态查询接口（3.11 / 3.12）/ 重拉 `/me` |
++| 超时（结果未知） | 不生成新请求、不认定成功；用原 `completion_ref` + 原幂等键重放（完成请求靠 `completion_ref` 去重、签到靠服务端 `cycle_key`），或调 `/growth/me` / `/growth/ledger` 核实。v4.0 完成请求无 3.11 状态轮询接口；仅订单履约（3.12）有状态查询 |
+ | 加密类（`CRYPTO_*`：信封/解封/MAC/解密/重放/错投） | **不重试**；核对双方写死的 SM2 公私钥是否配对、`kid`、MAC 拼接顺序、客户端时钟，属配置问题非瞬时故障 |
+ | 映射类（`GROWTH_USER_NOT_FOUND`） | 不重试；提示账号未开通（账务映射失败，非身份校验） |
+ 
+-### 5.4 轮询
++### 5.4 轮询（v4.0：完成请求不再轮询）
+ 
+-- 仅完成请求（3.11）和订单履约（3.12）需要轮询，按响应 `poll_after_ms`。
++- **完成请求（3.9）同步发分**，响应即最终结果，无需轮询；原 3.11 状态查询接口已删除。
++- 仅订单履约（3.12）仍需轮询，按响应 `poll_after_ms`。
+ - 有限次数 + 页面卸载/切后台即停止；超限展示"处理中，请稍后刷新"。
+ 
+ ### 5.5 开发/离线模式
+@@ -303,8 +316,9 @@
+ - [ ] 两套 envelope 都能正确解析；业务码分支提示正确
+ - [ ] 签到/兑换/完成请求无乐观更新；失败保留上次余额
+ - [ ] 切账号后 store 清空、旧幂等键不再使用
+-- [ ] 轮询有限次数、页面卸载停止
+-- [ ] 超时重放不产生第二笔积分（用 Mock 幂等日志核对）
++- [ ] 任务完成由 AIWork 判定并生成稳定 `completion_ref`；重试复用、重新完成任务换新值
++- [ ] 完成请求同步发分、无 3.11 轮询；仅订单履约轮询有限次数、页面卸载停止
++- [ ] 超时重放不产生第二笔积分（用 Mock 幂等日志核对 `completion_ref` 去重）
+ 
+ ---
+ 
+@@ -316,7 +330,7 @@
+ | A1 骨架 | preload bridge + Main client/crypto SM2 封装 + 错误归一化 + Mock Server | 本地可跑 Mock | SM2 数字信封与契约 1.3 互操作测试通过、两套 envelope 归一化通过 |
+ | A2 只读 UI | 积分概览、任务列表/详情、流水、商品、订单页 | 只读页面 | 全部数据来自服务端快照，无本地计算 |
+ | A3 签到 | 签到请求 + 状态机 + 重试/幂等 | 签到可用 | 无乐观更新，重放不加分 |
+-| A4 完成请求 | 提交 + 轮询 + run_id 来源对接 | 任务奖励闭环 | 异步结果能正确落任务卡 |
++| A4 完成判定与请求 | AIWork 侧任务完成判定逻辑 + `completion_ref` 生成 + 同步提交 #9 | 任务奖励闭环 | 完成判定正确、`completion_ref` 稳定去重、同步结果落任务卡 |
+ | A5 兑换 | 二次确认 + 下单 + 履约轮询 | 兑换闭环 | 版本变化/余额不足提示正确，失败保留余额 |
+ | A6 联调 | 切真 + 字段级 diff + 6.3 检查清单 | 联调通过 | 检查清单全绿 |
+ 
+@@ -326,10 +340,10 @@
+ 
+ | 依赖 | 需要 sub2api 提供 | 阻塞 AIWork 阶段 |
+ |---|---|---|
+-| U 面 12 接口 | 契约第 2.1 节全部（全 POST + 加密信封） | A2～A5 |
++| U 面 11 接口 | 契约 v4.0 第 2.1 节全部（全 POST + 加密信封；删除原完成请求状态查询接口） | A2～A5 |
+ | 加密配置 | sub2api 分配的测试 SM2 密钥对（公钥写死进 Main 常量、私钥写死进 sub2api 常量）、`kid` 固定 `growth-sm2-v1`、SM2/SM4/SM3 规范实现一致 | A1 起 |
+ | 网络边界 | 内网/VPN 可访问地址 + IP 白名单已放行 AIWork、双方 NTP 同步 | A2 起 |
+ | 测试环境 | 测试账号 email、测试积分池预算、Mock/真实开关 | A6 |
+-| 任务 run_id 来源 | 网关 `X-Client-Request-ID` 透传约定（设计文档 3.1） | A4 |
++| 任务完成判定规则 | 每类任务「何时算完成」的业务规则由 AIWork 定义；`completion_ref` 生成策略（设计文档 3.1） | A4 |
+ 
+ > 任一依赖未就绪时，AIWork 用 Mock 继续推进 UI 与流程，不阻塞在本地开发。
+===== GROWTH_PLAN_SUB2API_DEV.md =====
+--- E:/code/vs/bxsub2api/bxSub2Api/.growth_docs_baseline/GROWTH_PLAN_SUB2API_DEV.md	2026-11-17 19:09:19.647293000 +0800
++++ E:/code/vs/bxsub2api/bxSub2Api/docs/GROWTH_PLAN_SUB2API_DEV.md	2026-11-17 19:14:57.472009700 +0800
+@@ -1,17 +1,19 @@
+-# sub2api 侧开发设计｜成长计划（权威后端 + 后管）
++# sub2api 侧开发设计｜成长计划（账务与规则权威 + 后管）
+ 
+-> 日期：2026-11-17 ｜ 对接契约：[GROWTH_PLAN_AIWORK_API.md](GROWTH_PLAN_AIWORK_API.md) **v3.1（冻结，唯一接口真相源）**
++> 日期：2026-11-17 ｜ 对接契约：[GROWTH_PLAN_AIWORK_API.md](GROWTH_PLAN_AIWORK_API.md) **v4.0（冻结，唯一接口真相源）**
+ > 总体设计：[GROWTH_PLAN_DESIGN.md](GROWTH_PLAN_DESIGN.md) ｜ 对端开发设计：[GROWTH_PLAN_AIWORK_DEV.md](GROWTH_PLAN_AIWORK_DEV.md)
+ >
+-> 本文是 **sub2api 团队内部开发设计**。所有对外请求/响应字段、路径、状态枚举、错误码**不在本文重复定义**，一律引用冻结契约；本文描述 sub2api 侧数据模型、分层、事务、幂等、工程落点与任务拆分。
++> 本文是 **sub2api 团队内部开发设计**。所有对外请求/响应字段、路径、状态枚举、错误码**不在本文重复定义**，一律引用冻结契约 v4.0；本文描述 sub2api 侧数据模型、分层、事务、幂等、工程落点与任务拆分。
++>
++> **v4.0 职责反转**：任务/签到是否完成由 **AIWork 判定并声明**（`completion_ref`），sub2api **不回查 `usage_logs`、不接 I 面事件、不做证据核验**，收到完成请求即视为「已完成」，仅按当前规则算分、防重、双边入账。I 面与 `growth_task_events` 表删除。
+ 
+ ---
+ 
+ ## 0. 范围与原则
+ 
+-### 0.1 sub2api 是唯一权威
++### 0.1 sub2api 是账务与规则权威
+ 
+-积分池/预算、钱包与双边总账、任务与规则版本、商品与版本定价、库存/Token 预算、兑换订单与履约、运营后管、审计与对账，**所有事实只在 sub2api 产生**。AIWork 的每次点击只是待裁决请求。
++积分池/预算、钱包与双边总账、任务与规则版本、商品与版本定价、库存/Token 预算、兑换订单与履约、运营后管、审计与对账，**所有账事实只在 sub2api 产生**。发分规则、周期上限、奖励数额由 sub2api 裁决；**任务是否完成由 AIWork 判定并声明**（v4.0），sub2api 不再核验完成证据。
+ 
+ ### 0.2 信任（内部系统，国密 SM2 加密报文，无身份校验）
+ 
+@@ -69,8 +71,8 @@
+ | `growth_tasks` | 任务目录 | `task_code` 唯一；状态、排序、生效区间 |
+ | `growth_task_rules` | 规则版本 | `(task_id, version)` 唯一；触发事件、条件 JSON、目标、奖励、池、周期、上限；已发布不可覆盖 |
+ | `growth_user_tasks` | 用户任务进度 | `(user_id, task_id, rule_id, cycle_key)` 唯一 |
+-| `growth_task_events` | 可信事件收件/去重 | `(user_id, source_system, source_event_id)` 唯一；验签状态 |
+-| `growth_reward_claims` | 奖励结算记录 | `(user_id, idempotency_key)` 唯一；关联 `transfer_id` |
++| `growth_completion_requests`（v4.0 新增） | 完成请求记录 + 完成实例去重 | `(user_id, task_id, completion_ref)` 唯一；记录 `request_id`、发分结果、关联 `transfer_id`；替代旧 `growth_task_events` |
++| ~~`growth_task_events`~~ | ~~可信事件收件/去重~~ | **v4.0 删除**：任务完成判定在 AIWork、无外部事件接入 |
+ | `growth_products` | 商品主档 | `product_code` 唯一；类型、状态、排序 |
+ | `growth_product_versions` | 商品配置版本 | `(product_id, version)` 唯一；积分价格、权益 JSON、限购；被订单引用后不可覆盖 |
+ | `growth_product_inventory` | 库存 / Token 预算 | `lock_version` 乐观锁；`available/reserved/sold`、`token_quota_*` |
+@@ -93,8 +95,9 @@
+ growth_task.go              → GrowthTask
+ growth_task_rule.go         → GrowthTaskRule
+ growth_user_task.go         → GrowthUserTask
+-growth_task_event.go        → GrowthTaskEvent
++growth_completion_request.go → GrowthCompletionRequest   # v4.0 新增（完成请求记录/去重）
+ growth_reward_claim.go      → GrowthRewardClaim
++# 注：旧 growth_task_event.go 已删除（v4.0 无 I 面事件）
+ growth_product.go           → GrowthProduct
+ growth_product_version.go   → GrowthProductVersion
+ growth_product_inventory.go → GrowthProductInventory
+@@ -122,7 +125,7 @@
+ 
+ ## 3. 中间件与路由
+ 
+-### 3.1 `GrowthPayloadDecryptor`（U / I 面必挂，SM2 解封装即信任）
++### 3.1 `GrowthPayloadDecryptor`（U 面必挂，SM2 解封装即信任）
+ 
+ 新文件 `backend/internal/server/middleware/growth_payload.go`。职责：**只做 SM2 解封装 + 完整性 + 防重放 + `path` 绑定 + 用户名映射，不做身份校验**。国密库建议 `github.com/tjfoc/gmsm`（SM2/SM3/SM4 纯 Go 实现），需安全团队确认版本。
+ 
+@@ -195,7 +198,7 @@
+ - `c.FullPath()` 取 Gin 路由模板（如 `/api/v1/growth/tasks/:task_id`），与 payload `path`（契约约定的模板形式）逐字比对。
+ - 依赖 `service.UserRepository` 已在 `repository/wire.go:85` 注册；新增 `NonceCache` provider 到 `middleware/wire.go:22-27`（**无需 GrowthKeyStore provider**）；新增 gmsm 依赖到 `go.mod`。
+ - 顺序：`GrowthPayloadDecryptor` → handler。**不要挂 `BackendModeUserGuard`**（会把非 admin 用户 403）。
+-- I 面 `task-events` 复用同一中间件，但 `path` 为 `/api/v1/integrations/growth/task-events`，且映射用户后需校验 payload 内 `user_id` 与映射结果一致（归属校验，防越权上报）。
++- **v4.0 删除 I 面**：不再有 `task-events` 复用本中间件的场景；完成请求全部走 U 面 `completion-requests`，payload 只带 `completion_ref`（无 `user_id` 归属校验需求）。
+ 
+ ### 3.2 U 面路由
+ 
+@@ -213,21 +216,20 @@
+     g.POST("/products", h.Growth.ListProducts)
+     g.POST("/products/:product_id", h.Growth.GetProduct)
+     g.POST("/exchanges", h.Growth.ListExchanges)
+-    // 命令（幂等包裹见 4.1）
++    // 命令（幂等包裹见 4.1；完成请求 v4.0 同步发分，无证据核验）
+     g.POST("/checkins", h.Growth.Checkin)
+     g.POST("/tasks/:task_id/completion-requests", h.Growth.CreateCompletionRequest)
+     g.POST("/exchanges", h.Growth.CreateExchange)
+-    // 状态
+-    g.POST("/completion-requests/:request_id", h.Growth.GetCompletionRequest)
++    // 状态（v4.0 删除 /completion-requests/:request_id：完成请求同步返回最终结果）
+     g.POST("/exchanges/:order_id", h.Growth.GetExchange)
+ }
+ ```
+ 
+ 在 `router.go:125-135` 注册链旁加一行 `routes.RegisterGrowthRoutes(v1, h, dec)`。M 面（`/api/v1/admin/growth/*`）走 `rbacRoutes`，**不**走此函数。
+ 
+-### 3.3 I 面
++### 3.3 I 面：v4.0 删除
+ 
+-`POST /api/v1/integrations/growth/task-events` 挂同一 `GrowthPayloadDecryptor`（`path` 为集成面路径）；handler 内额外校验 payload `user_id` == 映射出的 `users.id`（归属校验）。**不再做服务间签名、集成 Bearer；令牌交换接口已取消，均不实现。**
++**无 I 面**。原 `POST /api/v1/integrations/growth/task-events` 及其 `GrowthTaskEvent` schema / `growth_task_events` 表 / 归属校验逻辑整体作废，不实现、不挂载。任务完成判定归属 AIWork、经 U 面 `completion-requests` 直接声明。页面路由装配仅保留 U 面（§3.2）与 M 面（走 `rbacRoutes`）。
+ 
+ ---
+ 
+@@ -252,12 +254,13 @@
+ - `growth_transfers`：`(biz_type, idempotency_key)` 唯一。
+ - 签到：`(user_id, task_id, cycle_key)` 唯一（规则版本作审计字段，避免换版本重复领取）。
+ - `growth_reward_claims`：`(user_id, idempotency_key)`；`growth_exchange_orders`：`(user_id, idempotency_key)`。
++- **`growth_completion_requests`（v4.0）**：`(user_id, task_id, completion_ref)` 唯一——同一完成实例重复申报（含超时重放、换幂等键但同 `completion_ref`）不重复发分。
+ - 唯一键冲突时**读取既有结果返回**，不依赖「先查后写」。
+ 
+-### 4.2 签到原子事务
++### 4.2 签到原子事务（v4.0：信任 AIWork 已判定完成，不核验证据）
+ 
+-1. 解析身份 → 按业务时区（复用 `timezone` 配置，默认 `Asia/Shanghai`）生成 `cycle_key`。
+-2. 查当前生效 `CHECKIN` 规则（规则版本、奖励积分、池、上限）。
++1. 解封装映射用户 + L1 幂等 → 按业务时区（复用 `timezone` 配置，默认 `Asia/Shanghai`）生成 `cycle_key`（**服务端生成，客户端传的 `business_date`/`cycle_key` 忽略**）。
++2. 查当前生效 `CHECKIN` 规则（规则版本、奖励积分、池、上限）算分。
+ 3. 同一 GoldenDB 事务内：
+    - 条件更新 `CHECKIN` 池 `available_points >= points`（`FOR UPDATE` 或条件 UPDATE）；
+    - 增加 `growth_wallets` 余额（`available_points >= 0` 约束）；
+@@ -266,16 +269,20 @@
+ 4. 余额不足/规则暂停/超限 → 整体回滚，不留半笔账。
+ 5. 唯一键冲突 → 读既有领取记录返回 `ALREADY_CLAIMED`，`awarded_points=0`。
+ 
+-### 4.3 任务完成核验
++### 4.3 任务完成发分（v4.0 重写：无证据核验，按规则同步发分）
+ 
+-- **网关任务**：提交 `run_id`（= 网关 `X-Client-Request-ID` / `usage_logs.request_id`），回查只追加表 `usage_logs`：
+-  1. `request_id = run_id AND user_id = 当前 AuthSubject.UserID`；
+-  2. 在规则时间窗/周期 `cycle_key` 内；
+-  3. 请求成功（排除失败/停止/中断/取消）；
+-  4. 业务键未计入过奖励（`growth_reward_claims` 唯一键）。
+-  SQL 按 `request_id + user_id` 下推过滤，不全文捞出后应用层过滤。满足后执行 `TASK 池 → 钱包` 转账（同 4.2 事务）。
+-- **非网关任务**：I 面 `task-events` 签名 + 归属校验 + `(source_system, source_event_id)` 去重；无签名的客户端上报落 `PENDING_VERIFICATION` / `NOT_ELIGIBLE`，**不发奖**。
+-- 异步核验：完成请求落 `PENDING_VERIFICATION`，由内部核验流程推进状态；AIWork 轮询状态接口。
++- **职责边界**：任务是否完成由 AIWork 判定并声明 `completion_ref`；sub2api **不回查 `usage_logs`、不接收 I 面事件、不判断任务是否真的完成**，收到完成请求即视为「已完成」。
++- **处理流程**：
++  1. 解封装映射用户 + L1 幂等（`growth.task-completion`）；解析 `params`：`task_id` + `completion_ref`（+ 可选 `request_id`）。
++  2. 查当前生效任务规则（规则版本、奖励积分、来源池、周期、每日/总量上限）。
++  3. **防重/限额裁决**：
++     - `growth_completion_requests` 按 `(user_id, task_id, completion_ref)` 唯一去重——命中则读既有结果返回 `ALREADY_COMPLETED`；
++     - 按周期/每日/总量上限判断，超限返回 `NOT_ELIGIBLE`（不发分）；
++     - 任务已暂停/规则不适用返回 `NOT_ELIGIBLE`。
++  4. 同一 GoldenDB 事务内执行 `TASK 池 → 钱包` 双边入账（同 4.2 事务结构）：条件扣减池、增加钱包、写 `growth_completion_requests` / `growth_user_tasks` / `growth_reward_claims` / `growth_transfers` / 恰好两条 `growth_account_ledger` 分录。
++  5. **同步返回** `AWARDED` + `transfer_id` / `awarded_points` / `current_balance` / `rule_version` / `cycle_key`。
++- **删除**：原 `PENDING_VERIFICATION` 异步核验、`REJECTED`（证据不可信）、`usage_logs` 回查 SQL、I 面 `task-events` 上报、完成请求状态轮询接口——全部不实现。
++- **防作弊取舍**：sub2api 不独立证明任务完成（可信调用方模型），靠上限约束 + `completion_ref` 去重 + 审计流水 + 对账告警兜底；风险书面化见总体设计 §3.4。
+ 
+ ### 4.4 兑换与履约
+ 
+@@ -308,14 +315,14 @@
+ 
+ ### 5.3 限流
+ 
+-- U 面按映射出的 `users.id` 限流（解密映射后），I 面按来源 IP + 业务限流。
++- U 面按映射出的 `users.id` 限流（解密映射后）；v4.0 I 面已删除，无集成面限流。
+ 
+ ### 5.4 RBAC coverage（否则启动 panic）
+ 
+-`router.go:156-161` 启动即校验 `ValidateRouteCoverage`。U / I 面是内部系统信任边界，在 `rbac/coverage.go:61-90` 的 `exclusionReason` 增加：
++`router.go:156-161` 启动即校验 `ValidateRouteCoverage`。U 面是内部系统信任边界，在 `rbac/coverage.go:61-90` 的 `exclusionReason` 增加（v4.0 I 面已删除，仅保留 U 面前缀）：
+ 
+ ```go
+-case strings.HasPrefix(path, "/api/v1/growth/"), strings.HasPrefix(path, "/api/v1/integrations/growth/"):
++case strings.HasPrefix(path, "/api/v1/growth/"):
+     return "internal growth trust boundary (SM2 encrypted payload, no identity auth)"
+ ```
+ 
+@@ -353,12 +360,12 @@
+ |---|---|
+ | 单测（`-tags=unit`） | 解封装中间件：合法报文解出 payload、`kid` 未知/SM2 解封失败/MAC 失败/SM4 解密失败/超时窗/nonce 重放/`path` 错投各返回对应 `CRYPTO_*`；用户名不存在返回 `GROWTH_USER_NOT_FOUND`；两套 envelope、错误码映射；幂等 helper 用 stub repo（`idempotency_helper_test.go:20-55`） |
+ | 加解密互操作测试 | 用 AIWork 侧同款加密样例（固定测试 SM2 密钥对、`kid`、会话密钥/IV）解出预期 payload，确保双方信封逐字节兼容；**重点核对 SM2 C1C3C2 编码、SM3-HMAC 拼接顺序、SM4-CBC 填充** |
+-| 服务层 | 规则匹配、cycle_key 生成、上限判断、证据核验条件（`usage_logs` 回查） |
++| 服务层 | 规则匹配、cycle_key 生成、上限判断、`completion_ref` 去重（**v4.0 无 `usage_logs` 证据核验**） |
+ | 集成（`-tags=integration`） | 双边入账事务：余额=分录之和；并发签到/兑换不重复记账、不超卖；唯一键冲突返回既有结果 |
+ | 契约测试 | 按冻结契约逐接口校验响应字段名/类型/枚举/状态机；与 AIWork Mock 对齐 |
+ | 对账脚本 | 每日校验池/钱包余额 = 分录之和，异常告警不自动改账 |
+ 
+-必测场景：双方写死的 SM2 公私钥不匹配（`CRYPTO_KEY_UNWRAP_FAILED`）、MAC 失败（篡改/拼接顺序错）、SM4 密文损坏、`kid` 不等于固定值（`CRYPTO_KEY_UNKNOWN`）、会话密钥/IV 复用、超时窗/nonce 重放、`path` 错投、用户名不存在（映射失败）、并发同幂等键、切账号旧键重放、`usage_logs` 用户不匹配、Token 接口超时按 `order_id` 重试、退款反向转账。
++必测场景：双方写死的 SM2 公私钥不匹配（`CRYPTO_KEY_UNWRAP_FAILED`）、MAC 失败（篡改/拼接顺序错）、SM4 密文损坏、`kid` 不等于固定值（`CRYPTO_KEY_UNKNOWN`）、会话密钥/IV 复用、超时窗/nonce 重放、`path` 错投、用户名不存在（映射失败）、并发同幂等键、切账号旧键重放、**同 `completion_ref` 重复申报不重复发分（含换幂等键场景）、周期/每日上限满返回 `NOT_ELIGIBLE`**、Token 接口超时按 `order_id` 重试、退款反向转账。
+ 
+ ---
+ 
+@@ -366,10 +373,10 @@
+ 
+ | 阶段 | 任务 | 产出 | 验收 |
+ |---|---|---|---|
+-| S0 契约 | 冻结契约签字 + sub2api 生成并分配 SM2 密钥对（私钥写死服务端、公钥写死 AIWork，确认配对）+ 国密库选型安全审批 + 网络边界/IP 白名单/NTP 确认 | 契约 v3.1 | 双方确认 |
++| S0 契约 | 冻结契约签字 + sub2api 生成并分配 SM2 密钥对（私钥写死服务端、公钥写死 AIWork，确认配对）+ 国密库选型安全审批 + 网络边界/IP 白名单/NTP 确认 + 确认「完成判定在 AIWork、发分在 sub2api」边界与风险接受 | 契约 v4.0 | 双方确认 |
+ | S1 内核 | Ent schema + `make generate` + 161/182 DDL + 对账脚本 | 16 张表 | 并发与重放不重复记账，余额=分录之和 |
+ | S2 解封装与读 | `GrowthPayloadDecryptor`（SM2 解封 + SM3-HMAC + SM4）+ 密钥/Nonce 组件 + U 面路由 + `/me` `/tasks` `/ledger` `/products` | 读接口可用 | 密文正确解封装、MAC/防重放与 `path` 绑定生效，用户名映射 `users.id`，`ActorScope` 非 `user:0`；加解密互操作测试通过 |
+-| S3 命令与核验 | 签到 + `usage_logs` 回查 + 完成请求 + I 面事件 | 签到/任务奖励闭环 | 客户端自证不发奖，超时重放幂等 |
++| S3 命令与发分 | 签到 + 完成请求（**AIWork 判定完成、sub2api 同步发分，无证据核验**）+ `growth_completion_requests` 去重 | 签到/任务奖励闭环 | 同步返回发分结果，`completion_ref` 去重、周期/上限防重，超时重放幂等 |
+ | S4 兑换与后管 | 商品版本/库存预算/订单/Outbox 履约 + M 面 + 后管 UI | 兑换闭环 | 不超卖，失败可退款，审计完整 |
+ | S5 联调 | 切真 + 契约测试 + 字段级 diff + 7. 必测场景 | 联调通过 | 与 AIWork 检查清单全绿 |
+ 
+@@ -381,10 +388,10 @@
+ 
+ | 依赖 | 需要 AIWork 提供 | 阻塞 sub2api 阶段 |
+ |---|---|---|
+-| 加密信封 | 每个 U/I 面请求为 SM2 数字信封（SM2 封装 + SM4 + SM3-HMAC），双方写死的公私钥配对、`kid` 固定 `growth-sm2-v1`、C1C3C2/MAC 拼接顺序一致、互操作通过 | S0 约定，S2 起联调 |
++| 加密信封 | 每个 U 面请求为 SM2 数字信封（SM2 封装 + SM4 + SM3-HMAC），双方写死的公私钥配对、`kid` 固定 `growth-sm2-v1`、C1C3C2/MAC 拼接顺序一致、互操作通过（v4.0 无 I 面） | S0 约定，S2 起联调 |
+ | 密钥写死分发 | sub2api 生成密钥对 → 私钥写死服务端常量、公钥写死 AIWork Main 常量；无注入/指纹校验/轮换；变更须双方同步发版 | S0（上线阻塞） |
+ | 幂等键 | 命令接口 payload 带 `idempotency_key`，重试复用但重发重新生成会话密钥/IV | S3 起 |
+-| 业务引用 | 完成任务提交 `run_id`（= 网关 request_id） | S3 |
++| 完成声明 | 完成任务提交 `completion_ref`（AIWork 判定的完成实例标识，sub2api 不核验、只去重） | S3 |
+ | 网络边界 | AIWork 出口 IP 清单 + 双方 NTP 同步 | S0（上线阻塞） |
+ 
+ > SM2 密钥对由 sub2api 生成后双方写死（私钥仅服务端、公钥进 AIWork Main；只保证机密性不保证来源），且**无热轮换**——变更须双方同步改代码发版。U 面必须仅内网/VPN + IP 白名单，代码库访问受控、私钥不进客户端/日志/响应。若无法满足，S2 起不得上线，须重新评审信任方案。
